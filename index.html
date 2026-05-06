@@ -268,6 +268,7 @@
           <th class="sortable text-right" @click="sortBy('esforco')">Hrs <span x-text="sortIcon('esforco')" class="text-[9px] ml-1"></span></th>
           <th class="sortable" @click="sortBy('prazo')">Prazo <span x-text="sortIcon('prazo')" class="text-[9px] ml-1"></span></th>
           <th class="sortable" @click="sortBy('status')">Status <span x-text="sortIcon('status')" class="text-[9px] ml-1"></span></th>
+          <th class="w-8"></th>
         </tr>
       </thead>
       <tbody>
@@ -296,10 +297,13 @@
                 <span x-text="lblStatus(t.status)"></span>
               </span>
             </td>
+            <td class="text-right">
+              <button class="btn btn-ghost btn-icon text-muted hover:text-danger" title="Excluir tarefa" @click.stop="deleteTaskById(t.id)">✕</button>
+            </td>
           </tr>
         </template>
         <tr x-show="filtered.length===0">
-          <td colspan="8" class="text-center text-muted py-16">
+          <td colspan="9" class="text-center text-muted py-16">
             <div class="font-brand text-xl mb-2 text-ink">Nada por aqui.</div>
             <div class="text-sm">Tente ajustar os filtros ou crie uma nova tarefa.</div>
           </td>
@@ -1032,6 +1036,12 @@ function app() {
       if (!confirm('Excluir esta tarefa? Esta ação não pode ser desfeita.')) return;
       this.tasks = this.tasks.filter(t => t.id !== this.editing.id);
       this.modal = false;
+    },
+    deleteTaskById(id) {
+      const t = this.tasks.find(x => x.id === id);
+      if (!t) return;
+      if (!confirm(`Excluir "${t.titulo}"? Esta ação não pode ser desfeita.`)) return;
+      this.tasks = this.tasks.filter(x => x.id !== id);
     },
 
     // ===================== CADASTROS =====================
