@@ -721,7 +721,7 @@ function app() {
     sortKey: 'prazo',
     sortDir: 'asc',
     modal: false,
-    editing: this ? this.blankTask() : null,
+    editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' },
     newCli: '',
     newPes: '',
     newProj: { nome: '', clienteId: '' },
