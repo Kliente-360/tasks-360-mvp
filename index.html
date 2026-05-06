@@ -165,6 +165,44 @@
   @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   .fade-up { animation: fadeUp 240ms ease both; }
 
+  /* tabela com scroll horizontal preservando colunas */
+  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tbl-wrap .tbl { min-width: 760px; }
+
+  /* kanban com carrossel horizontal em mobile */
+  .kanban-scroll { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+  /* tabs com scroll horizontal */
+  .tabs-row { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tabs-row::-webkit-scrollbar { display: none; }
+
+  @media (max-width: 768px) {
+    .tbl-wrap .tbl { min-width: 640px; }
+    .tbl thead th, .tbl tbody td { padding: 11px 12px; font-size: 13px; }
+    .tab { margin-right: 20px; padding: 12px 0; font-size: 13px; }
+    .kpi { padding: 16px 18px; }
+    .kpi-num { font-size: 32px; }
+    .kpi-lbl { margin-bottom: 8px; }
+    .btn { padding: 10px 14px; font-size: 13px; }
+    .btn-icon { padding: 8px 12px; }
+    .inp { padding: 10px 12px; font-size: 15px; } /* 16px+ evita zoom do iOS no focus */
+    .modal-card { max-height: calc(100vh - 24px); display: flex; flex-direction: column; }
+    .kanban-scroll {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      gap: 12px;
+      margin-left: -16px;
+      margin-right: -16px;
+      padding: 0 16px 4px 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .kanban-scroll > * {
+      flex: 0 0 82vw;
+      scroll-snap-align: start;
+    }
+  }
+
   [x-cloak] { display: none !important; }
 </style>
 </head>
@@ -172,26 +210,26 @@
 
 <!-- ============ TOPO ============ -->
 <header class="bg-elev border-b border-line sticky top-0 z-40">
-  <div class="max-w-[1400px] mx-auto px-8 py-4 flex items-center justify-between">
-    <div class="flex items-center gap-3">
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3 min-w-0">
       <div class="k360-mark"><span></span><span></span><span></span><span></span></div>
-      <div class="leading-none">
-        <div class="font-brand text-[22px] font-semibold text-brand">kliente 360</div>
-        <div class="text-[10px] uppercase tracking-[0.18em] text-muted mt-1">backlog · gestão executiva</div>
+      <div class="leading-none min-w-0">
+        <div class="font-brand text-[18px] md:text-[22px] font-semibold text-brand">kliente 360</div>
+        <div class="text-[10px] uppercase tracking-[0.18em] text-muted mt-1 truncate">backlog · gestão executiva</div>
       </div>
     </div>
-    <div class="flex items-center gap-1">
-      <button class="btn btn-ghost text-xs" @click="exportJSON()" title="Exportar dados como JSON">↓ exportar</button>
-      <label class="btn btn-ghost text-xs cursor-pointer" title="Importar JSON">
-        ↑ importar
+    <div class="flex items-center gap-1 shrink-0">
+      <button class="btn btn-ghost btn-icon text-xs" @click="exportJSON()" title="Exportar dados como JSON" aria-label="Exportar"><span class="md:hidden">↓</span><span class="hidden md:inline">↓ exportar</span></button>
+      <label class="btn btn-ghost btn-icon text-xs cursor-pointer" title="Importar JSON" aria-label="Importar">
+        <span class="md:hidden">↑</span><span class="hidden md:inline">↑ importar</span>
         <input type="file" accept="application/json" class="hidden" @change="importJSON($event)">
       </label>
-      <button class="btn btn-ghost text-xs" @click="if(confirm('Apagar todos os dados locais e voltar ao seed?')) resetData()" title="Resetar para dados de exemplo">⟲ resetar</button>
-      <div class="w-px h-6 bg-line mx-2"></div>
-      <button class="btn btn-primary" @click="openNew()">+ Nova tarefa</button>
+      <button class="btn btn-ghost btn-icon text-xs" @click="if(confirm('Apagar todos os dados locais e voltar ao seed?')) resetData()" title="Resetar para dados de exemplo" aria-label="Resetar"><span class="md:hidden">⟲</span><span class="hidden md:inline">⟲ resetar</span></button>
+      <div class="w-px h-6 bg-line mx-1 md:mx-2"></div>
+      <button class="btn btn-primary text-xs md:text-sm" @click="openNew()"><span class="md:hidden">+ Nova</span><span class="hidden md:inline">+ Nova tarefa</span></button>
     </div>
   </div>
-  <div class="max-w-[1400px] mx-auto px-8 flex">
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 tabs-row">
     <div class="tab" :class="tab==='backlog' && 'active'" @click="tab='backlog'">Backlog</div>
     <div class="tab" :class="tab==='kanban' && 'active'" @click="tab='kanban'">Kanban</div>
     <div class="tab" :class="tab==='dash' && 'active'" @click="tab='dash'; $nextTick(()=>renderCharts())">Dashboard</div>
@@ -199,44 +237,44 @@
   </div>
 </header>
 
-<main class="max-w-[1400px] mx-auto px-8 py-8">
+<main class="max-w-[1400px] mx-auto px-4 md:px-8 py-5 md:py-8">
 
 <!-- ============ BACKLOG ============ -->
 <section x-show="tab==='backlog'" class="fade-up">
-  <div class="flex items-end justify-between mb-6">
+  <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
     <div>
-      <h1 class="font-brand text-[34px] font-semibold leading-tight">Backlog</h1>
+      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Backlog</h1>
       <p class="text-ink-soft text-sm mt-1">Tudo que está aberto, em andamento ou recém entregue.</p>
     </div>
-    <div class="flex items-center gap-3 text-sm">
+    <div class="flex items-center gap-2 text-sm">
       <span class="text-muted text-[11px] uppercase tracking-wider font-semibold">mostrando</span>
       <span class="font-mono text-sm" x-text="filtered.length + ' / ' + tasks.length"></span>
     </div>
   </div>
 
-  <div class="grid grid-cols-12 gap-3 mb-5">
-    <div class="col-span-3">
+  <div class="grid grid-cols-2 md:grid-cols-12 gap-2 md:gap-3 mb-4 md:mb-5">
+    <div class="col-span-2 md:col-span-3">
       <input type="text" class="inp" placeholder="Buscar título…" x-model="f.q">
     </div>
-    <div class="col-span-2">
+    <div class="col-span-1 md:col-span-2">
       <select class="inp" x-model="f.cliente">
         <option value="">Todos os clientes</option>
         <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
     </div>
-    <div class="col-span-2">
+    <div class="col-span-1 md:col-span-2">
       <select class="inp" x-model="f.projeto">
         <option value="">Todos os projetos</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
-    <div class="col-span-2">
+    <div class="col-span-1 md:col-span-2">
       <select class="inp" x-model="f.pessoa">
         <option value="">Todas as pessoas</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
-    <div class="col-span-2">
+    <div class="col-span-1 md:col-span-2">
       <select class="inp" x-model="f.status">
         <option value="">Todos os status</option>
         <option value="backlog">Backlog</option>
@@ -245,7 +283,7 @@
         <option value="concluido">Concluído</option>
       </select>
     </div>
-    <div class="col-span-1">
+    <div class="col-span-2 md:col-span-1">
       <select class="inp" x-model="f.pri">
         <option value="">Pri</option>
         <option value="P0">P0</option>
@@ -256,7 +294,7 @@
     </div>
   </div>
 
-  <div class="card overflow-hidden">
+  <div class="card overflow-hidden tbl-wrap">
     <table class="tbl">
       <thead>
         <tr>
@@ -315,20 +353,20 @@
 
 <!-- ============ KANBAN ============ -->
 <section x-show="tab==='kanban'" class="fade-up">
-  <div class="flex items-end justify-between mb-6">
+  <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
     <div>
-      <h1 class="font-brand text-[34px] font-semibold leading-tight">Kanban</h1>
-      <p class="text-ink-soft text-sm mt-1">Visão de fluxo. Use as setas pra mover entre colunas.</p>
+      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Kanban</h1>
+      <p class="text-ink-soft text-sm mt-1">Visão de fluxo. <span class="hidden md:inline">Use as setas pra mover entre colunas.</span></p>
     </div>
-    <div class="flex items-center gap-3">
-      <select class="inp" style="width:220px" x-model="f.cliente">
+    <div class="flex items-center gap-3 w-full md:w-auto">
+      <select class="inp w-full md:w-[220px]" x-model="f.cliente">
         <option value="">Todos os clientes</option>
         <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
     </div>
   </div>
 
-  <div class="grid grid-cols-4 gap-4">
+  <div class="kanban-scroll">
     <template x-for="col in ['backlog','andamento','bloqueado','concluido']" :key="col">
       <div class="kcol">
         <div class="flex items-center justify-between mb-3 px-1">
@@ -365,12 +403,12 @@
 
 <!-- ============ DASHBOARD ============ -->
 <section x-show="tab==='dash'" class="fade-up">
-  <div class="mb-8">
-    <h1 class="font-brand text-[34px] font-semibold leading-tight">Dashboard</h1>
+  <div class="mb-6 md:mb-8">
+    <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Dashboard</h1>
     <p class="text-ink-soft text-sm mt-1">A operação em uma página.</p>
   </div>
 
-  <div class="grid grid-cols-4 gap-4 mb-6">
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-6">
     <div class="kpi">
       <div class="kpi-lbl">Em andamento</div>
       <div class="kpi-num brand" x-text="stats.andamento"></div>
@@ -393,15 +431,15 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-2 gap-4 mb-6">
-    <div class="card p-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-5 md:mb-6">
+    <div class="card p-4 md:p-6">
       <div class="mb-4">
         <div class="font-brand text-xl font-semibold">Volume por cliente</div>
         <div class="text-xs text-muted mt-0.5">horas em tarefas abertas</div>
       </div>
       <div style="height:260px"><canvas id="chartClientes"></canvas></div>
     </div>
-    <div class="card p-6">
+    <div class="card p-4 md:p-6">
       <div class="mb-4">
         <div class="font-brand text-xl font-semibold">Carga por pessoa</div>
         <div class="text-xs text-muted mt-0.5">horas alocadas em tarefas não concluídas</div>
@@ -410,8 +448,8 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-2 gap-4">
-    <div class="card p-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+    <div class="card p-4 md:p-6">
       <div class="font-brand text-xl font-semibold mb-1">Atrasadas</div>
       <div class="text-xs text-muted mb-4">prazo vencido e ainda abertas</div>
       <template x-if="atrasadasList.length===0">
@@ -431,7 +469,7 @@
       </template>
     </div>
 
-    <div class="card p-6">
+    <div class="card p-4 md:p-6">
       <div class="font-brand text-xl font-semibold mb-1">Bloqueadas</div>
       <div class="text-xs text-muted mb-4">aguardando alguma ação externa</div>
       <template x-if="bloqList.length===0">
@@ -455,12 +493,12 @@
 
 <!-- ============ CADASTROS ============ -->
 <section x-show="tab==='cad'" class="fade-up">
-  <div class="mb-6">
-    <h1 class="font-brand text-[34px] font-semibold leading-tight">Cadastros</h1>
+  <div class="mb-5 md:mb-6">
+    <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Cadastros</h1>
     <p class="text-ink-soft text-sm mt-1">Clientes, projetos e pessoas. Mantenha enxuto.</p>
   </div>
 
-  <div class="flex border-b border-line mb-6">
+  <div class="tabs-row border-b border-line mb-5 md:mb-6">
     <div class="tab" :class="cadTab==='clientes' && 'active'" @click="cadTab='clientes'">Clientes <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + clientes.length"></span></div>
     <div class="tab" :class="cadTab==='projetos' && 'active'" @click="cadTab='projetos'">Projetos <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + projetos.length"></span></div>
     <div class="tab" :class="cadTab==='pessoas' && 'active'" @click="cadTab='pessoas'">Pessoas <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + pessoas.length"></span></div>
@@ -468,20 +506,20 @@
 
   <!-- clientes -->
   <div x-show="cadTab==='clientes'">
-    <div class="card p-5 mb-4">
-      <div class="grid grid-cols-12 gap-3 items-end">
-        <div class="col-span-9">
+    <div class="card p-4 md:p-5 mb-4">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+        <div class="md:col-span-9">
           <label class="lbl">Nome do cliente</label>
           <input class="inp" x-model="newCli" placeholder="Ex: Acme Ltda." @keyup.enter="addCliente()">
         </div>
-        <div class="col-span-3">
+        <div class="md:col-span-3">
           <button class="btn btn-primary w-full justify-center" @click="addCliente()">+ Adicionar cliente</button>
         </div>
       </div>
     </div>
     <div class="card">
       <template x-for="c in clientes" :key="c.id">
-        <div class="flex items-center justify-between px-5 py-3 border-b border-line last:border-0">
+        <div class="flex items-center justify-between gap-3 flex-wrap px-4 md:px-5 py-3 border-b border-line last:border-0">
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-md bg-brand-soft flex items-center justify-center text-sm font-brand font-semibold text-brand" x-text="c.nome.charAt(0).toUpperCase()"></div>
             <div>
@@ -501,27 +539,27 @@
 
   <!-- projetos -->
   <div x-show="cadTab==='projetos'">
-    <div class="card p-5 mb-4">
-      <div class="grid grid-cols-12 gap-3 items-end">
-        <div class="col-span-5">
+    <div class="card p-4 md:p-5 mb-4">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+        <div class="md:col-span-5">
           <label class="lbl">Nome do projeto</label>
           <input class="inp" x-model="newProj.nome" placeholder="Ex: Sales Cloud — Onda 1" @keyup.enter="addProjeto()">
         </div>
-        <div class="col-span-4">
+        <div class="md:col-span-4">
           <label class="lbl">Cliente</label>
           <select class="inp" x-model="newProj.clienteId">
             <option value="">Selecione…</option>
             <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
           </select>
         </div>
-        <div class="col-span-3">
+        <div class="md:col-span-3">
           <button class="btn btn-primary w-full justify-center" @click="addProjeto()">+ Adicionar projeto</button>
         </div>
       </div>
     </div>
     <div class="card">
       <template x-for="p in projetos" :key="p.id">
-        <div class="flex items-center justify-between px-5 py-3 border-b border-line last:border-0">
+        <div class="flex items-center justify-between gap-3 flex-wrap px-4 md:px-5 py-3 border-b border-line last:border-0">
           <div>
             <div class="text-sm font-medium" x-text="p.nome"></div>
             <div class="text-xs text-muted" x-text="nomeCliente(p.clienteId) + ' · ' + contarTarefasProjeto(p.id) + ' tarefas'"></div>
@@ -538,20 +576,20 @@
 
   <!-- pessoas -->
   <div x-show="cadTab==='pessoas'">
-    <div class="card p-5 mb-4">
-      <div class="grid grid-cols-12 gap-3 items-end">
-        <div class="col-span-9">
+    <div class="card p-4 md:p-5 mb-4">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+        <div class="md:col-span-9">
           <label class="lbl">Nome da pessoa</label>
           <input class="inp" x-model="newPes" placeholder="Ex: Maria Silva" @keyup.enter="addPessoa()">
         </div>
-        <div class="col-span-3">
+        <div class="md:col-span-3">
           <button class="btn btn-primary w-full justify-center" @click="addPessoa()">+ Adicionar pessoa</button>
         </div>
       </div>
     </div>
     <div class="card">
       <template x-for="p in pessoas" :key="p.id">
-        <div class="flex items-center justify-between px-5 py-3 border-b border-line last:border-0">
+        <div class="flex items-center justify-between gap-3 flex-wrap px-4 md:px-5 py-3 border-b border-line last:border-0">
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-full bg-brand-soft flex items-center justify-center text-sm font-brand font-semibold text-brand" x-text="p.nome.charAt(0).toUpperCase()"></div>
             <div>
@@ -573,8 +611,8 @@
 </main>
 
 <!-- ============ FOOTER ============ -->
-<footer class="border-t border-line mt-16">
-  <div class="max-w-[1400px] mx-auto px-8 py-6 flex items-center justify-between text-xs text-muted">
+<footer class="border-t border-line mt-10 md:mt-16">
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-5 md:py-6 flex items-center justify-between gap-3 flex-wrap text-xs text-muted">
     <div class="flex items-center gap-2">
       <div class="k360-mark" style="width:14px;height:14px"><span style="width:5px;height:5px"></span><span style="width:5px;height:5px"></span><span style="width:5px;height:5px"></span><span style="width:5px;height:5px"></span></div>
       <span>protótipo · dados em <span class="font-mono">localStorage</span> deste navegador</span>
@@ -584,13 +622,13 @@
 </footer>
 
 <!-- ============ MODAL TAREFA ============ -->
-<div x-show="modal" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-4" @click.self="modal=false" x-transition.opacity>
+<div x-show="modal" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modal=false" x-transition.opacity>
   <div class="bg-elev rounded-lg w-full max-w-2xl modal-card" x-transition>
-    <div class="flex items-center justify-between px-6 py-4 border-b border-line">
-      <div class="font-brand text-xl font-semibold" x-text="editing.id ? 'Editar tarefa' : 'Nova tarefa'"></div>
+    <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-line">
+      <div class="font-brand text-lg md:text-xl font-semibold" x-text="editing.id ? 'Editar tarefa' : 'Nova tarefa'"></div>
       <button class="btn btn-ghost btn-icon" @click="modal=false">✕</button>
     </div>
-    <div class="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+    <div class="px-4 md:px-6 py-4 md:py-5 space-y-4 overflow-y-auto" style="max-height:70vh">
       <div>
         <label class="lbl">Título</label>
         <input class="inp" x-model="editing.titulo" placeholder="O que precisa ser feito?" x-ref="tituloInput">
@@ -599,7 +637,7 @@
         <label class="lbl">Descrição (opcional)</label>
         <textarea class="inp" rows="3" x-model="editing.descricao" placeholder="Contexto, links, critérios de aceite…"></textarea>
       </div>
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="lbl">Cliente</label>
           <select class="inp" x-model="editing.clienteId">
@@ -643,13 +681,13 @@
           <label class="lbl">Esforço (horas)</label>
           <input type="number" min="0" step="0.5" class="inp" x-model.number="editing.esforco">
         </div>
-        <div class="col-span-2">
+        <div class="sm:col-span-2">
           <label class="lbl">Prazo</label>
           <input type="date" class="inp" x-model="editing.prazo">
         </div>
       </div>
     </div>
-    <div class="flex items-center justify-between px-6 py-4 border-t border-line bg-brand-tint/30">
+    <div class="flex items-center justify-between gap-2 px-4 md:px-6 py-3 md:py-4 border-t border-line bg-brand-tint/30">
       <div>
         <button x-show="editing.id" class="btn btn-danger text-xs" @click="deleteTask()">excluir</button>
       </div>
