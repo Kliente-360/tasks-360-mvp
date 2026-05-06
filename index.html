@@ -132,9 +132,12 @@
   .tab.active { color: var(--brand-dark); border-color: var(--brand); }
 
   /* kanban */
-  .kcard { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 6px; padding: 14px; margin-bottom: 10px; transition: all 140ms ease; cursor: pointer; }
+  .kcard { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 6px; padding: 14px; margin-bottom: 10px; transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease; cursor: grab; }
   .kcard:hover { border-color: var(--brand); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,153,0,0.06); }
-  .kcol { background: rgba(0,0,0,0.025); border-radius: 8px; padding: 14px; min-height: 200px; }
+  .kcard:active { cursor: grabbing; }
+  .kcard.dragging { opacity: 0.4; transform: none; box-shadow: none; }
+  .kcol { background: rgba(0,0,0,0.025); border-radius: 8px; padding: 14px; min-height: 200px; transition: background 120ms ease, outline-color 120ms ease; outline: 2px dashed transparent; outline-offset: -4px; }
+  .kcol.drop-target { background: var(--brand-tint); outline-color: var(--brand); }
 
   /* modal */
   .modal-bg { background: rgba(15,26,20,0.5); backdrop-filter: blur(3px); }
@@ -368,7 +371,11 @@
 
   <div class="kanban-scroll">
     <template x-for="col in ['backlog','andamento','bloqueado','concluido']" :key="col">
-      <div class="kcol">
+      <div class="kcol"
+           :class="dragOverCol===col && 'drop-target'"
+           @dragover.prevent="dragOverCol=col"
+           @dragleave="dragOverCol===col && (dragOverCol='')"
+           @drop.prevent="onDrop($event, col)">
         <div class="flex items-center justify-between mb-3 px-1">
           <div>
             <div class="text-[11px] uppercase tracking-wider text-muted font-semibold" x-text="lblStatus(col)"></div>
@@ -376,7 +383,12 @@
           </div>
         </div>
         <template x-for="t in kanbanCol(col)" :key="t.id">
-          <div class="kcard" @click="openEdit(t)">
+          <div class="kcard"
+               draggable="true"
+               :class="draggingId===t.id && 'dragging'"
+               @click="openEdit(t)"
+               @dragstart="onDragStart($event, t)"
+               @dragend="draggingId=''; dragOverCol=''">
             <div class="flex items-start justify-between gap-2 mb-2">
               <div class="font-medium text-sm leading-snug" x-text="t.titulo"></div>
               <span class="pri" :class="'pri-'+t.prioridade">
@@ -748,6 +760,7 @@ function seed() {
       prazo: '2026-05-31',
       status: 'backlog',
       criadoEm: Date.now(),
+      statusEm: Date.now(),
     },
   ];
 
@@ -766,6 +779,8 @@ function app() {
     sortKey: 'prazo',
     sortDir: 'asc',
     modal: false,
+    draggingId: '',
+    dragOverCol: '',
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' },
     newCli: '',
     newPes: '',
@@ -940,20 +955,35 @@ function app() {
     // ===================== KANBAN =====================
     kanbanCol(status) {
       const arr = this.tasks.filter(t => t.status === status && (!this.f.cliente || t.clienteId === this.f.cliente));
-      const priOrder = { P0:0, P1:1, P2:2, P3:3 };
-      arr.sort((a,b) => {
-        const pa = priOrder[a.prioridade] - priOrder[b.prioridade];
-        if (pa !== 0) return pa;
-        return (a.prazo || '9999') < (b.prazo || '9999') ? -1 : 1;
-      });
+      // ordem da coluna = mais recentemente entrou nesta etapa primeiro
+      arr.sort((a,b) => (b.statusEm || b.criadoEm || 0) - (a.statusEm || a.criadoEm || 0));
       return arr;
+    },
+    setTaskStatus(t, newStatus) {
+      if (!t || t.status === newStatus) return;
+      const i = this.tasks.findIndex(x => x.id === t.id);
+      if (i < 0) return;
+      this.tasks[i] = { ...this.tasks[i], status: newStatus, statusEm: Date.now() };
     },
     moveTask(t, dir) {
       const order = ['backlog', 'andamento', 'bloqueado', 'concluido'];
       const i = order.indexOf(t.status);
       const ni = i + dir;
       if (ni < 0 || ni >= order.length) return;
-      t.status = order[ni];
+      this.setTaskStatus(t, order[ni]);
+    },
+    onDragStart(ev, t) {
+      this.draggingId = t.id;
+      ev.dataTransfer.setData('text/plain', t.id);
+      ev.dataTransfer.effectAllowed = 'move';
+    },
+    onDrop(ev, col) {
+      const id = ev.dataTransfer.getData('text/plain') || this.draggingId;
+      this.dragOverCol = '';
+      this.draggingId = '';
+      if (!id) return;
+      const t = this.tasks.find(x => x.id === id);
+      if (t) this.setTaskStatus(t, col);
     },
 
     // ===================== STATS =====================
@@ -1065,10 +1095,16 @@ function app() {
       e.esforco = +e.esforco || 0;
       if (e.id) {
         const i = this.tasks.findIndex(t => t.id === e.id);
-        if (i >= 0) this.tasks[i] = { ...this.tasks[i], ...e };
+        if (i >= 0) {
+          const prev = this.tasks[i];
+          const merged = { ...prev, ...e };
+          if (prev.status !== merged.status) merged.statusEm = Date.now();
+          this.tasks[i] = merged;
+        }
       } else {
         e.id = uid();
         e.criadoEm = Date.now();
+        e.statusEm = Date.now();
         this.tasks.push({ ...e });
       }
       this.modal = false;
