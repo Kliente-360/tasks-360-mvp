@@ -703,49 +703,52 @@
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 function seed() {
-  // clientes inspirados nos depoimentos do site Kliente 360 + exemplos plausíveis
   const cli = [
+    { id: uid(), nome: 'Kliente 360' },
     { id: uid(), nome: 'Bodytech' },
-    { id: uid(), nome: 'Sem Parar' },
-    { id: uid(), nome: 'Acme Varejo' },
-    { id: uid(), nome: 'Northwind Saúde' },
+    { id: uid(), nome: 'VB' },
+    { id: uid(), nome: 'CTF' },
+    { id: uid(), nome: 'Pão & Talho' },
+    { id: uid(), nome: 'Multimais' },
+    { id: uid(), nome: 'Aurora' },
+    { id: uid(), nome: 'Indigo' },
   ];
   const proj = [
-    { id: uid(), clienteId: cli[0].id, nome: 'Service Cloud — Onda 2' },
-    { id: uid(), clienteId: cli[0].id, nome: 'Integração WhatsApp Business' },
-    { id: uid(), clienteId: cli[1].id, nome: 'Sales Cloud — Pipeline B2B' },
-    { id: uid(), clienteId: cli[2].id, nome: 'Marketing Cloud — Jornadas' },
-    { id: uid(), clienteId: cli[3].id, nome: 'Sales Cloud — Implantação' },
+    { id: uid(), clienteId: cli[0].id, nome: 'Gestão Interna' },
+    { id: uid(), clienteId: cli[1].id, nome: 'Sustentação BT' },
+    { id: uid(), clienteId: cli[2].id, nome: 'Sustentação VB' },
+    { id: uid(), clienteId: cli[3].id, nome: 'Sustentação CTF' },
+    { id: uid(), clienteId: cli[4].id, nome: 'Sustentação Pão' },
+    { id: uid(), clienteId: cli[4].id, nome: 'ERP Pão' },
+    { id: uid(), clienteId: cli[5].id, nome: 'Sustentação Multimais' },
+    { id: uid(), clienteId: cli[6].id, nome: 'Sales Cloud Intercâmbios' },
+    { id: uid(), clienteId: cli[7].id, nome: 'Sales Cloud Estacionamentos' },
   ];
   const pes = [
-    { id: uid(), nome: 'Gustavo Goulart' },
-    { id: uid(), nome: 'Felipe Andrade' },
-    { id: uid(), nome: 'Ana Beatriz' },
-    { id: uid(), nome: 'Rafael Mendes' },
-    { id: uid(), nome: 'Camila Souza' },
+    { id: uid(), nome: 'Felipe' },
+    { id: uid(), nome: 'Henrique' },
+    { id: uid(), nome: 'Jéssica' },
+    { id: uid(), nome: 'João' },
+    { id: uid(), nome: 'Elder' },
+    { id: uid(), nome: 'Karen' },
+    { id: uid(), nome: 'Drieli' },
+    { id: uid(), nome: 'Fernando' },
   ];
 
-  const today = new Date();
-  const day = (offset) => {
-    const d = new Date(today); d.setDate(d.getDate() + offset);
-    return d.toISOString().slice(0,10);
-  };
-
   const tasks = [
-    { id: uid(), titulo: 'Configurar fluxo de leads inbound no Sales Cloud', descricao: 'Definir critérios de qualificação e roteamento por SLA', clienteId: cli[1].id, projetoId: proj[2].id, pessoaId: pes[0].id, prioridade: 'P0', esforco: 12, prazo: day(-3), status: 'andamento', criadoEm: Date.now()-86400000*5 },
-    { id: uid(), titulo: 'Migrar histórico de tickets do legado para Service Cloud', descricao: 'ETL com de-duplicação e mapeamento de campos customizados', clienteId: cli[0].id, projetoId: proj[0].id, pessoaId: pes[3].id, prioridade: 'P0', esforco: 24, prazo: day(7), status: 'andamento', criadoEm: Date.now()-86400000*8 },
-    { id: uid(), titulo: 'Aprovação do desenho da jornada de boas-vindas', descricao: 'Aguardando assinatura do gerente de marketing', clienteId: cli[2].id, projetoId: proj[3].id, pessoaId: pes[2].id, prioridade: 'P1', esforco: 4, prazo: day(-1), status: 'bloqueado', criadoEm: Date.now()-86400000*4 },
-    { id: uid(), titulo: 'Setup de sandbox para testes de integração', clienteId: cli[3].id, projetoId: proj[4].id, pessoaId: pes[1].id, prioridade: 'P1', esforco: 6, prazo: day(2), status: 'backlog', criadoEm: Date.now()-86400000*2 },
-    { id: uid(), titulo: 'POC integração WhatsApp Business via API oficial', descricao: 'Testar throughput e latência com volume realista', clienteId: cli[0].id, projetoId: proj[1].id, pessoaId: pes[0].id, prioridade: 'P2', esforco: 16, prazo: day(14), status: 'backlog', criadoEm: Date.now()-86400000*1 },
-    { id: uid(), titulo: 'Treinamento da equipe de atendimento (Onda 1)', clienteId: cli[0].id, projetoId: proj[0].id, pessoaId: pes[4].id, prioridade: 'P2', esforco: 8, prazo: day(10), status: 'backlog', criadoEm: Date.now()-86400000*3 },
-    { id: uid(), titulo: 'Criar dashboards executivos de funil', descricao: 'Conversão por etapa, ciclo médio, top vendedores', clienteId: cli[1].id, projetoId: proj[2].id, pessoaId: pes[2].id, prioridade: 'P1', esforco: 10, prazo: day(5), status: 'andamento', criadoEm: Date.now()-86400000*6 },
-    { id: uid(), titulo: 'Workshop de descoberta com stakeholders', clienteId: cli[3].id, projetoId: proj[4].id, pessoaId: pes[0].id, prioridade: 'P0', esforco: 4, prazo: day(1), status: 'andamento', criadoEm: Date.now()-86400000*1 },
-    { id: uid(), titulo: 'Documentar regras de atribuição de oportunidades', clienteId: cli[1].id, projetoId: proj[2].id, pessoaId: pes[1].id, prioridade: 'P3', esforco: 3, prazo: day(20), status: 'backlog', criadoEm: Date.now()-86400000*1 },
-    { id: uid(), titulo: 'Revisão pós go-live — Sales Cloud', clienteId: cli[1].id, projetoId: proj[2].id, pessoaId: pes[3].id, prioridade: 'P2', esforco: 6, prazo: day(-7), status: 'concluido', criadoEm: Date.now()-86400000*15 },
-    { id: uid(), titulo: 'Configurar Email Studio e templates iniciais', clienteId: cli[2].id, projetoId: proj[3].id, pessoaId: pes[4].id, prioridade: 'P2', esforco: 8, prazo: day(8), status: 'backlog', criadoEm: Date.now()-86400000*2 },
-    { id: uid(), titulo: 'Cliente precisa enviar lista de campos customizados', descricao: 'Email enviado dia 02/05, sem retorno até agora', clienteId: cli[2].id, projetoId: proj[3].id, pessoaId: pes[2].id, prioridade: 'P1', esforco: 2, prazo: day(-2), status: 'bloqueado', criadoEm: Date.now()-86400000*7 },
-    { id: uid(), titulo: 'Mapeamento de personas e segmentação inicial', clienteId: cli[2].id, projetoId: proj[3].id, pessoaId: pes[2].id, prioridade: 'P2', esforco: 12, prazo: day(15), status: 'backlog', criadoEm: Date.now()-86400000*4 },
-    { id: uid(), titulo: 'Testes de regressão pós-deploy', clienteId: cli[0].id, projetoId: proj[0].id, pessoaId: pes[3].id, prioridade: 'P1', esforco: 6, prazo: day(4), status: 'andamento', criadoEm: Date.now()-86400000*3 },
+    {
+      id: uid(),
+      titulo: 'Validar esta ferramenta e definir roadmap',
+      descricao: '',
+      clienteId: cli[0].id,
+      projetoId: proj[0].id,
+      pessoaId: pes[2].id,
+      prioridade: 'P0',
+      esforco: 4,
+      prazo: '2026-05-31',
+      status: 'backlog',
+      criadoEm: Date.now(),
+    },
   ];
 
   return { clientes: cli, projetos: proj, pessoas: pes, tasks };
