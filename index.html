@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
@@ -222,12 +223,8 @@
       </div>
     </div>
     <div class="flex items-center gap-1 shrink-0">
-      <button class="btn btn-ghost btn-icon text-xs" @click="exportJSON()" title="Exportar dados como JSON" aria-label="Exportar"><span class="md:hidden">↓</span><span class="hidden md:inline">↓ exportar</span></button>
-      <label class="btn btn-ghost btn-icon text-xs cursor-pointer" title="Importar JSON" aria-label="Importar">
-        <span class="md:hidden">↑</span><span class="hidden md:inline">↑ importar</span>
-        <input type="file" accept="application/json" class="hidden" @change="importJSON($event)">
-      </label>
-      <button class="btn btn-ghost btn-icon text-xs" @click="if(confirm('Apagar todos os dados locais e voltar ao seed?')) resetData()" title="Resetar para dados de exemplo" aria-label="Resetar"><span class="md:hidden">⟲</span><span class="hidden md:inline">⟲ resetar</span></button>
+      <button class="btn btn-ghost btn-icon text-xs" @click="exportJSON()" title="Exportar snapshot atual em JSON" aria-label="Exportar"><span class="md:hidden">↓</span><span class="hidden md:inline">↓ exportar</span></button>
+      <button class="btn btn-ghost btn-icon text-xs" @click="load()" title="Recarregar dados do Supabase" aria-label="Recarregar"><span class="md:hidden">⟲</span><span class="hidden md:inline">⟲ recarregar</span></button>
       <div class="w-px h-6 bg-line mx-1 md:mx-2"></div>
       <button class="btn btn-primary text-xs md:text-sm" @click="openNew()"><span class="md:hidden">+ Nova</span><span class="hidden md:inline">+ Nova tarefa</span></button>
     </div>
@@ -712,60 +709,43 @@
 </div>
 
 <script>
-function uid(){ return Math.random().toString(36).slice(2,10); }
+// ====== Supabase ======
+// Anon key é PÚBLICA por design (segurança vem da RLS, definida em
+// supabase/schema.sql). Service-role key NUNCA aqui.
+const SUPABASE_URL      = 'https://YOUR-PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function seed() {
-  const cli = [
-    { id: uid(), nome: 'Kliente 360' },
-    { id: uid(), nome: 'Bodytech' },
-    { id: uid(), nome: 'VB' },
-    { id: uid(), nome: 'CTF' },
-    { id: uid(), nome: 'Pão & Talho' },
-    { id: uid(), nome: 'Multimais' },
-    { id: uid(), nome: 'Aurora' },
-    { id: uid(), nome: 'Indigo' },
-  ];
-  const proj = [
-    { id: uid(), clienteId: cli[0].id, nome: 'Gestão Interna' },
-    { id: uid(), clienteId: cli[1].id, nome: 'Sustentação BT' },
-    { id: uid(), clienteId: cli[2].id, nome: 'Sustentação VB' },
-    { id: uid(), clienteId: cli[3].id, nome: 'Sustentação CTF' },
-    { id: uid(), clienteId: cli[4].id, nome: 'Sustentação Pão' },
-    { id: uid(), clienteId: cli[4].id, nome: 'ERP Pão' },
-    { id: uid(), clienteId: cli[5].id, nome: 'Sustentação Multimais' },
-    { id: uid(), clienteId: cli[6].id, nome: 'Sales Cloud Intercâmbios' },
-    { id: uid(), clienteId: cli[7].id, nome: 'Sales Cloud Estacionamentos' },
-  ];
-  const pes = [
-    { id: uid(), nome: 'Felipe' },
-    { id: uid(), nome: 'Henrique' },
-    { id: uid(), nome: 'Jéssica' },
-    { id: uid(), nome: 'João' },
-    { id: uid(), nome: 'Elder' },
-    { id: uid(), nome: 'Karen' },
-    { id: uid(), nome: 'Drieli' },
-    { id: uid(), nome: 'Fernando' },
-  ];
-
-  const tasks = [
-    {
-      id: uid(),
-      titulo: 'Validar esta ferramenta e definir roadmap',
-      descricao: '',
-      clienteId: cli[0].id,
-      projetoId: proj[0].id,
-      pessoaId: pes[2].id,
-      prioridade: 'P0',
-      esforco: 4,
-      prazo: '2026-05-31',
-      status: 'backlog',
-      criadoEm: Date.now(),
-      statusEm: Date.now(),
-    },
-  ];
-
-  return { clientes: cli, projetos: proj, pessoas: pes, tasks };
+function taskFromDb(r) {
+  return {
+    id: r.id,
+    titulo: r.titulo || '',
+    descricao: r.descricao || '',
+    clienteId: r.cliente_id || '',
+    projetoId: r.projeto_id || '',
+    pessoaId: r.pessoa_id || '',
+    prioridade: r.prioridade,
+    esforco: Number(r.esforco) || 0,
+    prazo: r.prazo || '',
+    status: r.status,
+    criadoEm: r.criado_em ? new Date(r.criado_em).getTime() : 0,
+    statusEm: r.status_em ? new Date(r.status_em).getTime() : 0,
+  };
 }
+function taskToDb(t) {
+  return {
+    titulo: t.titulo,
+    descricao: t.descricao || '',
+    cliente_id: t.clienteId || null,
+    projeto_id: t.projetoId || null,
+    pessoa_id: t.pessoaId || null,
+    prioridade: t.prioridade,
+    esforco: Number(t.esforco) || 0,
+    prazo: t.prazo || null,
+    status: t.status,
+  };
+}
+function projetoFromDb(r) { return { id: r.id, nome: r.nome, clienteId: r.cliente_id }; }
 
 function app() {
   return {
@@ -786,54 +766,50 @@ function app() {
     newPes: '',
     newProj: { nome: '', clienteId: '' },
     charts: { clientes: null, pessoas: null },
-    STORAGE_KEY: 'kliente360-backlog-v1',
 
     // ===================== INIT / PERSISTÊNCIA =====================
-    init() {
-      this.load();
+    async init() {
       this.editing = this.blankTask();
-      // watcher de persistência
-      this.$watch('tasks', () => this.save(), { deep: true });
-      this.$watch('clientes', () => this.save(), { deep: true });
-      this.$watch('projetos', () => this.save(), { deep: true });
-      this.$watch('pessoas', () => this.save(), { deep: true });
+      if (SUPABASE_URL.includes('YOUR-PROJECT')) {
+        alert('Supabase não configurado. Edite SUPABASE_URL e SUPABASE_ANON_KEY no index.html.');
+        return;
+      }
+      await this.load();
     },
-    load() {
+    async load() {
       try {
-        const raw = localStorage.getItem(this.STORAGE_KEY);
-        if (raw) {
-          const d = JSON.parse(raw);
-          this.clientes = d.clientes || [];
-          this.projetos = d.projetos || [];
-          this.pessoas  = d.pessoas  || [];
-          this.tasks    = d.tasks    || [];
-          return;
-        }
-      } catch(e) { console.warn('falha ao carregar', e); }
-      const s = seed();
-      this.clientes = s.clientes;
-      this.projetos = s.projetos;
-      this.pessoas  = s.pessoas;
-      this.tasks    = s.tasks;
-      this.save();
+        const [c, p, ps, t] = await Promise.all([
+          sb.from('clientes').select('id,nome').order('nome'),
+          sb.from('projetos').select('id,nome,cliente_id').order('nome'),
+          sb.from('pessoas').select('id,nome').order('nome'),
+          sb.from('tasks').select('*').order('criado_em', { ascending: false }),
+        ]);
+        const err = c.error || p.error || ps.error || t.error;
+        if (err) throw err;
+        this.clientes = c.data;
+        this.projetos = p.data.map(projetoFromDb);
+        this.pessoas  = ps.data;
+        this.tasks    = t.data.map(taskFromDb);
+      } catch (e) {
+        console.error('Falha ao carregar do Supabase', e);
+        alert('Falha ao carregar do Supabase: ' + (e.message || e));
+      }
     },
-    save() {
-      try {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify({
-          clientes: this.clientes, projetos: this.projetos,
-          pessoas: this.pessoas, tasks: this.tasks,
-          _savedAt: new Date().toISOString()
-        }));
-      } catch(e) { console.warn('falha ao salvar', e); }
+    async refreshTasks() {
+      const { data, error } = await sb.from('tasks').select('*').order('criado_em', { ascending: false });
+      if (!error) this.tasks = data.map(taskFromDb);
     },
-    resetData() {
-      localStorage.removeItem(this.STORAGE_KEY);
-      const s = seed();
-      this.clientes = s.clientes;
-      this.projetos = s.projetos;
-      this.pessoas  = s.pessoas;
-      this.tasks    = s.tasks;
-      this.save();
+    async refreshClientes() {
+      const { data, error } = await sb.from('clientes').select('id,nome').order('nome');
+      if (!error) this.clientes = data;
+    },
+    async refreshProjetos() {
+      const { data, error } = await sb.from('projetos').select('id,nome,cliente_id').order('nome');
+      if (!error) this.projetos = data.map(projetoFromDb);
+    },
+    async refreshPessoas() {
+      const { data, error } = await sb.from('pessoas').select('id,nome').order('nome');
+      if (!error) this.pessoas = data;
     },
     exportJSON() {
       const data = { clientes: this.clientes, projetos: this.projetos, pessoas: this.pessoas, tasks: this.tasks, _exportedAt: new Date().toISOString() };
@@ -844,27 +820,6 @@ function app() {
       a.download = 'kliente360-backlog-' + new Date().toISOString().slice(0,10) + '.json';
       a.click();
       URL.revokeObjectURL(url);
-    },
-    importJSON(ev) {
-      const file = ev.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const d = JSON.parse(e.target.result);
-          if (!confirm('Substituir todos os dados atuais pelos dados do arquivo?')) return;
-          this.clientes = d.clientes || [];
-          this.projetos = d.projetos || [];
-          this.pessoas  = d.pessoas  || [];
-          this.tasks    = d.tasks    || [];
-          this.save();
-          alert('Dados importados com sucesso.');
-        } catch(err) {
-          alert('Arquivo inválido: ' + err.message);
-        }
-      };
-      reader.readAsText(file);
-      ev.target.value = '';
     },
 
     // ===================== HELPERS =====================
@@ -959,31 +914,33 @@ function app() {
       arr.sort((a,b) => (b.statusEm || b.criadoEm || 0) - (a.statusEm || a.criadoEm || 0));
       return arr;
     },
-    setTaskStatus(t, newStatus) {
+    async setTaskStatus(t, newStatus) {
       if (!t || t.status === newStatus) return;
-      const i = this.tasks.findIndex(x => x.id === t.id);
-      if (i < 0) return;
-      this.tasks[i] = { ...this.tasks[i], status: newStatus, statusEm: Date.now() };
+      const { error } = await sb.from('tasks')
+        .update({ status: newStatus, status_em: new Date().toISOString() })
+        .eq('id', t.id);
+      if (error) { alert('Erro: ' + error.message); return; }
+      await this.refreshTasks();
     },
-    moveTask(t, dir) {
+    async moveTask(t, dir) {
       const order = ['backlog', 'andamento', 'bloqueado', 'concluido'];
       const i = order.indexOf(t.status);
       const ni = i + dir;
       if (ni < 0 || ni >= order.length) return;
-      this.setTaskStatus(t, order[ni]);
+      await this.setTaskStatus(t, order[ni]);
     },
     onDragStart(ev, t) {
       this.draggingId = t.id;
       ev.dataTransfer.setData('text/plain', t.id);
       ev.dataTransfer.effectAllowed = 'move';
     },
-    onDrop(ev, col) {
+    async onDrop(ev, col) {
       const id = ev.dataTransfer.getData('text/plain') || this.draggingId;
       this.dragOverCol = '';
       this.draggingId = '';
       if (!id) return;
       const t = this.tasks.find(x => x.id === id);
-      if (t) this.setTaskStatus(t, col);
+      if (t) await this.setTaskStatus(t, col);
     },
 
     // ===================== STATS =====================
@@ -1085,7 +1042,7 @@ function app() {
       this.editing = JSON.parse(JSON.stringify(t));
       this.modal = true;
     },
-    saveTask() {
+    async saveTask() {
       const e = this.editing;
       if (!e.titulo || !e.titulo.trim()) {
         alert('Dê um título à tarefa.');
@@ -1093,46 +1050,53 @@ function app() {
       }
       e.titulo = e.titulo.trim();
       e.esforco = +e.esforco || 0;
+      const payload = taskToDb(e);
       if (e.id) {
-        const i = this.tasks.findIndex(t => t.id === e.id);
-        if (i >= 0) {
-          const prev = this.tasks[i];
-          const merged = { ...prev, ...e };
-          if (prev.status !== merged.status) merged.statusEm = Date.now();
-          this.tasks[i] = merged;
-        }
+        const prev = this.tasks.find(t => t.id === e.id);
+        if (prev && prev.status !== e.status) payload.status_em = new Date().toISOString();
+        const { error } = await sb.from('tasks').update(payload).eq('id', e.id);
+        if (error) { alert('Erro: ' + error.message); return; }
       } else {
-        e.id = uid();
-        e.criadoEm = Date.now();
-        e.statusEm = Date.now();
-        this.tasks.push({ ...e });
+        payload.status_em = new Date().toISOString();
+        const { error } = await sb.from('tasks').insert(payload);
+        if (error) { alert('Erro: ' + error.message); return; }
       }
       this.modal = false;
+      await this.refreshTasks();
     },
-    deleteTask() {
+    async deleteTask() {
       if (!confirm('Excluir esta tarefa? Esta ação não pode ser desfeita.')) return;
-      this.tasks = this.tasks.filter(t => t.id !== this.editing.id);
+      const { error } = await sb.from('tasks').delete().eq('id', this.editing.id);
+      if (error) { alert('Erro: ' + error.message); return; }
       this.modal = false;
+      await this.refreshTasks();
     },
-    deleteTaskById(id) {
+    async deleteTaskById(id) {
       const t = this.tasks.find(x => x.id === id);
       if (!t) return;
       if (!confirm(`Excluir "${t.titulo}"? Esta ação não pode ser desfeita.`)) return;
-      this.tasks = this.tasks.filter(x => x.id !== id);
+      const { error } = await sb.from('tasks').delete().eq('id', id);
+      if (error) { alert('Erro: ' + error.message); return; }
+      await this.refreshTasks();
     },
 
     // ===================== CADASTROS =====================
-    addCliente() {
+    async addCliente() {
       const n = (this.newCli || '').trim();
       if (!n) return;
-      this.clientes.push({ id: uid(), nome: n });
+      const { error } = await sb.from('clientes').insert({ nome: n });
+      if (error) { alert('Erro: ' + error.message); return; }
       this.newCli = '';
+      await this.refreshClientes();
     },
-    renomeiaCliente(c) {
+    async renomeiaCliente(c) {
       const n = prompt('Novo nome do cliente:', c.nome);
-      if (n && n.trim()) c.nome = n.trim();
+      if (!n || !n.trim()) return;
+      const { error } = await sb.from('clientes').update({ nome: n.trim() }).eq('id', c.id);
+      if (error) { alert('Erro: ' + error.message); return; }
+      await this.refreshClientes();
     },
-    deleteCliente(c) {
+    async deleteCliente(c) {
       const tasks = this.tasks.filter(t => t.clienteId === c.id).length;
       const projs = this.projetos.filter(p => p.clienteId === c.id).length;
       if (tasks || projs) {
@@ -1140,42 +1104,58 @@ function app() {
         return;
       }
       if (!confirm(`Excluir cliente "${c.nome}"?`)) return;
-      this.clientes = this.clientes.filter(x => x.id !== c.id);
+      const { error } = await sb.from('clientes').delete().eq('id', c.id);
+      if (error) { alert('Erro: ' + error.message); return; }
+      await this.refreshClientes();
     },
 
-    addProjeto() {
+    async addProjeto() {
       const n = (this.newProj.nome || '').trim();
       if (!n) return;
       if (!this.newProj.clienteId) { alert('Selecione o cliente do projeto.'); return; }
-      this.projetos.push({ id: uid(), nome: n, clienteId: this.newProj.clienteId });
+      const { error } = await sb.from('projetos').insert({ nome: n, cliente_id: this.newProj.clienteId });
+      if (error) { alert('Erro: ' + error.message); return; }
       this.newProj = { nome: '', clienteId: '' };
+      await this.refreshProjetos();
     },
-    renomeiaProjeto(p) {
+    async renomeiaProjeto(p) {
       const n = prompt('Novo nome do projeto:', p.nome);
-      if (n && n.trim()) p.nome = n.trim();
+      if (!n || !n.trim()) return;
+      const { error } = await sb.from('projetos').update({ nome: n.trim() }).eq('id', p.id);
+      if (error) { alert('Erro: ' + error.message); return; }
+      await this.refreshProjetos();
     },
-    deleteProjeto(p) {
+    async deleteProjeto(p) {
       const tasks = this.tasks.filter(t => t.projetoId === p.id).length;
       if (tasks) { alert(`Não é possível excluir: existem ${tasks} tarefa(s) vinculadas.`); return; }
       if (!confirm(`Excluir projeto "${p.nome}"?`)) return;
-      this.projetos = this.projetos.filter(x => x.id !== p.id);
+      const { error } = await sb.from('projetos').delete().eq('id', p.id);
+      if (error) { alert('Erro: ' + error.message); return; }
+      await this.refreshProjetos();
     },
 
-    addPessoa() {
+    async addPessoa() {
       const n = (this.newPes || '').trim();
       if (!n) return;
-      this.pessoas.push({ id: uid(), nome: n });
+      const { error } = await sb.from('pessoas').insert({ nome: n });
+      if (error) { alert('Erro: ' + error.message); return; }
       this.newPes = '';
+      await this.refreshPessoas();
     },
-    renomeiaPessoa(p) {
+    async renomeiaPessoa(p) {
       const n = prompt('Novo nome:', p.nome);
-      if (n && n.trim()) p.nome = n.trim();
+      if (!n || !n.trim()) return;
+      const { error } = await sb.from('pessoas').update({ nome: n.trim() }).eq('id', p.id);
+      if (error) { alert('Erro: ' + error.message); return; }
+      await this.refreshPessoas();
     },
-    deletePessoa(p) {
+    async deletePessoa(p) {
       const tasks = this.tasks.filter(t => t.pessoaId === p.id).length;
       if (tasks) { alert(`Não é possível excluir: existem ${tasks} tarefa(s) atribuídas.`); return; }
       if (!confirm(`Excluir "${p.nome}"?`)) return;
-      this.pessoas = this.pessoas.filter(x => x.id !== p.id);
+      const { error } = await sb.from('pessoas').delete().eq('id', p.id);
+      if (error) { alert('Erro: ' + error.message); return; }
+      await this.refreshPessoas();
     },
   };
 }
