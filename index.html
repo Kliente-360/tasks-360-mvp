@@ -1,0 +1,1097 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Backlog — Kliente 360</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    /* identidade Kliente 360 */
+    --brand: #009900;
+    --brand-dark: #007A00;
+    --brand-soft: #E6F5E6;
+    --brand-tint: #F2FAF2;
+
+    /* base neutra */
+    --bg: #FAFAF8;
+    --bg-elev: #FFFFFF;
+    --ink: #0F1A14;
+    --ink-soft: #3A4A40;
+    --muted: #7C8A82;
+    --line: #E8ECE8;
+    --line-strong: #D4DAD4;
+
+    /* status semânticos (não conflitam com verde da marca) */
+    --p0: #C8392B;          /* urgente — vermelho */
+    --p0-soft: #FBEAE7;
+    --p1: #C77A1A;          /* alta — âmbar */
+    --p1-soft: #FAEFDD;
+    --p2: #2D7AA8;          /* normal — azul */
+    --p2-soft: #E3EEF5;
+    --p3: #6E7A72;          /* baixa — cinza */
+    --p3-soft: #ECEEEC;
+
+    --warn: #C77A1A;
+    --danger: #C8392B;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'ss01','cv11';
+    -webkit-font-smoothing: antialiased;
+  }
+  .font-brand { font-family: 'Quicksand', system-ui, sans-serif; letter-spacing: -0.01em; }
+  .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  .border-line { border-color: var(--line); }
+  .border-line-strong { border-color: var(--line-strong); }
+  .text-ink { color: var(--ink); }
+  .text-ink-soft { color: var(--ink-soft); }
+  .text-muted { color: var(--muted); }
+  .bg-elev { background: var(--bg-elev); }
+  .bg-brand { background: var(--brand); }
+  .text-brand { color: var(--brand); }
+  .bg-brand-soft { background: var(--brand-soft); }
+  .bg-brand-tint { background: var(--brand-tint); }
+  .border-brand { border-color: var(--brand); }
+
+  /* logo símbolo (4 círculos do logo Kliente 360) */
+  .k360-mark { display:inline-block; position:relative; width: 28px; height: 28px; }
+  .k360-mark span {
+    position:absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--brand);
+  }
+  .k360-mark span:nth-child(1) { top: 0; left: 50%; transform: translateX(-50%); }
+  .k360-mark span:nth-child(2) { top: 50%; left: 0; transform: translateY(-50%); }
+  .k360-mark span:nth-child(3) { top: 50%; right: 0; transform: translateY(-50%); }
+  .k360-mark span:nth-child(4) { bottom: 0; left: 50%; transform: translateX(-50%); }
+
+  /* tabela executiva */
+  .tbl { border-collapse: separate; border-spacing: 0; width: 100%; }
+  .tbl thead th {
+    text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--muted); padding: 14px 16px;
+    border-bottom: 1px solid var(--line-strong); user-select: none; background: var(--bg-elev);
+  }
+  .tbl tbody td { padding: 16px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: top; }
+  .tbl tbody tr { transition: background 120ms ease; cursor: pointer; }
+  .tbl tbody tr:hover { background: var(--brand-tint); }
+  .tbl thead th.sortable { cursor: pointer; }
+  .tbl thead th.sortable:hover { color: var(--ink); }
+
+  /* prioridades */
+  .pri { display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:500; padding: 3px 8px; border-radius: 3px; white-space: nowrap; }
+  .pri-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .pri-P0 { background: var(--p0-soft); color: var(--p0); }
+  .pri-P0 .pri-dot { background: var(--p0); }
+  .pri-P1 { background: var(--p1-soft); color: var(--p1); }
+  .pri-P1 .pri-dot { background: var(--p1); }
+  .pri-P2 { background: var(--p2-soft); color: var(--p2); }
+  .pri-P2 .pri-dot { background: var(--p2); }
+  .pri-P3 { background: var(--p3-soft); color: var(--p3); }
+  .pri-P3 .pri-dot { background: var(--p3); }
+
+  /* status */
+  .status { display:inline-flex; align-items:center; gap:6px; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--bg-elev); white-space: nowrap; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .status[data-s="andamento"] .status-dot { background: var(--brand); }
+  .status[data-s="andamento"] { border-color: var(--brand); color: var(--brand-dark); background: var(--brand-tint); }
+  .status[data-s="bloqueado"] .status-dot { background: var(--p0); }
+  .status[data-s="bloqueado"] { color: var(--p0); }
+  .status[data-s="concluido"] .status-dot { background: var(--p3); }
+  .status[data-s="concluido"] { color: var(--p3); }
+  .status[data-s="backlog"] .status-dot { background: var(--p1); }
+
+  /* botões */
+  .btn { display:inline-flex; align-items:center; gap:6px; font-size:13px; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--bg-elev); transition: all 140ms ease; font-weight: 500; }
+  .btn:hover { border-color: var(--ink); }
+  .btn-primary { background: var(--brand); color: white; border-color: var(--brand); }
+  .btn-primary:hover { background: var(--brand-dark); border-color: var(--brand-dark); color: white; }
+  .btn-ghost { border-color: transparent; background: transparent; }
+  .btn-ghost:hover { background: var(--brand-tint); border-color: transparent; color: var(--brand-dark); }
+  .btn-danger { color: var(--p0); border-color: transparent; background: transparent; }
+  .btn-danger:hover { background: var(--p0-soft); border-color: transparent; }
+  .btn-icon { padding: 6px 10px; }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* inputs */
+  .inp { width:100%; padding: 9px 12px; font-size: 14px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--bg-elev); transition: border 120ms ease; font-family: inherit; color: var(--ink); }
+  .inp:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+  .lbl { display:block; font-size: 11px; font-weight:600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+
+  /* tabs */
+  .tab { font-size: 14px; font-weight: 500; padding: 14px 0; margin-right: 32px; color: var(--muted); border-bottom: 2px solid transparent; transition: all 140ms ease; cursor: pointer; }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--brand-dark); border-color: var(--brand); }
+
+  /* kanban */
+  .kcard { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 6px; padding: 14px; margin-bottom: 10px; transition: all 140ms ease; cursor: pointer; }
+  .kcard:hover { border-color: var(--brand); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,153,0,0.06); }
+  .kcol { background: rgba(0,0,0,0.025); border-radius: 8px; padding: 14px; min-height: 200px; }
+
+  /* modal */
+  .modal-bg { background: rgba(15,26,20,0.5); backdrop-filter: blur(3px); }
+  .modal-card { box-shadow: 0 20px 60px rgba(0,0,0,0.20); }
+
+  /* kpi */
+  .kpi { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 8px; padding: 22px 24px; transition: all 140ms ease; }
+  .kpi:hover { border-color: var(--brand); }
+  .kpi-num { font-family: 'Quicksand', sans-serif; font-weight: 600; font-size: 44px; letter-spacing: -0.03em; line-height: 1; color: var(--ink); }
+  .kpi-num.danger { color: var(--p0); }
+  .kpi-num.brand { color: var(--brand); }
+  .kpi-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  .kpi-trend { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  /* atraso */
+  .late { color: var(--p0); font-weight: 600; }
+
+  /* card padrão */
+  .card { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 8px; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  /* animação */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .fade-up { animation: fadeUp 240ms ease both; }
+
+  [x-cloak] { display: none !important; }
+</style>
+</head>
+<body x-data="app()" x-init="init()" x-cloak>
+
+<!-- ============ TOPO ============ -->
+<header class="bg-elev border-b border-line sticky top-0 z-40">
+  <div class="max-w-[1400px] mx-auto px-8 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="k360-mark"><span></span><span></span><span></span><span></span></div>
+      <div class="leading-none">
+        <div class="font-brand text-[22px] font-semibold text-brand">kliente 360</div>
+        <div class="text-[10px] uppercase tracking-[0.18em] text-muted mt-1">backlog · gestão executiva</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-1">
+      <button class="btn btn-ghost text-xs" @click="exportJSON()" title="Exportar dados como JSON">↓ exportar</button>
+      <label class="btn btn-ghost text-xs cursor-pointer" title="Importar JSON">
+        ↑ importar
+        <input type="file" accept="application/json" class="hidden" @change="importJSON($event)">
+      </label>
+      <button class="btn btn-ghost text-xs" @click="if(confirm('Apagar todos os dados locais e voltar ao seed?')) resetData()" title="Resetar para dados de exemplo">⟲ resetar</button>
+      <div class="w-px h-6 bg-line mx-2"></div>
+      <button class="btn btn-primary" @click="openNew()">+ Nova tarefa</button>
+    </div>
+  </div>
+  <div class="max-w-[1400px] mx-auto px-8 flex">
+    <div class="tab" :class="tab==='backlog' && 'active'" @click="tab='backlog'">Backlog</div>
+    <div class="tab" :class="tab==='kanban' && 'active'" @click="tab='kanban'">Kanban</div>
+    <div class="tab" :class="tab==='dash' && 'active'" @click="tab='dash'; $nextTick(()=>renderCharts())">Dashboard</div>
+    <div class="tab" :class="tab==='cad' && 'active'" @click="tab='cad'">Cadastros</div>
+  </div>
+</header>
+
+<main class="max-w-[1400px] mx-auto px-8 py-8">
+
+<!-- ============ BACKLOG ============ -->
+<section x-show="tab==='backlog'" class="fade-up">
+  <div class="flex items-end justify-between mb-6">
+    <div>
+      <h1 class="font-brand text-[34px] font-semibold leading-tight">Backlog</h1>
+      <p class="text-ink-soft text-sm mt-1">Tudo que está aberto, em andamento ou recém entregue.</p>
+    </div>
+    <div class="flex items-center gap-3 text-sm">
+      <span class="text-muted text-[11px] uppercase tracking-wider font-semibold">mostrando</span>
+      <span class="font-mono text-sm" x-text="filtered.length + ' / ' + tasks.length"></span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-12 gap-3 mb-5">
+    <div class="col-span-3">
+      <input type="text" class="inp" placeholder="Buscar título…" x-model="f.q">
+    </div>
+    <div class="col-span-2">
+      <select class="inp" x-model="f.cliente">
+        <option value="">Todos os clientes</option>
+        <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+      </select>
+    </div>
+    <div class="col-span-2">
+      <select class="inp" x-model="f.projeto">
+        <option value="">Todos os projetos</option>
+        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+      </select>
+    </div>
+    <div class="col-span-2">
+      <select class="inp" x-model="f.pessoa">
+        <option value="">Todas as pessoas</option>
+        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+      </select>
+    </div>
+    <div class="col-span-2">
+      <select class="inp" x-model="f.status">
+        <option value="">Todos os status</option>
+        <option value="backlog">Backlog</option>
+        <option value="andamento">Em andamento</option>
+        <option value="bloqueado">Bloqueado</option>
+        <option value="concluido">Concluído</option>
+      </select>
+    </div>
+    <div class="col-span-1">
+      <select class="inp" x-model="f.pri">
+        <option value="">Pri</option>
+        <option value="P0">P0</option>
+        <option value="P1">P1</option>
+        <option value="P2">P2</option>
+        <option value="P3">P3</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th class="sortable" @click="sortBy('titulo')">Tarefa <span x-text="sortIcon('titulo')" class="text-[9px] ml-1"></span></th>
+          <th class="sortable" @click="sortBy('clienteId')">Cliente <span x-text="sortIcon('clienteId')" class="text-[9px] ml-1"></span></th>
+          <th class="sortable" @click="sortBy('projetoId')">Projeto <span x-text="sortIcon('projetoId')" class="text-[9px] ml-1"></span></th>
+          <th class="sortable" @click="sortBy('pessoaId')">Responsável <span x-text="sortIcon('pessoaId')" class="text-[9px] ml-1"></span></th>
+          <th class="sortable" @click="sortBy('prioridade')">Pri <span x-text="sortIcon('prioridade')" class="text-[9px] ml-1"></span></th>
+          <th class="sortable text-right" @click="sortBy('esforco')">Hrs <span x-text="sortIcon('esforco')" class="text-[9px] ml-1"></span></th>
+          <th class="sortable" @click="sortBy('prazo')">Prazo <span x-text="sortIcon('prazo')" class="text-[9px] ml-1"></span></th>
+          <th class="sortable" @click="sortBy('status')">Status <span x-text="sortIcon('status')" class="text-[9px] ml-1"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="t in filtered" :key="t.id">
+          <tr @click="openEdit(t)">
+            <td>
+              <div class="font-medium text-ink" x-text="t.titulo"></div>
+              <div class="text-xs text-muted mt-0.5" x-text="t.descricao ? t.descricao.slice(0,80) + (t.descricao.length>80?'…':'') : ''"></div>
+            </td>
+            <td class="text-ink-soft" x-text="nomeCliente(t.clienteId)"></td>
+            <td class="text-ink-soft" x-text="nomeProjeto(t.projetoId)"></td>
+            <td class="text-ink-soft" x-text="nomePessoa(t.pessoaId)"></td>
+            <td>
+              <span class="pri" :class="'pri-'+t.prioridade">
+                <span class="pri-dot"></span>
+                <span x-text="t.prioridade"></span>
+              </span>
+            </td>
+            <td class="font-mono text-ink-soft text-right" x-text="t.esforco + 'h'"></td>
+            <td>
+              <span :class="atrasada(t) && 'late'" x-text="t.prazo ? fmtDate(t.prazo) : '—'"></span>
+            </td>
+            <td>
+              <span class="status" :data-s="t.status">
+                <span class="status-dot"></span>
+                <span x-text="lblStatus(t.status)"></span>
+              </span>
+            </td>
+          </tr>
+        </template>
+        <tr x-show="filtered.length===0">
+          <td colspan="8" class="text-center text-muted py-16">
+            <div class="font-brand text-xl mb-2 text-ink">Nada por aqui.</div>
+            <div class="text-sm">Tente ajustar os filtros ou crie uma nova tarefa.</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ KANBAN ============ -->
+<section x-show="tab==='kanban'" class="fade-up">
+  <div class="flex items-end justify-between mb-6">
+    <div>
+      <h1 class="font-brand text-[34px] font-semibold leading-tight">Kanban</h1>
+      <p class="text-ink-soft text-sm mt-1">Visão de fluxo. Use as setas pra mover entre colunas.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <select class="inp" style="width:220px" x-model="f.cliente">
+        <option value="">Todos os clientes</option>
+        <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-4 gap-4">
+    <template x-for="col in ['backlog','andamento','bloqueado','concluido']" :key="col">
+      <div class="kcol">
+        <div class="flex items-center justify-between mb-3 px-1">
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-muted font-semibold" x-text="lblStatus(col)"></div>
+            <div class="font-mono text-xs text-muted mt-1" x-text="kanbanCol(col).length + ' itens · ' + kanbanCol(col).reduce((a,b)=>a+(+b.esforco||0),0) + 'h'"></div>
+          </div>
+        </div>
+        <template x-for="t in kanbanCol(col)" :key="t.id">
+          <div class="kcard" @click="openEdit(t)">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="font-medium text-sm leading-snug" x-text="t.titulo"></div>
+              <span class="pri" :class="'pri-'+t.prioridade">
+                <span class="pri-dot"></span>
+                <span x-text="t.prioridade"></span>
+              </span>
+            </div>
+            <div class="text-xs text-muted mb-3" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-ink-soft" x-text="nomePessoa(t.pessoaId)"></span>
+              <span :class="atrasada(t) && 'late'" class="font-mono" x-text="t.prazo ? fmtDateShort(t.prazo) : '—'"></span>
+            </div>
+            <div class="flex gap-1 mt-3 pt-3 border-t border-line" @click.stop>
+              <button class="btn btn-ghost btn-icon text-xs" @click="moveTask(t, -1)" :disabled="col==='backlog'">←</button>
+              <button class="btn btn-ghost btn-icon text-xs flex-1" @click="moveTask(t, 1)" :disabled="col==='concluido'">avançar →</button>
+            </div>
+          </div>
+        </template>
+        <div x-show="kanbanCol(col).length===0" class="text-center text-muted text-xs py-8 italic">vazio</div>
+      </div>
+    </template>
+  </div>
+</section>
+
+<!-- ============ DASHBOARD ============ -->
+<section x-show="tab==='dash'" class="fade-up">
+  <div class="mb-8">
+    <h1 class="font-brand text-[34px] font-semibold leading-tight">Dashboard</h1>
+    <p class="text-ink-soft text-sm mt-1">A operação em uma página.</p>
+  </div>
+
+  <div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="kpi">
+      <div class="kpi-lbl">Em andamento</div>
+      <div class="kpi-num brand" x-text="stats.andamento"></div>
+      <div class="kpi-trend" x-text="stats.andamentoH + 'h alocadas'"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Backlog</div>
+      <div class="kpi-num" x-text="stats.backlog"></div>
+      <div class="kpi-trend" x-text="stats.backlogH + 'h previstas'"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Bloqueadas</div>
+      <div class="kpi-num" :class="stats.bloqueado>0 && 'danger'" x-text="stats.bloqueado"></div>
+      <div class="kpi-trend">aguardando ação</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Atrasadas</div>
+      <div class="kpi-num" :class="stats.atrasadas>0 && 'danger'" x-text="stats.atrasadas"></div>
+      <div class="kpi-trend">prazo vencido</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4 mb-6">
+    <div class="card p-6">
+      <div class="mb-4">
+        <div class="font-brand text-xl font-semibold">Volume por cliente</div>
+        <div class="text-xs text-muted mt-0.5">horas em tarefas abertas</div>
+      </div>
+      <div style="height:260px"><canvas id="chartClientes"></canvas></div>
+    </div>
+    <div class="card p-6">
+      <div class="mb-4">
+        <div class="font-brand text-xl font-semibold">Carga por pessoa</div>
+        <div class="text-xs text-muted mt-0.5">horas alocadas em tarefas não concluídas</div>
+      </div>
+      <div style="height:260px"><canvas id="chartPessoas"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div class="card p-6">
+      <div class="font-brand text-xl font-semibold mb-1">Atrasadas</div>
+      <div class="text-xs text-muted mb-4">prazo vencido e ainda abertas</div>
+      <template x-if="atrasadasList.length===0">
+        <div class="text-sm text-muted italic py-6">Nada atrasado. Bom trabalho.</div>
+      </template>
+      <template x-for="t in atrasadasList" :key="t.id">
+        <div class="flex items-center justify-between py-3 border-b border-line last:border-0 cursor-pointer hover:bg-brand-tint -mx-3 px-3 rounded transition-colors" @click="openEdit(t)">
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium truncate" x-text="t.titulo"></div>
+            <div class="text-xs text-muted truncate" x-text="nomeCliente(t.clienteId) + ' · ' + nomePessoa(t.pessoaId)"></div>
+          </div>
+          <div class="text-right ml-3 flex flex-col items-end gap-1">
+            <span class="font-mono text-xs late" x-text="diasAtraso(t) + ' dias'"></span>
+            <span class="pri" :class="'pri-'+t.prioridade"><span class="pri-dot"></span><span x-text="t.prioridade"></span></span>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div class="card p-6">
+      <div class="font-brand text-xl font-semibold mb-1">Bloqueadas</div>
+      <div class="text-xs text-muted mb-4">aguardando alguma ação externa</div>
+      <template x-if="bloqList.length===0">
+        <div class="text-sm text-muted italic py-6">Nenhuma tarefa bloqueada.</div>
+      </template>
+      <template x-for="t in bloqList" :key="t.id">
+        <div class="flex items-center justify-between py-3 border-b border-line last:border-0 cursor-pointer hover:bg-brand-tint -mx-3 px-3 rounded transition-colors" @click="openEdit(t)">
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium truncate" x-text="t.titulo"></div>
+            <div class="text-xs text-muted truncate" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></div>
+          </div>
+          <div class="text-right ml-3 flex flex-col items-end gap-1">
+            <span class="font-mono text-xs text-muted" x-text="t.esforco + 'h'"></span>
+            <span class="pri" :class="'pri-'+t.prioridade"><span class="pri-dot"></span><span x-text="t.prioridade"></span></span>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CADASTROS ============ -->
+<section x-show="tab==='cad'" class="fade-up">
+  <div class="mb-6">
+    <h1 class="font-brand text-[34px] font-semibold leading-tight">Cadastros</h1>
+    <p class="text-ink-soft text-sm mt-1">Clientes, projetos e pessoas. Mantenha enxuto.</p>
+  </div>
+
+  <div class="flex border-b border-line mb-6">
+    <div class="tab" :class="cadTab==='clientes' && 'active'" @click="cadTab='clientes'">Clientes <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + clientes.length"></span></div>
+    <div class="tab" :class="cadTab==='projetos' && 'active'" @click="cadTab='projetos'">Projetos <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + projetos.length"></span></div>
+    <div class="tab" :class="cadTab==='pessoas' && 'active'" @click="cadTab='pessoas'">Pessoas <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + pessoas.length"></span></div>
+  </div>
+
+  <!-- clientes -->
+  <div x-show="cadTab==='clientes'">
+    <div class="card p-5 mb-4">
+      <div class="grid grid-cols-12 gap-3 items-end">
+        <div class="col-span-9">
+          <label class="lbl">Nome do cliente</label>
+          <input class="inp" x-model="newCli" placeholder="Ex: Acme Ltda." @keyup.enter="addCliente()">
+        </div>
+        <div class="col-span-3">
+          <button class="btn btn-primary w-full justify-center" @click="addCliente()">+ Adicionar cliente</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <template x-for="c in clientes" :key="c.id">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-line last:border-0">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-brand-soft flex items-center justify-center text-sm font-brand font-semibold text-brand" x-text="c.nome.charAt(0).toUpperCase()"></div>
+            <div>
+              <div class="text-sm font-medium" x-text="c.nome"></div>
+              <div class="text-xs text-muted" x-text="contarTarefasCliente(c.id) + ' tarefas · ' + contarProjetosCliente(c.id) + ' projetos'"></div>
+            </div>
+          </div>
+          <div class="flex gap-1">
+            <button class="btn btn-ghost text-xs" @click="renomeiaCliente(c)">renomear</button>
+            <button class="btn btn-danger text-xs" @click="deleteCliente(c)">excluir</button>
+          </div>
+        </div>
+      </template>
+      <div x-show="clientes.length===0" class="text-center text-muted py-10 text-sm italic">Nenhum cliente cadastrado.</div>
+    </div>
+  </div>
+
+  <!-- projetos -->
+  <div x-show="cadTab==='projetos'">
+    <div class="card p-5 mb-4">
+      <div class="grid grid-cols-12 gap-3 items-end">
+        <div class="col-span-5">
+          <label class="lbl">Nome do projeto</label>
+          <input class="inp" x-model="newProj.nome" placeholder="Ex: Sales Cloud — Onda 1" @keyup.enter="addProjeto()">
+        </div>
+        <div class="col-span-4">
+          <label class="lbl">Cliente</label>
+          <select class="inp" x-model="newProj.clienteId">
+            <option value="">Selecione…</option>
+            <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+          </select>
+        </div>
+        <div class="col-span-3">
+          <button class="btn btn-primary w-full justify-center" @click="addProjeto()">+ Adicionar projeto</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <template x-for="p in projetos" :key="p.id">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-line last:border-0">
+          <div>
+            <div class="text-sm font-medium" x-text="p.nome"></div>
+            <div class="text-xs text-muted" x-text="nomeCliente(p.clienteId) + ' · ' + contarTarefasProjeto(p.id) + ' tarefas'"></div>
+          </div>
+          <div class="flex gap-1">
+            <button class="btn btn-ghost text-xs" @click="renomeiaProjeto(p)">renomear</button>
+            <button class="btn btn-danger text-xs" @click="deleteProjeto(p)">excluir</button>
+          </div>
+        </div>
+      </template>
+      <div x-show="projetos.length===0" class="text-center text-muted py-10 text-sm italic">Nenhum projeto cadastrado.</div>
+    </div>
+  </div>
+
+  <!-- pessoas -->
+  <div x-show="cadTab==='pessoas'">
+    <div class="card p-5 mb-4">
+      <div class="grid grid-cols-12 gap-3 items-end">
+        <div class="col-span-9">
+          <label class="lbl">Nome da pessoa</label>
+          <input class="inp" x-model="newPes" placeholder="Ex: Maria Silva" @keyup.enter="addPessoa()">
+        </div>
+        <div class="col-span-3">
+          <button class="btn btn-primary w-full justify-center" @click="addPessoa()">+ Adicionar pessoa</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <template x-for="p in pessoas" :key="p.id">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-line last:border-0">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-brand-soft flex items-center justify-center text-sm font-brand font-semibold text-brand" x-text="p.nome.charAt(0).toUpperCase()"></div>
+            <div>
+              <div class="text-sm font-medium" x-text="p.nome"></div>
+              <div class="text-xs text-muted" x-text="contarTarefasPessoa(p.id) + ' tarefas ativas'"></div>
+            </div>
+          </div>
+          <div class="flex gap-1">
+            <button class="btn btn-ghost text-xs" @click="renomeiaPessoa(p)">renomear</button>
+            <button class="btn btn-danger text-xs" @click="deletePessoa(p)">excluir</button>
+          </div>
+        </div>
+      </template>
+      <div x-show="pessoas.length===0" class="text-center text-muted py-10 text-sm italic">Nenhuma pessoa cadastrada.</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="border-t border-line mt-16">
+  <div class="max-w-[1400px] mx-auto px-8 py-6 flex items-center justify-between text-xs text-muted">
+    <div class="flex items-center gap-2">
+      <div class="k360-mark" style="width:14px;height:14px"><span style="width:5px;height:5px"></span><span style="width:5px;height:5px"></span><span style="width:5px;height:5px"></span><span style="width:5px;height:5px"></span></div>
+      <span>protótipo · dados em <span class="font-mono">localStorage</span> deste navegador</span>
+    </div>
+    <div>kliente 360 · backlog</div>
+  </div>
+</footer>
+
+<!-- ============ MODAL TAREFA ============ -->
+<div x-show="modal" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-4" @click.self="modal=false" x-transition.opacity>
+  <div class="bg-elev rounded-lg w-full max-w-2xl modal-card" x-transition>
+    <div class="flex items-center justify-between px-6 py-4 border-b border-line">
+      <div class="font-brand text-xl font-semibold" x-text="editing.id ? 'Editar tarefa' : 'Nova tarefa'"></div>
+      <button class="btn btn-ghost btn-icon" @click="modal=false">✕</button>
+    </div>
+    <div class="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+      <div>
+        <label class="lbl">Título</label>
+        <input class="inp" x-model="editing.titulo" placeholder="O que precisa ser feito?" x-ref="tituloInput">
+      </div>
+      <div>
+        <label class="lbl">Descrição (opcional)</label>
+        <textarea class="inp" rows="3" x-model="editing.descricao" placeholder="Contexto, links, critérios de aceite…"></textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="lbl">Cliente</label>
+          <select class="inp" x-model="editing.clienteId">
+            <option value="">—</option>
+            <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Projeto</label>
+          <select class="inp" x-model="editing.projetoId">
+            <option value="">—</option>
+            <template x-for="p in projetosDoCliente(editing.clienteId)" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Responsável</label>
+          <select class="inp" x-model="editing.pessoaId">
+            <option value="">—</option>
+            <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Status</label>
+          <select class="inp" x-model="editing.status">
+            <option value="backlog">Backlog</option>
+            <option value="andamento">Em andamento</option>
+            <option value="bloqueado">Bloqueado</option>
+            <option value="concluido">Concluído</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Prioridade</label>
+          <select class="inp" x-model="editing.prioridade">
+            <option value="P0">P0 · Urgente</option>
+            <option value="P1">P1 · Alta</option>
+            <option value="P2">P2 · Normal</option>
+            <option value="P3">P3 · Baixa</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Esforço (horas)</label>
+          <input type="number" min="0" step="0.5" class="inp" x-model.number="editing.esforco">
+        </div>
+        <div class="col-span-2">
+          <label class="lbl">Prazo</label>
+          <input type="date" class="inp" x-model="editing.prazo">
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center justify-between px-6 py-4 border-t border-line bg-brand-tint/30">
+      <div>
+        <button x-show="editing.id" class="btn btn-danger text-xs" @click="deleteTask()">excluir</button>
+      </div>
+      <div class="flex gap-2">
+        <button class="btn" @click="modal=false">cancelar</button>
+        <button class="btn btn-primary" @click="saveTask()" x-text="editing.id ? 'salvar alterações' : 'criar tarefa'"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+function seed() {
+  // clientes inspirados nos depoimentos do site Kliente 360 + exemplos plausíveis
+  const cli = [
+    { id: uid(), nome: 'Bodytech' },
+    { id: uid(), nome: 'Sem Parar' },
+    { id: uid(), nome: 'Acme Varejo' },
+    { id: uid(), nome: 'Northwind Saúde' },
+  ];
+  const proj = [
+    { id: uid(), clienteId: cli[0].id, nome: 'Service Cloud — Onda 2' },
+    { id: uid(), clienteId: cli[0].id, nome: 'Integração WhatsApp Business' },
+    { id: uid(), clienteId: cli[1].id, nome: 'Sales Cloud — Pipeline B2B' },
+    { id: uid(), clienteId: cli[2].id, nome: 'Marketing Cloud — Jornadas' },
+    { id: uid(), clienteId: cli[3].id, nome: 'Sales Cloud — Implantação' },
+  ];
+  const pes = [
+    { id: uid(), nome: 'Gustavo Goulart' },
+    { id: uid(), nome: 'Felipe Andrade' },
+    { id: uid(), nome: 'Ana Beatriz' },
+    { id: uid(), nome: 'Rafael Mendes' },
+    { id: uid(), nome: 'Camila Souza' },
+  ];
+
+  const today = new Date();
+  const day = (offset) => {
+    const d = new Date(today); d.setDate(d.getDate() + offset);
+    return d.toISOString().slice(0,10);
+  };
+
+  const tasks = [
+    { id: uid(), titulo: 'Configurar fluxo de leads inbound no Sales Cloud', descricao: 'Definir critérios de qualificação e roteamento por SLA', clienteId: cli[1].id, projetoId: proj[2].id, pessoaId: pes[0].id, prioridade: 'P0', esforco: 12, prazo: day(-3), status: 'andamento', criadoEm: Date.now()-86400000*5 },
+    { id: uid(), titulo: 'Migrar histórico de tickets do legado para Service Cloud', descricao: 'ETL com de-duplicação e mapeamento de campos customizados', clienteId: cli[0].id, projetoId: proj[0].id, pessoaId: pes[3].id, prioridade: 'P0', esforco: 24, prazo: day(7), status: 'andamento', criadoEm: Date.now()-86400000*8 },
+    { id: uid(), titulo: 'Aprovação do desenho da jornada de boas-vindas', descricao: 'Aguardando assinatura do gerente de marketing', clienteId: cli[2].id, projetoId: proj[3].id, pessoaId: pes[2].id, prioridade: 'P1', esforco: 4, prazo: day(-1), status: 'bloqueado', criadoEm: Date.now()-86400000*4 },
+    { id: uid(), titulo: 'Setup de sandbox para testes de integração', clienteId: cli[3].id, projetoId: proj[4].id, pessoaId: pes[1].id, prioridade: 'P1', esforco: 6, prazo: day(2), status: 'backlog', criadoEm: Date.now()-86400000*2 },
+    { id: uid(), titulo: 'POC integração WhatsApp Business via API oficial', descricao: 'Testar throughput e latência com volume realista', clienteId: cli[0].id, projetoId: proj[1].id, pessoaId: pes[0].id, prioridade: 'P2', esforco: 16, prazo: day(14), status: 'backlog', criadoEm: Date.now()-86400000*1 },
+    { id: uid(), titulo: 'Treinamento da equipe de atendimento (Onda 1)', clienteId: cli[0].id, projetoId: proj[0].id, pessoaId: pes[4].id, prioridade: 'P2', esforco: 8, prazo: day(10), status: 'backlog', criadoEm: Date.now()-86400000*3 },
+    { id: uid(), titulo: 'Criar dashboards executivos de funil', descricao: 'Conversão por etapa, ciclo médio, top vendedores', clienteId: cli[1].id, projetoId: proj[2].id, pessoaId: pes[2].id, prioridade: 'P1', esforco: 10, prazo: day(5), status: 'andamento', criadoEm: Date.now()-86400000*6 },
+    { id: uid(), titulo: 'Workshop de descoberta com stakeholders', clienteId: cli[3].id, projetoId: proj[4].id, pessoaId: pes[0].id, prioridade: 'P0', esforco: 4, prazo: day(1), status: 'andamento', criadoEm: Date.now()-86400000*1 },
+    { id: uid(), titulo: 'Documentar regras de atribuição de oportunidades', clienteId: cli[1].id, projetoId: proj[2].id, pessoaId: pes[1].id, prioridade: 'P3', esforco: 3, prazo: day(20), status: 'backlog', criadoEm: Date.now()-86400000*1 },
+    { id: uid(), titulo: 'Revisão pós go-live — Sales Cloud', clienteId: cli[1].id, projetoId: proj[2].id, pessoaId: pes[3].id, prioridade: 'P2', esforco: 6, prazo: day(-7), status: 'concluido', criadoEm: Date.now()-86400000*15 },
+    { id: uid(), titulo: 'Configurar Email Studio e templates iniciais', clienteId: cli[2].id, projetoId: proj[3].id, pessoaId: pes[4].id, prioridade: 'P2', esforco: 8, prazo: day(8), status: 'backlog', criadoEm: Date.now()-86400000*2 },
+    { id: uid(), titulo: 'Cliente precisa enviar lista de campos customizados', descricao: 'Email enviado dia 02/05, sem retorno até agora', clienteId: cli[2].id, projetoId: proj[3].id, pessoaId: pes[2].id, prioridade: 'P1', esforco: 2, prazo: day(-2), status: 'bloqueado', criadoEm: Date.now()-86400000*7 },
+    { id: uid(), titulo: 'Mapeamento de personas e segmentação inicial', clienteId: cli[2].id, projetoId: proj[3].id, pessoaId: pes[2].id, prioridade: 'P2', esforco: 12, prazo: day(15), status: 'backlog', criadoEm: Date.now()-86400000*4 },
+    { id: uid(), titulo: 'Testes de regressão pós-deploy', clienteId: cli[0].id, projetoId: proj[0].id, pessoaId: pes[3].id, prioridade: 'P1', esforco: 6, prazo: day(4), status: 'andamento', criadoEm: Date.now()-86400000*3 },
+  ];
+
+  return { clientes: cli, projetos: proj, pessoas: pes, tasks };
+}
+
+function app() {
+  return {
+    tab: 'backlog',
+    cadTab: 'clientes',
+    clientes: [],
+    projetos: [],
+    pessoas: [],
+    tasks: [],
+    f: { q: '', cliente: '', projeto: '', pessoa: '', status: '', pri: '' },
+    sortKey: 'prazo',
+    sortDir: 'asc',
+    modal: false,
+    editing: this ? this.blankTask() : null,
+    newCli: '',
+    newPes: '',
+    newProj: { nome: '', clienteId: '' },
+    charts: { clientes: null, pessoas: null },
+    STORAGE_KEY: 'kliente360-backlog-v1',
+
+    // ===================== INIT / PERSISTÊNCIA =====================
+    init() {
+      this.load();
+      this.editing = this.blankTask();
+      // watcher de persistência
+      this.$watch('tasks', () => this.save(), { deep: true });
+      this.$watch('clientes', () => this.save(), { deep: true });
+      this.$watch('projetos', () => this.save(), { deep: true });
+      this.$watch('pessoas', () => this.save(), { deep: true });
+    },
+    load() {
+      try {
+        const raw = localStorage.getItem(this.STORAGE_KEY);
+        if (raw) {
+          const d = JSON.parse(raw);
+          this.clientes = d.clientes || [];
+          this.projetos = d.projetos || [];
+          this.pessoas  = d.pessoas  || [];
+          this.tasks    = d.tasks    || [];
+          return;
+        }
+      } catch(e) { console.warn('falha ao carregar', e); }
+      const s = seed();
+      this.clientes = s.clientes;
+      this.projetos = s.projetos;
+      this.pessoas  = s.pessoas;
+      this.tasks    = s.tasks;
+      this.save();
+    },
+    save() {
+      try {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify({
+          clientes: this.clientes, projetos: this.projetos,
+          pessoas: this.pessoas, tasks: this.tasks,
+          _savedAt: new Date().toISOString()
+        }));
+      } catch(e) { console.warn('falha ao salvar', e); }
+    },
+    resetData() {
+      localStorage.removeItem(this.STORAGE_KEY);
+      const s = seed();
+      this.clientes = s.clientes;
+      this.projetos = s.projetos;
+      this.pessoas  = s.pessoas;
+      this.tasks    = s.tasks;
+      this.save();
+    },
+    exportJSON() {
+      const data = { clientes: this.clientes, projetos: this.projetos, pessoas: this.pessoas, tasks: this.tasks, _exportedAt: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'kliente360-backlog-' + new Date().toISOString().slice(0,10) + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+    importJSON(ev) {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const d = JSON.parse(e.target.result);
+          if (!confirm('Substituir todos os dados atuais pelos dados do arquivo?')) return;
+          this.clientes = d.clientes || [];
+          this.projetos = d.projetos || [];
+          this.pessoas  = d.pessoas  || [];
+          this.tasks    = d.tasks    || [];
+          this.save();
+          alert('Dados importados com sucesso.');
+        } catch(err) {
+          alert('Arquivo inválido: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      ev.target.value = '';
+    },
+
+    // ===================== HELPERS =====================
+    blankTask() {
+      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' };
+    },
+    nomeCliente(id) { return (this.clientes.find(c => c.id === id) || {}).nome || '—'; },
+    nomeProjeto(id) { return (this.projetos.find(p => p.id === id) || {}).nome || '—'; },
+    nomePessoa(id)  { return (this.pessoas.find(p => p.id === id) || {}).nome || '—'; },
+    lblStatus(s) {
+      return ({ backlog: 'Backlog', andamento: 'Em andamento', bloqueado: 'Bloqueado', concluido: 'Concluído' })[s] || s;
+    },
+    fmtDate(d) {
+      if (!d) return '—';
+      const [y,m,da] = d.split('-');
+      return `${da}/${m}/${y}`;
+    },
+    fmtDateShort(d) {
+      if (!d) return '—';
+      const [y,m,da] = d.split('-');
+      return `${da}/${m}`;
+    },
+    atrasada(t) {
+      if (!t.prazo) return false;
+      if (t.status === 'concluido') return false;
+      return t.prazo < new Date().toISOString().slice(0,10);
+    },
+    diasAtraso(t) {
+      if (!t.prazo) return 0;
+      const hoje = new Date(); hoje.setHours(0,0,0,0);
+      const prazo = new Date(t.prazo + 'T00:00:00');
+      return Math.floor((hoje - prazo) / 86400000);
+    },
+    projetosDoCliente(cid) {
+      if (!cid) return this.projetos;
+      return this.projetos.filter(p => p.clienteId === cid);
+    },
+    contarTarefasCliente(id)  { return this.tasks.filter(t => t.clienteId === id && t.status !== 'concluido').length; },
+    contarProjetosCliente(id) { return this.projetos.filter(p => p.clienteId === id).length; },
+    contarTarefasProjeto(id)  { return this.tasks.filter(t => t.projetoId === id && t.status !== 'concluido').length; },
+    contarTarefasPessoa(id)   { return this.tasks.filter(t => t.pessoaId  === id && t.status !== 'concluido').length; },
+
+    // ===================== BACKLOG (filtros + sort) =====================
+    get projetosFiltrados() {
+      if (!this.f.cliente) return this.projetos;
+      return this.projetos.filter(p => p.clienteId === this.f.cliente);
+    },
+    get filtered() {
+      const f = this.f;
+      const q = (f.q || '').toLowerCase().trim();
+      let arr = this.tasks.filter(t => {
+        if (q && !(t.titulo + ' ' + (t.descricao||'')).toLowerCase().includes(q)) return false;
+        if (f.cliente && t.clienteId !== f.cliente) return false;
+        if (f.projeto && t.projetoId !== f.projeto) return false;
+        if (f.pessoa  && t.pessoaId  !== f.pessoa)  return false;
+        if (f.status  && t.status    !== f.status)  return false;
+        if (f.pri     && t.prioridade !== f.pri)    return false;
+        return true;
+      });
+      const k = this.sortKey, dir = this.sortDir === 'asc' ? 1 : -1;
+      arr.sort((a,b) => {
+        let av = a[k], bv = b[k];
+        if (k === 'clienteId') { av = this.nomeCliente(av); bv = this.nomeCliente(bv); }
+        if (k === 'projetoId') { av = this.nomeProjeto(av); bv = this.nomeProjeto(bv); }
+        if (k === 'pessoaId')  { av = this.nomePessoa(av);  bv = this.nomePessoa(bv); }
+        if (k === 'status') {
+          const order = { andamento:0, bloqueado:1, backlog:2, concluido:3 };
+          av = order[av]; bv = order[bv];
+        }
+        if (k === 'prioridade') { av = +av.slice(1); bv = +bv.slice(1); }
+        if (av == null) av = '';
+        if (bv == null) bv = '';
+        if (av < bv) return -1*dir;
+        if (av > bv) return  1*dir;
+        return 0;
+      });
+      return arr;
+    },
+    sortBy(key) {
+      if (this.sortKey === key) this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+      else { this.sortKey = key; this.sortDir = 'asc'; }
+    },
+    sortIcon(key) {
+      if (this.sortKey !== key) return '';
+      return this.sortDir === 'asc' ? '▲' : '▼';
+    },
+
+    // ===================== KANBAN =====================
+    kanbanCol(status) {
+      const arr = this.tasks.filter(t => t.status === status && (!this.f.cliente || t.clienteId === this.f.cliente));
+      const priOrder = { P0:0, P1:1, P2:2, P3:3 };
+      arr.sort((a,b) => {
+        const pa = priOrder[a.prioridade] - priOrder[b.prioridade];
+        if (pa !== 0) return pa;
+        return (a.prazo || '9999') < (b.prazo || '9999') ? -1 : 1;
+      });
+      return arr;
+    },
+    moveTask(t, dir) {
+      const order = ['backlog', 'andamento', 'bloqueado', 'concluido'];
+      const i = order.indexOf(t.status);
+      const ni = i + dir;
+      if (ni < 0 || ni >= order.length) return;
+      t.status = order[ni];
+    },
+
+    // ===================== STATS =====================
+    get stats() {
+      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+      const andamento = ativas.filter(t => t.status === 'andamento');
+      const backlog   = ativas.filter(t => t.status === 'backlog');
+      const bloqueado = ativas.filter(t => t.status === 'bloqueado');
+      const sum = arr => arr.reduce((a,b) => a + (+b.esforco || 0), 0);
+      return {
+        andamento: andamento.length,
+        andamentoH: sum(andamento),
+        backlog: backlog.length,
+        backlogH: sum(backlog),
+        bloqueado: bloqueado.length,
+        atrasadas: ativas.filter(t => this.atrasada(t)).length,
+      };
+    },
+    get atrasadasList() {
+      return this.tasks.filter(t => this.atrasada(t)).sort((a,b) => this.diasAtraso(b) - this.diasAtraso(a)).slice(0, 8);
+    },
+    get bloqList() {
+      return this.tasks.filter(t => t.status === 'bloqueado').sort((a,b) => {
+        const o = { P0:0,P1:1,P2:2,P3:3 };
+        return o[a.prioridade] - o[b.prioridade];
+      }).slice(0, 8);
+    },
+
+    // ===================== CHARTS =====================
+    renderCharts() {
+      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+
+      // por cliente
+      const porCliente = {};
+      this.clientes.forEach(c => porCliente[c.nome] = 0);
+      ativas.forEach(t => {
+        const n = this.nomeCliente(t.clienteId);
+        porCliente[n] = (porCliente[n] || 0) + (+t.esforco || 0);
+      });
+      const cliEntries = Object.entries(porCliente).filter(([_,v]) => v > 0).sort((a,b) => b[1] - a[1]);
+
+      // por pessoa
+      const porPessoa = {};
+      this.pessoas.forEach(p => porPessoa[p.nome] = 0);
+      ativas.forEach(t => {
+        const n = this.nomePessoa(t.pessoaId);
+        porPessoa[n] = (porPessoa[n] || 0) + (+t.esforco || 0);
+      });
+      const pesEntries = Object.entries(porPessoa).filter(([_,v]) => v > 0).sort((a,b) => b[1] - a[1]);
+
+      // destruir charts anteriores
+      if (this.charts.clientes) this.charts.clientes.destroy();
+      if (this.charts.pessoas)  this.charts.pessoas.destroy();
+
+      const baseOpts = {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: {
+          backgroundColor: '#0F1A14', padding: 10, titleFont: { family: 'Manrope', size: 12, weight: 600 },
+          bodyFont: { family: 'JetBrains Mono', size: 11 }, displayColors: false,
+          callbacks: { label: (c) => c.parsed.x + 'h' }
+        }},
+        scales: {
+          x: { grid: { color: '#E8ECE8' }, ticks: { color: '#7C8A82', font: { family: 'JetBrains Mono', size: 11 } }, border: { display: false } },
+          y: { grid: { display: false }, ticks: { color: '#3A4A40', font: { family: 'Manrope', size: 12 } }, border: { display: false } }
+        }
+      };
+
+      const ctxC = document.getElementById('chartClientes');
+      if (ctxC) {
+        this.charts.clientes = new Chart(ctxC, {
+          type: 'bar',
+          data: {
+            labels: cliEntries.map(e => e[0]),
+            datasets: [{ data: cliEntries.map(e => e[1]), backgroundColor: '#009900', borderRadius: 4, barThickness: 22 }]
+          },
+          options: { ...baseOpts, indexAxis: 'y' }
+        });
+      }
+      const ctxP = document.getElementById('chartPessoas');
+      if (ctxP) {
+        this.charts.pessoas = new Chart(ctxP, {
+          type: 'bar',
+          data: {
+            labels: pesEntries.map(e => e[0]),
+            datasets: [{ data: pesEntries.map(e => e[1]), backgroundColor: '#007A00', borderRadius: 4, barThickness: 22 }]
+          },
+          options: { ...baseOpts, indexAxis: 'y' }
+        });
+      }
+    },
+
+    // ===================== MODAL TAREFA =====================
+    openNew() {
+      this.editing = this.blankTask();
+      this.modal = true;
+      this.$nextTick(() => this.$refs.tituloInput && this.$refs.tituloInput.focus());
+    },
+    openEdit(t) {
+      this.editing = JSON.parse(JSON.stringify(t));
+      this.modal = true;
+    },
+    saveTask() {
+      const e = this.editing;
+      if (!e.titulo || !e.titulo.trim()) {
+        alert('Dê um título à tarefa.');
+        return;
+      }
+      e.titulo = e.titulo.trim();
+      e.esforco = +e.esforco || 0;
+      if (e.id) {
+        const i = this.tasks.findIndex(t => t.id === e.id);
+        if (i >= 0) this.tasks[i] = { ...this.tasks[i], ...e };
+      } else {
+        e.id = uid();
+        e.criadoEm = Date.now();
+        this.tasks.push({ ...e });
+      }
+      this.modal = false;
+    },
+    deleteTask() {
+      if (!confirm('Excluir esta tarefa? Esta ação não pode ser desfeita.')) return;
+      this.tasks = this.tasks.filter(t => t.id !== this.editing.id);
+      this.modal = false;
+    },
+
+    // ===================== CADASTROS =====================
+    addCliente() {
+      const n = (this.newCli || '').trim();
+      if (!n) return;
+      this.clientes.push({ id: uid(), nome: n });
+      this.newCli = '';
+    },
+    renomeiaCliente(c) {
+      const n = prompt('Novo nome do cliente:', c.nome);
+      if (n && n.trim()) c.nome = n.trim();
+    },
+    deleteCliente(c) {
+      const tasks = this.tasks.filter(t => t.clienteId === c.id).length;
+      const projs = this.projetos.filter(p => p.clienteId === c.id).length;
+      if (tasks || projs) {
+        alert(`Não é possível excluir: existem ${tasks} tarefa(s) e ${projs} projeto(s) vinculados.`);
+        return;
+      }
+      if (!confirm(`Excluir cliente "${c.nome}"?`)) return;
+      this.clientes = this.clientes.filter(x => x.id !== c.id);
+    },
+
+    addProjeto() {
+      const n = (this.newProj.nome || '').trim();
+      if (!n) return;
+      if (!this.newProj.clienteId) { alert('Selecione o cliente do projeto.'); return; }
+      this.projetos.push({ id: uid(), nome: n, clienteId: this.newProj.clienteId });
+      this.newProj = { nome: '', clienteId: '' };
+    },
+    renomeiaProjeto(p) {
+      const n = prompt('Novo nome do projeto:', p.nome);
+      if (n && n.trim()) p.nome = n.trim();
+    },
+    deleteProjeto(p) {
+      const tasks = this.tasks.filter(t => t.projetoId === p.id).length;
+      if (tasks) { alert(`Não é possível excluir: existem ${tasks} tarefa(s) vinculadas.`); return; }
+      if (!confirm(`Excluir projeto "${p.nome}"?`)) return;
+      this.projetos = this.projetos.filter(x => x.id !== p.id);
+    },
+
+    addPessoa() {
+      const n = (this.newPes || '').trim();
+      if (!n) return;
+      this.pessoas.push({ id: uid(), nome: n });
+      this.newPes = '';
+    },
+    renomeiaPessoa(p) {
+      const n = prompt('Novo nome:', p.nome);
+      if (n && n.trim()) p.nome = n.trim();
+    },
+    deletePessoa(p) {
+      const tasks = this.tasks.filter(t => t.pessoaId === p.id).length;
+      if (tasks) { alert(`Não é possível excluir: existem ${tasks} tarefa(s) atribuídas.`); return; }
+      if (!confirm(`Excluir "${p.nome}"?`)) return;
+      this.pessoas = this.pessoas.filter(x => x.id !== p.id);
+    },
+  };
+}
+</script>
+</body>
+</html>
