@@ -73,7 +73,7 @@ function render(size, dotRadius, distance) {
   ]);
 }
 
-writeFileSync(new URL('./apple-touch-icon.png', import.meta.url), render(180, 22, 56));
-writeFileSync(new URL('./favicon-32.png',       import.meta.url), render(32,  4,  10));
-writeFileSync(new URL('./icon-512.png',         import.meta.url), render(512, 60, 156));
+writeFileSync(new URL('./apple-touch-icon.png', import.meta.url), render(180, 20, 42));
+writeFileSync(new URL('./favicon-32.png',       import.meta.url), render(32,  4,  8));
+writeFileSync(new URL('./icon-512.png',         import.meta.url), render(512, 57, 119));
 console.log('icons gerados em assets/');
