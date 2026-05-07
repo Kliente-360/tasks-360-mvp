@@ -40,6 +40,44 @@
 
     --warn: #C77A1A;
     --danger: #C8392B;
+
+    /* tokens compostos */
+    --kcol-bg: rgba(0,0,0,0.025);
+    --modal-bg: rgba(15,26,20,0.5);
+    --shadow-card: 0 4px 12px rgba(0,153,0,0.06);
+    --shadow-modal: 0 20px 60px rgba(0,0,0,0.20);
+  }
+
+  [data-theme="dark"] {
+    --brand: #1AAF1A;
+    --brand-dark: #2BC72B;
+    --brand-soft: #133D17;
+    --brand-tint: #0E2913;
+
+    --bg: #0E1411;
+    --bg-elev: #16201A;
+    --ink: #E8ECE8;
+    --ink-soft: #B6C0BA;
+    --muted: #7C8A82;
+    --line: #243029;
+    --line-strong: #2F3D34;
+
+    --p0: #E55B4D;
+    --p0-soft: #3A1A17;
+    --p1: #E29A3F;
+    --p1-soft: #3A2A14;
+    --p2: #5BA3D0;
+    --p2-soft: #142838;
+    --p3: #9AA89E;
+    --p3-soft: #232C26;
+
+    --warn: #E29A3F;
+    --danger: #E55B4D;
+
+    --kcol-bg: rgba(255,255,255,0.04);
+    --modal-bg: rgba(0,0,0,0.65);
+    --shadow-card: 0 4px 12px rgba(26,175,26,0.10);
+    --shadow-modal: 0 20px 60px rgba(0,0,0,0.6);
   }
 
   html, body {
@@ -134,15 +172,15 @@
 
   /* kanban */
   .kcard { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 6px; padding: 14px; margin-bottom: 10px; transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease; cursor: grab; }
-  .kcard:hover { border-color: var(--brand); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,153,0,0.06); }
+  .kcard:hover { border-color: var(--brand); transform: translateY(-1px); box-shadow: var(--shadow-card); }
   .kcard:active { cursor: grabbing; }
   .kcard.dragging { opacity: 0.4; transform: none; box-shadow: none; }
-  .kcol { background: rgba(0,0,0,0.025); border-radius: 8px; padding: 14px; min-height: 200px; transition: background 120ms ease, outline-color 120ms ease; outline: 2px dashed transparent; outline-offset: -4px; }
+  .kcol { background: var(--kcol-bg); border-radius: 8px; padding: 14px; min-height: 200px; transition: background 120ms ease, outline-color 120ms ease; outline: 2px dashed transparent; outline-offset: -4px; }
   .kcol.drop-target { background: var(--brand-tint); outline-color: var(--brand); }
 
   /* modal */
-  .modal-bg { background: rgba(15,26,20,0.5); backdrop-filter: blur(3px); }
-  .modal-card { box-shadow: 0 20px 60px rgba(0,0,0,0.20); }
+  .modal-bg { background: var(--modal-bg); backdrop-filter: blur(3px); }
+  .modal-card { box-shadow: var(--shadow-modal); }
 
   /* kpi */
   .kpi { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 8px; padding: 22px 24px; transition: all 140ms ease; }
@@ -215,6 +253,13 @@
   [x-cloak] { display: none !important; }
 </style>
 </head>
+<script>
+  // Aplica tema antes do Alpine montar (evita flash de tema errado)
+  try {
+    const t = localStorage.getItem('kliente360-theme') || 'light';
+    if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  } catch(_) {}
+</script>
 <body x-data="app()" x-init="init()" x-cloak>
 
 <!-- ============ LOADING OVERLAY ============ -->
@@ -237,6 +282,7 @@
     </div>
     <div class="flex items-center gap-1 shrink-0">
       <button class="btn btn-ghost btn-icon text-xs" @click="exportJSON()" title="Exportar snapshot atual em JSON" aria-label="Exportar"><span class="md:hidden">↓</span><span class="hidden md:inline">↓ exportar</span></button>
+      <button class="btn btn-ghost btn-icon text-xs" @click="toggleTheme()" :title="theme==='dark' ? 'Mudar para claro' : 'Mudar para escuro'" aria-label="Alternar tema"><span x-text="theme==='dark' ? '☀' : '☾'"></span></button>
       <button class="btn btn-ghost btn-icon text-xs" @click="load()" title="Recarregar dados do Supabase" aria-label="Recarregar"><span class="md:hidden">⟲</span><span class="hidden md:inline">⟲ recarregar</span></button>
       <div class="w-px h-6 bg-line mx-1 md:mx-2"></div>
       <button class="btn btn-primary text-xs md:text-sm" @click="openNew()"><span class="md:hidden">+ Nova</span><span class="hidden md:inline">+ Nova tarefa</span></button>
@@ -780,6 +826,7 @@ function app() {
     sortDir: 'asc',
     modal: false,
     loading: true,
+    theme: (() => { try { return localStorage.getItem('kliente360-theme') || 'light'; } catch(_) { return 'light'; } })(),
     draggingId: '',
     dragOverCol: '',
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' },
@@ -847,6 +894,14 @@ function app() {
     async refreshPessoas() {
       const { data, error } = await sb.from('pessoas').select('id,nome').order('nome');
       if (!error) this.pessoas = data;
+    },
+    toggleTheme() {
+      this.theme = this.theme === 'dark' ? 'light' : 'dark';
+      if (this.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      else document.documentElement.removeAttribute('data-theme');
+      try { localStorage.setItem('kliente360-theme', this.theme); } catch(_) {}
+      // Re-renderiza charts pra pegar nova paleta (caso esteja na aba Dashboard)
+      if (this.tab === 'dash') this.$nextTick(() => this.renderCharts());
     },
     exportJSON() {
       const data = { clientes: this.clientes, projetos: this.projetos, pessoas: this.pessoas, tasks: this.tasks, _exportedAt: new Date().toISOString() };
@@ -1041,16 +1096,22 @@ function app() {
       if (this.charts.clientes) this.charts.clientes.destroy();
       if (this.charts.pessoas)  this.charts.pessoas.destroy();
 
+      const css = getComputedStyle(document.documentElement);
+      const v = (n) => css.getPropertyValue(n).trim();
+      const brand = v('--brand'), brandDark = v('--brand-dark'), bgElev = v('--bg-elev');
+      const ink = v('--ink'), inkSoft = v('--ink-soft'), muted = v('--muted'), line = v('--line');
+
       const baseOpts = {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: {
-          backgroundColor: '#0F1A14', padding: 10, titleFont: { family: 'Manrope', size: 12, weight: 600 },
+          backgroundColor: ink, titleColor: bgElev, bodyColor: bgElev,
+          padding: 10, titleFont: { family: 'Manrope', size: 12, weight: 600 },
           bodyFont: { family: 'JetBrains Mono', size: 11 }, displayColors: false,
           callbacks: { label: (c) => c.parsed.x + 'h' }
         }},
         scales: {
-          x: { grid: { color: '#E8ECE8' }, ticks: { color: '#7C8A82', font: { family: 'JetBrains Mono', size: 11 } }, border: { display: false } },
-          y: { grid: { display: false }, ticks: { color: '#3A4A40', font: { family: 'Manrope', size: 12 } }, border: { display: false } }
+          x: { grid: { color: line }, ticks: { color: muted, font: { family: 'JetBrains Mono', size: 11 } }, border: { display: false } },
+          y: { grid: { display: false }, ticks: { color: inkSoft, font: { family: 'Manrope', size: 12 } }, border: { display: false } }
         }
       };
 
@@ -1060,7 +1121,7 @@ function app() {
           type: 'bar',
           data: {
             labels: cliEntries.map(e => e[0]),
-            datasets: [{ data: cliEntries.map(e => e[1]), backgroundColor: '#009900', borderRadius: 4, barThickness: 22 }]
+            datasets: [{ data: cliEntries.map(e => e[1]), backgroundColor: brand, borderRadius: 4, barThickness: 22 }]
           },
           options: { ...baseOpts, indexAxis: 'y' }
         });
@@ -1071,7 +1132,7 @@ function app() {
           type: 'bar',
           data: {
             labels: pesEntries.map(e => e[0]),
-            datasets: [{ data: pesEntries.map(e => e[1]), backgroundColor: '#007A00', borderRadius: 4, barThickness: 22 }]
+            datasets: [{ data: pesEntries.map(e => e[1]), backgroundColor: brandDark, borderRadius: 4, barThickness: 22 }]
           },
           options: { ...baseOpts, indexAxis: 'y' }
         });
