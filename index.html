@@ -540,6 +540,14 @@
     <div style="height:240px"><canvas id="chartTimeline"></canvas></div>
   </div>
 
+  <div class="card p-4 md:p-6 mb-5 md:mb-6">
+    <div class="mb-4">
+      <div class="font-brand text-xl font-semibold">Dias com entregas — próximos 60 dias</div>
+      <div class="text-xs text-muted mt-0.5">quantidade de tarefas prometidas por dia (apenas dias com tarefas)</div>
+    </div>
+    <div style="height:240px"><canvas id="chartDias"></canvas></div>
+  </div>
+
   <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-5 md:mb-6">
     <div class="card p-4 md:p-6">
       <div class="mb-4">
@@ -867,7 +875,7 @@ function app() {
     newCli: '',
     newPes: '',
     newProj: { nome: '', clienteId: '' },
-    charts: { clientes: null, pessoas: null, timeline: null },
+    charts: { clientes: null, pessoas: null, timeline: null, dias: null },
 
     // ===================== INIT / PERSISTÊNCIA =====================
     async init() {
@@ -1163,10 +1171,29 @@ function app() {
       const tlData   = [atrasadasH, ...semanas.map(s => s.horas)];
       const tlCounts = [atrasadasN, ...semanas.map(s => s.count)];
 
+      // entregas — por dia, próximos 60 dias (só dias com tarefas)
+      const hojeISO = new Date(); hojeISO.setHours(0,0,0,0);
+      const limiteISO = new Date(hojeISO); limiteISO.setDate(limiteISO.getDate() + 60);
+      const porDia = new Map();
+      let atrasoDiasN = 0;
+      ativas.forEach(t => {
+        if (!t.prazo) return;
+        const prazo = new Date(t.prazo + 'T00:00:00');
+        if (prazo < hojeISO) { atrasoDiasN++; return; }
+        if (prazo > limiteISO) return;
+        porDia.set(t.prazo, (porDia.get(t.prazo) || 0) + 1);
+      });
+      const diasOrd = [...porDia.entries()].sort((a,b) => a[0] < b[0] ? -1 : 1);
+      const fmtDia = (iso) => { const [y,m,d] = iso.split('-'); return `${d}/${m}`; };
+      const dLabels = [], dData = [], dColorsAtraso = [];
+      if (atrasoDiasN > 0) { dLabels.push('Atrasadas'); dData.push(atrasoDiasN); dColorsAtraso.push(true); }
+      diasOrd.forEach(([iso, n]) => { dLabels.push(fmtDia(iso)); dData.push(n); dColorsAtraso.push(false); });
+
       // destruir charts anteriores
       if (this.charts.clientes) this.charts.clientes.destroy();
       if (this.charts.pessoas)  this.charts.pessoas.destroy();
       if (this.charts.timeline) this.charts.timeline.destroy();
+      if (this.charts.dias)     this.charts.dias.destroy();
 
       const css = getComputedStyle(document.documentElement);
       const v = (n) => css.getPropertyValue(n).trim();
@@ -1207,6 +1234,43 @@ function app() {
             datasets: [{ data: pesEntries.map(e => e[1]), backgroundColor: brandDark, borderRadius: 4, barThickness: 22 }]
           },
           options: { ...baseOpts, indexAxis: 'y' }
+        });
+      }
+      const ctxD = document.getElementById('chartDias');
+      if (ctxD && dLabels.length) {
+        this.charts.dias = new Chart(ctxD, {
+          type: 'bar',
+          data: {
+            labels: dLabels,
+            datasets: [{
+              data: dData,
+              backgroundColor: dColorsAtraso.map(a => a ? p0 : brand),
+              borderRadius: 4,
+              maxBarThickness: 28,
+            }]
+          },
+          options: {
+            ...baseOpts,
+            plugins: {
+              ...baseOpts.plugins,
+              tooltip: {
+                ...baseOpts.plugins.tooltip,
+                callbacks: {
+                  title: (items) => {
+                    const i = items[0].dataIndex;
+                    if (dColorsAtraso[i]) return 'Atrasadas';
+                    const idx = dColorsAtraso[0] ? i - 1 : i;
+                    return diasOrd[idx][0].split('-').reverse().join('/');
+                  },
+                  label: (c) => c.parsed.y + (c.parsed.y === 1 ? ' tarefa' : ' tarefas'),
+                }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: muted, font: { family: 'JetBrains Mono', size: 10 }, autoSkip: true, maxRotation: 0 }, border: { display: false } },
+              y: { grid: { color: line }, ticks: { color: inkSoft, font: { family: 'JetBrains Mono', size: 11 }, precision: 0, stepSize: 1 }, border: { display: false }, beginAtZero: true }
+            }
+          }
         });
       }
       const ctxT = document.getElementById('chartTimeline');
