@@ -1031,6 +1031,8 @@ function app() {
     // ===================== INIT / PERSISTÊNCIA =====================
     async init() {
       this.editing = this.blankTask();
+      this.hydrateFiltersFromUrl();
+      this.$watch('f', () => this.syncFiltersToUrl(), { deep: true });
       if (SUPABASE_URL.includes('YOUR-PROJECT')) {
         this.loading = false;
         this.toast('error', 'Supabase não configurado. Edite SUPABASE_URL e SUPABASE_ANON_KEY no index.html.', 30000);
@@ -1042,6 +1044,28 @@ function app() {
       } finally {
         this.loading = false;
       }
+    },
+    hydrateFiltersFromUrl() {
+      const p = new URLSearchParams(window.location.search);
+      if (p.has('q'))       this.f.q       = p.get('q') || '';
+      if (p.has('cliente')) this.f.cliente = p.get('cliente') || '';
+      if (p.has('projeto')) this.f.projeto = p.get('projeto') || '';
+      if (p.has('pessoa'))  this.f.pessoa  = p.get('pessoa') || '';
+      if (p.has('status'))  this.f.status  = p.get('status') || '';
+      if (p.has('pri'))     this.f.pri     = p.get('pri') || '';
+    },
+    syncFiltersToUrl() {
+      const f = this.f;
+      const params = new URLSearchParams();
+      if (f.q)       params.set('q', f.q);
+      if (f.cliente) params.set('cliente', f.cliente);
+      if (f.projeto) params.set('projeto', f.projeto);
+      if (f.pessoa)  params.set('pessoa', f.pessoa);
+      if (f.status !== 'abertas') params.set('status', f.status);
+      if (f.pri)     params.set('pri', f.pri);
+      const qs = params.toString();
+      const url = window.location.pathname + (qs ? '?' + qs : '');
+      history.replaceState(null, '', url);
     },
     subscribeRealtime() {
       // Qualquer alteração nas tabelas → refetch da afetada.
