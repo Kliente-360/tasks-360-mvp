@@ -207,7 +207,7 @@
 
   /* calendário */
   .cal-weekday { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); text-align: center; padding: 4px 0; }
-  .cal-day { aspect-ratio: 1 / 1; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-elev); }
+  .cal-day { height: 52px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-elev); }
   .cal-day.out { opacity: 0.32; }
   .cal-day.today { border-color: var(--brand); border-width: 2px; padding: 3px 5px; }
   .cal-day-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-soft); line-height: 1; }
@@ -221,7 +221,7 @@
   .cal-day-l4                { background: var(--p0-soft); border-color: var(--p0); }
   .cal-day-l4 .cal-count     { background: var(--p0); color: #fff; }
   @media (max-width: 768px) {
-    .cal-day { min-height: 40px; padding: 3px 4px; }
+    .cal-day { height: 44px; padding: 3px 4px; }
     .cal-day-num { font-size: 10px; }
     .cal-day .cal-count { font-size: 9px; padding: 1px 4px; }
   }
@@ -554,44 +554,46 @@
     </div>
   </div>
 
-  <div class="card p-4 md:p-6 mb-5 md:mb-6">
-    <div class="mb-4">
-      <div class="font-brand text-xl font-semibold">Entregas — próximas 8 semanas</div>
-      <div class="text-xs text-muted mt-0.5">horas de tarefas abertas agrupadas pela semana do prazo (atrasadas em vermelho)</div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 mb-5 md:mb-6">
+    <div class="card p-4 md:p-6">
+      <div class="mb-4">
+        <div class="font-brand text-xl font-semibold">Entregas — semana atual + 4</div>
+        <div class="text-xs text-muted mt-0.5">horas de tarefas abertas por semana do prazo (atrasadas em vermelho)</div>
+      </div>
+      <div style="height:240px"><canvas id="chartTimeline"></canvas></div>
     </div>
-    <div style="height:240px"><canvas id="chartTimeline"></canvas></div>
-  </div>
 
-  <div class="card p-4 md:p-6 mb-5 md:mb-6">
-    <div class="mb-4 flex items-start justify-between gap-3 flex-wrap">
-      <div>
-        <div class="font-brand text-xl font-semibold">Calendário de entregas</div>
-        <div class="text-xs text-muted mt-0.5">tarefas por dia · mês atual + 2 semanas do próximo</div>
-      </div>
-      <div class="flex items-center gap-2 text-[10px] uppercase tracking-wider font-semibold text-muted">
-        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm" style="background:var(--brand-tint);border:1px solid var(--line)"></span>1–2</span>
-        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm" style="background:var(--p1-soft);border:1px solid var(--p1)"></span>3–4</span>
-        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm" style="background:var(--p0-soft);border:1px solid var(--p0)"></span>5+ / atrasada</span>
-      </div>
-    </div>
-    <div class="grid grid-cols-7 gap-1 md:gap-2 mb-1 md:mb-2">
-      <template x-for="d in ['seg','ter','qua','qui','sex','sáb','dom']" :key="d">
-        <div class="cal-weekday" x-text="d"></div>
-      </template>
-    </div>
-    <div class="space-y-1 md:space-y-2">
-      <template x-for="(week, wi) in calendarWeeks" :key="wi">
-        <div class="grid grid-cols-7 gap-1 md:gap-2">
-          <template x-for="day in week" :key="day.iso">
-            <div class="cal-day"
-                 :class="[!day.inRange && 'out', day.isToday && 'today', day.level>0 && 'cal-day-l'+day.level]"
-                 :title="day.iso + (day.count ? ' — ' + day.count + (day.count===1?' tarefa':' tarefas') : '')">
-              <div class="cal-day-num" x-text="day.num"></div>
-              <span class="cal-count" x-show="day.count>0" x-text="day.count"></span>
-            </div>
-          </template>
+    <div class="card p-4 md:p-6">
+      <div class="mb-4 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <div class="font-brand text-xl font-semibold">Calendário de entregas</div>
+          <div class="text-xs text-muted mt-0.5">tarefas por dia · semana passada + atual + 4</div>
         </div>
-      </template>
+        <div class="flex items-center gap-2 text-[10px] uppercase tracking-wider font-semibold text-muted">
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm" style="background:var(--brand-tint);border:1px solid var(--line)"></span>1–2</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm" style="background:var(--p1-soft);border:1px solid var(--p1)"></span>3–4</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm" style="background:var(--p0-soft);border:1px solid var(--p0)"></span>5+ / atrasada</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-7 gap-1 md:gap-2 mb-1 md:mb-2">
+        <template x-for="d in ['seg','ter','qua','qui','sex','sáb','dom']" :key="d">
+          <div class="cal-weekday" x-text="d"></div>
+        </template>
+      </div>
+      <div class="space-y-1 md:space-y-2">
+        <template x-for="(week, wi) in calendarWeeks" :key="wi">
+          <div class="grid grid-cols-7 gap-1 md:gap-2">
+            <template x-for="day in week" :key="day.iso">
+              <div class="cal-day"
+                   :class="[day.isToday && 'today', day.level>0 && 'cal-day-l'+day.level]"
+                   :title="day.iso + (day.count ? ' — ' + day.count + (day.count===1?' tarefa':' tarefas') : '')">
+                <div class="cal-day-num" x-text="day.num"></div>
+                <span class="cal-count" x-show="day.count>0" x-text="day.count"></span>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 
@@ -1174,14 +1176,10 @@ function app() {
     },
     get calendarWeeks() {
       const today = new Date(); today.setHours(0,0,0,0);
-      const start   = new Date(today.getFullYear(), today.getMonth(), 1);
-      const endNext = new Date(today.getFullYear(), today.getMonth() + 1, 14);
-      // Alinha a grade ao início (segunda) e fim (domingo) das semanas
-      const startWd = (start.getDay() + 6) % 7;
-      const gridStart = new Date(start); gridStart.setDate(start.getDate() - startWd);
-      const endWd = (endNext.getDay() + 6) % 7;
-      const gridEnd = new Date(endNext); gridEnd.setDate(endNext.getDate() + (6 - endWd));
-      // Contagem por ISO
+      // Janela: semana passada + atual + 4 à frente = 6 semanas
+      const todayWd = (today.getDay() + 6) % 7; // segunda = 0
+      const gridStart = new Date(today);
+      gridStart.setDate(today.getDate() - todayWd - 7); // segunda da semana passada
       const counts = new Map();
       this.dashTasks.filter(t => t.status !== 'concluido').forEach(t => {
         if (!t.prazo) return;
@@ -1189,13 +1187,12 @@ function app() {
       });
       const weeks = [];
       const cursor = new Date(gridStart);
-      while (cursor <= gridEnd) {
+      for (let w = 0; w < 6; w++) {
         const week = [];
         for (let i = 0; i < 7; i++) {
           const iso = cursor.getFullYear() + '-' +
                       String(cursor.getMonth()+1).padStart(2,'0') + '-' +
                       String(cursor.getDate()).padStart(2,'0');
-          const inRange = cursor >= start && cursor <= endNext;
           const isToday = cursor.getTime() === today.getTime();
           const isPast  = cursor < today;
           const count = counts.get(iso) || 0;
@@ -1206,7 +1203,7 @@ function app() {
             else if (count >= 3) level = 2;
             else                 level = 1;
           }
-          week.push({ iso, num: cursor.getDate(), inRange, isToday, isPast, count, level });
+          week.push({ iso, num: cursor.getDate(), isToday, isPast, count, level });
           cursor.setDate(cursor.getDate() + 1);
         }
         weeks.push(week);
@@ -1252,7 +1249,7 @@ function app() {
       const fmtSem = (d) => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
       const hojeWk = startOfWeek(new Date());
       const semanas = [];
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 5; i++) {
         const ini = new Date(hojeWk); ini.setDate(ini.getDate() + i*7);
         const fim = new Date(ini); fim.setDate(fim.getDate() + 7);
         semanas.push({ ini, fim, label: fmtSem(ini), horas: 0, count: 0 });
