@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Backlog — Kliente 360</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -184,7 +185,7 @@
   .kcard { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 6px; padding: 14px; margin-bottom: 10px; transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease; cursor: grab; }
   .kcard:hover { border-color: var(--brand); transform: translateY(-1px); box-shadow: var(--shadow-card); }
   .kcard:active { cursor: grabbing; }
-  .kcard.dragging { opacity: 0.4; transform: none; box-shadow: none; }
+  .kcard.dragging { opacity: 0.4; transform: none; box-shadow: none; pointer-events: none; }
   .kcol { background: var(--kcol-bg); border-radius: 8px; padding: 14px; min-height: 200px; transition: background 120ms ease, outline-color 120ms ease; outline: 2px dashed transparent; outline-offset: -4px; }
   .kcol.drop-target { background: var(--brand-tint); outline-color: var(--brand); }
 
@@ -1109,11 +1110,21 @@ function app() {
     },
     async setTaskStatus(t, newStatus) {
       if (!t || t.status === newStatus) return;
+      const i = this.tasks.findIndex(x => x.id === t.id);
+      if (i < 0) return;
+      // Optimistic: muda local imediatamente pra UI ser instantânea.
+      const prev = this.tasks[i];
+      const nowMs = Date.now();
+      this.tasks[i] = { ...prev, status: newStatus, statusEm: nowMs };
+      // Persiste em background. Realtime cuida de propagar a outras sessões.
       const { error } = await sb.from('tasks')
-        .update({ status: newStatus, status_em: new Date().toISOString() })
+        .update({ status: newStatus, status_em: new Date(nowMs).toISOString() })
         .eq('id', t.id);
-      if (error) { alert('Erro: ' + error.message); return; }
-      await this.refreshTasks();
+      if (error) {
+        // Reverte
+        this.tasks[i] = prev;
+        alert('Erro ao mover: ' + error.message);
+      }
     },
     async moveTask(t, dir) {
       const order = ['backlog', 'andamento', 'bloqueado', 'concluido'];
