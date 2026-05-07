@@ -276,6 +276,7 @@
     </div>
     <div class="col-span-1 md:col-span-2">
       <select class="inp" x-model="f.status">
+        <option value="abertas">Abertas (sem concluídas)</option>
         <option value="">Todos os status</option>
         <option value="backlog">Backlog</option>
         <option value="andamento">Em andamento</option>
@@ -755,7 +756,7 @@ function app() {
     projetos: [],
     pessoas: [],
     tasks: [],
-    f: { q: '', cliente: '', projeto: '', pessoa: '', status: '', pri: '' },
+    f: { q: '', cliente: '', projeto: '', pessoa: '', status: 'abertas', pri: '' },
     sortKey: 'prazo',
     sortDir: 'asc',
     modal: false,
@@ -886,7 +887,8 @@ function app() {
         if (f.cliente && t.clienteId !== f.cliente) return false;
         if (f.projeto && t.projetoId !== f.projeto) return false;
         if (f.pessoa  && t.pessoaId  !== f.pessoa)  return false;
-        if (f.status  && t.status    !== f.status)  return false;
+        if (f.status === 'abertas') { if (t.status === 'concluido') return false; }
+        else if (f.status && t.status !== f.status) return false;
         if (f.pri     && t.prioridade !== f.pri)    return false;
         return true;
       });
