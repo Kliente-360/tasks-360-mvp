@@ -775,6 +775,17 @@ function app() {
         return;
       }
       await this.load();
+      this.subscribeRealtime();
+    },
+    subscribeRealtime() {
+      // Qualquer alteração nas 4 tabelas → refetch da tabela afetada.
+      // Pré-requisito: rodar supabase/realtime.sql para habilitar a publicação.
+      sb.channel('kliente360-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks'    }, () => this.refreshTasks())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'clientes' }, () => this.refreshClientes())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'projetos' }, () => this.refreshProjetos())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pessoas'  }, () => this.refreshPessoas())
+        .subscribe();
     },
     async load() {
       try {
