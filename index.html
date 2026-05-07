@@ -477,9 +477,13 @@
           </tr>
         </template>
         <tr x-show="filtered.length===0">
-          <td colspan="9" class="text-center text-muted py-16">
+          <td colspan="9" class="text-center py-12 md:py-16">
             <div class="font-brand text-xl mb-2 text-ink">Nada por aqui.</div>
-            <div class="text-sm">Tente ajustar os filtros ou crie uma nova tarefa.</div>
+            <div class="text-sm text-muted mb-4">
+              <span x-show="tasks.length>0">Tente ajustar os filtros…</span>
+              <span x-show="tasks.length===0">Comece criando a primeira tarefa.</span>
+            </div>
+            <button class="btn btn-primary" @click="openNew()">+ Nova tarefa</button>
           </td>
         </tr>
       </tbody>
@@ -719,7 +723,7 @@
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
         <div class="md:col-span-9">
           <label class="lbl">Nome do cliente</label>
-          <input class="inp" x-model="newCli" placeholder="Ex: Acme Ltda." @keyup.enter="addCliente()">
+          <input class="inp" x-model="newCli" x-ref="newCliInput" placeholder="Ex: Acme Ltda." @keyup.enter="addCliente()">
         </div>
         <div class="md:col-span-3">
           <button class="btn btn-primary w-full justify-center" @click="addCliente()">+ Adicionar cliente</button>
@@ -742,7 +746,10 @@
           </div>
         </div>
       </template>
-      <div x-show="clientes.length===0" class="text-center text-muted py-10 text-sm italic">Nenhum cliente cadastrado.</div>
+      <div x-show="clientes.length===0" class="text-center py-10">
+        <div class="text-sm text-muted mb-3 italic">Nenhum cliente cadastrado.</div>
+        <button class="btn btn-primary" @click="$refs.newCliInput.focus()">+ Adicionar primeiro cliente</button>
+      </div>
     </div>
   </div>
 
@@ -752,7 +759,7 @@
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
         <div class="md:col-span-5">
           <label class="lbl">Nome do projeto</label>
-          <input class="inp" x-model="newProj.nome" placeholder="Ex: Sales Cloud — Onda 1" @keyup.enter="addProjeto()">
+          <input class="inp" x-model="newProj.nome" x-ref="newProjInput" placeholder="Ex: Sales Cloud — Onda 1" @keyup.enter="addProjeto()">
         </div>
         <div class="md:col-span-4">
           <label class="lbl">Cliente</label>
@@ -779,7 +786,11 @@
           </div>
         </div>
       </template>
-      <div x-show="projetos.length===0" class="text-center text-muted py-10 text-sm italic">Nenhum projeto cadastrado.</div>
+      <div x-show="projetos.length===0" class="text-center py-10">
+        <div class="text-sm text-muted mb-3 italic">Nenhum projeto cadastrado.</div>
+        <button class="btn btn-primary" @click="$refs.newProjInput.focus()" :disabled="clientes.length===0">+ Adicionar primeiro projeto</button>
+        <div x-show="clientes.length===0" class="text-xs text-muted mt-2 italic">Cadastre um cliente antes.</div>
+      </div>
     </div>
   </div>
 
@@ -789,7 +800,7 @@
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
         <div class="md:col-span-9">
           <label class="lbl">Nome da pessoa</label>
-          <input class="inp" x-model="newPes" placeholder="Ex: Maria Silva" @keyup.enter="addPessoa()">
+          <input class="inp" x-model="newPes" x-ref="newPesInput" placeholder="Ex: Maria Silva" @keyup.enter="addPessoa()">
         </div>
         <div class="md:col-span-3">
           <button class="btn btn-primary w-full justify-center" @click="addPessoa()">+ Adicionar pessoa</button>
@@ -812,7 +823,10 @@
           </div>
         </div>
       </template>
-      <div x-show="pessoas.length===0" class="text-center text-muted py-10 text-sm italic">Nenhuma pessoa cadastrada.</div>
+      <div x-show="pessoas.length===0" class="text-center py-10">
+        <div class="text-sm text-muted mb-3 italic">Nenhuma pessoa cadastrada.</div>
+        <button class="btn btn-primary" @click="$refs.newPesInput.focus()">+ Adicionar primeira pessoa</button>
+      </div>
     </div>
   </div>
 </section>
