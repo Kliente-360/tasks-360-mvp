@@ -943,6 +943,17 @@
   </div>
 </div>
 
+<!-- ============ MODAL CONFIRMAÇÃO ============ -->
+<div x-show="confirmTarget" class="fixed inset-0 z-[58] flex items-center justify-center modal-bg p-4" @click.self="confirmTarget=null" @keyup.escape.window="confirmTarget=null" x-transition.opacity>
+  <div class="bg-elev rounded-lg w-full max-w-sm modal-card" x-transition>
+    <div class="px-5 py-4 text-sm text-ink" x-text="confirmTarget && confirmTarget.msg"></div>
+    <div class="flex items-center justify-end gap-2 px-5 py-3 border-t border-line bg-brand-tint/30">
+      <button class="btn" @click="confirmTarget=null">cancelar</button>
+      <button class="btn btn-danger" @click="runConfirm()" x-text="confirmTarget && confirmTarget.label || 'excluir'"></button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ MODAL RENOMEAR ============ -->
 <div x-show="renameTarget" class="fixed inset-0 z-[55] flex items-center justify-center modal-bg p-4" @click.self="renameTarget=null" @keyup.escape.window="renameTarget=null" x-transition.opacity>
   <div class="bg-elev rounded-lg w-full max-w-md modal-card" x-transition>
@@ -1019,6 +1030,7 @@ function app() {
     toasts: [],
     renameTarget: null,
     renameValue: '',
+    confirmTarget: null,
     draggingId: '',
     dragOverCol: '',
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' },
@@ -1135,6 +1147,14 @@ function app() {
     async refreshPessoas() {
       const { data, error } = await sb.from('pessoas').select('id,nome').order('nome');
       if (!error) this.pessoas = data;
+    },
+    askConfirm(msg, action, opts) {
+      this.confirmTarget = { msg, action, label: (opts && opts.label) || 'excluir', danger: !(opts && opts.danger === false) };
+    },
+    runConfirm() {
+      const t = this.confirmTarget;
+      this.confirmTarget = null;
+      if (t && typeof t.action === 'function') t.action();
     },
     toast(kind, msg, ms) {
       const id = Math.random().toString(36).slice(2, 9);
@@ -1577,31 +1597,33 @@ function app() {
         }
       }
     },
-    async deleteTask() {
-      if (!confirm('Excluir esta tarefa? Esta ação não pode ser desfeita.')) return;
-      const id = this.editing.id;
-      const i = this.tasks.findIndex(t => t.id === id);
-      const prev = i >= 0 ? this.tasks[i] : null;
-      if (i >= 0) this.tasks.splice(i, 1);
-      this.modal = false;
-      const { error } = await sb.from('tasks').delete().eq('id', id);
-      if (error) {
-        if (prev) this.tasks.splice(i, 0, prev);
-        this.toast('error', 'Erro ao excluir: ' + error.message);
-      }
+    deleteTask() {
+      this.askConfirm('Excluir esta tarefa? Esta ação não pode ser desfeita.', async () => {
+        const id = this.editing.id;
+        const i = this.tasks.findIndex(t => t.id === id);
+        const prev = i >= 0 ? this.tasks[i] : null;
+        if (i >= 0) this.tasks.splice(i, 1);
+        this.modal = false;
+        const { error } = await sb.from('tasks').delete().eq('id', id);
+        if (error) {
+          if (prev) this.tasks.splice(i, 0, prev);
+          this.toast('error', 'Erro ao excluir: ' + error.message);
+        }
+      });
     },
-    async deleteTaskById(id) {
+    deleteTaskById(id) {
       const t = this.tasks.find(x => x.id === id);
       if (!t) return;
-      if (!confirm(`Excluir "${t.titulo}"? Esta ação não pode ser desfeita.`)) return;
-      const i = this.tasks.findIndex(x => x.id === id);
-      const prev = this.tasks[i];
-      this.tasks.splice(i, 1);
-      const { error } = await sb.from('tasks').delete().eq('id', id);
-      if (error) {
-        this.tasks.splice(i, 0, prev);
-        this.toast('error', 'Erro ao excluir: ' + error.message);
-      }
+      this.askConfirm(`Excluir "${t.titulo}"?`, async () => {
+        const i = this.tasks.findIndex(x => x.id === id);
+        const prev = this.tasks[i];
+        this.tasks.splice(i, 1);
+        const { error } = await sb.from('tasks').delete().eq('id', id);
+        if (error) {
+          this.tasks.splice(i, 0, prev);
+          this.toast('error', 'Erro ao excluir: ' + error.message);
+        }
+      });
     },
 
     // ===================== CADASTROS =====================
@@ -1623,12 +1645,13 @@ function app() {
         this.toast('error', `Não é possível excluir: existem ${tasks} tarefa(s) e ${projs} projeto(s) vinculados.`);
         return;
       }
-      if (!confirm(`Excluir cliente "${c.nome}"?`)) return;
-      const i = this.clientes.findIndex(x => x.id === c.id);
-      const prev = this.clientes[i];
-      this.clientes.splice(i, 1);
-      const { error } = await sb.from('clientes').delete().eq('id', c.id);
-      if (error) { this.clientes.splice(i, 0, prev); this.toast('error', 'Erro: ' + error.message); }
+      this.askConfirm(`Excluir cliente "${c.nome}"?`, async () => {
+        const i = this.clientes.findIndex(x => x.id === c.id);
+        const prev = this.clientes[i];
+        this.clientes.splice(i, 1);
+        const { error } = await sb.from('clientes').delete().eq('id', c.id);
+        if (error) { this.clientes.splice(i, 0, prev); this.toast('error', 'Erro: ' + error.message); }
+      });
     },
 
     async addProjeto() {
@@ -1648,12 +1671,13 @@ function app() {
     async deleteProjeto(p) {
       const tasks = this.tasks.filter(t => t.projetoId === p.id).length;
       if (tasks) { this.toast('error', `Não é possível excluir: existem ${tasks} tarefa(s) vinculadas.`); return; }
-      if (!confirm(`Excluir projeto "${p.nome}"?`)) return;
-      const i = this.projetos.findIndex(x => x.id === p.id);
-      const prev = this.projetos[i];
-      this.projetos.splice(i, 1);
-      const { error } = await sb.from('projetos').delete().eq('id', p.id);
-      if (error) { this.projetos.splice(i, 0, prev); this.toast('error', 'Erro: ' + error.message); }
+      this.askConfirm(`Excluir projeto "${p.nome}"?`, async () => {
+        const i = this.projetos.findIndex(x => x.id === p.id);
+        const prev = this.projetos[i];
+        this.projetos.splice(i, 1);
+        const { error } = await sb.from('projetos').delete().eq('id', p.id);
+        if (error) { this.projetos.splice(i, 0, prev); this.toast('error', 'Erro: ' + error.message); }
+      });
     },
 
     async addPessoa() {
@@ -1695,12 +1719,13 @@ function app() {
     async deletePessoa(p) {
       const tasks = this.tasks.filter(t => t.pessoaId === p.id).length;
       if (tasks) { this.toast('error', `Não é possível excluir: existem ${tasks} tarefa(s) atribuídas.`); return; }
-      if (!confirm(`Excluir "${p.nome}"?`)) return;
-      const i = this.pessoas.findIndex(x => x.id === p.id);
-      const prev = this.pessoas[i];
-      this.pessoas.splice(i, 1);
-      const { error } = await sb.from('pessoas').delete().eq('id', p.id);
-      if (error) { this.pessoas.splice(i, 0, prev); this.toast('error', 'Erro: ' + error.message); }
+      this.askConfirm(`Excluir "${p.nome}"?`, async () => {
+        const i = this.pessoas.findIndex(x => x.id === p.id);
+        const prev = this.pessoas[i];
+        this.pessoas.splice(i, 1);
+        const { error } = await sb.from('pessoas').delete().eq('id', p.id);
+        if (error) { this.pessoas.splice(i, 0, prev); this.toast('error', 'Erro: ' + error.message); }
+      });
     },
   };
 }
