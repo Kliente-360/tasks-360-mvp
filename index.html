@@ -492,9 +492,21 @@
 
 <!-- ============ DASHBOARD ============ -->
 <section x-show="tab==='dash'" class="fade-up">
-  <div class="mb-6 md:mb-8">
-    <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Dashboard</h1>
-    <p class="text-ink-soft text-sm mt-1">A operação em uma página.</p>
+  <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
+    <div>
+      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Dashboard</h1>
+      <p class="text-ink-soft text-sm mt-1">A operação em uma página.</p>
+    </div>
+    <div class="flex items-center gap-2 md:gap-3 w-full md:w-auto">
+      <select class="inp w-full md:w-[200px]" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
+        <option value="">Todos os clientes</option>
+        <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+      </select>
+      <select class="inp w-full md:w-[180px]" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
+        <option value="">Todos os responsáveis</option>
+        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+      </select>
+    </div>
   </div>
 
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-6">
@@ -518,6 +530,14 @@
       <div class="kpi-num" :class="stats.atrasadas>0 && 'danger'" x-text="stats.atrasadas"></div>
       <div class="kpi-trend">prazo vencido</div>
     </div>
+  </div>
+
+  <div class="card p-4 md:p-6 mb-5 md:mb-6">
+    <div class="mb-4">
+      <div class="font-brand text-xl font-semibold">Entregas — próximas 8 semanas</div>
+      <div class="text-xs text-muted mt-0.5">horas de tarefas abertas agrupadas pela semana do prazo (atrasadas em vermelho)</div>
+    </div>
+    <div style="height:240px"><canvas id="chartTimeline"></canvas></div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-5 md:mb-6">
@@ -847,7 +867,7 @@ function app() {
     newCli: '',
     newPes: '',
     newProj: { nome: '', clienteId: '' },
-    charts: { clientes: null, pessoas: null },
+    charts: { clientes: null, pessoas: null, timeline: null },
 
     // ===================== INIT / PERSISTÊNCIA =====================
     async init() {
@@ -1063,8 +1083,14 @@ function app() {
     },
 
     // ===================== STATS =====================
+    get dashTasks() {
+      return this.tasks.filter(t =>
+        (!this.f.cliente || t.clienteId === this.f.cliente)
+        && (!this.f.pessoa || t.pessoaId === this.f.pessoa)
+      );
+    },
     get stats() {
-      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+      const ativas = this.dashTasks.filter(t => t.status !== 'concluido');
       const andamento = ativas.filter(t => t.status === 'andamento');
       const backlog   = ativas.filter(t => t.status === 'backlog');
       const bloqueado = ativas.filter(t => t.status === 'bloqueado');
@@ -1079,10 +1105,10 @@ function app() {
       };
     },
     get atrasadasList() {
-      return this.tasks.filter(t => this.atrasada(t)).sort((a,b) => this.diasAtraso(b) - this.diasAtraso(a)).slice(0, 8);
+      return this.dashTasks.filter(t => this.atrasada(t)).sort((a,b) => this.diasAtraso(b) - this.diasAtraso(a)).slice(0, 8);
     },
     get bloqList() {
-      return this.tasks.filter(t => t.status === 'bloqueado').sort((a,b) => {
+      return this.dashTasks.filter(t => t.status === 'bloqueado').sort((a,b) => {
         const o = { P0:0,P1:1,P2:2,P3:3 };
         return o[a.prioridade] - o[b.prioridade];
       }).slice(0, 8);
@@ -1090,7 +1116,7 @@ function app() {
 
     // ===================== CHARTS =====================
     renderCharts() {
-      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+      const ativas = this.dashTasks.filter(t => t.status !== 'concluido');
 
       // por cliente
       const porCliente = {};
@@ -1110,14 +1136,42 @@ function app() {
       });
       const pesEntries = Object.entries(porPessoa).filter(([_,v]) => v > 0).sort((a,b) => b[1] - a[1]);
 
+      // entregas — próximas 8 semanas (1ª barra = atrasadas)
+      const startOfWeek = (d) => {
+        const dt = new Date(d); dt.setHours(0,0,0,0);
+        const diff = (dt.getDay() + 6) % 7; // segunda como início
+        dt.setDate(dt.getDate() - diff);
+        return dt;
+      };
+      const fmtSem = (d) => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+      const hojeWk = startOfWeek(new Date());
+      const semanas = [];
+      for (let i = 0; i < 8; i++) {
+        const ini = new Date(hojeWk); ini.setDate(ini.getDate() + i*7);
+        const fim = new Date(ini); fim.setDate(fim.getDate() + 7);
+        semanas.push({ ini, fim, label: fmtSem(ini), horas: 0, count: 0 });
+      }
+      let atrasadasH = 0, atrasadasN = 0;
+      ativas.forEach(t => {
+        if (!t.prazo) return;
+        const prazo = new Date(t.prazo + 'T00:00:00');
+        if (prazo < hojeWk) { atrasadasH += (+t.esforco||0); atrasadasN++; return; }
+        const wk = semanas.find(s => prazo >= s.ini && prazo < s.fim);
+        if (wk) { wk.horas += (+t.esforco||0); wk.count++; }
+      });
+      const tlLabels = ['Atrasadas', ...semanas.map(s => s.label)];
+      const tlData   = [atrasadasH, ...semanas.map(s => s.horas)];
+      const tlCounts = [atrasadasN, ...semanas.map(s => s.count)];
+
       // destruir charts anteriores
       if (this.charts.clientes) this.charts.clientes.destroy();
       if (this.charts.pessoas)  this.charts.pessoas.destroy();
+      if (this.charts.timeline) this.charts.timeline.destroy();
 
       const css = getComputedStyle(document.documentElement);
       const v = (n) => css.getPropertyValue(n).trim();
       const brand = v('--brand'), brandDark = v('--brand-dark'), bgElev = v('--bg-elev');
-      const ink = v('--ink'), inkSoft = v('--ink-soft'), muted = v('--muted'), line = v('--line');
+      const ink = v('--ink'), inkSoft = v('--ink-soft'), muted = v('--muted'), line = v('--line'), p0 = v('--p0');
 
       const baseOpts = {
         responsive: true, maintainAspectRatio: false,
@@ -1153,6 +1207,44 @@ function app() {
             datasets: [{ data: pesEntries.map(e => e[1]), backgroundColor: brandDark, borderRadius: 4, barThickness: 22 }]
           },
           options: { ...baseOpts, indexAxis: 'y' }
+        });
+      }
+      const ctxT = document.getElementById('chartTimeline');
+      if (ctxT) {
+        this.charts.timeline = new Chart(ctxT, {
+          type: 'bar',
+          data: {
+            labels: tlLabels,
+            datasets: [{
+              data: tlData,
+              backgroundColor: tlLabels.map((_,i) => i === 0 ? p0 : brand),
+              borderRadius: 4,
+              maxBarThickness: 36,
+            }]
+          },
+          options: {
+            ...baseOpts,
+            plugins: {
+              ...baseOpts.plugins,
+              tooltip: {
+                ...baseOpts.plugins.tooltip,
+                callbacks: {
+                  title: (items) => {
+                    const i = items[0].dataIndex;
+                    if (i === 0) return 'Atrasadas';
+                    const s = semanas[i-1];
+                    const fim = new Date(s.fim); fim.setDate(fim.getDate()-1);
+                    return 'Semana de ' + fmtSem(s.ini) + ' a ' + fmtSem(fim);
+                  },
+                  label: (c) => tlCounts[c.dataIndex] + ' tarefas · ' + c.parsed.y + 'h',
+                }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: muted, font: { family: 'JetBrains Mono', size: 11 } }, border: { display: false } },
+              y: { grid: { color: line }, ticks: { color: inkSoft, font: { family: 'JetBrains Mono', size: 11 }, callback: (v) => v + 'h' }, border: { display: false } }
+            }
+          }
         });
       }
     },
