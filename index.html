@@ -929,6 +929,25 @@
   </div>
 </div>
 
+<!-- ============ MODAL RENOMEAR ============ -->
+<div x-show="renameTarget" class="fixed inset-0 z-[55] flex items-center justify-center modal-bg p-4" @click.self="renameTarget=null" @keyup.escape.window="renameTarget=null" x-transition.opacity>
+  <div class="bg-elev rounded-lg w-full max-w-md modal-card" x-transition>
+    <div class="px-5 py-4 border-b border-line">
+      <div class="font-brand text-lg font-semibold">
+        Renomear <span x-text="renameTarget && renameTarget.kind"></span>
+      </div>
+    </div>
+    <div class="px-5 py-4">
+      <input class="inp" x-model="renameValue" x-ref="renameInput"
+             @keyup.enter="confirmRename()" placeholder="novo nome…">
+    </div>
+    <div class="flex items-center justify-end gap-2 px-5 py-3 border-t border-line bg-brand-tint/30">
+      <button class="btn" @click="renameTarget=null">cancelar</button>
+      <button class="btn btn-primary" @click="confirmRename()">salvar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ====== Supabase ======
 // Anon key é PÚBLICA por design (segurança vem da RLS, definida em
@@ -984,6 +1003,8 @@ function app() {
     theme: (() => { try { return localStorage.getItem('kliente360-theme') || 'light'; } catch(_) { return 'light'; } })(),
     filtersOpen: false,
     toasts: [],
+    renameTarget: null,
+    renameValue: '',
     draggingId: '',
     dragOverCol: '',
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' },
@@ -1518,13 +1539,7 @@ function app() {
       this.newCli = '';
       await this.refreshClientes();
     },
-    async renomeiaCliente(c) {
-      const n = prompt('Novo nome do cliente:', c.nome);
-      if (!n || !n.trim()) return;
-      const { error } = await sb.from('clientes').update({ nome: n.trim() }).eq('id', c.id);
-      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
-      await this.refreshClientes();
-    },
+    renomeiaCliente(c) { this.openRename('cliente', c); },
     async deleteCliente(c) {
       const tasks = this.tasks.filter(t => t.clienteId === c.id).length;
       const projs = this.projetos.filter(p => p.clienteId === c.id).length;
@@ -1547,13 +1562,7 @@ function app() {
       this.newProj = { nome: '', clienteId: '' };
       await this.refreshProjetos();
     },
-    async renomeiaProjeto(p) {
-      const n = prompt('Novo nome do projeto:', p.nome);
-      if (!n || !n.trim()) return;
-      const { error } = await sb.from('projetos').update({ nome: n.trim() }).eq('id', p.id);
-      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
-      await this.refreshProjetos();
-    },
+    renomeiaProjeto(p) { this.openRename('projeto', p); },
     async deleteProjeto(p) {
       const tasks = this.tasks.filter(t => t.projetoId === p.id).length;
       if (tasks) { this.toast('error', `Não é possível excluir: existem ${tasks} tarefa(s) vinculadas.`); return; }
@@ -1571,12 +1580,24 @@ function app() {
       this.newPes = '';
       await this.refreshPessoas();
     },
-    async renomeiaPessoa(p) {
-      const n = prompt('Novo nome:', p.nome);
-      if (!n || !n.trim()) return;
-      const { error } = await sb.from('pessoas').update({ nome: n.trim() }).eq('id', p.id);
+    renomeiaPessoa(p) { this.openRename('pessoa', p); },
+    openRename(kind, item) {
+      this.renameTarget = { kind, item };
+      this.renameValue = item.nome;
+      this.$nextTick(() => this.$refs.renameInput && this.$refs.renameInput.focus());
+    },
+    async confirmRename() {
+      if (!this.renameTarget) return;
+      const { kind, item } = this.renameTarget;
+      const novo = (this.renameValue || '').trim();
+      if (!novo || novo === item.nome) { this.renameTarget = null; return; }
+      const tableMap   = { cliente: 'clientes', projeto: 'projetos', pessoa: 'pessoas' };
+      const refreshMap = { cliente: 'refreshClientes', projeto: 'refreshProjetos', pessoa: 'refreshPessoas' };
+      const { error } = await sb.from(tableMap[kind]).update({ nome: novo }).eq('id', item.id);
       if (error) { this.toast('error', 'Erro: ' + error.message); return; }
-      await this.refreshPessoas();
+      await this[refreshMap[kind]]();
+      this.renameTarget = null;
+      this.toast('success', kind.charAt(0).toUpperCase()+kind.slice(1) + ' renomeado.');
     },
     async deletePessoa(p) {
       const tasks = this.tasks.filter(t => t.pessoaId === p.id).length;
