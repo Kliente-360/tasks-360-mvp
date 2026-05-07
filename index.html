@@ -205,6 +205,14 @@
   /* atraso */
   .late { color: var(--p0); font-weight: 600; }
 
+  /* badge contador (filtros) */
+  .badge-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--brand); color: #fff; font-size: 10px; font-weight: 700;
+    padding: 0 6px; border-radius: 999px; min-width: 18px; height: 16px;
+    line-height: 1; margin-left: 4px;
+  }
+
   /* calendário */
   .cal-weekday { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); text-align: center; padding: 4px 0; }
   .cal-day { height: 52px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-elev); }
@@ -344,28 +352,35 @@
   </div>
 
   <div class="grid grid-cols-2 md:grid-cols-12 gap-2 md:gap-3 mb-4 md:mb-5">
-    <div class="col-span-2 md:col-span-3">
+    <div class="col-span-1 md:col-span-3">
       <input type="text" class="inp" placeholder="Buscar título…" x-model="f.q">
     </div>
-    <div class="col-span-1 md:col-span-2">
+    <div class="col-span-1 md:hidden">
+      <button class="btn w-full justify-center" @click="filtersOpen = !filtersOpen" type="button">
+        <span>Filtros</span>
+        <span x-show="activeFiltersCount > 0" class="badge-count" x-text="activeFiltersCount"></span>
+        <span class="ml-1 text-muted" x-text="filtersOpen ? '▴' : '▾'"></span>
+      </button>
+    </div>
+    <div class="col-span-1 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.cliente">
         <option value="">Todos os clientes</option>
         <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
     </div>
-    <div class="col-span-1 md:col-span-2">
+    <div class="col-span-1 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.projeto">
         <option value="">Todos os projetos</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
-    <div class="col-span-1 md:col-span-2">
+    <div class="col-span-1 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.pessoa">
         <option value="">Todas as pessoas</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
-    <div class="col-span-1 md:col-span-2">
+    <div class="col-span-1 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.status">
         <option value="abertas">Abertas (sem concluídas)</option>
         <option value="">Todos os status</option>
@@ -375,7 +390,7 @@
         <option value="concluido">Concluído</option>
       </select>
     </div>
-    <div class="col-span-2 md:col-span-1">
+    <div class="col-span-2 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.pri">
         <option value="">Pri</option>
         <option value="P0">P0</option>
@@ -918,6 +933,7 @@ function app() {
     modal: false,
     loading: true,
     theme: (() => { try { return localStorage.getItem('kliente360-theme') || 'light'; } catch(_) { return 'light'; } })(),
+    filtersOpen: false,
     draggingId: '',
     dragOverCol: '',
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' },
@@ -1155,6 +1171,15 @@ function app() {
         (!this.f.cliente || t.clienteId === this.f.cliente)
         && (!this.f.pessoa || t.pessoaId === this.f.pessoa)
       );
+    },
+    get activeFiltersCount() {
+      let n = 0;
+      if (this.f.cliente) n++;
+      if (this.f.projeto) n++;
+      if (this.f.pessoa)  n++;
+      if (this.f.pri)     n++;
+      if (this.f.status && this.f.status !== 'abertas') n++;
+      return n;
     },
     get stats() {
       const ativas = this.dashTasks.filter(t => t.status !== 'concluido');
