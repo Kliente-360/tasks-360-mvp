@@ -327,7 +327,7 @@
 </div>
 
 <!-- ============ LOGIN ============ -->
-<div x-show="!loading && (!session || !currentPessoa)" class="fixed inset-0 z-[55] flex items-center justify-center bg-elev p-4" x-transition.opacity>
+<div x-show="authEnabled && !loading && (!session || !currentPessoa)" class="fixed inset-0 z-[55] flex items-center justify-center bg-elev p-4" x-transition.opacity>
   <div class="card max-w-sm w-full p-6 md:p-8">
     <div class="flex items-center gap-3 mb-6">
       <div class="k360-mark"><span></span><span></span><span></span><span></span></div>
@@ -390,7 +390,7 @@
       <button class="btn btn-ghost btn-icon text-xs" @click="load()" title="Recarregar dados do Supabase" aria-label="Recarregar"><span class="md:hidden">⟲</span><span class="hidden md:inline">⟲ recarregar</span></button>
       <div class="w-px h-6 bg-line mx-1 md:mx-2"></div>
       <button class="btn btn-primary text-xs md:text-sm" @click="openNew()"><span class="md:hidden">+ Nova</span><span class="hidden md:inline">+ Nova tarefa</span></button>
-      <div class="relative" @click.outside="userMenuOpen=false">
+      <div class="relative" x-show="authEnabled" @click.outside="userMenuOpen=false">
         <button class="btn btn-ghost btn-icon text-xs" @click="userMenuOpen=!userMenuOpen" :title="currentPessoa && currentPessoa.nome" aria-label="Conta">
           <span class="w-6 h-6 rounded-full bg-brand-soft text-brand font-brand font-semibold text-xs flex items-center justify-center" x-text="currentPessoa ? currentPessoa.nome.charAt(0).toUpperCase() : '?'"></span>
         </button>
@@ -1063,6 +1063,11 @@
 // supabase/schema.sql). Service-role key NUNCA aqui.
 const SUPABASE_URL      = 'https://nxtlipldmsopscpshrfd.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dGxpcGxkbXNvcHNjcHNocmZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMDQzOTcsImV4cCI6MjA5MzY4MDM5N30.4FXSioyUTidsHkhCIsq8CfoPgnbgW1rXROfCDdJcMqM';
+
+// Toggle pra ligar/desligar login. false = app aberto a quem
+// abrir o link (sem login). true = magic link + lista fechada.
+// Histórico de status continua sendo registrado (sem autor) qdo desligado.
+const AUTH_ENABLED = false;
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function taskFromDb(r) {
@@ -1117,6 +1122,7 @@ function app() {
     confirmTarget: null,
     exportOpen: false,
     userMenuOpen: false,
+    authEnabled: AUTH_ENABLED,
     session: null,
     currentPessoa: null,
     loginEmail: '',
@@ -1144,36 +1150,46 @@ function app() {
         return;
       }
 
-      // Auth: hidrata sessão e escuta mudanças
-      const { data: { session } } = await sb.auth.getSession();
-      this.session = session;
-      await this.ensureCurrentPessoa(session);
+      if (AUTH_ENABLED) {
+        // Auth: hidrata sessão e escuta mudanças
+        const { data: { session } } = await sb.auth.getSession();
+        this.session = session;
+        await this.ensureCurrentPessoa(session);
 
-      sb.auth.onAuthStateChange(async (event, sess) => {
-        this.session = sess;
-        if (event === 'SIGNED_IN') {
-          this.loginSent = false;
-          this.loginEmail = '';
-        }
-        await this.ensureCurrentPessoa(sess);
-        if (this.session && this.currentPessoa && this.tasks.length === 0) {
-          await this.load();
-          this.subscribeRealtime();
-        }
-        if (event === 'SIGNED_OUT') {
-          this.tasks = []; this.clientes = []; this.projetos = []; this.pessoas = [];
-        }
-      });
+        sb.auth.onAuthStateChange(async (event, sess) => {
+          this.session = sess;
+          if (event === 'SIGNED_IN') {
+            this.loginSent = false;
+            this.loginEmail = '';
+          }
+          await this.ensureCurrentPessoa(sess);
+          if (this.session && this.currentPessoa && this.tasks.length === 0) {
+            await this.load();
+            this.subscribeRealtime();
+          }
+          if (event === 'SIGNED_OUT') {
+            this.tasks = []; this.clientes = []; this.projetos = []; this.pessoas = [];
+          }
+        });
 
-      if (this.session && this.currentPessoa) {
+        if (this.session && this.currentPessoa) {
+          try {
+            await this.load();
+            this.subscribeRealtime();
+          } finally {
+            this.loading = false;
+          }
+        } else {
+          this.loading = false;
+        }
+      } else {
+        // Auth desligada: carrega direto, sem gating
         try {
           await this.load();
           this.subscribeRealtime();
         } finally {
           this.loading = false;
         }
-      } else {
-        this.loading = false;
       }
     },
     async ensureCurrentPessoa(session) {
