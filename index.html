@@ -168,6 +168,11 @@
   /* animação */
   @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   .fade-up { animation: fadeUp 240ms ease both; }
+  @keyframes k360pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .loading-pulse span { animation: k360pulse 1.1s ease-in-out infinite; }
+  .loading-pulse span:nth-child(2) { animation-delay: 0.15s; }
+  .loading-pulse span:nth-child(3) { animation-delay: 0.30s; }
+  .loading-pulse span:nth-child(4) { animation-delay: 0.45s; }
 
   /* tabela com scroll horizontal preservando colunas */
   .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -211,6 +216,14 @@
 </style>
 </head>
 <body x-data="app()" x-init="init()" x-cloak>
+
+<!-- ============ LOADING OVERLAY ============ -->
+<div x-show="loading" class="fixed inset-0 z-[60] flex items-center justify-center bg-elev" x-transition.opacity>
+  <div class="flex items-center gap-3 text-muted text-sm">
+    <div class="k360-mark loading-pulse" style="width:22px;height:22px"><span style="width:7px;height:7px"></span><span style="width:7px;height:7px"></span><span style="width:7px;height:7px"></span><span style="width:7px;height:7px"></span></div>
+    <span class="font-mono">Carregando…</span>
+  </div>
+</div>
 
 <!-- ============ TOPO ============ -->
 <header class="bg-elev border-b border-line sticky top-0 z-40">
@@ -766,6 +779,7 @@ function app() {
     sortKey: 'prazo',
     sortDir: 'asc',
     modal: false,
+    loading: true,
     draggingId: '',
     dragOverCol: '',
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' },
@@ -778,11 +792,16 @@ function app() {
     async init() {
       this.editing = this.blankTask();
       if (SUPABASE_URL.includes('YOUR-PROJECT')) {
+        this.loading = false;
         alert('Supabase não configurado. Edite SUPABASE_URL e SUPABASE_ANON_KEY no index.html.');
         return;
       }
-      await this.load();
-      this.subscribeRealtime();
+      try {
+        await this.load();
+        this.subscribeRealtime();
+      } finally {
+        this.loading = false;
+      }
     },
     subscribeRealtime() {
       // Qualquer alteração nas 4 tabelas → refetch da tabela afetada.
