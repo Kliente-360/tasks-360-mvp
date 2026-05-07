@@ -157,14 +157,28 @@ Deno.serve(async (req) => {
   if (existing) {
     const { error } = await sb.from('tasks').update(payload).eq('id', existing.id);
     if (error) return err(500, 'db_error', error.message);
+    if (status && existing.status !== status) {
+      await sb.from('task_status_history').insert({
+        task_id: existing.id,
+        from_status: existing.status,
+        to_status: status,
+        actor_source: SOURCE,
+      });
+    }
     return json(200, { id: existing.id, action: 'updated' });
   } else {
     payload.external_source = SOURCE;
     payload.external_id     = externalId;
     payload.status          = (payload.status as string) || 'backlog';
     payload.status_em       = new Date().toISOString();
-    const { data, error } = await sb.from('tasks').insert(payload).select('id').single();
+    const { data, error } = await sb.from('tasks').insert(payload).select('id, status').single();
     if (error) return err(500, 'db_error', error.message);
+    await sb.from('task_status_history').insert({
+      task_id: data.id,
+      from_status: null,
+      to_status: data.status,
+      actor_source: SOURCE,
+    });
     return json(201, { id: data.id, action: 'created' });
   }
 });
