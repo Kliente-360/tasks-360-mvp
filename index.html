@@ -46,6 +46,11 @@
     --modal-bg: rgba(15,26,20,0.5);
     --shadow-card: 0 4px 12px rgba(0,153,0,0.06);
     --shadow-modal: 0 20px 60px rgba(0,0,0,0.20);
+
+    /* botão primário (no light = brand cheio) */
+    --btn-primary-bg: var(--brand);
+    --btn-primary-bg-hover: var(--brand-dark);
+    --btn-primary-fg: #FFFFFF;
   }
 
   [data-theme="dark"] {
@@ -78,6 +83,11 @@
     --modal-bg: rgba(0,0,0,0.65);
     --shadow-card: 0 4px 12px rgba(26,175,26,0.10);
     --shadow-modal: 0 20px 60px rgba(0,0,0,0.6);
+
+    /* botão primário no dark: verde floresta calmo, não vibra contra fundo escuro */
+    --btn-primary-bg: #1F7A33;
+    --btn-primary-bg-hover: #279340;
+    --btn-primary-fg: #F2FAF2;
   }
 
   html, body {
@@ -151,8 +161,8 @@
   /* botões */
   .btn { display:inline-flex; align-items:center; gap:6px; font-size:13px; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--bg-elev); transition: all 140ms ease; font-weight: 500; }
   .btn:hover { border-color: var(--ink); }
-  .btn-primary { background: var(--brand); color: white; border-color: var(--brand); }
-  .btn-primary:hover { background: var(--brand-dark); border-color: var(--brand-dark); color: white; }
+  .btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-fg); border-color: var(--btn-primary-bg); }
+  .btn-primary:hover { background: var(--btn-primary-bg-hover); border-color: var(--btn-primary-bg-hover); color: var(--btn-primary-fg); }
   .btn-ghost { border-color: transparent; background: transparent; }
   .btn-ghost:hover { background: var(--brand-tint); border-color: transparent; color: var(--brand-dark); }
   .btn-danger { color: var(--p0); border-color: transparent; background: transparent; }
