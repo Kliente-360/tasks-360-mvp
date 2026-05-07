@@ -223,7 +223,7 @@
   .loading-pulse span:nth-child(4) { animation-delay: 0.45s; }
 
   /* tabela com scroll horizontal preservando colunas */
-  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tbl-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch; border-radius: 8px; }
   .tbl-wrap .tbl { min-width: 760px; }
 
   /* kanban com carrossel horizontal em mobile */
@@ -364,7 +364,7 @@
     </div>
   </div>
 
-  <div class="card overflow-hidden tbl-wrap">
+  <div class="card tbl-wrap">
     <table class="tbl">
       <thead>
         <tr>
