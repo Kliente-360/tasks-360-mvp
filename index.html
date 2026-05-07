@@ -335,6 +335,7 @@
                 <span class="status-dot"></span>
                 <span x-text="lblStatus(t.status)"></span>
               </span>
+              <div class="text-[10px] text-muted font-mono mt-1" x-text="tempoNaEtapa(t)"></div>
             </td>
             <td class="text-right">
               <button class="btn btn-ghost btn-icon text-muted hover:text-danger" title="Excluir tarefa" @click.stop="deleteTaskById(t.id)">✕</button>
@@ -399,6 +400,7 @@
               <span class="text-ink-soft" x-text="nomePessoa(t.pessoaId)"></span>
               <span :class="atrasada(t) && 'late'" class="font-mono" x-text="t.prazo ? fmtDateShort(t.prazo) : '—'"></span>
             </div>
+            <div class="text-[10px] text-muted font-mono mt-2" x-text="tempoNaEtapa(t) + ' nesta etapa'"></div>
             <div class="flex gap-1 mt-3 pt-3 border-t border-line" @click.stop>
               <button class="btn btn-ghost btn-icon text-xs" @click="moveTask(t, -1)" :disabled="col==='backlog'">←</button>
               <button class="btn btn-ghost btn-icon text-xs flex-1" @click="moveTask(t, 1)" :disabled="col==='concluido'">avançar →</button>
@@ -864,6 +866,14 @@ function app() {
       const hoje = new Date(); hoje.setHours(0,0,0,0);
       const prazo = new Date(t.prazo + 'T00:00:00');
       return Math.floor((hoje - prazo) / 86400000);
+    },
+    tempoNaEtapa(t) {
+      if (!t.statusEm) return '';
+      const ms = Date.now() - t.statusEm;
+      const d = Math.floor(ms / 86400000);
+      if (d <= 0) return 'hoje';
+      if (d === 1) return 'há 1d';
+      return 'há ' + d + 'd';
     },
     projetosDoCliente(cid) {
       if (!cid) return this.projetos;
