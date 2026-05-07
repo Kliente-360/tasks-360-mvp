@@ -2,8 +2,10 @@
 -- Roda uma vez no SQL Editor depois dos patches anteriores.
 
 -- 1. Liga pessoas ao Supabase Auth (1 pessoa = 1 user, opcional)
+alter table pessoas add column if not exists email text;
 alter table pessoas add column if not exists user_id uuid unique references auth.users(id) on delete set null;
 create index if not exists pessoas_user_idx on pessoas(user_id);
+create unique index if not exists pessoas_email_uq on pessoas(lower(email)) where email is not null;
 
 -- 2. Histórico de mudanças de status
 create table if not exists task_status_history (

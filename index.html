@@ -106,6 +106,7 @@
   .text-ink { color: var(--ink); }
   .text-ink-soft { color: var(--ink-soft); }
   .text-muted { color: var(--muted); }
+  .text-danger { color: var(--danger); }
   .bg-elev { background: var(--bg-elev); }
   .bg-brand { background: var(--brand); }
   .text-brand { color: var(--brand); }
@@ -325,6 +326,35 @@
   </div>
 </div>
 
+<!-- ============ LOGIN ============ -->
+<div x-show="!loading && (!session || !currentPessoa)" class="fixed inset-0 z-[55] flex items-center justify-center bg-elev p-4" x-transition.opacity>
+  <div class="card max-w-sm w-full p-6 md:p-8">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="k360-mark"><span></span><span></span><span></span><span></span></div>
+      <div class="leading-none">
+        <div class="font-brand text-[20px] font-semibold text-brand">kliente 360</div>
+        <div class="text-[10px] uppercase tracking-[0.18em] text-muted mt-1">backlog</div>
+      </div>
+    </div>
+    <div x-show="!loginSent">
+      <div class="font-brand text-lg font-semibold mb-1">Entrar</div>
+      <div class="text-xs text-muted mb-4">Você recebe um link no email pra entrar sem senha.</div>
+      <label class="lbl">Email</label>
+      <input type="email" inputmode="email" autocomplete="email" class="inp mb-3" x-model="loginEmail" @keyup.enter="sendMagicLink()" placeholder="voce@empresa.com">
+      <div x-show="loginError" class="text-xs text-danger mb-3" x-text="loginError"></div>
+      <button class="btn btn-primary w-full justify-center" @click="sendMagicLink()">Enviar link</button>
+      <div class="text-[11px] text-muted mt-4 leading-relaxed">
+        Acesso restrito à equipe Kliente 360. Se seu email não estiver cadastrado em <span class="font-mono">pessoas</span>, peça pro admin cadastrar antes.
+      </div>
+    </div>
+    <div x-show="loginSent">
+      <div class="font-brand text-lg font-semibold mb-2">Verifica teu email ✉</div>
+      <div class="text-sm text-ink-soft">Mandamos um link pra <span class="font-mono" x-text="loginEmail"></span>. Clica no link pra entrar.</div>
+      <button class="btn btn-ghost text-xs mt-4" @click="loginSent=false">trocar email</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ TOASTS ============ -->
 <div class="fixed bottom-4 right-4 z-[70] flex flex-col-reverse gap-2 max-w-[calc(100vw-2rem)] md:max-w-sm pointer-events-none">
   <template x-for="t in toasts" :key="t.id">
@@ -360,6 +390,18 @@
       <button class="btn btn-ghost btn-icon text-xs" @click="load()" title="Recarregar dados do Supabase" aria-label="Recarregar"><span class="md:hidden">⟲</span><span class="hidden md:inline">⟲ recarregar</span></button>
       <div class="w-px h-6 bg-line mx-1 md:mx-2"></div>
       <button class="btn btn-primary text-xs md:text-sm" @click="openNew()"><span class="md:hidden">+ Nova</span><span class="hidden md:inline">+ Nova tarefa</span></button>
+      <div class="relative" @click.outside="userMenuOpen=false">
+        <button class="btn btn-ghost btn-icon text-xs" @click="userMenuOpen=!userMenuOpen" :title="currentPessoa && currentPessoa.nome" aria-label="Conta">
+          <span class="w-6 h-6 rounded-full bg-brand-soft text-brand font-brand font-semibold text-xs flex items-center justify-center" x-text="currentPessoa ? currentPessoa.nome.charAt(0).toUpperCase() : '?'"></span>
+        </button>
+        <div x-show="userMenuOpen" x-transition.opacity class="absolute right-0 top-full mt-1 bg-elev border border-line rounded-md shadow-lg py-2 min-w-[200px] z-50">
+          <div class="px-3 py-1 text-xs text-muted">logado como</div>
+          <div class="px-3 pb-2 text-sm font-medium text-ink" x-text="currentPessoa && currentPessoa.nome"></div>
+          <div class="px-3 pb-2 text-[11px] text-muted font-mono" x-text="session && session.user && session.user.email"></div>
+          <div class="border-t border-line"></div>
+          <button class="block w-full text-left px-3 py-2 text-xs hover:bg-brand-tint" @click="signOut(); userMenuOpen=false">sair</button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="max-w-[1400px] mx-auto px-4 md:px-8 tabs-row">
@@ -1038,6 +1080,12 @@ function app() {
     renameValue: '',
     confirmTarget: null,
     exportOpen: false,
+    userMenuOpen: false,
+    session: null,
+    currentPessoa: null,
+    loginEmail: '',
+    loginSent: false,
+    loginError: '',
     draggingId: '',
     dragOverCol: '',
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' },
@@ -1057,12 +1105,80 @@ function app() {
         this.toast('error', 'Supabase não configurado. Edite SUPABASE_URL e SUPABASE_ANON_KEY no index.html.', 30000);
         return;
       }
-      try {
-        await this.load();
-        this.subscribeRealtime();
-      } finally {
+
+      // Auth: hidrata sessão e escuta mudanças
+      const { data: { session } } = await sb.auth.getSession();
+      this.session = session;
+      await this.ensureCurrentPessoa(session);
+
+      sb.auth.onAuthStateChange(async (event, sess) => {
+        this.session = sess;
+        if (event === 'SIGNED_IN') {
+          this.loginSent = false;
+          this.loginEmail = '';
+        }
+        await this.ensureCurrentPessoa(sess);
+        if (this.session && this.currentPessoa && this.tasks.length === 0) {
+          await this.load();
+          this.subscribeRealtime();
+        }
+        if (event === 'SIGNED_OUT') {
+          this.tasks = []; this.clientes = []; this.projetos = []; this.pessoas = [];
+        }
+      });
+
+      if (this.session && this.currentPessoa) {
+        try {
+          await this.load();
+          this.subscribeRealtime();
+        } finally {
+          this.loading = false;
+        }
+      } else {
         this.loading = false;
       }
+    },
+    async ensureCurrentPessoa(session) {
+      if (!session || !session.user) { this.currentPessoa = null; return; }
+      const userId = session.user.id;
+      const email = session.user.email;
+      // 1) por user_id já vinculado
+      const r1 = await sb.from('pessoas').select('id, nome, email, user_id').eq('user_id', userId).maybeSingle();
+      if (r1.data) { this.currentPessoa = r1.data; return; }
+      // 2) por email (case-insensitive) — vincula
+      if (email) {
+        const r2 = await sb.from('pessoas').select('id, nome, email, user_id').ilike('email', email).maybeSingle();
+        if (r2.data && !r2.data.user_id) {
+          await sb.from('pessoas').update({ user_id: userId }).eq('id', r2.data.id);
+          this.currentPessoa = { ...r2.data, user_id: userId };
+          return;
+        } else if (r2.data) {
+          this.currentPessoa = r2.data;
+          return;
+        }
+      }
+      // 3) lista fechada — nega acesso
+      this.toast('error', `Email '${email}' não está cadastrado em pessoas. Peça acesso ao admin.`, 20000);
+      await sb.auth.signOut();
+      this.currentPessoa = null;
+      this.session = null;
+    },
+    async sendMagicLink() {
+      const email = (this.loginEmail || '').trim().toLowerCase();
+      this.loginError = '';
+      if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        this.loginError = 'Informe um email válido.';
+        return;
+      }
+      const { error } = await sb.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin + window.location.pathname }
+      });
+      if (error) { this.loginError = error.message; return; }
+      this.loginSent = true;
+    },
+    async signOut() {
+      await sb.auth.signOut();
     },
     hydrateFiltersFromUrl() {
       const p = new URLSearchParams(window.location.search);
