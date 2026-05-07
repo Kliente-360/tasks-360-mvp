@@ -349,7 +349,13 @@
       </div>
     </div>
     <div class="flex items-center gap-1 shrink-0">
-      <button class="btn btn-ghost btn-icon text-xs" @click="exportJSON()" title="Exportar snapshot atual em JSON" aria-label="Exportar"><span class="md:hidden">↓</span><span class="hidden md:inline">↓ exportar</span></button>
+      <div class="relative" @click.outside="exportOpen=false">
+        <button class="btn btn-ghost btn-icon text-xs" @click="exportOpen = !exportOpen" title="Exportar" aria-label="Exportar"><span class="md:hidden">↓</span><span class="hidden md:inline">↓ exportar</span></button>
+        <div x-show="exportOpen" x-transition.opacity class="absolute right-0 top-full mt-1 bg-elev border border-line rounded-md shadow-lg py-1 min-w-[160px] z-50 text-left">
+          <button class="block w-full text-left px-3 py-1.5 text-xs hover:bg-brand-tint" @click="exportCSV()">CSV (visão atual)</button>
+          <button class="block w-full text-left px-3 py-1.5 text-xs hover:bg-brand-tint" @click="exportJSON()">JSON (snapshot)</button>
+        </div>
+      </div>
       <button class="btn btn-ghost btn-icon text-xs" @click="toggleTheme()" :title="theme==='dark' ? 'Mudar para claro' : 'Mudar para escuro'" aria-label="Alternar tema"><span x-text="theme==='dark' ? '☀' : '☾'"></span></button>
       <button class="btn btn-ghost btn-icon text-xs" @click="load()" title="Recarregar dados do Supabase" aria-label="Recarregar"><span class="md:hidden">⟲</span><span class="hidden md:inline">⟲ recarregar</span></button>
       <div class="w-px h-6 bg-line mx-1 md:mx-2"></div>
@@ -1031,6 +1037,7 @@ function app() {
     renameTarget: null,
     renameValue: '',
     confirmTarget: null,
+    exportOpen: false,
     draggingId: '',
     dragOverCol: '',
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' },
@@ -1171,6 +1178,7 @@ function app() {
       if (this.tab === 'dash') this.$nextTick(() => this.renderCharts());
     },
     exportJSON() {
+      this.exportOpen = false;
       const data = { clientes: this.clientes, projetos: this.projetos, pessoas: this.pessoas, tasks: this.tasks, _exportedAt: new Date().toISOString() };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -1179,6 +1187,36 @@ function app() {
       a.download = 'kliente360-backlog-' + new Date().toISOString().slice(0,10) + '.json';
       a.click();
       URL.revokeObjectURL(url);
+    },
+    exportCSV() {
+      this.exportOpen = false;
+      const rows = this.filtered; // exporta o que tá filtrado na visão atual
+      const head = ['Título','Cliente','Projeto','Responsável','Prioridade','Status','Esforço (h)','Prazo','Descrição','Criado em'];
+      const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""').replace(/\r?\n/g, ' ') + '"';
+      const lines = [head.map(esc).join(',')];
+      for (const t of rows) {
+        lines.push([
+          t.titulo,
+          this.nomeCliente(t.clienteId),
+          this.nomeProjeto(t.projetoId),
+          this.nomePessoa(t.pessoaId),
+          t.prioridade,
+          this.lblStatus(t.status),
+          t.esforco,
+          t.prazo || '',
+          t.descricao || '',
+          t.criadoEm ? new Date(t.criadoEm).toISOString().slice(0,10) : '',
+        ].map(esc).join(','));
+      }
+      const csv = '﻿' + lines.join('\r\n'); // BOM pra Excel reconhecer UTF-8
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'kliente360-tarefas-' + new Date().toISOString().slice(0,10) + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      this.toast('success', `${rows.length} tarefa(s) exportadas em CSV.`);
     },
 
     // ===================== HELPERS =====================
