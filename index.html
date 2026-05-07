@@ -1500,44 +1500,82 @@ function app() {
       }
       e.titulo = e.titulo.trim();
       e.esforco = +e.esforco || 0;
+      const nowMs = Date.now();
+      const nowIso = new Date(nowMs).toISOString();
       const payload = taskToDb(e);
+
       if (e.id) {
-        const prev = this.tasks.find(t => t.id === e.id);
-        if (prev && prev.status !== e.status) payload.status_em = new Date().toISOString();
+        // Optimistic update: aplica local antes do round-trip.
+        const i = this.tasks.findIndex(t => t.id === e.id);
+        const prev = i >= 0 ? this.tasks[i] : null;
+        if (i >= 0) {
+          const statusChanged = prev.status !== e.status;
+          if (statusChanged) payload.status_em = nowIso;
+          this.tasks[i] = {
+            ...prev,
+            titulo: e.titulo, descricao: e.descricao || '',
+            clienteId: e.clienteId, projetoId: e.projetoId, pessoaId: e.pessoaId,
+            prioridade: e.prioridade, esforco: +e.esforco || 0,
+            prazo: e.prazo || '', status: e.status,
+            statusEm: statusChanged ? nowMs : prev.statusEm,
+          };
+        }
+        this.modal = false;
         const { error } = await sb.from('tasks').update(payload).eq('id', e.id);
-        if (error) { this.toast('error', 'Erro: ' + error.message); return; }
+        if (error) {
+          if (prev) this.tasks[i] = prev;
+          this.toast('error', 'Erro ao salvar: ' + error.message);
+        }
       } else {
-        payload.status_em = new Date().toISOString();
-        const { error } = await sb.from('tasks').insert(payload);
-        if (error) { this.toast('error', 'Erro: ' + error.message); return; }
+        // Insert: precisamos do id real do banco — fechamos modal otimista,
+        // mas só inserimos local após resposta. Realtime traz pra outras sessões.
+        payload.status_em = nowIso;
+        this.modal = false;
+        const { data, error } = await sb.from('tasks').insert(payload).select('*').single();
+        if (error) { this.toast('error', 'Erro ao criar: ' + error.message); return; }
+        // Insere local imediato (realtime daria, mas evitamos delay pro próprio user)
+        if (data && !this.tasks.some(t => t.id === data.id)) {
+          this.tasks = [taskFromDb(data), ...this.tasks];
+        }
       }
-      this.modal = false;
-      await this.refreshTasks();
     },
     async deleteTask() {
       if (!confirm('Excluir esta tarefa? Esta ação não pode ser desfeita.')) return;
-      const { error } = await sb.from('tasks').delete().eq('id', this.editing.id);
-      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
+      const id = this.editing.id;
+      const i = this.tasks.findIndex(t => t.id === id);
+      const prev = i >= 0 ? this.tasks[i] : null;
+      if (i >= 0) this.tasks.splice(i, 1);
       this.modal = false;
-      await this.refreshTasks();
+      const { error } = await sb.from('tasks').delete().eq('id', id);
+      if (error) {
+        if (prev) this.tasks.splice(i, 0, prev);
+        this.toast('error', 'Erro ao excluir: ' + error.message);
+      }
     },
     async deleteTaskById(id) {
       const t = this.tasks.find(x => x.id === id);
       if (!t) return;
       if (!confirm(`Excluir "${t.titulo}"? Esta ação não pode ser desfeita.`)) return;
+      const i = this.tasks.findIndex(x => x.id === id);
+      const prev = this.tasks[i];
+      this.tasks.splice(i, 1);
       const { error } = await sb.from('tasks').delete().eq('id', id);
-      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
-      await this.refreshTasks();
+      if (error) {
+        this.tasks.splice(i, 0, prev);
+        this.toast('error', 'Erro ao excluir: ' + error.message);
+      }
     },
 
     // ===================== CADASTROS =====================
     async addCliente() {
       const n = (this.newCli || '').trim();
       if (!n) return;
-      const { error } = await sb.from('clientes').insert({ nome: n });
+      const { data, error } = await sb.from('clientes').insert({ nome: n }).select('id, nome').single();
       if (error) { this.toast('error', 'Erro: ' + error.message); return; }
       this.newCli = '';
-      await this.refreshClientes();
+      if (data && !this.clientes.some(c => c.id === data.id)) {
+        this.clientes = [...this.clientes, data].sort((a,b) => a.nome.localeCompare(b.nome));
+      }
     },
     renomeiaCliente(c) { this.openRename('cliente', c); },
     async deleteCliente(c) {
@@ -1548,37 +1586,47 @@ function app() {
         return;
       }
       if (!confirm(`Excluir cliente "${c.nome}"?`)) return;
+      const i = this.clientes.findIndex(x => x.id === c.id);
+      const prev = this.clientes[i];
+      this.clientes.splice(i, 1);
       const { error } = await sb.from('clientes').delete().eq('id', c.id);
-      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
-      await this.refreshClientes();
+      if (error) { this.clientes.splice(i, 0, prev); this.toast('error', 'Erro: ' + error.message); }
     },
 
     async addProjeto() {
       const n = (this.newProj.nome || '').trim();
       if (!n) return;
       if (!this.newProj.clienteId) { this.toast('error', 'Selecione o cliente do projeto.'); return; }
-      const { error } = await sb.from('projetos').insert({ nome: n, cliente_id: this.newProj.clienteId });
+      const { data, error } = await sb.from('projetos')
+        .insert({ nome: n, cliente_id: this.newProj.clienteId })
+        .select('id, nome, cliente_id').single();
       if (error) { this.toast('error', 'Erro: ' + error.message); return; }
       this.newProj = { nome: '', clienteId: '' };
-      await this.refreshProjetos();
+      if (data && !this.projetos.some(p => p.id === data.id)) {
+        this.projetos = [...this.projetos, projetoFromDb(data)].sort((a,b) => a.nome.localeCompare(b.nome));
+      }
     },
     renomeiaProjeto(p) { this.openRename('projeto', p); },
     async deleteProjeto(p) {
       const tasks = this.tasks.filter(t => t.projetoId === p.id).length;
       if (tasks) { this.toast('error', `Não é possível excluir: existem ${tasks} tarefa(s) vinculadas.`); return; }
       if (!confirm(`Excluir projeto "${p.nome}"?`)) return;
+      const i = this.projetos.findIndex(x => x.id === p.id);
+      const prev = this.projetos[i];
+      this.projetos.splice(i, 1);
       const { error } = await sb.from('projetos').delete().eq('id', p.id);
-      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
-      await this.refreshProjetos();
+      if (error) { this.projetos.splice(i, 0, prev); this.toast('error', 'Erro: ' + error.message); }
     },
 
     async addPessoa() {
       const n = (this.newPes || '').trim();
       if (!n) return;
-      const { error } = await sb.from('pessoas').insert({ nome: n });
+      const { data, error } = await sb.from('pessoas').insert({ nome: n }).select('id, nome').single();
       if (error) { this.toast('error', 'Erro: ' + error.message); return; }
       this.newPes = '';
-      await this.refreshPessoas();
+      if (data && !this.pessoas.some(p => p.id === data.id)) {
+        this.pessoas = [...this.pessoas, data].sort((a,b) => a.nome.localeCompare(b.nome));
+      }
     },
     renomeiaPessoa(p) { this.openRename('pessoa', p); },
     openRename(kind, item) {
@@ -1591,21 +1639,30 @@ function app() {
       const { kind, item } = this.renameTarget;
       const novo = (this.renameValue || '').trim();
       if (!novo || novo === item.nome) { this.renameTarget = null; return; }
-      const tableMap   = { cliente: 'clientes', projeto: 'projetos', pessoa: 'pessoas' };
-      const refreshMap = { cliente: 'refreshClientes', projeto: 'refreshProjetos', pessoa: 'refreshPessoas' };
-      const { error } = await sb.from(tableMap[kind]).update({ nome: novo }).eq('id', item.id);
-      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
-      await this[refreshMap[kind]]();
+      const tableMap = { cliente: 'clientes', projeto: 'projetos', pessoa: 'pessoas' };
+      const arrMap   = { cliente: this.clientes, projeto: this.projetos, pessoa: this.pessoas };
+      const arr = arrMap[kind];
+      const i = arr.findIndex(x => x.id === item.id);
+      const prevNome = i >= 0 ? arr[i].nome : null;
+      if (i >= 0) arr[i] = { ...arr[i], nome: novo };
       this.renameTarget = null;
+      const { error } = await sb.from(tableMap[kind]).update({ nome: novo }).eq('id', item.id);
+      if (error) {
+        if (i >= 0 && prevNome !== null) arr[i] = { ...arr[i], nome: prevNome };
+        this.toast('error', 'Erro: ' + error.message);
+        return;
+      }
       this.toast('success', kind.charAt(0).toUpperCase()+kind.slice(1) + ' renomeado.');
     },
     async deletePessoa(p) {
       const tasks = this.tasks.filter(t => t.pessoaId === p.id).length;
       if (tasks) { this.toast('error', `Não é possível excluir: existem ${tasks} tarefa(s) atribuídas.`); return; }
       if (!confirm(`Excluir "${p.nome}"?`)) return;
+      const i = this.pessoas.findIndex(x => x.id === p.id);
+      const prev = this.pessoas[i];
+      this.pessoas.splice(i, 1);
       const { error } = await sb.from('pessoas').delete().eq('id', p.id);
-      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
-      await this.refreshPessoas();
+      if (error) { this.pessoas.splice(i, 0, prev); this.toast('error', 'Erro: ' + error.message); }
     },
   };
 }
