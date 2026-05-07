@@ -1204,23 +1204,32 @@ function app() {
     async ensureCurrentPessoa(session) {
       if (!session || !session.user) { this.currentPessoa = null; return; }
       const userId = session.user.id;
-      const email = session.user.email;
+      const email = (session.user.email || '').trim().toLowerCase();
+      console.log('[auth] resolving pessoa for', { userId, email });
+
       // 1) por user_id já vinculado
       const r1 = await sb.from('pessoas').select('id, nome, email, user_id').eq('user_id', userId).maybeSingle();
+      if (r1.error) console.error('[auth] lookup by user_id failed:', r1.error);
+      console.log('[auth] by user_id →', r1.data);
       if (r1.data) { this.currentPessoa = r1.data; return; }
-      // 2) por email (case-insensitive) — vincula
+
+      // 2) por email (case-insensitive) — vincula se for primeiro login
       if (email) {
         const r2 = await sb.from('pessoas').select('id, nome, email, user_id').ilike('email', email).maybeSingle();
-        if (r2.data && !r2.data.user_id) {
-          await sb.from('pessoas').update({ user_id: userId }).eq('id', r2.data.id);
-          this.currentPessoa = { ...r2.data, user_id: userId };
-          return;
-        } else if (r2.data) {
-          this.currentPessoa = r2.data;
+        if (r2.error) console.error('[auth] lookup by email failed:', r2.error);
+        console.log('[auth] by email →', r2.data);
+        if (r2.data) {
+          if (!r2.data.user_id) {
+            const { error: upErr } = await sb.from('pessoas').update({ user_id: userId }).eq('id', r2.data.id);
+            if (upErr) console.error('[auth] linking user_id failed:', upErr);
+          }
+          this.currentPessoa = { ...r2.data, user_id: r2.data.user_id || userId };
           return;
         }
       }
+
       // 3) lista fechada — nega acesso
+      console.warn('[auth] no pessoa found for email', email, '→ signing out');
       this.toast('error', `Email '${email}' não está cadastrado em pessoas. Peça acesso ao admin.`, 20000);
       await sb.auth.signOut();
       this.currentPessoa = null;
