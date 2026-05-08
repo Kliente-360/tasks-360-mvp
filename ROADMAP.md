@@ -509,7 +509,6 @@ Entregas:
 
 ### Pendentes (a decidir)
 
-- **Cadastro de etapas do kanban** — transformar os status (hoje enum fixo `backlog/andamento/bloqueado/concluido`) em cadastro com reorder e bloqueio de exclusão quando há task na etapa. Pendente: definir escopo entre (a) full CRUD com etapas de sistema protegidas + customizadas neutras, (b) só renomear/reordenar as 4 fixas, (c) full CRUD sem etapas de sistema. Decisão impacta migration (drop CHECK em `tasks.status`), CSS de cores semânticas, aging logic, charts e edit form.
 - **Importação em massa via CSV** — usuário vai colar CSV com tasks; gerar `supabase/seeds/import_<data>.sql` com INSERTs prontos resolvendo cliente/projeto/pessoa por nome. Pendente: receber o CSV + decidir se cadastros faltantes são auto-criados ou bloqueiam o import.
 
 ### Onda 5+ — Diferenciação com IA
