@@ -1359,7 +1359,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Toggle pra ligar/desligar login. false = app aberto a quem
 // abrir o link (sem login). true = magic link + lista fechada.
 // Histórico de status continua sendo registrado (sem autor) qdo desligado.
-const AUTH_ENABLED = true;
+const AUTH_ENABLED = false;
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function taskFromDb(r) {
