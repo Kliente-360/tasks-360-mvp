@@ -77,7 +77,7 @@ A faixa colorida no topo de cada coluna operacional sinaliza o grupo macro: verd
 
 Grid mensal. Cada dia mostra as tarefas com prazo nele. No desktop, chips com título; no mobile, dots coloridos.
 
-- **Click num dia** com tarefas → seleciona o dia (destaque verde escuro) e mostra **tabela das tarefas daquele prazo abaixo do calendário** (cliente · projeto · resp · pri · status). Click numa linha abre a tarefa.
+- **Click num dia** com tarefas → seleciona o dia (destaque verde escuro) e mostra **cards das tarefas daquele prazo abaixo do calendário**. Cards são idênticos aos do kanban (com select pra mover etapa direto dali), ordenados por prioridade. Click no card abre a tarefa.
 - **Click no mesmo dia de novo** → desseleciona e fecha a tabela.
 - Mudar de mês limpa a seleção automaticamente.
 - Verde = no prazo · Vermelho = atrasada · Cinza riscado = concluída
