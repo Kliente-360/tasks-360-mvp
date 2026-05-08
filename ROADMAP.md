@@ -510,6 +510,14 @@ Entregas:
 ### Pendentes (a decidir)
 
 - **Importação em massa via CSV** — usuário vai colar CSV com tasks; gerar `supabase/seeds/import_<data>.sql` com INSERTs prontos resolvendo cliente/projeto/pessoa por nome. Pendente: receber o CSV + decidir se cadastros faltantes são auto-criados ou bloqueiam o import.
+- **Arquivamento de clientes / projetos / tasks** — substitui qualquer controle de "ativo/inativo".
+  - **Manual**: clientes e projetos podem ser arquivados/desarquivados via botão no cadastro.
+  - **Automático**: tasks com status `concluido` há +14 dias são arquivadas por job (cron na edge function).
+  - **Modelo**: coluna `arquivado_em timestamptz null` em `clientes`, `projetos`, `tasks`. `null` = ativo. Filtros do app ignoram arquivados por padrão.
+  - **UI** (decisão pendente — leaning B):
+    - (a) toggle "ver arquivados" no Backlog/Kanban/Cadastros
+    - (b) tela dedicada "Arquivo" com tabelão único (clientes, projetos, tasks) + filtros (tipo, cliente, período, busca) e ação de desarquivar
+  - **Impacto**: Backlog/Kanban/Dashboard/Adoption ganham filtro automático `arquivado_em is null`. Edit form: botão "arquivar" ao invés de excluir (manter excluir só pra erro). Realtime continua propagando.
 
 ### Onda 5+ — Diferenciação com IA
 
