@@ -396,8 +396,26 @@
     </div>
     <div x-show="loginSent">
       <div class="font-brand text-lg font-semibold mb-2">Verifica teu email ✉</div>
-      <div class="text-sm text-ink-soft">Mandamos um link pra <span class="font-mono" x-text="loginEmail"></span>. Clica no link pra entrar.</div>
-      <button class="btn btn-ghost text-xs mt-4" @click="loginSent=false">trocar email</button>
+      <div class="text-sm text-ink-soft mb-4">Mandamos pra <span class="font-mono" x-text="loginEmail"></span>:</div>
+
+      <div class="text-xs text-muted mb-2"><strong class="text-ink">Opção 1 — link no email</strong> (clica e volta pra cá)</div>
+      <div class="border-t border-line my-3"></div>
+      <div class="text-xs text-muted mb-2"><strong class="text-ink">Opção 2 — código de 6 dígitos</strong> (use no PWA / outro browser)</div>
+
+      <input type="text" inputmode="numeric" pattern="\d*" maxlength="6"
+             class="inp mb-2 font-mono text-center text-xl tracking-[0.4em]"
+             x-model="loginCode"
+             placeholder="000000"
+             @keyup.enter="verifyLoginCode()">
+      <div x-show="loginError" class="text-xs text-danger mb-2" x-text="loginError"></div>
+      <button class="btn btn-primary w-full justify-center"
+              @click="verifyLoginCode()"
+              :disabled="loginVerifying || !/^\d{6}$/.test(loginCode)">
+        <span x-show="!loginVerifying">Entrar com código</span>
+        <span x-show="loginVerifying">Verificando…</span>
+      </button>
+
+      <button class="btn btn-ghost text-xs mt-4" @click="loginSent=false; loginCode=''; loginError=''">trocar email</button>
     </div>
   </div>
 </div>
@@ -1341,7 +1359,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Toggle pra ligar/desligar login. false = app aberto a quem
 // abrir o link (sem login). true = magic link + lista fechada.
 // Histórico de status continua sendo registrado (sem autor) qdo desligado.
-const AUTH_ENABLED = false;
+const AUTH_ENABLED = true;
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function taskFromDb(r) {
@@ -1407,6 +1425,8 @@ function app() {
     loginEmail: '',
     loginSent: false,
     loginError: '',
+    loginCode: '',
+    loginVerifying: false,
     draggingId: '',
     dragOverCol: '',
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' },
@@ -1442,12 +1462,17 @@ function app() {
         await this.ensureCurrentPessoa(session);
 
         sb.auth.onAuthStateChange(async (event, sess) => {
+          console.log('[auth] state change', event, sess && sess.user && sess.user.email);
           this.session = sess;
           if (event === 'SIGNED_IN') {
             this.loginSent = false;
             this.loginEmail = '';
           }
-          await this.ensureCurrentPessoa(sess);
+          // Evita re-resolver pessoa se a mesma já está vinculada ao userId atual
+          const sameUser = sess && sess.user && this.currentPessoa && this.currentPessoa.user_id === sess.user.id;
+          if (!sameUser) {
+            await this.ensureCurrentPessoa(sess);
+          }
           if (this.session && this.currentPessoa && this.tasks.length === 0) {
             await this.load();
             this.subscribeRealtime();
@@ -1485,19 +1510,33 @@ function app() {
 
       // 1) por user_id já vinculado
       const r1 = await sb.from('pessoas').select('id, nome, email, user_id').eq('user_id', userId).maybeSingle();
-      if (r1.error) console.error('[auth] lookup by user_id failed:', r1.error);
+      if (r1.error) {
+        console.error('[auth] lookup by user_id failed:', r1.error);
+        this.toast('error', 'Erro ao buscar usuário: ' + r1.error.message, 20000);
+        return; // mantém estado anterior; não força signOut em erro de rede
+      }
       console.log('[auth] by user_id →', r1.data);
       if (r1.data) { this.currentPessoa = r1.data; return; }
 
       // 2) por email (case-insensitive) — vincula se for primeiro login
       if (email) {
         const r2 = await sb.from('pessoas').select('id, nome, email, user_id').ilike('email', email).maybeSingle();
-        if (r2.error) console.error('[auth] lookup by email failed:', r2.error);
+        if (r2.error) {
+          console.error('[auth] lookup by email failed:', r2.error);
+          this.toast('error', 'Erro ao buscar usuário: ' + r2.error.message, 20000);
+          return;
+        }
         console.log('[auth] by email →', r2.data);
         if (r2.data) {
+          // Vincula user_id apenas se está vazio E ainda não há outro registro com esse user_id
           if (!r2.data.user_id) {
             const { error: upErr } = await sb.from('pessoas').update({ user_id: userId }).eq('id', r2.data.id);
-            if (upErr) console.error('[auth] linking user_id failed:', upErr);
+            if (upErr) {
+              console.error('[auth] linking user_id failed:', upErr);
+              // UNIQUE violation: outra pessoa já tem esse user_id. Loga, mas segue.
+            }
+          } else if (r2.data.user_id !== userId) {
+            console.warn('[auth] pessoa.user_id já está vinculado a outro auth user — usando mesmo assim');
           }
           this.currentPessoa = { ...r2.data, user_id: r2.data.user_id || userId };
           return;
@@ -1524,6 +1563,19 @@ function app() {
       });
       if (error) { this.loginError = error.message; return; }
       this.loginSent = true;
+    },
+    async verifyLoginCode() {
+      const email = (this.loginEmail || '').trim().toLowerCase();
+      const token = (this.loginCode || '').trim();
+      this.loginError = '';
+      if (!email) { this.loginError = 'Email perdido — recomeça.'; return; }
+      if (!/^\d{6}$/.test(token)) { this.loginError = 'Código de 6 dígitos.'; return; }
+      this.loginVerifying = true;
+      const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
+      this.loginVerifying = false;
+      if (error) { this.loginError = error.message; return; }
+      // sucesso → onAuthStateChange vai resolver currentPessoa e carregar
+      this.loginCode = '';
     },
     async signOut() {
       await sb.auth.signOut();
