@@ -688,6 +688,14 @@
     <table class="tbl">
       <thead>
         <tr>
+          <th class="w-8" @click.stop>
+            <input type="checkbox"
+                   class="cursor-pointer"
+                   :checked="filtered.length > 0 && selectedIds.length === filtered.length"
+                   :indeterminate.prop="selectedIds.length > 0 && selectedIds.length < filtered.length"
+                   @change="toggleSelectAll()"
+                   title="Selecionar todas as visíveis">
+          </th>
           <th class="sortable" @click="sortBy('titulo')">Tarefa <span x-text="sortIcon('titulo')" class="text-[9px] ml-1"></span></th>
           <th class="sortable" @click="sortBy('clienteId')">Cliente <span x-text="sortIcon('clienteId')" class="text-[9px] ml-1"></span></th>
           <th class="sortable" @click="sortBy('projetoId')">Projeto <span x-text="sortIcon('projetoId')" class="text-[9px] ml-1"></span></th>
@@ -704,11 +712,16 @@
         <template x-for="t in filtered" :key="t.id">
           <tr @click="openEdit(t)"
               :draggable="sortKey==='manual'"
-              :class="sortKey==='manual' && 'manual-row'"
+              :class="[sortKey==='manual' && 'manual-row', selectedIds.includes(t.id) && 'bg-brand-tint']"
               @dragstart.stop="onBacklogDragStart($event, t)"
               @dragover.prevent="onBacklogDragOver($event, t)"
               @drop.stop.prevent="onBacklogDrop($event, t)"
               @dragend="backlogDragId=''">
+            <td @click.stop>
+              <input type="checkbox" class="cursor-pointer"
+                     :checked="selectedIds.includes(t.id)"
+                     @change="toggleSelect(t.id)">
+            </td>
             <td>
               <div class="font-medium text-ink" x-text="t.titulo"></div>
               <div x-show="(t.tags || []).length>0" class="flex flex-wrap gap-1 mt-1">
@@ -757,7 +770,7 @@
           </tr>
         </template>
         <tr x-show="filtered.length===0">
-          <td colspan="9" class="text-center py-12 md:py-16">
+          <td colspan="10" class="text-center py-12 md:py-16">
             <div class="font-brand text-xl mb-2 text-ink">Nada por aqui.</div>
             <div class="text-sm text-muted mb-4">
               <span x-show="tasks.length>0">Tente ajustar os filtros…</span>
@@ -1345,6 +1358,51 @@
 
 </main>
 
+<!-- ============ BULK ACTIONS BAR ============ -->
+<div x-show="selectedIds.length > 0 && tab==='backlog'"
+     x-transition.opacity
+     class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[55] bg-elev border border-line rounded-lg shadow-2xl px-3 py-2 flex flex-wrap items-center gap-2 max-w-[calc(100vw-24px)]">
+  <span class="text-xs font-mono text-ink"><strong x-text="selectedIds.length"></strong> selecionada(s)</span>
+  <div class="w-px h-5 bg-line mx-1"></div>
+  <select class="inp text-xs py-1.5 w-[160px]" @change="bulkSetSubetapa($event.target.value); $event.target.value=''" title="Mover para…">
+    <option value="" disabled selected>mover etapa…</option>
+    <optgroup label="Backlog">
+      <option value="backlog">Backlog</option>
+      <option value="priorizado">Priorizado</option>
+      <option value="em_definicao">Em definição</option>
+      <option value="escopo_definido">Escopo definido</option>
+    </optgroup>
+    <optgroup label="Em andamento">
+      <option value="em_desenvolvimento">Em desenvolvimento</option>
+      <option value="em_homologacao">Em homologação</option>
+      <option value="em_revisao">Em revisão</option>
+      <option value="pronto_producao">Pronto p/ produção</option>
+      <option value="em_implantacao">Em implantação</option>
+    </optgroup>
+    <optgroup label="Bloqueado">
+      <option value="bloqueado">Bloqueado</option>
+    </optgroup>
+    <optgroup label="Concluído">
+      <option value="concluido">Concluído</option>
+    </optgroup>
+  </select>
+  <select class="inp text-xs py-1.5 w-[140px]" @change="bulkSetPessoa($event.target.value); $event.target.value=''" title="Atribuir…">
+    <option value="" disabled selected>atribuir…</option>
+    <option value="__none__">— sem responsável —</option>
+    <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+  </select>
+  <select class="inp text-xs py-1.5 w-[100px]" @change="bulkSetPriority($event.target.value); $event.target.value=''" title="Prioridade…">
+    <option value="" disabled selected>prioridade…</option>
+    <option value="P0">P0 · Urgente</option>
+    <option value="P1">P1 · Alta</option>
+    <option value="P2">P2 · Normal</option>
+    <option value="P3">P3 · Baixa</option>
+  </select>
+  <button class="btn btn-danger text-xs py-1.5 px-2" @click="bulkDelete()" title="Excluir todas">excluir</button>
+  <div class="w-px h-5 bg-line mx-1"></div>
+  <button class="btn btn-ghost text-xs py-1.5 px-2" @click="clearSelection()">limpar</button>
+</div>
+
 <!-- ============ RELATÓRIO EXECUTIVO (print-only) ============ -->
 <section class="print-only" aria-hidden="true">
   <div class="pr-page">
@@ -1794,6 +1852,7 @@ function app() {
     kanbanView: 'op', // 'op' (operacional, nível 2) | 'exec' (executiva, nível 1)
     quickAddSub: '',
     quickAddTitle: '',
+    selectedIds: [],
     SUB_LABELS: {
       backlog: 'Backlog', priorizado: 'Priorizado', em_definicao: 'Em definição', escopo_definido: 'Escopo definido',
       em_desenvolvimento: 'Em desenvolvimento', em_homologacao: 'Em homologação', em_revisao: 'Em revisão',
@@ -2682,6 +2741,58 @@ function app() {
         });
       }
     },
+    // ===================== BULK ACTIONS =====================
+    toggleSelect(id) {
+      const i = this.selectedIds.indexOf(id);
+      if (i >= 0) this.selectedIds.splice(i, 1); else this.selectedIds.push(id);
+    },
+    toggleSelectAll() {
+      const visible = this.filtered.map(t => t.id);
+      const allSelected = visible.length > 0 && visible.every(id => this.selectedIds.includes(id));
+      if (allSelected) this.selectedIds = this.selectedIds.filter(id => !visible.includes(id));
+      else this.selectedIds = Array.from(new Set([...this.selectedIds, ...visible]));
+    },
+    clearSelection() { this.selectedIds = []; },
+    async bulkSetSubetapa(sub) {
+      if (!sub) return;
+      const ids = [...this.selectedIds];
+      for (const id of ids) {
+        const t = this.tasks.find(x => x.id === id);
+        if (t && t.subetapa !== sub) await this.setTaskSubetapa(t, sub);
+      }
+      this.toast('success', ids.length + ' tarefa(s) movida(s).');
+    },
+    async bulkSetPessoa(pid) {
+      if (!pid) return;
+      const target = pid === '__none__' ? null : pid;
+      const ids = [...this.selectedIds];
+      const { error } = await sb.from('tasks').update({ pessoa_id: target }).in('id', ids);
+      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
+      // Optimistic local update
+      this.tasks = this.tasks.map(t => ids.includes(t.id) ? { ...t, pessoaId: target || '' } : t);
+      this.toast('success', ids.length + ' tarefa(s) atualizada(s).');
+    },
+    async bulkSetPriority(p) {
+      if (!p) return;
+      const ids = [...this.selectedIds];
+      const { error } = await sb.from('tasks').update({ prioridade: p }).in('id', ids);
+      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
+      this.tasks = this.tasks.map(t => ids.includes(t.id) ? { ...t, prioridade: p } : t);
+      this.toast('success', ids.length + ' tarefa(s) atualizada(s).');
+    },
+    bulkDelete() {
+      const n = this.selectedIds.length;
+      if (!n) return;
+      this.askConfirm('Excluir ' + n + ' tarefa(s)? Esta ação não pode ser desfeita.', async () => {
+        const ids = [...this.selectedIds];
+        const { error } = await sb.from('tasks').delete().in('id', ids);
+        if (error) { this.toast('error', 'Erro: ' + error.message); return; }
+        this.tasks = this.tasks.filter(t => !ids.includes(t.id));
+        this.selectedIds = [];
+        this.toast('success', n + ' tarefa(s) excluída(s).');
+      });
+    },
+
     openQuickAdd(sub) {
       this.quickAddSub = sub;
       this.quickAddTitle = '';
