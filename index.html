@@ -1414,6 +1414,14 @@
           <label class="lbl">Esforço (horas)</label>
           <input type="number" min="0" step="0.5" class="inp" x-model.number="editing.esforco">
         </div>
+        <div>
+          <label class="lbl">Complexidade</label>
+          <select class="inp" x-model="editing.complexidade">
+            <option value="baixa">Baixa</option>
+            <option value="media">Média</option>
+            <option value="alta">Alta</option>
+          </select>
+        </div>
         <div class="sm:col-span-2">
           <label class="lbl">Prazo</label>
           <input type="date" class="inp" x-model="editing.prazo">
@@ -1569,6 +1577,7 @@ function taskFromDb(r) {
     pessoaId: r.pessoa_id || '',
     prioridade: r.prioridade,
     esforco: Number(r.esforco) || 0,
+    complexidade: r.complexidade || 'media',
     prazo: r.prazo || '',
     status: r.status,
     criadoEm: r.criado_em ? new Date(r.criado_em).getTime() : 0,
@@ -1586,6 +1595,7 @@ function taskToDb(t) {
     pessoa_id: t.pessoaId || null,
     prioridade: t.prioridade,
     esforco: Number(t.esforco) || 0,
+    complexidade: t.complexidade || 'media',
     prazo: t.prazo || null,
     status: t.status,
     tags: Array.isArray(t.tags) ? t.tags : [],
@@ -1626,7 +1636,7 @@ function app() {
     loginVerifying: false,
     draggingId: '',
     dragOverCol: '',
-    editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' },
+    editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', complexidade: 'media' },
     editingComments: [],
     editingHistory: [],
     newComment: '',
@@ -2216,7 +2226,7 @@ function app() {
 
     // ===================== HELPERS =====================
     blankTask() {
-      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', tags: [] };
+      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', complexidade: 'media', tags: [] };
     },
     normalizeTag(s) {
       return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24);
