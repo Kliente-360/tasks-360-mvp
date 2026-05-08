@@ -673,18 +673,12 @@
 
 <!-- ============ MEU FOCO ============ -->
 <section x-show="tab==='foco'" class="fade-up">
-  <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
-    <div>
-      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Meu foco</h1>
-      <p class="text-ink-soft text-sm mt-1">o que pedir atenção hoje, em ordem de urgência.</p>
-    </div>
-    <div class="flex items-center gap-2 flex-wrap">
-      <label class="text-xs text-muted font-mono uppercase tracking-wider">atuando como</label>
-      <select class="inp w-[200px]" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
-        <option value="">— selecionar pessoa —</option>
-        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
-      </select>
-    </div>
+  <div class="flex items-center justify-end gap-2 mb-5 md:mb-6 flex-wrap">
+    <label class="text-xs text-muted font-mono uppercase tracking-wider">atuando como</label>
+    <select class="inp w-[200px]" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
+      <option value="">— selecionar pessoa —</option>
+      <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+    </select>
   </div>
 
   <!-- Setup banner -->
@@ -755,25 +749,20 @@
 
 <!-- ============ BACKLOG ============ -->
 <section x-show="tab==='backlog'" class="fade-up">
-  <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
-    <div>
-      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Backlog</h1>
-    </div>
-    <div class="flex items-center gap-2 text-sm">
-      <button class="btn btn-ghost text-xs" x-show="activeFiltersCount > 0 || f.q || f.tag"
-              @click="clearFilters()"
-              title="Limpar todos os filtros aplicados">
-        ✕ limpar filtros<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
-      </button>
-      <button class="btn btn-ghost text-xs" :class="sortKey==='manual' && '!text-brand-dark !bg-brand-tint'"
-              @click="sortKey==='manual' ? clearManualSort() : setManualSort()"
-              :title="sortKey==='manual' ? 'Sair da ordenação manual' : 'Ordenar manualmente (arrastar para reordenar)'">
-        <span x-show="sortKey!=='manual'">≡ ordem manual</span>
-        <span x-show="sortKey==='manual'">✓ ordem manual</span>
-      </button>
-      <span class="text-muted text-[11px] uppercase tracking-wider font-semibold">mostrando</span>
-      <span class="font-mono text-sm" x-text="filtered.length + ' / ' + tasks.length"></span>
-    </div>
+  <div class="flex items-center justify-end gap-2 mb-4 md:mb-5 flex-wrap text-sm">
+    <button class="btn btn-ghost text-xs" x-show="activeFiltersCount > 0 || f.q || f.tag"
+            @click="clearFilters()"
+            title="Limpar todos os filtros aplicados">
+      ✕ limpar filtros<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
+    </button>
+    <button class="btn btn-ghost text-xs" :class="sortKey==='manual' && '!text-brand-dark !bg-brand-tint'"
+            @click="sortKey==='manual' ? clearManualSort() : setManualSort()"
+            :title="sortKey==='manual' ? 'Sair da ordenação manual' : 'Ordenar manualmente (arrastar para reordenar)'">
+      <span x-show="sortKey!=='manual'">≡ ordem manual</span>
+      <span x-show="sortKey==='manual'">✓ ordem manual</span>
+    </button>
+    <span class="text-muted text-[11px] uppercase tracking-wider font-semibold">mostrando</span>
+    <span class="font-mono text-sm" x-text="filtered.length + ' / ' + tasks.length"></span>
   </div>
 
   <div class="grid grid-cols-2 md:grid-cols-12 gap-2 md:gap-3 mb-4 md:mb-5">
@@ -934,13 +923,10 @@
 
 <!-- ============ KANBAN ============ -->
 <section x-show="tab==='kanban'" class="fade-up">
-  <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
-    <div class="flex items-center gap-3 flex-wrap">
-      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Kanban</h1>
-      <div class="view-toggle" role="tablist" aria-label="Visão do kanban">
-        <button :class="kanbanView==='op' && 'active'" @click="kanbanView='op'" title="Visão operacional — colunas detalhadas (nível 2)">Operacional</button>
-        <button :class="kanbanView==='exec' && 'active'" @click="kanbanView='exec'" title="Visão executiva — colunas macro (nível 1, somente leitura)">Executiva</button>
-      </div>
+  <div class="flex items-center justify-between gap-3 mb-5 md:mb-6 flex-wrap">
+    <div class="view-toggle" role="tablist" aria-label="Visão do kanban">
+      <button :class="kanbanView==='op' && 'active'" @click="kanbanView='op'" title="Visão operacional — colunas detalhadas (nível 2)">Operacional</button>
+      <button :class="kanbanView==='exec' && 'active'" @click="kanbanView='exec'" title="Visão executiva — colunas macro (nível 1, somente leitura)">Executiva</button>
     </div>
     <div class="flex items-center gap-2 md:gap-3 w-full md:w-auto">
       <select class="inp w-full md:w-[200px]" x-model="f.cliente">
@@ -1089,20 +1075,15 @@
 
 <!-- ============ CALENDÁRIO ============ -->
 <section x-show="tab==='cal'" class="fade-up">
-  <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
-    <div>
-      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Calendário</h1>
-    </div>
-    <div class="flex items-center gap-2 flex-wrap">
-      <select class="inp w-[160px]" x-model="f.cliente">
-        <option value="">Todos os clientes</option>
-        <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
-      </select>
-      <select class="inp w-[150px]" x-model="f.pessoa">
-        <option value="">Todos os responsáveis</option>
-        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
-      </select>
-    </div>
+  <div class="flex items-center justify-end gap-2 mb-5 md:mb-6 flex-wrap">
+    <select class="inp w-[160px]" x-model="f.cliente">
+      <option value="">Todos os clientes</option>
+      <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+    </select>
+    <select class="inp w-[150px]" x-model="f.pessoa">
+      <option value="">Todos os responsáveis</option>
+      <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+    </select>
   </div>
 
   <div class="card p-3 md:p-5">
@@ -1161,20 +1142,15 @@
 
 <!-- ============ DASHBOARD ============ -->
 <section x-show="tab==='dash'" class="fade-up">
-  <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
-    <div>
-      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Dashboard</h1>
-    </div>
-    <div class="flex items-center gap-2 md:gap-3 w-full md:w-auto">
-      <select class="inp w-full md:w-[200px]" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
-        <option value="">Todos os clientes</option>
-        <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
-      </select>
-      <select class="inp w-full md:w-[180px]" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
-        <option value="">Todos os responsáveis</option>
-        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
-      </select>
-    </div>
+  <div class="flex items-center justify-end gap-2 md:gap-3 mb-5 md:mb-6 flex-wrap">
+    <select class="inp w-full md:w-[200px]" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
+      <option value="">Todos os clientes</option>
+      <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+    </select>
+    <select class="inp w-full md:w-[180px]" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
+      <option value="">Todos os responsáveis</option>
+      <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+    </select>
   </div>
 
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-6">
@@ -1336,11 +1312,6 @@
 
 <!-- ============ CADASTROS ============ -->
 <section x-show="tab==='cad'" class="fade-up">
-  <div class="mb-5 md:mb-6">
-    <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Cadastros</h1>
-    <p class="text-ink-soft text-sm mt-1">Clientes, projetos e pessoas. Mantenha enxuto.</p>
-  </div>
-
   <div class="tabs-row border-b border-line mb-5 md:mb-6">
     <div class="tab" :class="cadTab==='clientes' && 'active'" @click="cadTab='clientes'">Clientes <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + clientes.length"></span></div>
     <div class="tab" :class="cadTab==='projetos' && 'active'" @click="cadTab='projetos'">Projetos <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + projetos.length"></span></div>
@@ -1479,15 +1450,9 @@
 
 <!-- ============ DADOS MVP ============ -->
 <section x-show="tab==='mvp'" class="fade-up">
-  <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
-    <div>
-      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Adoption</h1>
-      <p class="text-ink-soft text-sm mt-1">Métricas para validar o protótipo.</p>
-    </div>
-    <div class="flex items-center gap-2 text-xs text-muted">
-      <span x-show="mvpLoadedAt>0" x-text="'última carga: ' + new Date(mvpLoadedAt).toLocaleTimeString('pt-BR')"></span>
-      <button class="btn btn-ghost btn-icon text-xs" @click="loadMvpDados()" title="Recarregar">⟲</button>
-    </div>
+  <div class="flex items-center justify-end gap-2 mb-5 md:mb-6 flex-wrap text-xs text-muted">
+    <span x-show="mvpLoadedAt>0" x-text="'última carga: ' + new Date(mvpLoadedAt).toLocaleTimeString('pt-BR')"></span>
+    <button class="btn btn-ghost btn-icon text-xs" @click="loadMvpDados()" title="Recarregar">⟲</button>
   </div>
 
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-6">
