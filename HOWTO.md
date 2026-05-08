@@ -75,11 +75,14 @@ A faixa colorida no topo de cada coluna operacional sinaliza o grupo macro: verd
 
 ### Calendário
 
-Grid mensal. Cada dia mostra as tarefas com prazo nele. No desktop, chips com título; no mobile, dots coloridos. Clique numa tarefa pra editar.
+Grid mensal. Cada dia mostra as tarefas com prazo nele. No desktop, chips com título; no mobile, dots coloridos.
 
+- **Click num dia** com tarefas → seleciona o dia (destaque verde escuro) e mostra **tabela das tarefas daquele prazo abaixo do calendário** (cliente · projeto · resp · pri · status). Click numa linha abre a tarefa.
+- **Click no mesmo dia de novo** → desseleciona e fecha a tabela.
+- Mudar de mês limpa a seleção automaticamente.
 - Verde = no prazo · Vermelho = atrasada · Cinza riscado = concluída
 - Hoje destacado em borda verde
-- Header mostra navegação (‹ hoje ›) e contagem do mês
+- Header mostra navegação (‹ hoje ›). Contagens vão pra legenda inferior.
 
 ### Dashboard
 
