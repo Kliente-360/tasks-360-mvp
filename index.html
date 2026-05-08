@@ -1358,6 +1358,38 @@
 
 </main>
 
+<!-- ============ AJUDA DE ATALHOS (?) ============ -->
+<div x-show="shortcutsHelpOpen" x-transition.opacity class="fixed inset-0 z-[80] bg-black/40 flex items-center justify-center px-4" @click="shortcutsHelpOpen=false">
+  <div class="bg-elev border border-line rounded-lg shadow-2xl w-full max-w-[420px] overflow-hidden" @click.stop>
+    <div class="px-4 py-3 border-b border-line flex items-center justify-between">
+      <div class="font-brand font-semibold text-sm">Atalhos de teclado</div>
+      <button class="text-muted hover:text-ink text-lg" @click="shortcutsHelpOpen=false">×</button>
+    </div>
+    <div class="px-4 py-3 text-sm space-y-2">
+      <template x-for="row in [
+        ['⌘K · Ctrl+K', 'Abrir command palette'],
+        ['n',           'Nova tarefa'],
+        ['/',           'Foco na busca · ou abre palette'],
+        ['g b',         'Ir pra Backlog'],
+        ['g k',         'Ir pra Kanban'],
+        ['g d',         'Ir pra Dashboard'],
+        ['g c',         'Ir pra Cadastros'],
+        ['g a',         'Ir pra Adoption'],
+        ['?',           'Abrir/fechar esta ajuda'],
+        ['Esc',         'Fechar modal/palette/ajuda'],
+      ]" :key="row[0]">
+        <div class="flex items-center justify-between gap-3">
+          <span class="font-mono text-xs px-2 py-0.5 bg-bg-elev border border-line rounded text-ink-soft" x-text="row[0]"></span>
+          <span class="text-ink-soft text-right" x-text="row[1]"></span>
+        </div>
+      </template>
+    </div>
+    <div class="px-4 py-2 border-t border-line text-[10px] font-mono text-muted">
+      atalhos não disparam quando você está digitando em campos.
+    </div>
+  </div>
+</div>
+
 <!-- ============ COMMAND PALETTE (cmd+k) ============ -->
 <div x-show="paletteOpen" x-transition.opacity class="fixed inset-0 z-[80] bg-black/40 flex items-start justify-center pt-[15vh] px-4" @click="closePalette()" @keydown.escape.window="closePalette()">
   <div class="bg-elev border border-line rounded-lg shadow-2xl w-full max-w-[560px] overflow-hidden" @click.stop>
@@ -1895,6 +1927,8 @@ function app() {
     paletteOpen: false,
     paletteQuery: '',
     paletteIndex: 0,
+    shortcutsHelpOpen: false,
+    _gPrefix: 0, // timestamp do último 'g' pressionado para sequência g+letter
     SUB_LABELS: {
       backlog: 'Backlog', priorizado: 'Priorizado', em_definicao: 'Em definição', escopo_definido: 'Escopo definido',
       em_desenvolvimento: 'Em desenvolvimento', em_homologacao: 'Em homologação', em_revisao: 'Em revisão',
@@ -1936,13 +1970,8 @@ function app() {
       this.editing = this.blankTask();
       this.hydrateFiltersFromUrl();
       this.$watch('f', () => this.syncFiltersToUrl(), { deep: true });
-      // Atalho global: Cmd/Ctrl+K abre o command palette
-      window.addEventListener('keydown', (e) => {
-        if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
-          e.preventDefault();
-          this.openPalette();
-        }
-      });
+      // Atalhos globais de teclado.
+      window.addEventListener('keydown', (e) => this.handleGlobalShortcut(e));
       if (SUPABASE_URL.includes('YOUR-PROJECT')) {
         this.loading = false;
         this.toast('error', 'Supabase não configurado. Edite SUPABASE_URL e SUPABASE_ANON_KEY no index.html.', 30000);
@@ -2790,6 +2819,53 @@ function app() {
         });
       }
     },
+    // ===================== ATALHOS DE TECLADO =====================
+    handleGlobalShortcut(e) {
+      const tag = (e.target && e.target.tagName) || '';
+      const isTyping = ['INPUT','TEXTAREA','SELECT'].includes(tag) || (e.target && e.target.isContentEditable);
+      // Cmd/Ctrl+K — sempre disponível
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        if (this.paletteOpen) this.closePalette(); else this.openPalette();
+        return;
+      }
+      // Esc é tratado pelos componentes (modal, palette etc)
+      if (e.key === 'Escape') {
+        if (this.shortcutsHelpOpen) { this.shortcutsHelpOpen = false; return; }
+        return;
+      }
+      if (isTyping || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Atalhos de uma letra
+      const k = e.key;
+      // Sequência "g + letra" pra navegar abas
+      if (k === 'g') { this._gPrefix = Date.now(); return; }
+      const inGSeq = this._gPrefix && (Date.now() - this._gPrefix) < 1500;
+      if (inGSeq) {
+        this._gPrefix = 0;
+        const map = { b: 'backlog', k: 'kanban', d: 'dash', c: 'cad', a: 'mvp' };
+        if (map[k]) {
+          e.preventDefault();
+          this.tab = map[k];
+          if (k === 'd') this.$nextTick(() => this.renderCharts());
+          if (k === 'a') this.loadMvpDados();
+          return;
+        }
+      }
+      if (k === 'n') { e.preventDefault(); this.openNew(); return; }
+      if (k === '/') {
+        e.preventDefault();
+        if (this.tab === 'backlog') {
+          // foca a busca do backlog
+          const inp = document.querySelector('input[placeholder="Buscar título…"]');
+          if (inp) inp.focus();
+        } else {
+          this.openPalette();
+        }
+        return;
+      }
+      if (k === '?') { e.preventDefault(); this.shortcutsHelpOpen = !this.shortcutsHelpOpen; return; }
+    },
+
     // ===================== COMMAND PALETTE =====================
     openPalette() {
       this.paletteOpen = true;
@@ -2863,6 +2939,7 @@ function app() {
         { id: 'act-clear',  kind: 'ação', label: 'Limpar filtros',        hint: 'reseta busca, cliente, etc.',    action: () => this.clearFilters() },
         { id: 'act-theme',  kind: 'ação', label: 'Alternar tema',         hint: 'claro / escuro',                 action: () => this.toggleTheme() },
         { id: 'act-reload', kind: 'ação', label: 'Recarregar dados',      hint: 'busca tudo do Supabase',         action: () => this.load() },
+        { id: 'act-help',   kind: 'ação', label: 'Atalhos de teclado',    hint: 'ver lista completa',             action: () => this.shortcutsHelpOpen = true },
       ];
       for (const a of actions) {
         const hay = (a.label + ' ' + (a.hint || '')).toLowerCase();
