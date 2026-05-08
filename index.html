@@ -568,6 +568,11 @@
       <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Backlog</h1>
     </div>
     <div class="flex items-center gap-2 text-sm">
+      <button class="btn btn-ghost text-xs" x-show="activeFiltersCount > 0 || f.q || f.tag"
+              @click="clearFilters()"
+              title="Limpar todos os filtros aplicados">
+        ✕ limpar filtros<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
+      </button>
       <button class="btn btn-ghost text-xs" :class="sortKey==='manual' && '!text-brand-dark !bg-brand-tint'"
               @click="sortKey==='manual' ? clearManualSort() : setManualSort()"
               :title="sortKey==='manual' ? 'Sair da ordenação manual' : 'Ordenar manualmente (arrastar para reordenar)'">
@@ -2495,6 +2500,17 @@ function app() {
       if (this.f.pri)     n++;
       if (this.f.status && this.f.status !== 'abertas') n++;
       return n;
+    },
+    clearFilters() {
+      this.f.q = '';
+      this.f.cliente = '';
+      this.f.projeto = '';
+      this.f.pessoa = '';
+      this.f.status = 'abertas';
+      this.f.pri = '';
+      this.f.tag = '';
+      // Re-renderiza charts caso esteja na aba dashboard (filtros de cliente/pessoa afetam).
+      if (this.tab === 'dash') this.$nextTick(() => this.renderCharts());
     },
     get stats() {
       const ativas = this.dashTasks.filter(t => t.status !== 'concluido');
