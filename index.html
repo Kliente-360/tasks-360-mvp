@@ -1110,17 +1110,48 @@
           <label class="lbl !mb-0">Comentários</label>
           <span class="text-[11px] font-mono text-muted" x-text="editingComments.length"></span>
         </div>
-        <div class="space-y-3 max-h-[40vh] overflow-y-auto pr-1 mb-3">
-          <template x-for="c in editingComments" :key="c.id">
-            <div class="pl-3 py-1" :class="c.external_source ? 'border-l-2 border-brand' : 'border-l-2'" :style="!c.external_source && 'border-color: var(--p2)'">
-              <div class="flex items-center justify-between gap-2 text-xs">
-                <span class="font-medium text-ink flex items-center gap-1.5">
-                  <span x-text="c.author || '—'"></span>
-                  <span x-show="c.external_source==='salesforce'" class="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
-                </span>
-                <span class="text-muted font-mono" x-text="fmtPostedEm(c.posted_em || c.criado_em)"></span>
+        <div class="space-y-3 max-h-[50vh] overflow-y-auto pr-1 mb-3">
+          <template x-for="c in topLevelComments" :key="c.id">
+            <div>
+              <div class="pl-3 py-1" :class="c.external_source ? 'border-l-2 border-brand' : 'border-l-2'" :style="!c.external_source && 'border-color: var(--p2)'">
+                <div class="flex items-center justify-between gap-2 text-xs">
+                  <span class="font-medium text-ink flex items-center gap-1.5">
+                    <span x-text="c.author || '—'"></span>
+                    <span x-show="c.external_source==='salesforce'" class="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
+                  </span>
+                  <span class="text-muted font-mono" x-text="fmtPostedEm(c.posted_em || c.criado_em)"></span>
+                </div>
+                <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-text="c.body"></div>
+                <div class="mt-1">
+                  <button x-show="replyingToId !== c.id" class="text-[11px] text-muted hover:text-brand-dark" @click="startReply(c.id)">↳ responder</button>
+                </div>
               </div>
-              <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-text="c.body"></div>
+              <!-- replies (1 nível) -->
+              <template x-for="r in repliesOf(c.id)" :key="r.id">
+                <div class="ml-6 mt-1.5 pl-3 py-1 border-l-2" style="border-color: var(--line-strong)">
+                  <div class="flex items-center justify-between gap-2 text-xs">
+                    <span class="font-medium text-ink flex items-center gap-1.5">
+                      <span x-text="r.author || '—'"></span>
+                      <span x-show="r.external_source==='salesforce'" class="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
+                    </span>
+                    <span class="text-muted font-mono" x-text="fmtPostedEm(r.posted_em || r.criado_em)"></span>
+                  </div>
+                  <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-text="r.body"></div>
+                </div>
+              </template>
+              <!-- input de reply, inline abaixo das replies existentes -->
+              <div x-show="replyingToId === c.id" class="ml-6 mt-2 flex items-end gap-2">
+                <textarea class="inp resize-y min-h-[50px] text-sm flex-1" x-model="newReply"
+                          :data-reply-input="c.id"
+                          placeholder="responder…"
+                          @keydown.meta.enter.prevent="postReply(c.id)"
+                          @keydown.ctrl.enter.prevent="postReply(c.id)"
+                          @keydown.escape="cancelReply()"></textarea>
+                <div class="flex flex-col gap-1 self-stretch">
+                  <button class="btn btn-primary text-xs flex-1" @click="postReply(c.id)" :disabled="!newReply.trim()">responder</button>
+                  <button class="btn btn-ghost text-xs" @click="cancelReply()">cancelar</button>
+                </div>
+              </div>
             </div>
           </template>
           <div x-show="editingComments.length === 0" class="text-xs text-muted italic py-2">
@@ -1282,6 +1313,8 @@ function app() {
     editingComments: [],
     editingHistory: [],
     newComment: '',
+    replyingToId: '',
+    newReply: '',
     newCli: '',
     newPes: '',
     newPesEmail: '',
@@ -1443,11 +1476,63 @@ function app() {
     async loadComments(taskId) {
       if (!taskId) { this.editingComments = []; return; }
       const { data, error } = await sb.from('task_comments')
-        .select('id, author, author_external_id, body, posted_em, criado_em, external_source, external_id')
+        .select('id, parent_id, author, author_external_id, body, posted_em, criado_em, external_source, external_id')
         .eq('task_id', taskId)
-        .order('posted_em', { ascending: false, nullsFirst: false })
-        .order('criado_em', { ascending: false });
+        .order('posted_em', { ascending: true, nullsFirst: true })
+        .order('criado_em', { ascending: true });
       if (!error) this.editingComments = data || [];
+    },
+    repliesOf(parentId) {
+      return this.editingComments.filter(c => c.parent_id === parentId);
+    },
+    get topLevelComments() {
+      // top-level: parent_id null. Mais recente primeiro.
+      return this.editingComments
+        .filter(c => !c.parent_id)
+        .slice()
+        .sort((a, b) => {
+          const ta = new Date(a.posted_em || a.criado_em).getTime();
+          const tb = new Date(b.posted_em || b.criado_em).getTime();
+          return tb - ta;
+        });
+    },
+    startReply(parentId) {
+      this.replyingToId = parentId;
+      this.newReply = '';
+      this.$nextTick(() => {
+        const el = document.querySelector(`[data-reply-input="${parentId}"]`);
+        if (el) el.focus();
+      });
+    },
+    cancelReply() {
+      this.replyingToId = '';
+      this.newReply = '';
+    },
+    async postReply(parentId) {
+      const body = (this.newReply || '').trim();
+      if (!body || !this.editing.id || !parentId) return;
+      const author = (this.currentPessoa && this.currentPessoa.nome) || 'app';
+      const tempId = 'tmp-' + Math.random().toString(36).slice(2, 8);
+      const optimistic = {
+        id: tempId, parent_id: parentId, author, body,
+        external_source: null, posted_em: null,
+        criado_em: new Date().toISOString(),
+      };
+      this.editingComments = [...this.editingComments, optimistic];
+      this.newReply = '';
+      this.replyingToId = '';
+      const { data, error } = await sb.from('task_comments')
+        .insert({ task_id: this.editing.id, parent_id: parentId, author, body })
+        .select('id, parent_id, author, body, external_source, posted_em, criado_em')
+        .single();
+      if (error) {
+        this.editingComments = this.editingComments.filter(c => c.id !== tempId);
+        this.newReply = body;
+        this.replyingToId = parentId;
+        this.toast('error', 'Erro ao responder: ' + error.message);
+        return;
+      }
+      this.editingComments = this.editingComments.map(c => c.id === tempId ? data : c);
     },
     fmtPostedEm(iso) {
       if (!iso) return '—';
@@ -2161,6 +2246,8 @@ function app() {
       this.editingComments = [];
       this.editingHistory = [];
       this.newComment = '';
+      this.replyingToId = '';
+      this.newReply = '';
       this.modal = true;
       this.$nextTick(() => this.$refs.tituloInput && this.$refs.tituloInput.focus());
     },
@@ -2169,6 +2256,8 @@ function app() {
       this.editingComments = [];
       this.editingHistory = [];
       this.newComment = '';
+      this.replyingToId = '';
+      this.newReply = '';
       this.modal = true;
       this.loadComments(t.id);
       this.loadHistory(t.id);
