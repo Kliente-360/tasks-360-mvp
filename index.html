@@ -1086,17 +1086,13 @@
   </div>
 
   <div class="card p-3 md:p-5">
-    <div class="flex items-center justify-between gap-2 mb-3 flex-wrap">
-      <div class="flex items-center gap-1">
+    <div class="flex items-center justify-between gap-2 mb-3">
+      <div class="flex items-center gap-1 shrink-0">
         <button class="btn btn-ghost btn-icon text-xs" @click="calPrev()" title="Mês anterior">‹</button>
         <button class="btn btn-ghost text-xs" @click="calToday()">hoje</button>
         <button class="btn btn-ghost btn-icon text-xs" @click="calNext()" title="Próximo mês">›</button>
       </div>
-      <div class="font-brand text-lg md:text-xl font-semibold capitalize" x-text="calMonthLabel"></div>
-      <div class="text-xs text-muted font-mono">
-        <span x-text="calStats.total + ' tarefas'"></span>
-        <span x-show="calStats.late > 0" class="text-[color:var(--p0)] ml-2" x-text="'· ' + calStats.late + ' atrasada(s)'"></span>
-      </div>
+      <div class="font-brand text-base md:text-xl font-semibold capitalize text-right truncate" x-text="calMonthLabel"></div>
     </div>
 
     <div class="cal-grid mb-1">
@@ -1131,10 +1127,11 @@
       </template>
     </div>
     <div class="text-[10px] text-muted font-mono mt-3 flex items-center gap-3 flex-wrap">
+      <span><strong class="text-ink-soft" x-text="calStats.total"></strong> no mês</span>
       <span><span class="cal-dot"></span> no prazo</span>
-      <span><span class="cal-dot late"></span> atrasada</span>
+      <span><span class="cal-dot late"></span> atrasada<span x-show="calStats.late > 0" x-text="' (' + calStats.late + ')'"></span></span>
       <span><span class="cal-dot done"></span> concluída</span>
-      <span class="text-muted">· clique numa tarefa pra editar</span>
+      <span class="text-muted hidden md:inline">· clique numa tarefa pra editar</span>
     </div>
   </div>
 </section>
