@@ -613,6 +613,7 @@
     </div>
   </div>
   <div class="max-w-[1400px] mx-auto px-4 md:px-8 tabs-row">
+    <div class="tab" :class="tab==='foco' && 'active'" @click="tab='foco'">Meu foco</div>
     <div class="tab" :class="tab==='backlog' && 'active'" @click="tab='backlog'">Backlog</div>
     <div class="tab" :class="tab==='kanban' && 'active'" @click="tab='kanban'">Kanban</div>
     <div class="tab" :class="tab==='cal' && 'active'" @click="tab='cal'">Calendário</div>
@@ -623,6 +624,88 @@
 </header>
 
 <main class="max-w-[1400px] mx-auto px-4 md:px-8 py-5 md:py-8">
+
+<!-- ============ MEU FOCO ============ -->
+<section x-show="tab==='foco'" class="fade-up">
+  <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
+    <div>
+      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Meu foco</h1>
+      <p class="text-ink-soft text-sm mt-1">o que pedir atenção hoje, em ordem de urgência.</p>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <label class="text-xs text-muted font-mono uppercase tracking-wider">atuando como</label>
+      <select class="inp w-[200px]" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
+        <option value="">— selecionar pessoa —</option>
+        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+      </select>
+    </div>
+  </div>
+
+  <!-- Setup banner -->
+  <div x-show="!focusPessoaId" class="card p-6 md:p-10 text-center">
+    <div class="font-brand text-lg md:text-xl font-semibold mb-2">Quem é você hoje?</div>
+    <div class="text-ink-soft text-sm mb-4">Selecione a pessoa acima pra ver as tarefas que pedem sua atenção.<br>Quando o login estiver ativo, isso vai ser automático.</div>
+  </div>
+
+  <!-- Painel de foco -->
+  <div x-show="focusPessoaId" class="space-y-4 md:space-y-5">
+    <!-- KPIs -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="card p-3 md:p-4">
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Atrasadas</div>
+        <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" :class="focusGroups.atrasadas.length > 0 && 'text-[color:var(--p0)]'" x-text="focusGroups.atrasadas.length"></div>
+      </div>
+      <div class="card p-3 md:p-4">
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Para hoje</div>
+        <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" x-text="focusGroups.hoje.length"></div>
+      </div>
+      <div class="card p-3 md:p-4">
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Bloqueadas</div>
+        <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" :class="focusGroups.bloqueadas.length > 0 && 'text-[color:var(--p0)]'" x-text="focusGroups.bloqueadas.length"></div>
+      </div>
+      <div class="card p-3 md:p-4">
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">P0/P1 ativas</div>
+        <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" x-text="focusGroups.urgentes.length"></div>
+      </div>
+    </div>
+
+    <!-- Lista priorizada (combinada) -->
+    <template x-for="group in [
+      { key: 'atrasadas',  title: 'Atrasadas',                  empty: 'Nada atrasado. Bom dia.' },
+      { key: 'hoje',       title: 'Para hoje',                  empty: 'Nada com prazo hoje.' },
+      { key: 'bloqueadas', title: 'Bloqueadas',                 empty: 'Sem represas.' },
+      { key: 'urgentes',   title: 'P0/P1 ativas (sem repetir)', empty: 'Sem urgentes pendentes.' },
+    ]" :key="group.key">
+      <div class="card overflow-hidden">
+        <div class="px-4 md:px-5 py-3 border-b border-line flex items-center justify-between">
+          <div class="font-brand font-semibold text-sm" x-text="group.title"></div>
+          <span class="font-mono text-xs text-muted" x-text="focusGroups[group.key].length + ' item(s)'"></span>
+        </div>
+        <template x-for="t in focusGroups[group.key]" :key="t.id">
+          <div class="px-4 md:px-5 py-3 border-b border-line last:border-0 flex items-center justify-between gap-3 hover:bg-brand-tint cursor-pointer transition-colors" @click="openEdit(t)">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="pri" :class="'pri-'+t.prioridade"><span class="pri-dot"></span><span x-text="t.prioridade"></span></span>
+                <span class="font-medium text-ink truncate" x-text="t.titulo"></span>
+              </div>
+              <div class="text-xs text-muted mt-1" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId) + ' · ' + lblSub(t.subetapa)"></div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-xs font-mono" :class="atrasada(t) ? 'text-[color:var(--p0)]' : 'text-ink-soft'"
+                   x-text="t.prazo ? fmtDate(t.prazo) + (atrasada(t) ? ' · +' + diasAtraso(t) + 'd' : '') : 'sem prazo'"></div>
+              <div class="text-[10px] text-muted mt-0.5" x-text="t.esforco + 'h'"></div>
+            </div>
+          </div>
+        </template>
+        <div x-show="focusGroups[group.key].length === 0" class="px-4 md:px-5 py-6 text-center text-muted text-xs italic" x-text="group.empty"></div>
+      </div>
+    </template>
+
+    <div class="text-[10px] text-muted font-mono mt-2">
+      tarefas concluídas e não atribuídas a você não aparecem. itens podem aparecer em mais de um grupo.
+    </div>
+  </div>
+</section>
 
 <!-- ============ BACKLOG ============ -->
 <section x-show="tab==='backlog'" class="fade-up">
@@ -1461,6 +1544,7 @@
         ['⌘K · Ctrl+K', 'Abrir command palette'],
         ['n',           'Nova tarefa'],
         ['/',           'Foco na busca · ou abre palette'],
+        ['g f',         'Ir pra Meu foco'],
         ['g b',         'Ir pra Backlog'],
         ['g k',         'Ir pra Kanban'],
         ['g l',         'Ir pra Calendário'],
@@ -2018,6 +2102,8 @@ function app() {
     selectedIds: [],
     // Calendário: mês corrente exibido (1º dia, normalizado)
     calCursor: (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d.getTime(); })(),
+    // Meu foco: pessoa que está atuando (workaround enquanto auth está off)
+    focusPessoaId: '',
     paletteOpen: false,
     paletteQuery: '',
     paletteIndex: 0,
@@ -2066,6 +2152,8 @@ function app() {
       this.$watch('f', () => this.syncFiltersToUrl(), { deep: true });
       // Atalhos globais de teclado.
       window.addEventListener('keydown', (e) => this.handleGlobalShortcut(e));
+      // Restaura "atuando como" do storage
+      try { this.focusPessoaId = localStorage.getItem('kliente360-focus-pessoa') || ''; } catch(_) {}
       if (SUPABASE_URL.includes('YOUR-PROJECT')) {
         this.loading = false;
         this.toast('error', 'Supabase não configurado. Edite SUPABASE_URL e SUPABASE_ANON_KEY no index.html.', 30000);
@@ -2936,7 +3024,7 @@ function app() {
       const inGSeq = this._gPrefix && (Date.now() - this._gPrefix) < 1500;
       if (inGSeq) {
         this._gPrefix = 0;
-        const map = { b: 'backlog', k: 'kanban', l: 'cal', d: 'dash', c: 'cad', a: 'mvp' };
+        const map = { f: 'foco', b: 'backlog', k: 'kanban', l: 'cal', d: 'dash', c: 'cad', a: 'mvp' };
         if (map[k]) {
           e.preventDefault();
           this.tab = map[k];
@@ -3023,6 +3111,7 @@ function app() {
       // Ações
       const actions = [
         { id: 'act-new',    kind: 'ação', label: 'Nova tarefa',           hint: 'abrir formulário de criação',   action: () => this.openNew() },
+        { id: 'act-foco',   kind: 'ir pra', label: 'Meu foco',            hint: 'urgências do dia',               action: () => this.tab = 'foco' },
         { id: 'act-back',   kind: 'ir pra', label: 'Backlog',             hint: 'tabela de tarefas',              action: () => this.tab = 'backlog' },
         { id: 'act-kan',    kind: 'ir pra', label: 'Kanban',              hint: 'colunas operacional/executiva',  action: () => this.tab = 'kanban' },
         { id: 'act-cal',    kind: 'ir pra', label: 'Calendário',          hint: 'tarefas por prazo',              action: () => this.tab = 'cal' },
@@ -3047,6 +3136,28 @@ function app() {
       const fn = item.action;
       this.closePalette();
       this.$nextTick(() => fn());
+    },
+
+    // ===================== MEU FOCO =====================
+    setFocusPessoa(pid) {
+      this.focusPessoaId = pid || '';
+      try { localStorage.setItem('kliente360-focus-pessoa', this.focusPessoaId); } catch(_) {}
+    },
+    get focusGroups() {
+      const empty = { atrasadas: [], hoje: [], bloqueadas: [], urgentes: [] };
+      if (!this.focusPessoaId) return empty;
+      const mine = this.tasks.filter(t => t.pessoaId === this.focusPessoaId && t.status !== 'concluido');
+      const todayIso = new Date().toISOString().slice(0,10);
+      const prioRank = { P0: 0, P1: 1, P2: 2, P3: 3 };
+      const sortPri = (a,b) => (prioRank[a.prioridade]??9) - (prioRank[b.prioridade]??9);
+      const atrasadas = mine.filter(t => this.atrasada(t)).sort((a,b) => this.diasAtraso(b) - this.diasAtraso(a) || sortPri(a,b));
+      const hoje = mine.filter(t => t.prazo === todayIso && !this.atrasada(t)).sort(sortPri);
+      const bloqueadas = mine.filter(t => t.status === 'bloqueado').sort((a,b) => (b.statusEm||0) - (a.statusEm||0));
+      const seen = new Set([...atrasadas, ...hoje, ...bloqueadas].map(t => t.id));
+      const urgentes = mine
+        .filter(t => (t.prioridade === 'P0' || t.prioridade === 'P1') && !seen.has(t.id))
+        .sort((a,b) => sortPri(a,b) || (a.prazo || '9999-12-31').localeCompare(b.prazo || '9999-12-31'));
+      return { atrasadas, hoje, bloqueadas, urgentes };
     },
 
     // ===================== CALENDÁRIO =====================
