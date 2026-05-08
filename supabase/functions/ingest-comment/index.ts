@@ -4,13 +4,18 @@
 //
 // Body JSON:
 //   {
-//     "external_id":         "0D5...FeedItem.Id...",   // pra dedupe
-//     "task_external_id":    "a0X...RecordId...",       // do custom object
-//     "author":              "Maria Silva",             // CreatedBy.Name
-//     "author_external_id":  "005...UserId...",         // CreatedById (opcional)
-//     "body":                "texto do post",
-//     "posted_em":           "2026-05-07T14:30:00Z"     // CreatedDate (opcional)
+//     "external_id":          "0D5...FeedItem.Id...",   // pra dedupe
+//     "task_external_id":     "a0X...RecordId...",       // do custom object
+//     "parent_external_id":   "0D7...FeedItem.Id...",    // OPCIONAL — pra reply
+//     "author":               "Maria Silva",             // CreatedBy.Name
+//     "author_external_id":   "005...UserId...",         // CreatedById (opcional)
+//     "body":                 "texto do post",
+//     "posted_em":            "2026-05-07T14:30:00Z"     // CreatedDate (opcional)
 //   }
+//
+// Reply rules: máximo 1 nível de aninhamento (treplica é proibida pelo DB).
+// Se parent_external_id apontar pra um comment que já é reply, o insert falha
+// com 'replies cannot have replies (max 1 level of nesting)'.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -76,6 +81,26 @@ Deno.serve(async (req) => {
   const authorExternalId = body.author_external_id != null
     ? String(body.author_external_id).trim() || null : null;
 
+  // Resolve parent (reply): converte parent_external_id → parent_id local
+  let parentId: string | null = null;
+  if (body.parent_external_id) {
+    const parentExt = String(body.parent_external_id).trim();
+    if (parentExt && parentExt !== externalId) {
+      const { data: parent, error: pErr } = await sb
+        .from('task_comments')
+        .select('id, parent_id')
+        .eq('external_source', SOURCE)
+        .eq('external_id', parentExt)
+        .maybeSingle();
+      if (pErr) return err(500, 'db_error', pErr.message);
+      if (!parent) return err(422, 'parent_not_found',
+        `parent comment com external_id '${parentExt}' não existe — sincronize antes`);
+      if (parent.parent_id) return err(422, 'parent_is_reply',
+        'parent_external_id aponta pra um reply — apenas 1 nível de aninhamento permitido');
+      parentId = parent.id as string;
+    }
+  }
+
   // Existe?
   const { data: existing, error: eErr } = await sb
     .from('task_comments')
@@ -90,6 +115,7 @@ Deno.serve(async (req) => {
     body: text,
     author, author_external_id: authorExternalId,
     posted_em: postedEm,
+    parent_id: parentId,
   };
 
   if (existing) {
