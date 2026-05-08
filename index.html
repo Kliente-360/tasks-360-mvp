@@ -693,7 +693,7 @@
                   <span class="tag-chip tag-chip-link" @click.stop="f.tag = tag" x-text="'#' + tag"></span>
                 </template>
               </div>
-              <div class="text-xs text-muted mt-0.5" x-text="t.descricao ? t.descricao.slice(0,80) + (t.descricao.length>80?'…':'') : ''"></div>
+              <div class="text-xs text-muted mt-0.5 hidden md:block" x-text="t.descricao ? t.descricao.slice(0,80) + (t.descricao.length>80?'…':'') : ''"></div>
             </td>
             <td class="text-ink-soft" x-text="nomeCliente(t.clienteId)"></td>
             <td class="text-ink-soft" x-text="nomeProjeto(t.projetoId)"></td>
