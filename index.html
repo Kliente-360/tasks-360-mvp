@@ -223,6 +223,20 @@
     line-height: 1; margin-left: 4px;
   }
 
+  /* tag chips */
+  .tag-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 10px; font-family: var(--font-mono); font-weight: 500;
+    padding: 1px 7px; border-radius: 999px;
+    background: var(--brand-tint); color: var(--brand-dark);
+    border: 1px solid transparent; line-height: 1.5; white-space: nowrap;
+  }
+  .tag-chip:hover { border-color: var(--brand-soft); }
+  .tag-chip button { font-size: 11px; line-height: 1; opacity: 0.55; padding: 0 1px; color: inherit; }
+  .tag-chip button:hover { opacity: 1; }
+  .tag-chip-link { cursor: pointer; }
+  .tag-chip-link:hover { background: var(--brand-soft); }
+
   /* drag manual no backlog */
   .manual-row { cursor: grab; }
   .manual-row:active { cursor: grabbing; }
@@ -514,6 +528,12 @@
         <option value="P3">P3</option>
       </select>
     </div>
+    <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'" x-show="allTags.length>0">
+      <select class="inp" x-model="f.tag">
+        <option value="">Todas as tags</option>
+        <template x-for="t in allTags" :key="t"><option :value="t" x-text="'#' + t"></option></template>
+      </select>
+    </div>
   </div>
 
   <div class="card tbl-wrap">
@@ -542,6 +562,11 @@
               @dragend="backlogDragId=''">
             <td>
               <div class="font-medium text-ink" x-text="t.titulo"></div>
+              <div x-show="(t.tags || []).length>0" class="flex flex-wrap gap-1 mt-1">
+                <template x-for="tag in (t.tags || [])" :key="tag">
+                  <span class="tag-chip tag-chip-link" @click.stop="f.tag = tag" x-text="'#' + tag"></span>
+                </template>
+              </div>
               <div class="text-xs text-muted mt-0.5" x-text="t.descricao ? t.descricao.slice(0,80) + (t.descricao.length>80?'…':'') : ''"></div>
             </td>
             <td class="text-ink-soft" x-text="nomeCliente(t.clienteId)"></td>
@@ -633,7 +658,12 @@
                 <span x-text="t.prioridade"></span>
               </span>
             </div>
-            <div class="text-xs text-muted mb-3" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></div>
+            <div class="text-xs text-muted mb-2" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></div>
+            <div x-show="(t.tags || []).length>0" class="flex flex-wrap gap-1 mb-2">
+              <template x-for="tag in (t.tags || [])" :key="tag">
+                <span class="tag-chip" x-text="'#' + tag"></span>
+              </template>
+            </div>
             <div class="flex items-center justify-between text-xs">
               <span class="text-ink-soft" x-text="nomePessoa(t.pessoaId)"></span>
               <span :class="atrasada(t) && 'late'" class="font-mono" x-text="t.prazo ? fmtDateShort(t.prazo) : '—'"></span>
@@ -1002,6 +1032,29 @@
         <label class="lbl">Descrição (opcional)</label>
         <textarea class="inp" rows="3" x-model="editing.descricao" placeholder="Contexto, links, critérios de aceite…"></textarea>
       </div>
+      <div>
+        <label class="lbl">Tags</label>
+        <div class="flex flex-wrap items-center gap-1.5 p-2 inp" style="min-height: 38px; cursor: text;" @click="$refs.tagInput.focus()">
+          <template x-for="tag in (editing.tags || [])" :key="tag">
+            <span class="tag-chip">
+              <span x-text="'#' + tag"></span>
+              <button type="button" @click.stop="removeTag(tag)" aria-label="remover">✕</button>
+            </span>
+          </template>
+          <input x-ref="tagInput" type="text" x-model="newTag"
+                 class="bg-transparent border-0 outline-none text-sm flex-1 min-w-[100px] p-0"
+                 placeholder="adicionar tag (enter ou vírgula)…"
+                 @keydown.enter.prevent="addTag()"
+                 @keydown.,.prevent="addTag()"
+                 @keydown.tab.prevent="addTag()"
+                 @blur="addTag()"
+                 list="taglist">
+          <datalist id="taglist">
+            <template x-for="t in allTags" :key="t"><option :value="t"></option></template>
+          </datalist>
+        </div>
+        <div class="text-[10px] text-muted mt-1">letras, números e hífen. lowercase automático. máx 24 chars.</div>
+      </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="lbl">Cliente</label>
@@ -1175,6 +1228,7 @@ function taskFromDb(r) {
     criadoEm: r.criado_em ? new Date(r.criado_em).getTime() : 0,
     statusEm: r.status_em ? new Date(r.status_em).getTime() : 0,
     ordem: r.ordem == null ? null : Number(r.ordem),
+    tags: Array.isArray(r.tags) ? r.tags : [],
   };
 }
 function taskToDb(t) {
@@ -1188,6 +1242,7 @@ function taskToDb(t) {
     esforco: Number(t.esforco) || 0,
     prazo: t.prazo || null,
     status: t.status,
+    tags: Array.isArray(t.tags) ? t.tags : [],
   };
 }
 function projetoFromDb(r) { return { id: r.id, nome: r.nome, clienteId: r.cliente_id }; }
@@ -1200,7 +1255,8 @@ function app() {
     projetos: [],
     pessoas: [],
     tasks: [],
-    f: { q: '', cliente: '', projeto: '', pessoa: '', status: 'abertas', pri: '' },
+    f: { q: '', cliente: '', projeto: '', pessoa: '', status: 'abertas', pri: '', tag: '' },
+    newTag: '',
     sortKey: 'prazo',
     sortDir: 'asc',
     backlogDragId: '',
@@ -1345,6 +1401,7 @@ function app() {
       if (p.has('pessoa'))  this.f.pessoa  = p.get('pessoa') || '';
       if (p.has('status'))  this.f.status  = p.get('status') || '';
       if (p.has('pri'))     this.f.pri     = p.get('pri') || '';
+      if (p.has('tag'))     this.f.tag     = p.get('tag') || '';
     },
     syncFiltersToUrl() {
       const f = this.f;
@@ -1355,6 +1412,7 @@ function app() {
       if (f.pessoa)  params.set('pessoa', f.pessoa);
       if (f.status !== 'abertas') params.set('status', f.status);
       if (f.pri)     params.set('pri', f.pri);
+      if (f.tag)     params.set('tag', f.tag);
       const qs = params.toString();
       const url = window.location.pathname + (qs ? '?' + qs : '');
       history.replaceState(null, '', url);
@@ -1490,7 +1548,7 @@ function app() {
     exportCSV() {
       this.exportOpen = false;
       const rows = this.filtered; // exporta o que tá filtrado na visão atual
-      const head = ['Título','Cliente','Projeto','Responsável','Prioridade','Status','Esforço (h)','Prazo','Descrição','Criado em'];
+      const head = ['Título','Cliente','Projeto','Responsável','Prioridade','Status','Esforço (h)','Prazo','Tags','Descrição','Criado em'];
       const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""').replace(/\r?\n/g, ' ') + '"';
       const lines = [head.map(esc).join(',')];
       for (const t of rows) {
@@ -1503,6 +1561,7 @@ function app() {
           this.lblStatus(t.status),
           t.esforco,
           t.prazo || '',
+          (t.tags || []).join(', '),
           t.descricao || '',
           t.criadoEm ? new Date(t.criadoEm).toISOString().slice(0,10) : '',
         ].map(esc).join(','));
@@ -1520,7 +1579,25 @@ function app() {
 
     // ===================== HELPERS =====================
     blankTask() {
-      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog' };
+      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', tags: [] };
+    },
+    normalizeTag(s) {
+      return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24);
+    },
+    addTag() {
+      const t = this.normalizeTag(this.newTag);
+      if (!t) { this.newTag = ''; return; }
+      this.editing.tags = this.editing.tags || [];
+      if (!this.editing.tags.includes(t)) this.editing.tags.push(t);
+      this.newTag = '';
+    },
+    removeTag(t) {
+      this.editing.tags = (this.editing.tags || []).filter(x => x !== t);
+    },
+    get allTags() {
+      const s = new Set();
+      for (const t of this.tasks) for (const tag of (t.tags || [])) s.add(tag);
+      return Array.from(s).sort();
     },
     nomeCliente(id) { return (this.clientes.find(c => c.id === id) || {}).nome || '—'; },
     nomeProjeto(id) { return (this.projetos.find(p => p.id === id) || {}).nome || '—'; },
@@ -1601,6 +1678,7 @@ function app() {
         if (f.status === 'abertas') { if (t.status === 'concluido') return false; }
         else if (f.status && t.status !== f.status) return false;
         if (f.pri     && t.prioridade !== f.pri)    return false;
+        if (f.tag     && !(t.tags || []).includes(f.tag)) return false;
         return true;
       });
       if (this.sortKey === 'manual') {

@@ -130,6 +130,13 @@ Deno.serve(async (req) => {
     if (Number.isNaN(e) || e < 0) return err(422, 'invalid_esforco', 'esforco deve ser número não-negativo');
     esforco = e;
   }
+  let tags: string[] | null = null;
+  if (body.tags != null) {
+    if (!Array.isArray(body.tags)) return err(422, 'invalid_tags', 'tags deve ser array de strings');
+    tags = body.tags
+      .map((x: unknown) => String(x || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24))
+      .filter((x: string) => x.length > 0);
+  }
 
   // Existe? Procura por (source, external_id)
   const { data: existing, error: lookupErr } = await sb
@@ -149,6 +156,7 @@ Deno.serve(async (req) => {
   if (prioridade)      payload.prioridade = prioridade;
   if (esforco != null) payload.esforco    = esforco;
   if (prazo)           payload.prazo      = prazo;
+  if (tags)            payload.tags       = tags;
   if (status) {
     payload.status = status;
     if (!existing || existing.status !== status) payload.status_em = new Date().toISOString();
