@@ -923,7 +923,7 @@
 <!-- ============ KANBAN ============ -->
 <section x-show="tab==='kanban'" class="fade-up">
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 mb-5 md:mb-6">
-    <div class="view-toggle self-start md:self-auto" role="tablist" aria-label="Visão do kanban">
+    <div class="view-toggle self-start md:self-auto hidden md:inline-flex" role="tablist" aria-label="Visão do kanban">
       <button :class="kanbanView==='op' && 'active'" @click="kanbanView='op'" title="Visão operacional — colunas detalhadas (nível 2)">Operacional</button>
       <button :class="kanbanView==='exec' && 'active'" @click="kanbanView='exec'" title="Visão executiva — colunas macro (nível 1, somente leitura)">Executiva</button>
     </div>
@@ -940,7 +940,7 @@
   </div>
 
   <!-- ============ VISÃO OPERACIONAL (nível 2) ============ -->
-  <div x-show="kanbanView==='op'" class="kanban-scroll-op">
+  <div x-show="effectiveKanbanView==='op'" class="kanban-scroll-op">
     <template x-for="sub in SUBS_FLAT" :key="sub">
       <div class="kcol kcol-op"
            :data-m="SUB_TO_MACRO[sub]"
@@ -1031,7 +1031,7 @@
   </div>
 
   <!-- ============ VISÃO EXECUTIVA (nível 1, read-only) ============ -->
-  <div x-show="kanbanView==='exec'" class="kanban-scroll">
+  <div x-show="effectiveKanbanView==='exec'" class="kanban-scroll">
     <template x-for="col in ['backlog','andamento','bloqueado','concluido']" :key="col">
       <div class="kcol kcol-readonly">
         <div class="flex items-center justify-between mb-3 px-1">
@@ -2144,6 +2144,7 @@ function app() {
     dragOverCol: '',
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media' },
     kanbanView: 'op', // 'op' (operacional, nível 2) | 'exec' (executiva, nível 1)
+    isMobileViewport: typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
     quickAddSub: '',
     quickAddTitle: '',
     selectedIds: [],
@@ -2217,6 +2218,11 @@ function app() {
       window.addEventListener('keydown', (e) => this.handleGlobalShortcut(e));
       // Restaura "atuando como" do storage
       try { this.focusPessoaId = localStorage.getItem('kliente360-focus-pessoa') || ''; } catch(_) {}
+      // Tracking de viewport pra forçar kanban executivo no mobile
+      const mq = window.matchMedia('(max-width: 767px)');
+      const updateMq = () => { this.isMobileViewport = mq.matches; };
+      if (mq.addEventListener) mq.addEventListener('change', updateMq);
+      else if (mq.addListener) mq.addListener(updateMq);
       if (SUPABASE_URL.includes('YOUR-PROJECT')) {
         this.loading = false;
         this.toast('error', 'Supabase não configurado. Edite SUPABASE_URL e SUPABASE_ANON_KEY no index.html.', 30000);
@@ -3000,6 +3006,9 @@ function app() {
     },
 
     // ===================== KANBAN =====================
+    // Mobile sempre força visão executiva (operacional com 11 colunas é
+    // ruim em telas estreitas).
+    get effectiveKanbanView() { return this.isMobileViewport ? 'exec' : this.kanbanView; },
     kanbanCol(status) {
       const arr = this.tasks.filter(t =>
         t.status === status
