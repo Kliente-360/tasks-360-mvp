@@ -269,7 +269,7 @@ Quem não estiver na lista de convidados não consegue entrar.
 ## Tema, mobile, PWA
 
 - **Tema**: ☾/☀ no topo. Respeita preferência do sistema na primeira visita.
-- **Mobile**: layout adapta — kanban vira carrossel horizontal, filtros viram drawer, descrição some da tabela do Backlog pra altura uniforme, dropdown de exportar fica colado à borda direita.
+- **Mobile**: layout adapta — barra de abas vira **dropdown** (botão com aba atual + ▾ abre lista completa), kanban vira carrossel horizontal, filtros viram drawer, descrição some da tabela do Backlog pra altura uniforme, dropdown de exportar fica colado à borda direita.
 - **PWA**: no iPhone, "Adicionar à tela de início" instala como app com ícone próprio.
 - **Realtime**: qualquer mudança feita por outra pessoa aparece pra você em segundos sem refresh.
 
