@@ -42,7 +42,11 @@ Não é um Jira, não é um Trello, não é um Asana. É **opinativo**, executiv
 
 ### Estado atual
 
-Protótipo single-file (`index.html`) com Alpine + Tailwind + Chart.js, hospedado no Netlify. Serve para validar fluxos, descobrir requisitos faltantes e materializar a UX antes da construção do app real.
+Protótipo single-file (`index.html`) com Alpine + Tailwind + Chart.js, hospedado no Netlify (`https://tasks-360-mvp.netlify.app`). Serve para validar fluxos, descobrir requisitos faltantes e materializar a UX antes da construção do app real.
+
+**Maio/2026 — protótipo MVP completo.** Todas as ondas de polimento (H1/H2/H3) e fechamentos de ciclo entregues. Detalhe em [§9.0](#90-onda-protótipo-pós-h1h2h3--ganhos-de-fechamento-maio2026).
+
+**Próximo passo recomendado**: 2-3 semanas de uso real do time + 1 cliente piloto antes de iniciar a Onda 0 (rebuild). Não codar mais aqui antes disso.
 
 ---
 
@@ -338,6 +342,82 @@ Expandir conforme decisões surgirem.
 - **2 devs full-time**: versão completa em ~8–9 semanas.
 
 Timelines abaixo assumem 1 dev. Multiplicar por ~0.6 para 2 devs.
+
+---
+
+### 9.0 Onda protótipo pós-H1/H2/H3 — ganhos de fechamento (maio/2026)
+
+> Onda informal feita **dentro do protótipo single-file**, antes da Onda 0. Objetivo: extrair valor máximo do `index.html` antes do investimento da Onda 0, e maturar requisitos com base em uso real.
+
+#### Onda H1 — UX rasa (✅ concluída)
+
+| # | Item | Commit |
+|---|---|---|
+| H1.1 | Toasts no lugar de `alert()` | `fa4256d` |
+| H1.2 | Mini-modal de renomear no lugar de `prompt()` | `a4eff22` |
+| H1.3 | Optimistic UI em todo o CRUD (tasks, clientes, projetos, pessoas) | `36fc0a7` |
+| H1.4 | Empty states com CTA acionável | `93ec72f` |
+
+#### Onda H2 — Funcionalidades de uso (✅ concluída)
+
+| # | Item | Commit |
+|---|---|---|
+| H2.1 | Filtros persistem em querystring | `a986b83` |
+| H2.2 | Search já cobria descrição (no-op) | — |
+| H2.3 | Mini-modal de confirmação no lugar de `confirm()` | `7f45015` |
+| H2.4 | Export CSV (visão atual filtrada) + dropdown CSV/JSON | `bb77e9b` |
+
+#### Onda H3 — Login + histórico (✅ concluída, login toggleable)
+
+| # | Item | Commit |
+|---|---|---|
+| H3.1 | Schema: `pessoas.email`, `pessoas.user_id`, `task_status_history` | `606e106` |
+| H3.2 | Tela de login magic link + menu de usuário | `5ef9dfd` |
+| H3.3 | Cadastro de email + botão "convidar" em pessoas | `a9a8bfd` |
+| H3.4 | Logging de mudanças de status (app + Edge Function) + timeline | `68d6a7d` |
+| — | `AUTH_ENABLED` toggle (atualmente `false`, religar quando estabilizar) | `465eaee` |
+
+#### Vale agora — fechamento de ciclos abertos (✅ concluída)
+
+| # | Item | Commit |
+|---|---|---|
+| 1 | Aging indicators no backlog e kanban | `f45bad7` |
+| 2 | Comentários do app (não só Salesforce) | `a2c3a33` |
+| 3 | Métricas de velocidade (throughput, lead, cycle) no Dashboard | `e1ca509` |
+
+#### Se aparecer dor real — itens promovidos antecipadamente (✅ concluída)
+
+| # | Item | Commit |
+|---|---|---|
+| 4 | Reordenação manual no backlog (DnD com `tasks.ordem` float) | `31804d1` |
+| 5 | Tags / etiquetas (`tasks.tags text[]`) | `92e5526` |
+
+#### Outros ganhos avulsos
+
+| Item | Commit |
+|---|---|
+| Endpoint `delete-task` para sync com Salesforce | `4832d43` |
+| PWA: apple-touch-icon, favicon, manifest | `d0d0e32`, `acdb3d9` |
+
+#### O que ficou explicitamente fora desta onda (vai pra Onda 0+)
+
+- **Anexos**: precisa Supabase Storage + UI heavy.
+- **Notificações** (email/push): Edge Function + cron + templates.
+- **Recorrência de tasks**: lógica não-trivial.
+- **Search global indexado** (FTS / Algolia).
+- **Permissões granulares** (RLS apertada por papel).
+- **Multi-responsável**: mexe schema fundamental.
+- **Histórico de campos não-status** (título, prazo, atribuição).
+
+#### Critérios de saída do protótipo (pra autorizar Onda 0)
+
+Não inventar features novas até bater todos:
+
+1. ≥2 pessoas do time usando todo dia por 2+ semanas.
+2. ≥3 dores documentadas que NÃO dá pra resolver no protótipo.
+3. ≥1 cliente externo formalmente pedindo acesso ao próprio backlog.
+
+Se 2-3 semanas de uso passarem sem bater os 3 critérios, abrir conversa séria sobre se vale construir Onda 0 ou se a Kliente fica neste protótipo (que é mais robusto do que parece).
 
 ---
 
