@@ -37,18 +37,24 @@ Esta ferramenta materializa esse método. Quem não opera assim não vai gostar 
 
 ### Operação no dia-a-dia
 
-- **4 visões integradas**: Backlog (tabela filtrável), Kanban (drag-and-drop entre status), Calendário (entregas por dia), Dashboard.
-- **Filtros que viram link**: cliente, projeto, pessoa, status, prioridade e tag persistem na URL. Visões compartilháveis instantaneamente.
-- **Reordenação manual**: arraste para definir prioridade fina; persistência via float-precision (zero numerações periódicas).
+- **7 visões integradas**: Meu foco (urgências do dia), Backlog (tabela filtrável), Kanban (operacional 11 colunas / executiva 4 macros), Calendário (entregas por mês), Dashboard, Cadastros, Adoption.
+- **Etapas em dois níveis**: 4 macros fixas (Backlog, Em andamento, Bloqueado, Concluído) + 11 sub-etapas (Priorizado, Em definição, Em desenvolvimento, Em homologação, Pronto p/ produção etc.). Macro derivada da sub via trigger; toggle Operacional/Executiva no kanban.
+- **Quick add inline**: cada coluna do kanban operacional tem `+ adicionar` para captura rápida — só título + Enter.
+- **Bulk actions**: seleção múltipla na tabela do Backlog com barra flutuante (mover etapa, atribuir, mudar prioridade, excluir).
+- **Command palette (⌘K)**: busca global em tarefas, clientes, projetos, pessoas e ações. Navegação 100% teclado.
+- **Atalhos de teclado**: `n` nova tarefa, `/` busca, `g f/b/k/l/d/c/a` navega abas, `?` ajuda.
+- **Filtros que viram link**: cliente, projeto, pessoa, status, prioridade, tag persistem na URL. Botão "✕ limpar filtros" com contador.
+- **Reordenação manual** no backlog: arraste para definir prioridade fina; persistência via float-precision (zero numerações periódicas).
 - **Tags livres**: campo `tags[]` por task; chip-input com auto-complete, filtro por tag, clique no chip filtra.
 - **Comentários bidirecionais**: time conversa direto na task; comentários do Salesforce Chatter aparecem badged como "SF".
 - **Histórico completo de status**: timeline com quem moveu, de onde para onde, quando.
+- **Modelo da task**: título, descrição, cliente, projeto, responsável, prioridade P0–P3, esforço (h), **complexidade** (alta/média/baixa), prazo, sub-etapa, tags.
 
 ### Sinalização proativa
 
-- **Aging indicators**: badges automáticos quando uma task está parada além do limite saudável do status (laranja em warn, vermelho em stale). Thresholds por status: bloqueado >3d, andamento >7d, backlog >30d.
+- **Aging indicators**: badges automáticos quando uma task está parada além do limite saudável do status (laranja em warn, vermelho em stale). Thresholds por status macro: bloqueado >3d, andamento >7d, backlog >30d. Aging granular por sub-etapa também é registrado (`subetapa_em`).
 - **Atraso por prazo**: prazo vencido em vermelho em todas as visões.
-- **Calendário com heatmap**: 1-2 tasks no dia em verde claro, 3-4 em amarelo, 5+ ou atrasadas em vermelho.
+- **Sinais de risco** automáticos no relatório executivo: atrasadas concentradas, bloqueadas há +5d, aging crítico, tasks sem responsável, fila sem prazo.
 
 ### Analytics executivo
 
@@ -69,8 +75,8 @@ Esta ferramenta materializa esse método. Quem não opera assim não vai gostar 
 
 - **Login com magic link** (toggleable): lista fechada de pessoas, sem senha. Vincula automaticamente pessoa cadastrada à conta auth no primeiro login.
 - **PWA com ícone próprio**: "Adicionar à tela de início" no iPhone instala como app.
+- **Export PDF — relatório executivo**: snapshot CEO-first em 2 páginas A4 (capa com KPIs + sinais de risco + 3 charts; tabela de backlog priorizado). Ignora filtros — sempre relatório completo.
 - **Export CSV** filtrado: gestão pega a planilha do que tá visível.
-- **Export JSON** completo: snapshot de backup.
 - **Tema claro / escuro**: respeita preferência do sistema.
 - **Realtime**: qualquer mudança propaga em segundos pra todas as sessões abertas.
 
@@ -113,6 +119,7 @@ Para o Supabase, rodar os SQLs em `supabase/` na ordem cronológica do filename.
 
 ## Documentos relacionados
 
+- [`HOWTO.md`](./HOWTO.md) — manual do usuário com tudo o que dá pra fazer no app, atualizado a cada release
 - [`ROADMAP.md`](./ROADMAP.md) — roadmap canônico, decisões, ondas, registro de decisões
 - [`CONTEXT.md`](./CONTEXT.md) — handoff técnico curto pra continuidade no Claude Code
 - [`supabase/`](./supabase/) — schema SQL e Edge Functions
