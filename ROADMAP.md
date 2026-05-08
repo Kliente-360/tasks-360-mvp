@@ -573,6 +573,39 @@ Entregas:
 2. Definir orçamento mensal aceitável.
 3. Detalhar arquitetura e prompt do **item 1** (`ai-suggest`).
 
+#### Custos estimados por execução
+
+Premissas: Sonnet 4.6 ($3/M in · $15/M out), Haiku 4.5 ($1/M in · $5/M out), prompt caching ligado (cache hit = 10% do custo input). USD/BRL ≈ 5,20. Estimativas de tokens realistas mas variam com conteúdo real.
+
+| # | Feature | Modelo | Quando dispara | Tokens (in/out) | Custo / execução |
+|---|---|---|---|---|---|
+| 1 | Sugestão de complexidade + esforço | Haiku 4.5 | Click "✨ sugerir" | ~2k / 100 | ~R$ 0,015 |
+| 2 | Resumo semanal por projeto | Sonnet 4.6 | 1×/semana, por projeto | ~10k / 500 | ~R$ 0,20 (1ª) · ~R$ 0,05 (cache) |
+| 3 | Detector de risco antecipado | Sonnet 4.6 | 1×/dia | ~20k / 750 | ~R$ 0,37 (1ª) · ~R$ 0,07 (cache) |
+| 4 | Auto-tag ao criar task | Haiku 4.5 | A cada task criada | ~500 / 50 | ~R$ 0,004 |
+| 5 | Chat com seu backlog (tool use) | Sonnet 4.6 | Pergunta do usuário | ~4k / 750 | ~R$ 0,12 (1ª) · ~R$ 0,05 (cache) |
+
+#### Projeção mensal (cenário realista)
+
+Premissa: 10 projetos ativos · 30 tasks/mês · 5 perguntas/dia no chat · 50% adesão da sugestão.
+
+| Feature | Frequência/mês | Custo/mês |
+|---|---|---|
+| 1. Sugestão (15 execuções) | 15× | R$ 0,23 |
+| 2. Resumo semanal (10 proj × 4 sem) | 40× | ~R$ 2,30 |
+| 3. Detector diário | 30× | ~R$ 2,40 |
+| 4. Auto-tag (30 tasks) | 30× | R$ 0,12 |
+| 5. Chat (5/dia × 30) | 150× | ~R$ 8,00 |
+| **Total** | | **~R$ 13,00/mês** |
+
+Sem cache (worst case absoluto): R$ 35–50/mês. Preços de modelo podem mudar; instrumentar logging do `usage` do response pra calibrar custo real.
+
+#### Notas operacionais
+
+- **Item 5 é o mais variável**: conversa longa com 10 turnos cresce linear. Definir cota por usuário/mês evita surpresas.
+- **Cache** tem premium na primeira escrita (+25%) mas hit subsequente custa 10% do input. Em jobs recorrentes (itens 2 e 3), system prompt + estrutura ficam no cache e o ganho é grande.
+- **Itens 1 e 4** são praticamente gratuitos. Podem rodar automático ao salvar sem impacto de custo.
+
 ---
 
 ## 10. Analytics — as 8 visões
