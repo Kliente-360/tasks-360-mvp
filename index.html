@@ -1358,6 +1358,45 @@
 
 </main>
 
+<!-- ============ COMMAND PALETTE (cmd+k) ============ -->
+<div x-show="paletteOpen" x-transition.opacity class="fixed inset-0 z-[80] bg-black/40 flex items-start justify-center pt-[15vh] px-4" @click="closePalette()" @keydown.escape.window="closePalette()">
+  <div class="bg-elev border border-line rounded-lg shadow-2xl w-full max-w-[560px] overflow-hidden" @click.stop>
+    <div class="px-3 py-2 border-b border-line flex items-center gap-2">
+      <span class="text-muted text-sm">⌘K</span>
+      <input id="paletteInput" type="text"
+             class="flex-1 bg-transparent outline-none text-sm py-1 placeholder:text-muted"
+             placeholder="Buscar tarefa, cliente, projeto, pessoa, ação…"
+             x-model="paletteQuery"
+             @input="paletteIndex=0"
+             @keydown.arrow-down.prevent="paletteIndex = Math.min(paletteIndex + 1, paletteResults.length - 1)"
+             @keydown.arrow-up.prevent="paletteIndex = Math.max(paletteIndex - 1, 0)"
+             @keydown.enter.prevent="paletteSelect(paletteResults[paletteIndex])"
+             @keydown.escape.prevent="closePalette()">
+    </div>
+    <div class="max-h-[60vh] overflow-y-auto" x-show="paletteResults.length > 0">
+      <template x-for="(item, idx) in paletteResults" :key="item.id">
+        <div class="px-3 py-2 cursor-pointer flex items-center justify-between gap-3 border-b border-line last:border-0"
+             :class="idx === paletteIndex ? 'bg-brand-tint' : 'hover:bg-bg-elev'"
+             @click="paletteSelect(item)" @mouseenter="paletteIndex = idx">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[9px] font-mono uppercase tracking-wider text-muted px-1.5 py-0.5 rounded border border-line" x-text="item.kind"></span>
+              <span class="text-sm font-medium truncate" x-text="item.label"></span>
+            </div>
+            <div x-show="item.hint" class="text-[11px] text-muted mt-0.5 truncate" x-text="item.hint"></div>
+          </div>
+          <span class="text-muted text-xs">↵</span>
+        </div>
+      </template>
+    </div>
+    <div x-show="paletteResults.length === 0" class="px-3 py-6 text-center text-muted text-sm italic">Nenhum resultado.</div>
+    <div class="px-3 py-1.5 border-t border-line text-[10px] font-mono text-muted flex items-center justify-between">
+      <span>↑↓ navegar · ↵ abrir · esc fechar</span>
+      <span x-text="paletteResults.length + ' resultado(s)'"></span>
+    </div>
+  </div>
+</div>
+
 <!-- ============ BULK ACTIONS BAR ============ -->
 <div x-show="selectedIds.length > 0 && tab==='backlog'"
      x-transition.opacity
@@ -1853,6 +1892,9 @@ function app() {
     quickAddSub: '',
     quickAddTitle: '',
     selectedIds: [],
+    paletteOpen: false,
+    paletteQuery: '',
+    paletteIndex: 0,
     SUB_LABELS: {
       backlog: 'Backlog', priorizado: 'Priorizado', em_definicao: 'Em definição', escopo_definido: 'Escopo definido',
       em_desenvolvimento: 'Em desenvolvimento', em_homologacao: 'Em homologação', em_revisao: 'Em revisão',
@@ -1894,6 +1936,13 @@ function app() {
       this.editing = this.blankTask();
       this.hydrateFiltersFromUrl();
       this.$watch('f', () => this.syncFiltersToUrl(), { deep: true });
+      // Atalho global: Cmd/Ctrl+K abre o command palette
+      window.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+          e.preventDefault();
+          this.openPalette();
+        }
+      });
       if (SUPABASE_URL.includes('YOUR-PROJECT')) {
         this.loading = false;
         this.toast('error', 'Supabase não configurado. Edite SUPABASE_URL e SUPABASE_ANON_KEY no index.html.', 30000);
@@ -2741,6 +2790,93 @@ function app() {
         });
       }
     },
+    // ===================== COMMAND PALETTE =====================
+    openPalette() {
+      this.paletteOpen = true;
+      this.paletteQuery = '';
+      this.paletteIndex = 0;
+      this.$nextTick(() => {
+        const el = document.getElementById('paletteInput');
+        if (el) el.focus();
+      });
+    },
+    closePalette() {
+      this.paletteOpen = false;
+      this.paletteQuery = '';
+      this.paletteIndex = 0;
+    },
+    get paletteResults() {
+      const q = (this.paletteQuery || '').toLowerCase().trim();
+      const out = [];
+      // Tasks
+      const tlimit = q ? 30 : 8;
+      const taskMatches = this.tasks
+        .filter(t => !q || (t.titulo || '').toLowerCase().includes(q) || (t.descricao || '').toLowerCase().includes(q))
+        .slice(0, tlimit);
+      for (const t of taskMatches) {
+        out.push({
+          id: 'task-' + t.id, kind: 'tarefa', label: t.titulo,
+          hint: this.nomeCliente(t.clienteId) + ' · ' + this.nomeProjeto(t.projetoId) + ' · ' + this.lblStatus(t.status),
+          action: () => { this.openEdit(t); this.tab = 'backlog'; },
+        });
+      }
+      // Clientes
+      for (const c of this.clientes) {
+        if (!q || c.nome.toLowerCase().includes(q)) {
+          out.push({
+            id: 'cli-' + c.id, kind: 'cliente', label: c.nome,
+            hint: 'filtrar backlog por este cliente',
+            action: () => { this.f.cliente = c.id; this.tab = 'backlog'; },
+          });
+        }
+      }
+      // Projetos
+      for (const p of this.projetos) {
+        if (!q || p.nome.toLowerCase().includes(q)) {
+          out.push({
+            id: 'proj-' + p.id, kind: 'projeto', label: p.nome,
+            hint: this.nomeCliente(p.clienteId) + ' · filtrar backlog',
+            action: () => { this.f.cliente = p.clienteId; this.f.projeto = p.id; this.tab = 'backlog'; },
+          });
+        }
+      }
+      // Pessoas
+      for (const p of this.pessoas) {
+        if (!q || p.nome.toLowerCase().includes(q)) {
+          out.push({
+            id: 'pes-' + p.id, kind: 'pessoa', label: p.nome,
+            hint: 'filtrar backlog por responsável',
+            action: () => { this.f.pessoa = p.id; this.tab = 'backlog'; },
+          });
+        }
+      }
+      // Ações
+      const actions = [
+        { id: 'act-new',    kind: 'ação', label: 'Nova tarefa',           hint: 'abrir formulário de criação',   action: () => this.openNew() },
+        { id: 'act-back',   kind: 'ir pra', label: 'Backlog',             hint: 'tabela de tarefas',              action: () => this.tab = 'backlog' },
+        { id: 'act-kan',    kind: 'ir pra', label: 'Kanban',              hint: 'colunas operacional/executiva',  action: () => this.tab = 'kanban' },
+        { id: 'act-dash',   kind: 'ir pra', label: 'Dashboard',           hint: 'KPIs e charts',                  action: () => { this.tab = 'dash'; this.$nextTick(() => this.renderCharts()); } },
+        { id: 'act-cad',    kind: 'ir pra', label: 'Cadastros',           hint: 'clientes · projetos · pessoas',  action: () => this.tab = 'cad' },
+        { id: 'act-mvp',    kind: 'ir pra', label: 'Adoption',            hint: 'métricas de uso',                action: () => { this.tab = 'mvp'; this.loadMvpDados(); } },
+        { id: 'act-pdf',    kind: 'export', label: 'Exportar PDF (relatório executivo)', hint: 'snapshot completo', action: () => this.exportPDF() },
+        { id: 'act-csv',    kind: 'export', label: 'Exportar CSV (visão atual)',         hint: 'pra Excel',         action: () => this.exportCSV() },
+        { id: 'act-clear',  kind: 'ação', label: 'Limpar filtros',        hint: 'reseta busca, cliente, etc.',    action: () => this.clearFilters() },
+        { id: 'act-theme',  kind: 'ação', label: 'Alternar tema',         hint: 'claro / escuro',                 action: () => this.toggleTheme() },
+        { id: 'act-reload', kind: 'ação', label: 'Recarregar dados',      hint: 'busca tudo do Supabase',         action: () => this.load() },
+      ];
+      for (const a of actions) {
+        const hay = (a.label + ' ' + (a.hint || '')).toLowerCase();
+        if (!q || hay.includes(q)) out.push(a);
+      }
+      return out.slice(0, 50);
+    },
+    paletteSelect(item) {
+      if (!item || !item.action) return;
+      const fn = item.action;
+      this.closePalette();
+      this.$nextTick(() => fn());
+    },
+
     // ===================== BULK ACTIONS =====================
     toggleSelect(id) {
       const i = this.selectedIds.indexOf(id);
