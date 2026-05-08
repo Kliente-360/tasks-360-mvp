@@ -332,9 +332,23 @@
   .kanban-scroll { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
   /* operacional: 11 colunas, scroll horizontal sempre */
   .kanban-scroll-op { display: grid; grid-template-columns: repeat(11, minmax(240px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
-  .kcol-macro-tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; font-family: 'JetBrains Mono', monospace; background: var(--bg-elev); color: var(--muted); border: 1px solid var(--line); margin-bottom: 4px; }
-  .kcol-macro-tag[data-m="andamento"] { color: var(--brand-dark); background: var(--brand-tint); border-color: var(--brand); }
-  .kcol-macro-tag[data-m="bloqueado"] { color: var(--p0); border-color: var(--p0); }
+  /* faixa colorida no topo da coluna indicando o grupo macro */
+  .kcol-op { position: relative; padding-top: 14px; }
+  .kcol-op::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 3px 3px 0 0;
+    background: var(--line);
+  }
+  .kcol-op[data-m="andamento"]::before { background: var(--brand); }
+  .kcol-op[data-m="bloqueado"]::before { background: var(--p0); }
+  .kcol-op[data-m="concluido"]::before { background: var(--p3); opacity: 0.5; }
+  .kcol-op[data-m="backlog"]::before    { background: var(--muted); opacity: 0.4; }
+  .kcol-op-crumb {
+    font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600;
+    color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .kcol-op-crumb::after { content: '›'; opacity: 0.5; }
+  .kcol-op-name { font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600; line-height: 1.15; color: var(--ink); margin-top: 3px; }
   .view-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--bg-elev); }
   .view-toggle button { padding: 6px 12px; font-size: 12px; font-weight: 500; color: var(--muted); border: none; background: transparent; cursor: pointer; transition: all 0.15s; }
   .view-toggle button:hover { color: var(--ink); }
@@ -773,15 +787,16 @@
   <!-- ============ VISÃO OPERACIONAL (nível 2) ============ -->
   <div x-show="kanbanView==='op'" class="kanban-scroll-op">
     <template x-for="sub in SUBS_FLAT" :key="sub">
-      <div class="kcol"
+      <div class="kcol kcol-op"
+           :data-m="SUB_TO_MACRO[sub]"
            :class="dragOverCol===sub && 'drop-target'"
            @dragover.prevent="dragOverCol=sub"
            @dragleave="dragOverCol===sub && (dragOverCol='')"
            @drop.prevent="onDropSub($event, sub)">
         <div class="mb-3 px-1">
-          <span class="kcol-macro-tag" :data-m="SUB_TO_MACRO[sub]" x-text="lblStatus(SUB_TO_MACRO[sub])"></span>
-          <div class="text-[12px] tracking-tight text-ink font-semibold mt-1" x-text="lblSub(sub)"></div>
-          <div class="font-mono text-xs text-muted mt-1" x-text="kanbanColSub(sub).length + ' itens · ' + kanbanColSub(sub).reduce((a,b)=>a+(+b.esforco||0),0) + 'h'"></div>
+          <div class="kcol-op-crumb" x-text="lblStatus(SUB_TO_MACRO[sub])"></div>
+          <div class="kcol-op-name" x-text="lblSub(sub)"></div>
+          <div class="font-mono text-xs text-muted mt-1.5" x-text="kanbanColSub(sub).length + ' itens · ' + kanbanColSub(sub).reduce((a,b)=>a+(+b.esforco||0),0) + 'h'"></div>
         </div>
         <template x-for="t in kanbanColSub(sub)" :key="t.id">
           <div class="kcard"
