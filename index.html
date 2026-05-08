@@ -995,7 +995,9 @@
             <div class="min-w-0">
               <div class="text-sm font-medium flex items-center gap-2 flex-wrap">
                 <span x-text="p.nome"></span>
-                <span x-show="p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)">acesso</span>
+                <span x-show="p.invited_at && p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)">acesso ativo</span>
+                <span x-show="p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">convidada</span>
+                <span x-show="!p.invited_at && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">sem convite</span>
               </div>
               <div class="text-xs text-muted truncate">
                 <span x-show="p.email" class="font-mono" x-text="p.email"></span>
@@ -1004,8 +1006,10 @@
               </div>
             </div>
           </div>
-          <div class="flex gap-1">
-            <button class="btn btn-ghost text-xs" x-show="p.email && !p.user_id" @click="convidarPessoa(p)" title="Enviar magic link de convite">convidar</button>
+          <div class="flex gap-1 flex-wrap">
+            <button class="btn btn-ghost text-xs" x-show="p.email && !p.invited_at" @click="convidarPessoa(p)" title="Marcar como convidada e enviar magic link">convidar</button>
+            <button class="btn btn-ghost text-xs" x-show="p.email && p.invited_at" @click="convidarPessoa(p)" title="Reenviar magic link">reenviar link</button>
+            <button class="btn btn-ghost text-xs" x-show="p.invited_at" @click="desconvidarPessoa(p)" title="Revogar acesso">desconvidar</button>
             <button class="btn btn-ghost text-xs" @click="renomeiaPessoa(p)">renomear</button>
             <button class="btn btn-danger text-xs" @click="deletePessoa(p)">excluir</button>
           </div>
@@ -1506,18 +1510,27 @@ function app() {
       console.log('[auth] resolving pessoa for', { userId, email });
 
       // 1) por user_id já vinculado
-      const r1 = await sb.from('pessoas').select('id, nome, email, user_id').eq('user_id', userId).maybeSingle();
+      const r1 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at').eq('user_id', userId).maybeSingle();
       if (r1.error) {
         console.error('[auth] lookup by user_id failed:', r1.error);
         this.toast('error', 'Erro ao buscar usuário: ' + r1.error.message, 20000);
         return; // mantém estado anterior; não força signOut em erro de rede
       }
       console.log('[auth] by user_id →', r1.data);
-      if (r1.data) { this.currentPessoa = r1.data; return; }
+      if (r1.data) {
+        if (!r1.data.invited_at) {
+          console.warn('[auth] pessoa encontrada mas SEM invited_at → revogada');
+          this.toast('error', `Acesso revogado por admin. Peça novo convite.`, 20000);
+          await sb.auth.signOut();
+          this.currentPessoa = null; this.session = null;
+          return;
+        }
+        this.currentPessoa = r1.data; return;
+      }
 
       // 2) por email (case-insensitive) — vincula se for primeiro login
       if (email) {
-        const r2 = await sb.from('pessoas').select('id, nome, email, user_id').ilike('email', email).maybeSingle();
+        const r2 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at').ilike('email', email).maybeSingle();
         if (r2.error) {
           console.error('[auth] lookup by email failed:', r2.error);
           this.toast('error', 'Erro ao buscar usuário: ' + r2.error.message, 20000);
@@ -1525,6 +1538,13 @@ function app() {
         }
         console.log('[auth] by email →', r2.data);
         if (r2.data) {
+          if (!r2.data.invited_at) {
+            console.warn('[auth] pessoa encontrada por email mas SEM invited_at');
+            this.toast('error', `Email '${email}' está cadastrado mas não foi convidado. Peça pro admin.`, 20000);
+            await sb.auth.signOut();
+            this.currentPessoa = null; this.session = null;
+            return;
+          }
           // Vincula user_id apenas se está vazio E ainda não há outro registro com esse user_id
           if (!r2.data.user_id) {
             const { error: upErr } = await sb.from('pessoas').update({ user_id: userId }).eq('id', r2.data.id);
@@ -1552,6 +1572,21 @@ function app() {
       this.loginError = '';
       if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
         this.loginError = 'Informe um email válido.';
+        return;
+      }
+      // Pré-check: pessoa precisa estar cadastrada COM email E convidada (invited_at not null)
+      const { data: pessoa, error: pErr } = await sb
+        .from('pessoas')
+        .select('id, nome, invited_at')
+        .ilike('email', email)
+        .maybeSingle();
+      if (pErr) { this.loginError = 'Erro ao validar acesso: ' + pErr.message; return; }
+      if (!pessoa) {
+        this.loginError = 'Email não está cadastrado. Peça pro admin cadastrar antes.';
+        return;
+      }
+      if (!pessoa.invited_at) {
+        this.loginError = 'Email cadastrado mas sem convite ativo. Peça pro admin clicar em "convidar".';
         return;
       }
       const { error } = await sb.auth.signInWithOtp({
@@ -1703,7 +1738,7 @@ function app() {
         const [c, p, ps, t, h] = await Promise.all([
           sb.from('clientes').select('id,nome').order('nome'),
           sb.from('projetos').select('id,nome,cliente_id').order('nome'),
-          sb.from('pessoas').select('id,nome,email,user_id').order('nome'),
+          sb.from('pessoas').select('id,nome,email,user_id,invited_at').order('nome'),
           sb.from('tasks').select('*').order('criado_em', { ascending: false }),
           sb.from('task_status_history')
             .select('task_id, from_status, to_status, actor_pessoa_id, actor_source, occurred_at')
@@ -1735,7 +1770,7 @@ function app() {
       if (!error) this.projetos = data.map(projetoFromDb);
     },
     async refreshPessoas() {
-      const { data, error } = await sb.from('pessoas').select('id,nome,email,user_id').order('nome');
+      const { data, error } = await sb.from('pessoas').select('id,nome,email,user_id,invited_at').order('nome');
       if (!error) this.pessoas = data;
     },
     async convidarPessoa(p) {
@@ -1743,12 +1778,40 @@ function app() {
         this.toast('error', `${p.nome} não tem email cadastrado. Edite no banco ou recadastre.`);
         return;
       }
+      // 1) Marca como convidada (libera acesso futuro mesmo se o email falhar agora)
+      const nowIso = new Date().toISOString();
+      const { error: upErr } = await sb.from('pessoas').update({ invited_at: nowIso }).eq('id', p.id);
+      if (upErr) { this.toast('error', 'Erro ao marcar convite: ' + upErr.message); return; }
+      const i = this.pessoas.findIndex(x => x.id === p.id);
+      if (i >= 0) this.pessoas[i] = { ...this.pessoas[i], invited_at: nowIso };
+      // 2) Dispara magic link
       const { error } = await sb.auth.signInWithOtp({
         email: p.email,
         options: { emailRedirectTo: window.location.origin + window.location.pathname }
       });
-      if (error) { this.toast('error', 'Erro ao enviar convite: ' + error.message); return; }
-      this.toast('success', `Link enviado para ${p.email}`);
+      if (error) {
+        this.toast('error', 'Convite marcado, mas falha ao enviar email: ' + error.message);
+        return;
+      }
+      this.toast('success', `Convite enviado para ${p.email}`);
+    },
+    desconvidarPessoa(p) {
+      this.askConfirm(
+        `Revogar acesso de ${p.nome}? Sessão ativa dele expira no próximo refresh do browser dele.`,
+        async () => {
+          const i = this.pessoas.findIndex(x => x.id === p.id);
+          const prev = i >= 0 ? this.pessoas[i] : null;
+          if (i >= 0) this.pessoas[i] = { ...prev, invited_at: null };
+          const { error } = await sb.from('pessoas').update({ invited_at: null }).eq('id', p.id);
+          if (error) {
+            if (prev) this.pessoas[i] = prev;
+            this.toast('error', 'Erro ao revogar: ' + error.message);
+            return;
+          }
+          this.toast('success', `Acesso de ${p.nome} revogado.`);
+        },
+        { label: 'revogar' }
+      );
     },
     askConfirm(msg, action, opts) {
       this.confirmTarget = { msg, action, label: (opts && opts.label) || 'excluir', danger: !(opts && opts.danger === false) };
