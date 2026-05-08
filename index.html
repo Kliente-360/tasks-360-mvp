@@ -157,6 +157,15 @@
   .pri-P2 .pri-dot { background: var(--p2); }
   .pri-P3 { background: var(--p3-soft); color: var(--p3); }
   .pri-P3 .pri-dot { background: var(--p3); }
+  /* complexidade */
+  .cx { display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:500; padding: 2px 7px; border-radius: 3px; white-space: nowrap; border: 1px solid var(--line); background: var(--bg-elev); color: var(--ink-soft); }
+  .cx-bar { display:inline-flex; gap:2px; }
+  .cx-bar i { width:3px; border-radius: 1px; background: currentColor; opacity: 0.25; }
+  .cx-bar i.on { opacity: 1; }
+  .cx-alta  { color: #b45309; background: #fef3c7; border-color: #fde68a; }
+  .cx-media { color: var(--ink-soft); }
+  .cx-baixa { color: var(--muted); }
+  html.dark .cx-alta { color: #fcd34d; background: rgba(180,83,9,0.18); border-color: rgba(252,211,77,0.4); }
 
   /* status */
   .status { display:inline-flex; align-items:center; gap:6px; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--bg-elev); white-space: nowrap; }
@@ -650,6 +659,7 @@
           <th class="sortable" @click="sortBy('pessoaId')">Responsável <span x-text="sortIcon('pessoaId')" class="text-[9px] ml-1"></span></th>
           <th class="sortable" @click="sortBy('prioridade')">Pri <span x-text="sortIcon('prioridade')" class="text-[9px] ml-1"></span></th>
           <th class="sortable text-right" @click="sortBy('esforco')">Hrs <span x-text="sortIcon('esforco')" class="text-[9px] ml-1"></span></th>
+          <th class="sortable" @click="sortBy('complexidade')">Cmplx <span x-text="sortIcon('complexidade')" class="text-[9px] ml-1"></span></th>
           <th class="sortable" @click="sortBy('prazo')">Prazo <span x-text="sortIcon('prazo')" class="text-[9px] ml-1"></span></th>
           <th class="sortable" @click="sortBy('status')">Status <span x-text="sortIcon('status')" class="text-[9px] ml-1"></span></th>
           <th class="w-8"></th>
@@ -683,6 +693,16 @@
               </span>
             </td>
             <td class="font-mono text-ink-soft text-right" x-text="t.esforco + 'h'"></td>
+            <td>
+              <span class="cx" :class="'cx-'+(t.complexidade||'media')">
+                <span class="cx-bar">
+                  <i :class="(t.complexidade==='baixa'||t.complexidade==='media'||t.complexidade==='alta') && 'on'" style="height:6px"></i>
+                  <i :class="(t.complexidade==='media'||t.complexidade==='alta') && 'on'" style="height:9px"></i>
+                  <i :class="t.complexidade==='alta' && 'on'" style="height:12px"></i>
+                </span>
+                <span x-text="lblComplex(t.complexidade)"></span>
+              </span>
+            </td>
             <td>
               <span :class="atrasada(t) && 'late'" x-text="t.prazo ? fmtDate(t.prazo) : '—'"></span>
             </td>
@@ -2249,6 +2269,9 @@ function app() {
     nomeCliente(id) { return (this.clientes.find(c => c.id === id) || {}).nome || '—'; },
     nomeProjeto(id) { return (this.projetos.find(p => p.id === id) || {}).nome || '—'; },
     nomePessoa(id)  { return (this.pessoas.find(p => p.id === id) || {}).nome || '—'; },
+    lblComplex(c) {
+      return ({ alta: 'Alta', media: 'Média', baixa: 'Baixa' })[c] || 'Média';
+    },
     lblStatus(s) {
       return ({ backlog: 'Backlog', andamento: 'Em andamento', bloqueado: 'Bloqueado', concluido: 'Concluído' })[s] || s;
     },
@@ -2350,6 +2373,10 @@ function app() {
           av = order[av]; bv = order[bv];
         }
         if (k === 'prioridade') { av = +av.slice(1); bv = +bv.slice(1); }
+        if (k === 'complexidade') {
+          const order = { alta: 0, media: 1, baixa: 2 };
+          av = order[av] ?? 1; bv = order[bv] ?? 1;
+        }
         if (av == null) av = '';
         if (bv == null) bv = '';
         if (av < bv) return -1*dir;
