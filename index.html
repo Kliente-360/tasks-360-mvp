@@ -330,6 +330,17 @@
 
   /* kanban com carrossel horizontal em mobile */
   .kanban-scroll { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  /* operacional: 11 colunas, scroll horizontal sempre */
+  .kanban-scroll-op { display: grid; grid-template-columns: repeat(11, minmax(240px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+  .kcol-macro-tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; font-family: 'JetBrains Mono', monospace; background: var(--bg-elev); color: var(--muted); border: 1px solid var(--line); margin-bottom: 4px; }
+  .kcol-macro-tag[data-m="andamento"] { color: var(--brand-dark); background: var(--brand-tint); border-color: var(--brand); }
+  .kcol-macro-tag[data-m="bloqueado"] { color: var(--p0); border-color: var(--p0); }
+  .view-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--bg-elev); }
+  .view-toggle button { padding: 6px 12px; font-size: 12px; font-weight: 500; color: var(--muted); border: none; background: transparent; cursor: pointer; transition: all 0.15s; }
+  .view-toggle button:hover { color: var(--ink); }
+  .view-toggle button.active { background: var(--brand); color: #fff; }
+  .kcol-readonly { opacity: 0.95; }
+  .kcol-readonly .kcard { cursor: pointer; }
 
   /* tabs com scroll horizontal */
   .tabs-row { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
@@ -346,17 +357,18 @@
     .btn-icon { padding: 8px 12px; }
     .inp { padding: 10px 12px; font-size: 16px; } /* 16px evita zoom automático do iOS no focus */
     .modal-card { max-height: calc(100vh - 24px); display: flex; flex-direction: column; }
-    .kanban-scroll {
+    .kanban-scroll, .kanban-scroll-op {
       display: flex;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
       gap: 12px;
+      grid-template-columns: none;
       margin-left: -16px;
       margin-right: -16px;
       padding: 0 16px 4px 16px;
       -webkit-overflow-scrolling: touch;
     }
-    .kanban-scroll > * {
+    .kanban-scroll > *, .kanban-scroll-op > * {
       flex: 0 0 82vw;
       scroll-snap-align: start;
     }
@@ -739,8 +751,12 @@
 <!-- ============ KANBAN ============ -->
 <section x-show="tab==='kanban'" class="fade-up">
   <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
-    <div>
+    <div class="flex items-center gap-3 flex-wrap">
       <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Kanban</h1>
+      <div class="view-toggle" role="tablist" aria-label="Visão do kanban">
+        <button :class="kanbanView==='op' && 'active'" @click="kanbanView='op'" title="Visão operacional — colunas detalhadas (nível 2)">Operacional</button>
+        <button :class="kanbanView==='exec' && 'active'" @click="kanbanView='exec'" title="Visão executiva — colunas macro (nível 1, somente leitura)">Executiva</button>
+      </div>
     </div>
     <div class="flex items-center gap-2 md:gap-3 w-full md:w-auto">
       <select class="inp w-full md:w-[200px]" x-model="f.cliente">
@@ -754,20 +770,20 @@
     </div>
   </div>
 
-  <div class="kanban-scroll">
-    <template x-for="col in ['backlog','andamento','bloqueado','concluido']" :key="col">
+  <!-- ============ VISÃO OPERACIONAL (nível 2) ============ -->
+  <div x-show="kanbanView==='op'" class="kanban-scroll-op">
+    <template x-for="sub in SUBS_FLAT" :key="sub">
       <div class="kcol"
-           :class="dragOverCol===col && 'drop-target'"
-           @dragover.prevent="dragOverCol=col"
-           @dragleave="dragOverCol===col && (dragOverCol='')"
-           @drop.prevent="onDrop($event, col)">
-        <div class="flex items-center justify-between mb-3 px-1">
-          <div>
-            <div class="text-[11px] uppercase tracking-wider text-muted font-semibold" x-text="lblStatus(col)"></div>
-            <div class="font-mono text-xs text-muted mt-1" x-text="kanbanCol(col).length + ' itens · ' + kanbanCol(col).reduce((a,b)=>a+(+b.esforco||0),0) + 'h'"></div>
-          </div>
+           :class="dragOverCol===sub && 'drop-target'"
+           @dragover.prevent="dragOverCol=sub"
+           @dragleave="dragOverCol===sub && (dragOverCol='')"
+           @drop.prevent="onDropSub($event, sub)">
+        <div class="mb-3 px-1">
+          <span class="kcol-macro-tag" :data-m="SUB_TO_MACRO[sub]" x-text="lblStatus(SUB_TO_MACRO[sub])"></span>
+          <div class="text-[12px] tracking-tight text-ink font-semibold mt-1" x-text="lblSub(sub)"></div>
+          <div class="font-mono text-xs text-muted mt-1" x-text="kanbanColSub(sub).length + ' itens · ' + kanbanColSub(sub).reduce((a,b)=>a+(+b.esforco||0),0) + 'h'"></div>
         </div>
-        <template x-for="t in kanbanCol(col)" :key="t.id">
+        <template x-for="t in kanbanColSub(sub)" :key="t.id">
           <div class="kcard"
                draggable="true"
                :class="draggingId===t.id && 'dragging'"
@@ -792,16 +808,72 @@
               <span :class="atrasada(t) && 'late'" class="font-mono" x-text="t.prazo ? fmtDateShort(t.prazo) : '—'"></span>
             </div>
             <div class="flex items-center gap-1.5 mt-2">
-              <div class="text-[10px] text-muted font-mono" x-text="tempoNaEtapa(t) + ' nesta etapa'"></div>
-              <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias neste status'" x-text="agingDays(t)+'d'"></span>
+              <div class="text-[10px] text-muted font-mono" x-text="tempoNaSubetapa(t) + ' nesta etapa'"></div>
+              <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias na macro'" x-text="agingDays(t)+'d'"></span>
             </div>
             <div class="mt-3 pt-3 border-t border-line" @click.stop>
-              <select class="inp text-xs py-1.5" :value="t.status" @change="setTaskStatus(t, $event.target.value)" title="Mover para…">
-                <option value="backlog">→ Backlog</option>
-                <option value="andamento">→ Em andamento</option>
-                <option value="bloqueado">→ Bloqueado</option>
-                <option value="concluido">→ Concluído</option>
+              <select class="inp text-xs py-1.5" :value="t.subetapa" @change="setTaskSubetapa(t, $event.target.value)" title="Mover para…">
+                <optgroup label="Backlog">
+                  <option value="backlog">→ Backlog</option>
+                  <option value="priorizado">→ Priorizado</option>
+                  <option value="em_definicao">→ Em definição</option>
+                  <option value="escopo_definido">→ Escopo definido</option>
+                </optgroup>
+                <optgroup label="Em andamento">
+                  <option value="em_desenvolvimento">→ Em desenvolvimento</option>
+                  <option value="em_homologacao">→ Em homologação</option>
+                  <option value="em_revisao">→ Em revisão</option>
+                  <option value="pronto_producao">→ Pronto p/ produção</option>
+                  <option value="em_implantacao">→ Em implantação</option>
+                </optgroup>
+                <optgroup label="Bloqueado">
+                  <option value="bloqueado">→ Bloqueado</option>
+                </optgroup>
+                <optgroup label="Concluído">
+                  <option value="concluido">→ Concluído</option>
+                </optgroup>
               </select>
+            </div>
+          </div>
+        </template>
+        <div x-show="kanbanColSub(sub).length===0" class="text-center text-muted text-xs py-8 italic">vazio</div>
+      </div>
+    </template>
+  </div>
+
+  <!-- ============ VISÃO EXECUTIVA (nível 1, read-only) ============ -->
+  <div x-show="kanbanView==='exec'" class="kanban-scroll">
+    <template x-for="col in ['backlog','andamento','bloqueado','concluido']" :key="col">
+      <div class="kcol kcol-readonly">
+        <div class="flex items-center justify-between mb-3 px-1">
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-muted font-semibold" x-text="lblStatus(col)"></div>
+            <div class="font-mono text-xs text-muted mt-1" x-text="kanbanCol(col).length + ' itens · ' + kanbanCol(col).reduce((a,b)=>a+(+b.esforco||0),0) + 'h'"></div>
+          </div>
+        </div>
+        <template x-for="t in kanbanCol(col)" :key="t.id">
+          <div class="kcard" @click="openEdit(t)">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="font-medium text-sm leading-snug" x-text="t.titulo"></div>
+              <span class="pri" :class="'pri-'+t.prioridade">
+                <span class="pri-dot"></span>
+                <span x-text="t.prioridade"></span>
+              </span>
+            </div>
+            <div class="text-xs text-muted mb-1" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></div>
+            <div class="text-[11px] text-ink-soft font-mono mb-2" x-text="lblSub(t.subetapa)"></div>
+            <div x-show="(t.tags || []).length>0" class="flex flex-wrap gap-1 mb-2">
+              <template x-for="tag in (t.tags || [])" :key="tag">
+                <span class="tag-chip" x-text="'#' + tag"></span>
+              </template>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-ink-soft" x-text="nomePessoa(t.pessoaId)"></span>
+              <span :class="atrasada(t) && 'late'" class="font-mono" x-text="t.prazo ? fmtDateShort(t.prazo) : '—'"></span>
+            </div>
+            <div class="flex items-center gap-1.5 mt-2">
+              <div class="text-[10px] text-muted font-mono" x-text="tempoNaEtapa(t) + ' nesta etapa'"></div>
+              <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias neste status'" x-text="agingDays(t)+'d'"></span>
             </div>
           </div>
         </template>
@@ -1413,13 +1485,29 @@
           </select>
         </div>
         <div>
-          <label class="lbl">Status</label>
-          <select class="inp" x-model="editing.status">
-            <option value="backlog">Backlog</option>
-            <option value="andamento">Em andamento</option>
-            <option value="bloqueado">Bloqueado</option>
-            <option value="concluido">Concluído</option>
+          <label class="lbl">Etapa</label>
+          <select class="inp" x-model="editing.subetapa">
+            <optgroup label="Backlog">
+              <option value="backlog">Backlog</option>
+              <option value="priorizado">Priorizado</option>
+              <option value="em_definicao">Em definição</option>
+              <option value="escopo_definido">Escopo definido</option>
+            </optgroup>
+            <optgroup label="Em andamento">
+              <option value="em_desenvolvimento">Em desenvolvimento</option>
+              <option value="em_homologacao">Em homologação</option>
+              <option value="em_revisao">Em revisão</option>
+              <option value="pronto_producao">Pronto p/ produção</option>
+              <option value="em_implantacao">Em implantação</option>
+            </optgroup>
+            <optgroup label="Bloqueado">
+              <option value="bloqueado">Bloqueado</option>
+            </optgroup>
+            <optgroup label="Concluído">
+              <option value="concluido">Concluído</option>
+            </optgroup>
           </select>
+          <div class="text-[10px] text-muted mt-1">macro: <span class="font-mono" x-text="lblStatus(SUB_TO_MACRO[editing.subetapa] || 'backlog')"></span></div>
         </div>
         <div>
           <label class="lbl">Prioridade</label>
@@ -1600,8 +1688,10 @@ function taskFromDb(r) {
     complexidade: r.complexidade || 'media',
     prazo: r.prazo || '',
     status: r.status,
+    subetapa: r.subetapa || 'backlog',
     criadoEm: r.criado_em ? new Date(r.criado_em).getTime() : 0,
     statusEm: r.status_em ? new Date(r.status_em).getTime() : 0,
+    subetapaEm: r.subetapa_em ? new Date(r.subetapa_em).getTime() : 0,
     ordem: r.ordem == null ? null : Number(r.ordem),
     tags: Array.isArray(r.tags) ? r.tags : [],
   };
@@ -1618,6 +1708,7 @@ function taskToDb(t) {
     complexidade: t.complexidade || 'media',
     prazo: t.prazo || null,
     status: t.status,
+    subetapa: t.subetapa || 'backlog',
     tags: Array.isArray(t.tags) ? t.tags : [],
   };
 }
@@ -1656,7 +1747,27 @@ function app() {
     loginVerifying: false,
     draggingId: '',
     dragOverCol: '',
-    editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', complexidade: 'media' },
+    editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media' },
+    kanbanView: 'op', // 'op' (operacional, nível 2) | 'exec' (executiva, nível 1)
+    SUB_LABELS: {
+      backlog: 'Backlog', priorizado: 'Priorizado', em_definicao: 'Em definição', escopo_definido: 'Escopo definido',
+      em_desenvolvimento: 'Em desenvolvimento', em_homologacao: 'Em homologação', em_revisao: 'Em revisão',
+      pronto_producao: 'Pronto p/ produção', em_implantacao: 'Em implantação',
+      bloqueado: 'Bloqueado', concluido: 'Concluído',
+    },
+    SUB_TO_MACRO: {
+      backlog: 'backlog', priorizado: 'backlog', em_definicao: 'backlog', escopo_definido: 'backlog',
+      em_desenvolvimento: 'andamento', em_homologacao: 'andamento', em_revisao: 'andamento',
+      pronto_producao: 'andamento', em_implantacao: 'andamento',
+      bloqueado: 'bloqueado', concluido: 'concluido',
+    },
+    SUBS_BY_MACRO: {
+      backlog:    ['backlog','priorizado','em_definicao','escopo_definido'],
+      andamento:  ['em_desenvolvimento','em_homologacao','em_revisao','pronto_producao','em_implantacao'],
+      bloqueado:  ['bloqueado'],
+      concluido:  ['concluido'],
+    },
+    SUBS_FLAT: ['backlog','priorizado','em_definicao','escopo_definido','em_desenvolvimento','em_homologacao','em_revisao','pronto_producao','em_implantacao','bloqueado','concluido'],
     editingComments: [],
     editingHistory: [],
     newComment: '',
@@ -2246,7 +2357,7 @@ function app() {
 
     // ===================== HELPERS =====================
     blankTask() {
-      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', complexidade: 'media', tags: [] };
+      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', tags: [] };
     },
     normalizeTag(s) {
       return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24);
@@ -2471,6 +2582,68 @@ function app() {
       // ordem da coluna = mais recentemente entrou nesta etapa primeiro
       arr.sort((a,b) => (b.statusEm || b.criadoEm || 0) - (a.statusEm || a.criadoEm || 0));
       return arr;
+    },
+    kanbanColSub(sub) {
+      const arr = this.tasks.filter(t =>
+        t.subetapa === sub
+        && (!this.f.cliente || t.clienteId === this.f.cliente)
+        && (!this.f.pessoa  || t.pessoaId  === this.f.pessoa)
+      );
+      arr.sort((a,b) => (b.subetapaEm || b.statusEm || b.criadoEm || 0) - (a.subetapaEm || a.statusEm || a.criadoEm || 0));
+      return arr;
+    },
+    lblSub(s) { return this.SUB_LABELS[s] || s || '—'; },
+    tempoNaSubetapa(t) {
+      const ts = t.subetapaEm || t.statusEm;
+      if (!ts) return '';
+      const d = Math.floor((Date.now() - ts) / 86400000);
+      if (d <= 0) return 'hoje';
+      if (d === 1) return 'há 1d';
+      return 'há ' + d + 'd';
+    },
+    async setTaskSubetapa(t, newSub) {
+      if (!t || t.subetapa === newSub) return;
+      const i = this.tasks.findIndex(x => x.id === t.id);
+      if (i < 0) return;
+      const prev = this.tasks[i];
+      const newMacro = this.SUB_TO_MACRO[newSub] || prev.status;
+      const macroChanged = prev.status !== newMacro;
+      const nowMs = Date.now();
+      const nowIso = new Date(nowMs).toISOString();
+      // Optimistic.
+      this.tasks[i] = {
+        ...prev,
+        subetapa: newSub,
+        status: newMacro,
+        subetapaEm: nowMs,
+        statusEm: macroChanged ? nowMs : prev.statusEm,
+      };
+      const payload = { subetapa: newSub, subetapa_em: nowIso };
+      if (macroChanged) payload.status_em = nowIso;
+      const { error } = await sb.from('tasks').update(payload).eq('id', t.id);
+      if (error) {
+        this.tasks[i] = prev;
+        this.toast('error', 'Erro ao mover: ' + error.message);
+        return;
+      }
+      if (macroChanged) {
+        await sb.from('task_status_history').insert({
+          task_id: t.id,
+          from_status: prev.status,
+          to_status: newMacro,
+          actor_pessoa_id: this.currentPessoa ? this.currentPessoa.id : null,
+          actor_source: 'app',
+          occurred_at: nowIso,
+        });
+      }
+    },
+    async onDropSub(ev, sub) {
+      const id = ev.dataTransfer.getData('text/plain') || this.draggingId;
+      this.dragOverCol = '';
+      this.draggingId = '';
+      if (!id) return;
+      const t = this.tasks.find(x => x.id === id);
+      if (t) await this.setTaskSubetapa(t, sub);
     },
     async setTaskStatus(t, newStatus) {
       if (!t || t.status === newStatus) return;
@@ -3038,6 +3211,9 @@ function app() {
       }
       e.titulo = e.titulo.trim();
       e.esforco = +e.esforco || 0;
+      // Status (macro) é derivado da subetapa.
+      e.subetapa = e.subetapa || 'backlog';
+      e.status = this.SUB_TO_MACRO[e.subetapa] || 'backlog';
       const nowMs = Date.now();
       const nowIso = new Date(nowMs).toISOString();
       const payload = taskToDb(e);
@@ -3046,16 +3222,21 @@ function app() {
         // Optimistic update: aplica local antes do round-trip.
         const i = this.tasks.findIndex(t => t.id === e.id);
         const prev = i >= 0 ? this.tasks[i] : null;
-        const statusChanged = prev && prev.status !== e.status;
+        const subChanged    = prev && prev.subetapa !== e.subetapa;
+        const statusChanged = prev && prev.status   !== e.status;
         if (i >= 0) {
-          if (statusChanged) payload.status_em = nowIso;
+          if (subChanged)    payload.subetapa_em = nowIso;
+          if (statusChanged) payload.status_em   = nowIso;
           this.tasks[i] = {
             ...prev,
             titulo: e.titulo, descricao: e.descricao || '',
             clienteId: e.clienteId, projetoId: e.projetoId, pessoaId: e.pessoaId,
             prioridade: e.prioridade, esforco: +e.esforco || 0,
-            prazo: e.prazo || '', status: e.status,
-            statusEm: statusChanged ? nowMs : prev.statusEm,
+            prazo: e.prazo || '', status: e.status, subetapa: e.subetapa,
+            complexidade: e.complexidade || 'media',
+            tags: Array.isArray(e.tags) ? [...e.tags] : [],
+            statusEm:   statusChanged ? nowMs : prev.statusEm,
+            subetapaEm: subChanged    ? nowMs : prev.subetapaEm,
           };
         }
         this.modal = false;
@@ -3075,6 +3256,7 @@ function app() {
       } else {
         // Insert
         payload.status_em = nowIso;
+        payload.subetapa_em = nowIso;
         this.modal = false;
         const { data, error } = await sb.from('tasks').insert(payload).select('*').single();
         if (error) { this.toast('error', 'Erro ao criar: ' + error.message); return; }
