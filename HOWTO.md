@@ -165,7 +165,7 @@ Quando a etapa muda atravessando macros (ex: backlog → em desenvolvimento), o 
 ### Filtros do Backlog
 
 - **Busca por título** (campo livre)
-- **Cliente · Projeto · Pessoa · Status · Prioridade · Tag** (selects)
+- **Cliente · Projeto · Pessoa · Pri · Cmplx · Status · Tag** (selects, na mesma ordem das colunas da tabela)
 - Filtros viram URL: pode compartilhar o link e o destinatário vê a mesma visão.
 - Botão **✕ limpar filtros** com contador aparece quando há ao menos um filtro ativo.
 

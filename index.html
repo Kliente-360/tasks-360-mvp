@@ -754,18 +754,19 @@
             title="Limpar todos os filtros aplicados">
       ✕ limpar filtros<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
     </button>
-    <button class="btn btn-ghost text-xs" :class="sortKey==='manual' && '!text-brand-dark !bg-brand-tint'"
+    <button class="btn btn-ghost text-xs hidden md:inline-flex" :class="sortKey==='manual' && '!text-brand-dark !bg-brand-tint'"
             @click="sortKey==='manual' ? clearManualSort() : setManualSort()"
             :title="sortKey==='manual' ? 'Sair da ordenação manual' : 'Ordenar manualmente (arrastar para reordenar)'">
       <span x-show="sortKey!=='manual'">≡ ordem manual</span>
       <span x-show="sortKey==='manual'">✓ ordem manual</span>
     </button>
-    <span class="text-muted text-[11px] uppercase tracking-wider font-semibold">mostrando</span>
-    <span class="font-mono text-sm" x-text="filtered.length + ' / ' + tasks.length"></span>
+    <span class="text-muted text-[11px] uppercase tracking-wider font-semibold hidden md:inline">mostrando</span>
+    <span class="font-mono text-sm hidden md:inline" x-text="filtered.length + ' / ' + tasks.length"></span>
   </div>
 
+  <!-- Filtros — ordem espelha colunas da tabela: Tarefa · Cliente · Projeto · Resp · Pri · Cmplx · Status · Tag -->
   <div class="grid grid-cols-2 md:grid-cols-12 gap-2 md:gap-3 mb-4 md:mb-5">
-    <div class="col-span-1 md:col-span-3">
+    <div class="col-span-1 md:col-span-2">
       <input type="text" class="inp" placeholder="Buscar título…" x-model="f.q">
     </div>
     <div class="col-span-1 md:hidden">
@@ -793,7 +794,24 @@
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
-    <div class="col-span-1 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
+    <div class="col-span-1 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
+      <select class="inp" x-model="f.pri">
+        <option value="">Pri</option>
+        <option value="P0">P0</option>
+        <option value="P1">P1</option>
+        <option value="P2">P2</option>
+        <option value="P3">P3</option>
+      </select>
+    </div>
+    <div class="col-span-1 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
+      <select class="inp" x-model="f.complexidade">
+        <option value="">Cmplx</option>
+        <option value="alta">Alta</option>
+        <option value="media">Média</option>
+        <option value="baixa">Baixa</option>
+      </select>
+    </div>
+    <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.status">
         <option value="abertas">Abertas (sem concluídas)</option>
         <option value="">Todos os status</option>
@@ -801,15 +819,6 @@
         <option value="andamento">Em andamento</option>
         <option value="bloqueado">Bloqueado</option>
         <option value="concluido">Concluído</option>
-      </select>
-    </div>
-    <div class="col-span-2 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
-      <select class="inp" x-model="f.pri">
-        <option value="">Pri</option>
-        <option value="P0">P0</option>
-        <option value="P1">P1</option>
-        <option value="P2">P2</option>
-        <option value="P3">P3</option>
       </select>
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'" x-show="allTags.length>0">
@@ -2132,7 +2141,7 @@ function app() {
     projetos: [],
     pessoas: [],
     tasks: [],
-    f: { q: '', cliente: '', projeto: '', pessoa: '', status: 'abertas', pri: '', tag: '' },
+    f: { q: '', cliente: '', projeto: '', pessoa: '', pri: '', complexidade: '', status: 'abertas', tag: '' },
     newTag: '',
     sortKey: 'prazo',
     sortDir: 'asc',
@@ -2407,8 +2416,9 @@ function app() {
       if (p.has('projeto')) this.f.projeto = p.get('projeto') || '';
       if (p.has('pessoa'))  this.f.pessoa  = p.get('pessoa') || '';
       if (p.has('status'))  this.f.status  = p.get('status') || '';
-      if (p.has('pri'))     this.f.pri     = p.get('pri') || '';
-      if (p.has('tag'))     this.f.tag     = p.get('tag') || '';
+      if (p.has('pri'))          this.f.pri          = p.get('pri') || '';
+      if (p.has('complexidade')) this.f.complexidade = p.get('complexidade') || '';
+      if (p.has('tag'))          this.f.tag          = p.get('tag') || '';
     },
     syncFiltersToUrl() {
       const f = this.f;
@@ -2418,8 +2428,9 @@ function app() {
       if (f.projeto) params.set('projeto', f.projeto);
       if (f.pessoa)  params.set('pessoa', f.pessoa);
       if (f.status !== 'abertas') params.set('status', f.status);
-      if (f.pri)     params.set('pri', f.pri);
-      if (f.tag)     params.set('tag', f.tag);
+      if (f.pri)          params.set('pri', f.pri);
+      if (f.complexidade) params.set('complexidade', f.complexidade);
+      if (f.tag)          params.set('tag', f.tag);
       const qs = params.toString();
       const url = window.location.pathname + (qs ? '?' + qs : '');
       history.replaceState(null, '', url);
@@ -2906,8 +2917,9 @@ function app() {
         if (f.pessoa  && t.pessoaId  !== f.pessoa)  return false;
         if (f.status === 'abertas') { if (t.status === 'concluido') return false; }
         else if (f.status && t.status !== f.status) return false;
-        if (f.pri     && t.prioridade !== f.pri)    return false;
-        if (f.tag     && !(t.tags || []).includes(f.tag)) return false;
+        if (f.pri          && t.prioridade !== f.pri)            return false;
+        if (f.complexidade && (t.complexidade||'media') !== f.complexidade) return false;
+        if (f.tag          && !(t.tags || []).includes(f.tag))   return false;
         return true;
       });
       if (this.sortKey === 'manual') {
@@ -3520,10 +3532,11 @@ function app() {
     },
     get activeFiltersCount() {
       let n = 0;
-      if (this.f.cliente) n++;
-      if (this.f.projeto) n++;
-      if (this.f.pessoa)  n++;
-      if (this.f.pri)     n++;
+      if (this.f.cliente)      n++;
+      if (this.f.projeto)      n++;
+      if (this.f.pessoa)       n++;
+      if (this.f.pri)          n++;
+      if (this.f.complexidade) n++;
       if (this.f.status && this.f.status !== 'abertas') n++;
       return n;
     },
@@ -3532,8 +3545,9 @@ function app() {
       this.f.cliente = '';
       this.f.projeto = '';
       this.f.pessoa = '';
-      this.f.status = 'abertas';
       this.f.pri = '';
+      this.f.complexidade = '';
+      this.f.status = 'abertas';
       this.f.tag = '';
       // Re-renderiza charts caso esteja na aba dashboard (filtros de cliente/pessoa afetam).
       if (this.tab === 'dash') this.$nextTick(() => this.renderCharts());
