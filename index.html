@@ -456,6 +456,7 @@
     <div class="tab" :class="tab==='kanban' && 'active'" @click="tab='kanban'">Kanban</div>
     <div class="tab" :class="tab==='dash' && 'active'" @click="tab='dash'; $nextTick(()=>renderCharts())">Dashboard</div>
     <div class="tab" :class="tab==='cad' && 'active'" @click="tab='cad'">Cadastros</div>
+    <div class="tab" :class="tab==='mvp' && 'active'" @click="tab='mvp'; loadMvpDados()">Dados MVP</div>
   </div>
 </header>
 
@@ -1003,6 +1004,105 @@
   </div>
 </section>
 
+<!-- ============ DADOS MVP ============ -->
+<section x-show="tab==='mvp'" class="fade-up">
+  <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
+    <div>
+      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Dados MVP</h1>
+      <p class="text-ink-soft text-sm mt-1">Adoção interna do app — base pra decidir se a Onda 0 faz sentido.</p>
+    </div>
+    <div class="flex items-center gap-2 text-xs text-muted">
+      <span x-show="mvpLoadedAt>0" x-text="'última carga: ' + new Date(mvpLoadedAt).toLocaleTimeString('pt-BR')"></span>
+      <button class="btn btn-ghost btn-icon text-xs" @click="loadMvpDados()" title="Recarregar">⟲</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-6">
+    <div class="kpi">
+      <div class="kpi-lbl">Eventos 1d</div>
+      <div class="kpi-num brand" x-text="mvpTotals.eventos1d"></div>
+      <div class="kpi-trend">últimas 24h</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Eventos 7d</div>
+      <div class="kpi-num" x-text="mvpTotals.eventos7d"></div>
+      <div class="kpi-trend">última semana</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Pessoas ativas 14d</div>
+      <div class="kpi-num" :class="mvpTotals.pessoasAtivas14d>=2 && 'brand'" x-text="mvpTotals.pessoasAtivas14d"></div>
+      <div class="kpi-trend">distintas no período</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Atribuídos / Anônimos</div>
+      <div class="kpi-num font-mono text-xl" x-text="mvpTotals.atribuidos30d + ' / ' + mvpTotals.anonimos30d"></div>
+      <div class="kpi-trend">eventos 30d (login on/off)</div>
+    </div>
+  </div>
+
+  <div class="card p-4 md:p-6 mb-4">
+    <div class="font-brand text-xl font-semibold mb-1">Volume diário (30d)</div>
+    <div class="text-xs text-muted mb-4">eventos do app por dia: mudanças de status, comentários e replies. Salesforce excluído.</div>
+    <div style="height:200px"><canvas id="chartMvpVolume"></canvas></div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 mb-4">
+    <div class="card p-4 md:p-6">
+      <div class="font-brand text-xl font-semibold mb-1">DAU (14d)</div>
+      <div class="text-xs text-muted mb-4">pessoas distintas com algum evento no dia. Conta só quando o login está on.</div>
+      <div style="height:200px"><canvas id="chartMvpDau"></canvas></div>
+    </div>
+    <div class="card p-4 md:p-6">
+      <div class="font-brand text-xl font-semibold mb-1">Stickiness por pessoa (14d)</div>
+      <div class="text-xs text-muted mb-4">dias com pelo menos um evento. Critério 1 do roadmap: ≥2 pessoas com ≥10 dias.</div>
+      <template x-if="mvpStickiness14d.length === 0">
+        <div class="text-sm text-muted italic py-6">
+          Nenhuma atividade atribuída no período. Login precisa estar ativo pra contar por pessoa.
+        </div>
+      </template>
+      <template x-if="mvpStickiness14d.length > 0">
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="text-[10px] uppercase tracking-wider font-semibold text-muted">
+                <th class="text-left pb-2">Pessoa</th>
+                <th class="text-right pb-2">Dias ativos</th>
+                <th class="text-left pb-2 pl-3">Critério</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="row in mvpStickiness14d" :key="row.pid">
+                <tr class="border-t border-line">
+                  <td class="py-2">
+                    <div class="font-medium" x-text="row.nome"></div>
+                    <div class="text-[10px] text-muted font-mono" x-text="row.email"></div>
+                  </td>
+                  <td class="py-2 text-right font-mono" x-text="row.dias_ativos + ' / 14'"></td>
+                  <td class="py-2 pl-3">
+                    <span x-show="row.dias_ativos>=10" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)">bate critério</span>
+                    <span x-show="row.dias_ativos<10 && row.dias_ativos>=5" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">parcial</span>
+                    <span x-show="row.dias_ativos<5" class="text-[10px] text-muted">—</span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <div class="card p-4 md:p-6">
+    <div class="font-brand text-xl font-semibold mb-1">Como ler estes números</div>
+    <ul class="text-sm text-ink-soft space-y-1 list-disc pl-5">
+      <li><strong>Eventos do app</strong> = mudança de status (criar, editar, mover) + comentário + reply, originados pelo browser. Salesforce e seeds são ignorados.</li>
+      <li>Enquanto o login estiver desligado, eventos não conseguem ser atribuídos a pessoas (campo <span class="font-mono">actor_pessoa_id</span> fica null). O KPI "Pessoas ativas" e o gráfico de DAU só ganham significado depois de religar o login.</li>
+      <li>O critério 1 do roadmap é satisfeito quando: <strong>2+ pessoas distintas com 10+ dias ativos no período de 14 dias</strong>. Margem pra fim de semana e feriados embutida.</li>
+      <li>Esta aba não exige login pra ser vista — ficou propositalmente aberta.</li>
+    </ul>
+  </div>
+</section>
+
 </main>
 
 <!-- ============ FOOTER ============ -->
@@ -1319,8 +1419,10 @@ function app() {
     newPes: '',
     newPesEmail: '',
     newProj: { nome: '', clienteId: '' },
-    charts: { clientes: null, pessoas: null, timeline: null, throughput: null },
     historyAll: [],
+    mvpComments: [],
+    mvpLoadedAt: 0,
+    charts: { clientes: null, pessoas: null, timeline: null, throughput: null, mvpVolume: null, mvpDau: null },
 
     // ===================== INIT / PERSISTÊNCIA =====================
     async init() {
@@ -1476,7 +1578,7 @@ function app() {
     async loadComments(taskId) {
       if (!taskId) { this.editingComments = []; return; }
       const { data, error } = await sb.from('task_comments')
-        .select('id, parent_id, author, author_external_id, body, posted_em, criado_em, external_source, external_id')
+        .select('id, parent_id, author, author_external_id, author_pessoa_id, body, posted_em, criado_em, external_source, external_id')
         .eq('task_id', taskId)
         .order('posted_em', { ascending: true, nullsFirst: true })
         .order('criado_em', { ascending: true });
@@ -1512,9 +1614,11 @@ function app() {
       const body = (this.newReply || '').trim();
       if (!body || !this.editing.id || !parentId) return;
       const author = (this.currentPessoa && this.currentPessoa.nome) || 'app';
+      const authorPessoaId = (this.currentPessoa && this.currentPessoa.id) || null;
       const tempId = 'tmp-' + Math.random().toString(36).slice(2, 8);
       const optimistic = {
         id: tempId, parent_id: parentId, author, body,
+        author_pessoa_id: authorPessoaId,
         external_source: null, posted_em: null,
         criado_em: new Date().toISOString(),
       };
@@ -1522,8 +1626,8 @@ function app() {
       this.newReply = '';
       this.replyingToId = '';
       const { data, error } = await sb.from('task_comments')
-        .insert({ task_id: this.editing.id, parent_id: parentId, author, body })
-        .select('id, parent_id, author, body, external_source, posted_em, criado_em')
+        .insert({ task_id: this.editing.id, parent_id: parentId, author, body, author_pessoa_id: authorPessoaId })
+        .select('id, parent_id, author, body, author_pessoa_id, external_source, posted_em, criado_em')
         .single();
       if (error) {
         this.editingComments = this.editingComments.filter(c => c.id !== tempId);
@@ -1553,7 +1657,7 @@ function app() {
           sb.from('pessoas').select('id,nome,email,user_id').order('nome'),
           sb.from('tasks').select('*').order('criado_em', { ascending: false }),
           sb.from('task_status_history')
-            .select('task_id, from_status, to_status, occurred_at')
+            .select('task_id, from_status, to_status, actor_pessoa_id, actor_source, occurred_at')
             .order('occurred_at', { ascending: false })
             .limit(5000),
         ]);
@@ -2005,6 +2109,139 @@ function app() {
         cycleTime: avg(last30.filter(c => c.cycleDays != null).map(c => c.cycleDays)),
       };
     },
+    // ====== Dados MVP ======
+    async loadMvpDados() {
+      // Carrega comments do app dos últimos 60 dias (com author_pessoa_id)
+      const since = new Date(Date.now() - 60 * 86400000).toISOString();
+      const { data, error } = await sb.from('task_comments')
+        .select('id, author, author_pessoa_id, criado_em, external_source, parent_id')
+        .gte('criado_em', since)
+        .order('criado_em', { ascending: false })
+        .limit(10000);
+      if (error) { this.toast('error', 'Erro ao carregar dados MVP: ' + error.message); return; }
+      this.mvpComments = data || [];
+      this.mvpLoadedAt = Date.now();
+      this.$nextTick(() => this.renderMvpCharts());
+    },
+    // Eventos do app só (exclui SF) pra medir adoção interna real.
+    _mvpEvents(days) {
+      const cutoff = Date.now() - days * 86400000;
+      const events = [];
+      for (const h of this.historyAll) {
+        const ts = new Date(h.occurred_at).getTime();
+        if (ts < cutoff) continue;
+        if (h.actor_source && h.actor_source !== 'app') continue;
+        events.push({ dia: h.occurred_at.slice(0, 10), pid: h.actor_pessoa_id, kind: 'status' });
+      }
+      for (const c of this.mvpComments) {
+        const ts = new Date(c.criado_em).getTime();
+        if (ts < cutoff) continue;
+        if (c.external_source) continue;
+        events.push({ dia: c.criado_em.slice(0, 10), pid: c.author_pessoa_id, kind: c.parent_id ? 'reply' : 'comment' });
+      }
+      return events;
+    },
+    get mvpVolume30d() {
+      // Array de {dia, eventos} pros últimos 30 dias, em ordem cronológica.
+      const events = this._mvpEvents(30);
+      const map = new Map();
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+        map.set(d.toISOString().slice(0, 10), 0);
+      }
+      for (const e of events) if (map.has(e.dia)) map.set(e.dia, map.get(e.dia) + 1);
+      return Array.from(map, ([dia, eventos]) => ({ dia, eventos }));
+    },
+    get mvpDau14d() {
+      const events = this._mvpEvents(14);
+      const map = new Map();
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+        map.set(d.toISOString().slice(0, 10), new Set());
+      }
+      for (const e of events) {
+        if (!e.pid) continue;
+        if (map.has(e.dia)) map.get(e.dia).add(e.pid);
+      }
+      return Array.from(map, ([dia, set]) => ({ dia, pessoas: set.size }));
+    },
+    get mvpStickiness14d() {
+      const events = this._mvpEvents(14);
+      const byPid = new Map();
+      for (const e of events) {
+        if (!e.pid) continue;
+        if (!byPid.has(e.pid)) byPid.set(e.pid, new Set());
+        byPid.get(e.pid).add(e.dia);
+      }
+      const out = [];
+      for (const [pid, dias] of byPid) {
+        const p = this.pessoas.find(x => x.id === pid);
+        out.push({ pid, nome: (p && p.nome) || '—', email: (p && p.email) || '', dias_ativos: dias.size });
+      }
+      return out.sort((a, b) => b.dias_ativos - a.dias_ativos);
+    },
+    get mvpTotals() {
+      const events = this._mvpEvents(30);
+      const totalSemPessoa = events.filter(e => !e.pid).length;
+      const totalComPessoa = events.filter(e => e.pid).length;
+      const last7 = this._mvpEvents(7);
+      const last1 = this._mvpEvents(1);
+      return {
+        eventos30d: events.length,
+        eventos7d: last7.length,
+        eventos1d: last1.length,
+        anonimos30d: totalSemPessoa,
+        atribuidos30d: totalComPessoa,
+        pessoasAtivas14d: this.mvpStickiness14d.length,
+      };
+    },
+    renderMvpCharts() {
+      if (typeof Chart === 'undefined') return;
+      const v = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      const brand = v('--brand'), brandDark = v('--brand-dark'), muted = v('--muted'), inkSoft = v('--ink-soft'), line = v('--line');
+      const baseOpts = {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { backgroundColor: v('--bg-elev'), titleColor: v('--ink'), bodyColor: v('--ink-soft'), borderColor: v('--line'), borderWidth: 1, padding: 8, displayColors: false } },
+      };
+      if (this.charts.mvpVolume) this.charts.mvpVolume.destroy();
+      if (this.charts.mvpDau)    this.charts.mvpDau.destroy();
+
+      const fmtDay = (iso) => {
+        const d = new Date(iso + 'T00:00:00');
+        return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+      };
+
+      const vol = this.mvpVolume30d;
+      const ctxV = document.getElementById('chartMvpVolume');
+      if (ctxV) {
+        this.charts.mvpVolume = new Chart(ctxV, {
+          type: 'bar',
+          data: { labels: vol.map(d => fmtDay(d.dia)), datasets: [{ data: vol.map(d => d.eventos), backgroundColor: brand, borderRadius: 3, maxBarThickness: 16 }] },
+          options: { ...baseOpts,
+            scales: {
+              x: { grid: { display: false }, ticks: { color: muted, font: { family: 'JetBrains Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }, border: { display: false } },
+              y: { grid: { color: line }, ticks: { color: inkSoft, font: { family: 'JetBrains Mono', size: 10 }, stepSize: 1, precision: 0 }, border: { display: false } }
+            }
+          }
+        });
+      }
+
+      const dau = this.mvpDau14d;
+      const ctxD = document.getElementById('chartMvpDau');
+      if (ctxD) {
+        this.charts.mvpDau = new Chart(ctxD, {
+          type: 'bar',
+          data: { labels: dau.map(d => fmtDay(d.dia)), datasets: [{ data: dau.map(d => d.pessoas), backgroundColor: dau.map((_, i) => i === dau.length - 1 ? brandDark : brand), borderRadius: 3, maxBarThickness: 24 }] },
+          options: { ...baseOpts,
+            scales: {
+              x: { grid: { display: false }, ticks: { color: muted, font: { family: 'JetBrains Mono', size: 10 } }, border: { display: false } },
+              y: { grid: { color: line }, ticks: { color: inkSoft, font: { family: 'JetBrains Mono', size: 10 }, stepSize: 1, precision: 0 }, border: { display: false } }
+            }
+          }
+        });
+      }
+    },
+
     get throughputSemanas() {
       // últimas 8 semanas (seg-dom), ordem: mais antiga → atual
       const completed = this._completedWithTimes;
@@ -2266,17 +2503,19 @@ function app() {
       const body = (this.newComment || '').trim();
       if (!body || !this.editing.id) return;
       const author = (this.currentPessoa && this.currentPessoa.nome) || 'app';
+      const authorPessoaId = (this.currentPessoa && this.currentPessoa.id) || null;
       const tempId = 'tmp-' + Math.random().toString(36).slice(2, 8);
       const optimistic = {
         id: tempId, author, body,
+        author_pessoa_id: authorPessoaId,
         external_source: null, posted_em: null,
         criado_em: new Date().toISOString(),
       };
       this.editingComments = [optimistic, ...this.editingComments];
       this.newComment = '';
       const { data, error } = await sb.from('task_comments')
-        .insert({ task_id: this.editing.id, author, body })
-        .select('id, author, body, external_source, posted_em, criado_em')
+        .insert({ task_id: this.editing.id, author, body, author_pessoa_id: authorPessoaId })
+        .select('id, author, body, author_pessoa_id, external_source, posted_em, criado_em')
         .single();
       if (error) {
         this.editingComments = this.editingComments.filter(c => c.id !== tempId);
