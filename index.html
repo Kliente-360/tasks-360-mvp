@@ -623,7 +623,6 @@
       </div>
       <button class="btn btn-ghost btn-icon text-xs" @click="openHelp()" title="Manual da ferramenta" aria-label="Manual"><span>?</span></button>
       <button class="btn btn-ghost btn-icon text-xs" @click="toggleTheme()" :title="theme==='dark' ? 'Mudar para claro' : 'Mudar para escuro'" aria-label="Alternar tema"><span x-text="theme==='dark' ? '☀' : '☾'"></span></button>
-      <button class="btn btn-ghost btn-icon text-xs" @click="load()" title="Recarregar dados do Supabase" aria-label="Recarregar"><span class="md:hidden">⟲</span><span class="hidden md:inline">⟲ recarregar</span></button>
       <div class="w-px h-6 bg-line mx-1 md:mx-2"></div>
       <button class="btn btn-primary text-xs md:text-sm" @click="openNew()"><span class="md:hidden">+ Nova</span><span class="hidden md:inline">+ Nova tarefa</span></button>
       <div class="relative" x-show="authEnabled" @click.outside="userMenuOpen=false">
