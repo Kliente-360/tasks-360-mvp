@@ -776,25 +776,25 @@
         <span class="ml-1 text-muted" x-text="filtersOpen ? '▴' : '▾'"></span>
       </button>
     </div>
-    <div class="col-span-1 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
+    <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.cliente">
         <option value="">Todos os clientes</option>
         <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
     </div>
-    <div class="col-span-1 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
+    <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.projeto">
         <option value="">Todos os projetos</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
-    <div class="col-span-1 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
+    <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.pessoa">
         <option value="">Todas as pessoas</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
-    <div class="col-span-1 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
+    <div class="col-span-2 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.pri">
         <option value="">Pri</option>
         <option value="P0">P0</option>
@@ -803,7 +803,7 @@
         <option value="P3">P3</option>
       </select>
     </div>
-    <div class="col-span-1 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
+    <div class="col-span-2 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.complexidade">
         <option value="">Cmplx</option>
         <option value="alta">Alta</option>
