@@ -64,12 +64,14 @@ Tabela mestre. Cabeçalho ordenável por qualquer coluna (clique). Colunas: Tare
 
 ### Kanban
 
-Duas visões via toggle no topo:
+Duas visões via toggle no topo (no **desktop**). No **mobile** só a visão executiva aparece (a operacional, com 11 colunas, é ruim em tela estreita).
 
-- **Operacional** (default) — 11 colunas com sub-etapas em scroll horizontal. Mover entre colunas via drag-and-drop ou via o select no rodapé do card. Cada coluna tem `+ adicionar` pra criar tarefa rápido.
-- **Executiva** — 4 colunas macro (Backlog, Em andamento, Bloqueado, Concluído), só leitura. O sub-status atual aparece em cada card.
+- **Operacional** (default desktop) — 11 colunas com sub-etapas em scroll horizontal. Mover entre colunas via drag-and-drop ou via o select no rodapé do card. Cada coluna tem `+ adicionar` pra criar tarefa rápido.
+- **Executiva** (única no mobile) — 4 colunas macro (Backlog, Em andamento, Bloqueado, Concluído), só leitura. O sub-status atual aparece em cada card.
 
 A faixa colorida no topo de cada coluna operacional sinaliza o grupo macro: verde = andamento, vermelho = bloqueado, cinza = backlog/concluído.
+
+> No mobile, pra mover de etapa: abra a tarefa (toque no card) e mude o campo "Etapa" no formulário.
 
 ### Calendário
 
