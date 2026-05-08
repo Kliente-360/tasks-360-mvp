@@ -474,7 +474,7 @@
     <div class="tab" :class="tab==='kanban' && 'active'" @click="tab='kanban'">Kanban</div>
     <div class="tab" :class="tab==='dash' && 'active'" @click="tab='dash'; $nextTick(()=>renderCharts())">Dashboard</div>
     <div class="tab" :class="tab==='cad' && 'active'" @click="tab='cad'">Cadastros</div>
-    <div class="tab" :class="tab==='mvp' && 'active'" @click="tab='mvp'; loadMvpDados()">Dados MVP</div>
+    <div class="tab" :class="tab==='mvp' && 'active'" @click="tab='mvp'; loadMvpDados()">Adoption</div>
   </div>
 </header>
 
@@ -1026,7 +1026,7 @@
 <section x-show="tab==='mvp'" class="fade-up">
   <div class="flex items-end justify-between gap-3 mb-5 md:mb-6 flex-wrap">
     <div>
-      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Dados MVP</h1>
+      <h1 class="font-brand text-[26px] md:text-[34px] font-semibold leading-tight">Adoption</h1>
       <p class="text-ink-soft text-sm mt-1">Adoção interna do app — base pra decidir se a Onda 0 faz sentido.</p>
     </div>
     <div class="flex items-center gap-2 text-xs text-muted">
