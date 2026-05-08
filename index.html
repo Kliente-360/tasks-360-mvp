@@ -672,9 +672,9 @@
 
 <!-- ============ MEU FOCO ============ -->
 <section x-show="tab==='foco'" class="fade-up">
-  <div class="flex items-center justify-end gap-2 mb-5 md:mb-6 flex-wrap">
-    <label class="text-xs text-muted font-mono uppercase tracking-wider">atuando como</label>
-    <select class="inp w-[200px]" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 mb-5 md:mb-6">
+    <label class="text-xs text-muted font-mono uppercase tracking-wider md:self-center">atuando como</label>
+    <select class="inp w-full md:w-[200px]" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
       <option value="">— selecionar pessoa —</option>
       <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
@@ -922,12 +922,12 @@
 
 <!-- ============ KANBAN ============ -->
 <section x-show="tab==='kanban'" class="fade-up">
-  <div class="flex items-center justify-between gap-3 mb-5 md:mb-6 flex-wrap">
-    <div class="view-toggle" role="tablist" aria-label="Visão do kanban">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 mb-5 md:mb-6">
+    <div class="view-toggle self-start md:self-auto" role="tablist" aria-label="Visão do kanban">
       <button :class="kanbanView==='op' && 'active'" @click="kanbanView='op'" title="Visão operacional — colunas detalhadas (nível 2)">Operacional</button>
       <button :class="kanbanView==='exec' && 'active'" @click="kanbanView='exec'" title="Visão executiva — colunas macro (nível 1, somente leitura)">Executiva</button>
     </div>
-    <div class="flex items-center gap-2 md:gap-3 w-full md:w-auto">
+    <div class="flex flex-col md:flex-row gap-2 md:gap-3">
       <select class="inp w-full md:w-[200px]" x-model="f.cliente">
         <option value="">Todos os clientes</option>
         <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
@@ -1074,12 +1074,12 @@
 
 <!-- ============ CALENDÁRIO ============ -->
 <section x-show="tab==='cal'" class="fade-up">
-  <div class="flex items-center justify-end gap-2 mb-5 md:mb-6 flex-wrap">
-    <select class="inp w-[160px]" x-model="f.cliente">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 mb-5 md:mb-6">
+    <select class="inp w-full md:w-[200px]" x-model="f.cliente">
       <option value="">Todos os clientes</option>
       <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
     </select>
-    <select class="inp w-[150px]" x-model="f.pessoa">
+    <select class="inp w-full md:w-[180px]" x-model="f.pessoa">
       <option value="">Todos os responsáveis</option>
       <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
@@ -1138,7 +1138,7 @@
 
 <!-- ============ DASHBOARD ============ -->
 <section x-show="tab==='dash'" class="fade-up">
-  <div class="flex items-center justify-end gap-2 md:gap-3 mb-5 md:mb-6 flex-wrap">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 md:gap-3 mb-5 md:mb-6">
     <select class="inp w-full md:w-[200px]" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
       <option value="">Todos os clientes</option>
       <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
