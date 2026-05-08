@@ -673,8 +673,7 @@
 <!-- ============ MEU FOCO ============ -->
 <section x-show="tab==='foco'" class="fade-up">
   <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 mb-5 md:mb-6">
-    <label class="text-xs text-muted font-mono uppercase tracking-wider md:self-center">atuando como</label>
-    <select class="inp w-full md:w-[200px]" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
+    <select class="inp w-full md:w-[240px]" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
       <option value="">— selecionar pessoa —</option>
       <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
@@ -1455,10 +1454,6 @@
 
 <!-- ============ DADOS MVP ============ -->
 <section x-show="tab==='mvp'" class="fade-up">
-  <div class="flex items-center justify-end gap-2 mb-5 md:mb-6 flex-wrap text-xs text-muted">
-    <span x-show="mvpLoadedAt>0" x-text="'última carga: ' + new Date(mvpLoadedAt).toLocaleTimeString('pt-BR')"></span>
-    <button class="btn btn-ghost btn-icon text-xs" @click="loadMvpDados()" title="Recarregar">⟲</button>
-  </div>
 
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-6">
     <div class="kpi">
