@@ -612,7 +612,25 @@
       </div>
     </div>
   </div>
-  <div class="max-w-[1400px] mx-auto px-4 md:px-8 tabs-row">
+  <!-- Mobile: dropdown com aba atual -->
+  <div class="md:hidden border-t border-line relative" @click.outside="mobileNavOpen=false">
+    <button class="w-full flex items-center justify-between px-4 py-3" @click="mobileNavOpen=!mobileNavOpen" aria-label="Menu de navegação">
+      <span class="font-brand font-semibold text-sm" x-text="tabLabel(tab)"></span>
+      <span class="text-muted text-sm" x-text="mobileNavOpen ? '▴' : '▾'"></span>
+    </button>
+    <div x-show="mobileNavOpen" x-transition.opacity class="absolute left-0 right-0 top-full bg-elev border-b border-line shadow-lg z-30">
+      <template x-for="t in tabsList" :key="t.key">
+        <button class="w-full flex items-center justify-between px-4 py-3 border-b border-line last:border-0 transition-colors"
+                :class="tab===t.key ? 'bg-brand-tint text-brand-dark font-medium' : 'hover:bg-bg-elev'"
+                @click="goToTab(t.key); mobileNavOpen=false">
+          <span class="text-sm" x-text="t.label"></span>
+          <span x-show="tab===t.key" class="text-brand text-xs">●</span>
+        </button>
+      </template>
+    </div>
+  </div>
+  <!-- Desktop: abas tradicionais -->
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 tabs-row hidden md:flex">
     <div class="tab" :class="tab==='foco' && 'active'" @click="tab='foco'">Meu foco</div>
     <div class="tab" :class="tab==='backlog' && 'active'" @click="tab='backlog'">Backlog</div>
     <div class="tab" :class="tab==='kanban' && 'active'" @click="tab='kanban'">Kanban</div>
@@ -2104,6 +2122,16 @@ function app() {
     calCursor: (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d.getTime(); })(),
     // Meu foco: pessoa que está atuando (workaround enquanto auth está off)
     focusPessoaId: '',
+    mobileNavOpen: false,
+    tabsList: [
+      { key: 'foco',    label: 'Meu foco' },
+      { key: 'backlog', label: 'Backlog' },
+      { key: 'kanban',  label: 'Kanban' },
+      { key: 'cal',     label: 'Calendário' },
+      { key: 'dash',    label: 'Dashboard' },
+      { key: 'cad',     label: 'Cadastros' },
+      { key: 'mvp',     label: 'Adoption' },
+    ],
     paletteOpen: false,
     paletteQuery: '',
     paletteIndex: 0,
@@ -3136,6 +3164,17 @@ function app() {
       const fn = item.action;
       this.closePalette();
       this.$nextTick(() => fn());
+    },
+
+    // ===================== NAVEGAÇÃO =====================
+    tabLabel(key) {
+      const t = this.tabsList.find(x => x.key === key);
+      return t ? t.label : key;
+    },
+    goToTab(key) {
+      this.tab = key;
+      if (key === 'dash') this.$nextTick(() => this.renderCharts());
+      if (key === 'mvp')  this.loadMvpDados();
     },
 
     // ===================== MEU FOCO =====================
