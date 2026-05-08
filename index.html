@@ -562,9 +562,18 @@
     <div class="flex items-center gap-1 shrink-0">
       <div class="relative" @click.outside="exportOpen=false">
         <button class="btn btn-ghost btn-icon text-xs" @click="exportOpen = !exportOpen" title="Exportar" aria-label="Exportar"><span class="md:hidden">↓</span><span class="hidden md:inline">↓ exportar</span></button>
-        <div x-show="exportOpen" x-transition.opacity class="absolute right-0 top-full mt-1 bg-elev border border-line rounded-md shadow-lg py-1 min-w-[160px] z-50 text-left">
-          <button class="block w-full text-left px-3 py-1.5 text-xs hover:bg-brand-tint" @click="exportCSV()">CSV (visão atual)</button>
-          <button class="block w-full text-left px-3 py-1.5 text-xs hover:bg-brand-tint" @click="exportPDF()">PDF (relatório executivo)</button>
+        <div x-show="exportOpen" x-transition.opacity
+             class="absolute right-0 top-full mt-2 bg-elev border border-line rounded-lg shadow-xl z-50 text-left overflow-hidden w-[260px] md:w-[240px]">
+          <div class="px-3 pt-2.5 pb-1 text-[10px] uppercase tracking-wider text-muted font-semibold font-mono border-b border-line">Exportar como</div>
+          <button class="block w-full text-left px-3 py-3 md:py-2 hover:bg-brand-tint transition-colors" @click="exportCSV()">
+            <div class="text-sm md:text-xs font-medium text-ink">CSV</div>
+            <div class="text-[11px] md:text-[10px] text-muted mt-0.5">visão atual filtrada · pra Excel</div>
+          </button>
+          <div class="border-t border-line"></div>
+          <button class="block w-full text-left px-3 py-3 md:py-2 hover:bg-brand-tint transition-colors" @click="exportPDF()">
+            <div class="text-sm md:text-xs font-medium text-ink">PDF · relatório executivo</div>
+            <div class="text-[11px] md:text-[10px] text-muted mt-0.5">snapshot completo · imprimir/salvar</div>
+          </button>
         </div>
       </div>
       <button class="btn btn-ghost btn-icon text-xs" @click="toggleTheme()" :title="theme==='dark' ? 'Mudar para claro' : 'Mudar para escuro'" aria-label="Alternar tema"><span x-text="theme==='dark' ? '☀' : '☾'"></span></button>
