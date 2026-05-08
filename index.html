@@ -720,6 +720,37 @@
     </div>
   </div>
 
+  <div class="card p-4 md:p-6 mb-5 md:mb-6">
+    <div class="mb-4">
+      <div class="font-brand text-xl font-semibold">Velocidade da operação</div>
+      <div class="text-xs text-muted mt-0.5">throughput, lead time e cycle time — baseado no histórico de status</div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5">
+      <div class="kpi">
+        <div class="kpi-lbl">Throughput 7d</div>
+        <div class="kpi-num brand" x-text="kpiVelocity.throughput7d"></div>
+        <div class="kpi-trend">tarefas concluídas</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">Throughput 30d</div>
+        <div class="kpi-num" x-text="kpiVelocity.throughput30d"></div>
+        <div class="kpi-trend">últimos 30 dias</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">Lead time médio</div>
+        <div class="kpi-num" x-text="kpiVelocity.leadTime ? kpiVelocity.leadTime + 'd' : '—'"></div>
+        <div class="kpi-trend">criação → concluído</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">Cycle time médio</div>
+        <div class="kpi-num" x-text="kpiVelocity.cycleTime ? kpiVelocity.cycleTime + 'd' : '—'"></div>
+        <div class="kpi-trend">andamento → concluído</div>
+      </div>
+    </div>
+    <div style="height:200px"><canvas id="chartThroughput"></canvas></div>
+    <div class="text-[11px] text-muted mt-2">8 semanas, segunda a domingo. Histórico começa quando o registro de status foi habilitado.</div>
+  </div>
+
   <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-5 md:mb-6">
     <div class="card p-4 md:p-6">
       <div class="mb-4">
@@ -1174,7 +1205,8 @@ function app() {
     newPes: '',
     newPesEmail: '',
     newProj: { nome: '', clienteId: '' },
-    charts: { clientes: null, pessoas: null, timeline: null },
+    charts: { clientes: null, pessoas: null, timeline: null, throughput: null },
+    historyAll: [],
 
     // ===================== INIT / PERSISTÊNCIA =====================
     async init() {
@@ -1317,6 +1349,11 @@ function app() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'task_status_history' }, (payload) => {
           const tid = (payload.new && payload.new.task_id) || (payload.old && payload.old.task_id);
           if (this.modal && this.editing.id && this.editing.id === tid) this.loadHistory(this.editing.id);
+          if (payload.eventType === 'INSERT' && payload.new) {
+            this.historyAll = [payload.new, ...this.historyAll];
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            this.historyAll = this.historyAll.filter(h => h.id !== payload.old.id);
+          }
         })
         .subscribe();
     },
@@ -1342,18 +1379,23 @@ function app() {
     },
     async load() {
       try {
-        const [c, p, ps, t] = await Promise.all([
+        const [c, p, ps, t, h] = await Promise.all([
           sb.from('clientes').select('id,nome').order('nome'),
           sb.from('projetos').select('id,nome,cliente_id').order('nome'),
           sb.from('pessoas').select('id,nome,email,user_id').order('nome'),
           sb.from('tasks').select('*').order('criado_em', { ascending: false }),
+          sb.from('task_status_history')
+            .select('task_id, from_status, to_status, occurred_at')
+            .order('occurred_at', { ascending: false })
+            .limit(5000),
         ]);
-        const err = c.error || p.error || ps.error || t.error;
+        const err = c.error || p.error || ps.error || t.error || h.error;
         if (err) throw err;
         this.clientes = c.data;
         this.projetos = p.data.map(projetoFromDb);
         this.pessoas  = ps.data;
         this.tasks    = t.data.map(taskFromDb);
+        this.historyAll = h.data || [];
       } catch (e) {
         console.error('Falha ao carregar do Supabase', e);
         this.toast('error', 'Falha ao carregar: ' + (e.message || e));
@@ -1659,6 +1701,65 @@ function app() {
     get atrasadasList() {
       return this.dashTasks.filter(t => this.atrasada(t)).sort((a,b) => this.diasAtraso(b) - this.diasAtraso(a)).slice(0, 8);
     },
+    // Lead time / cycle time / throughput baseado em task_status_history.
+    // Respeita filtro de cliente/pessoa via dashTasks.
+    get _completedWithTimes() {
+      // Map task → entries asc, mas só pra tasks visíveis no escopo do dashboard
+      const validIds = new Set(this.dashTasks.map(t => t.id));
+      const byTask = new Map();
+      for (const h of this.historyAll) {
+        if (!validIds.has(h.task_id)) continue;
+        if (!byTask.has(h.task_id)) byTask.set(h.task_id, []);
+        byTask.get(h.task_id).push(h);
+      }
+      const out = [];
+      for (const [taskId, entries] of byTask.entries()) {
+        entries.sort((a, b) => new Date(a.occurred_at) - new Date(b.occurred_at));
+        const created    = entries[0];
+        const concluido  = entries.find(e => e.to_status === 'concluido');
+        const andamento  = entries.find(e => e.to_status === 'andamento');
+        if (!concluido) continue;
+        const leadDays  = (new Date(concluido.occurred_at) - new Date(created.occurred_at)) / 86400000;
+        const cycleDays = andamento ? (new Date(concluido.occurred_at) - new Date(andamento.occurred_at)) / 86400000 : null;
+        out.push({ taskId, completedAt: concluido.occurred_at, leadDays, cycleDays });
+      }
+      return out;
+    },
+    get kpiVelocity() {
+      const now = Date.now();
+      const completed = this._completedWithTimes;
+      const within = ms => completed.filter(c => now - new Date(c.completedAt).getTime() <= ms);
+      const last7  = within(7  * 86400000);
+      const last30 = within(30 * 86400000);
+      const avg = arr => arr.length ? Math.round(arr.reduce((a,b) => a+b, 0) / arr.length * 10) / 10 : 0;
+      return {
+        throughput7d:  last7.length,
+        throughput30d: last30.length,
+        leadTime:  avg(last30.map(c => c.leadDays)),
+        cycleTime: avg(last30.filter(c => c.cycleDays != null).map(c => c.cycleDays)),
+      };
+    },
+    get throughputSemanas() {
+      // últimas 8 semanas (seg-dom), ordem: mais antiga → atual
+      const completed = this._completedWithTimes;
+      const out = [];
+      const now = new Date(); now.setHours(0, 0, 0, 0);
+      const offsetSeg = (now.getDay() + 6) % 7;
+      const monday = new Date(now); monday.setDate(now.getDate() - offsetSeg);
+      for (let i = 7; i >= 0; i--) {
+        const start = new Date(monday); start.setDate(monday.getDate() - i * 7);
+        const end   = new Date(start);  end.setDate(start.getDate() + 7);
+        const count = completed.filter(c => {
+          const t = new Date(c.completedAt);
+          return t >= start && t < end;
+        }).length;
+        out.push({
+          label: start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          count,
+        });
+      }
+      return out;
+    },
     get calendarWeeks() {
       const today = new Date(); today.setHours(0,0,0,0);
       // Janela: semana passada + atual + 4 à frente = 6 semanas
@@ -1752,9 +1853,10 @@ function app() {
       const tlCounts = [atrasadasN, ...semanas.map(s => s.count)];
 
       // destruir charts anteriores
-      if (this.charts.clientes) this.charts.clientes.destroy();
-      if (this.charts.pessoas)  this.charts.pessoas.destroy();
-      if (this.charts.timeline) this.charts.timeline.destroy();
+      if (this.charts.clientes)   this.charts.clientes.destroy();
+      if (this.charts.pessoas)    this.charts.pessoas.destroy();
+      if (this.charts.timeline)   this.charts.timeline.destroy();
+      if (this.charts.throughput) this.charts.throughput.destroy();
 
       const css = getComputedStyle(document.documentElement);
       const v = (n) => css.getPropertyValue(n).trim();
@@ -1797,6 +1899,41 @@ function app() {
           options: { ...baseOpts, indexAxis: 'y' }
         });
       }
+      // Throughput semanal (8 semanas, com base no histórico)
+      const ts = this.throughputSemanas;
+      const ctxTh = document.getElementById('chartThroughput');
+      if (ctxTh) {
+        this.charts.throughput = new Chart(ctxTh, {
+          type: 'bar',
+          data: {
+            labels: ts.map(s => s.label),
+            datasets: [{
+              data: ts.map(s => s.count),
+              backgroundColor: ts.map((_, i) => i === ts.length - 1 ? brandDark : brand),
+              borderRadius: 4,
+              maxBarThickness: 36,
+            }]
+          },
+          options: {
+            ...baseOpts,
+            plugins: {
+              ...baseOpts.plugins,
+              tooltip: {
+                ...baseOpts.plugins.tooltip,
+                callbacks: {
+                  title: (items) => 'Semana de ' + ts[items[0].dataIndex].label,
+                  label: (c) => c.parsed.y + ' tarefa(s) concluída(s)',
+                }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: muted, font: { family: 'JetBrains Mono', size: 11 } }, border: { display: false } },
+              y: { grid: { color: line }, ticks: { color: inkSoft, font: { family: 'JetBrains Mono', size: 11 }, stepSize: 1, precision: 0 }, border: { display: false } }
+            }
+          }
+        });
+      }
+
       const ctxT = document.getElementById('chartTimeline');
       if (ctxT) {
         this.charts.timeline = new Chart(ctxT, {
