@@ -2,7 +2,9 @@
 
 > **Como usar a ferramenta no dia a dia.** Atualizado a cada release com novas funcionalidades ou mudanças de comportamento.
 >
-> Última atualização: 08/05/2026 · após onda de polimento (Meu foco · Calendário · ⌘K · atalhos · bulk actions · quick add)
+> **Dentro do app**: clique no botão **?** no topo (ou ⌘K → "Manual") pra abrir esse documento renderizado bonito, com índice navegável.
+>
+> Última atualização: 08/05/2026 · após onda de polimento (Meu foco · Calendário · ⌘K · atalhos · bulk actions · quick add · manual no app)
 
 ---
 

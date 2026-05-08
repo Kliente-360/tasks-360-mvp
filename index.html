@@ -21,6 +21,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js"></script>
 <style>
   :root {
     /* identidade Kliente 360 */
@@ -406,6 +407,32 @@
     }
   }
 
+  /* ============ MANUAL (markdown rendered) ============ */
+  .help-md { color: var(--ink); font-family: 'Inter', sans-serif; line-height: 1.65; font-size: 14.5px; }
+  .help-md > *:first-child { margin-top: 0 !important; }
+  .help-md h1, .help-md h2, .help-md h3, .help-md h4 { font-family: 'Manrope', sans-serif; color: var(--ink); font-weight: 700; line-height: 1.25; scroll-margin-top: 12px; }
+  .help-md h1 { font-size: 26px; margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--brand); color: var(--brand); }
+  .help-md h2 { font-size: 20px; margin: 28px 0 10px; padding-left: 8px; border-left: 3px solid var(--brand); }
+  .help-md h3 { font-size: 16px; margin: 20px 0 8px; color: var(--ink); }
+  .help-md h4 { font-size: 14px; margin: 14px 0 6px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; }
+  .help-md p { margin: 8px 0; color: var(--ink-soft); }
+  .help-md strong { color: var(--ink); font-weight: 600; }
+  .help-md ul, .help-md ol { padding-left: 22px; margin: 8px 0; color: var(--ink-soft); }
+  .help-md li { margin: 4px 0; }
+  .help-md li > p { margin: 2px 0; }
+  .help-md a { color: var(--brand-dark); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  .help-md a:hover { color: var(--brand); }
+  .help-md code { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; background: var(--bg-elev); border: 1px solid var(--line); padding: 1px 5px; border-radius: 3px; color: var(--brand-dark); }
+  .help-md pre { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; margin: 10px 0; }
+  .help-md pre code { background: transparent; border: 0; padding: 0; color: var(--ink); }
+  .help-md blockquote { border-left: 3px solid var(--brand); background: var(--brand-tint); color: var(--ink-soft); margin: 10px 0; padding: 8px 14px; border-radius: 0 4px 4px 0; }
+  .help-md blockquote p { color: inherit; margin: 4px 0; }
+  .help-md hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+  .help-md table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  .help-md th, .help-md td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+  .help-md th { background: var(--bg-elev); font-weight: 600; color: var(--ink); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .help-md tbody tr:nth-child(even) td { background: var(--bg); }
+
   [x-cloak] { display: none !important; }
 
   /* ============ RELATÓRIO EXECUTIVO (PDF via print) ============ */
@@ -594,6 +621,7 @@
           </button>
         </div>
       </div>
+      <button class="btn btn-ghost btn-icon text-xs" @click="openHelp()" title="Manual da ferramenta" aria-label="Manual"><span>?</span></button>
       <button class="btn btn-ghost btn-icon text-xs" @click="toggleTheme()" :title="theme==='dark' ? 'Mudar para claro' : 'Mudar para escuro'" aria-label="Alternar tema"><span x-text="theme==='dark' ? '☀' : '☾'"></span></button>
       <button class="btn btn-ghost btn-icon text-xs" @click="load()" title="Recarregar dados do Supabase" aria-label="Recarregar"><span class="md:hidden">⟲</span><span class="hidden md:inline">⟲ recarregar</span></button>
       <div class="w-px h-6 bg-line mx-1 md:mx-2"></div>
@@ -1550,6 +1578,46 @@
 
 </main>
 
+<!-- ============ MANUAL DO USUÁRIO (overlay) ============ -->
+<div x-show="helpOpen" x-transition.opacity class="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center px-2 md:px-4 py-4" @click="closeHelp()" @keydown.escape.window="closeHelp()">
+  <div class="bg-elev border border-line rounded-lg shadow-2xl w-full max-w-[920px] h-[92vh] flex flex-col overflow-hidden" @click.stop>
+    <div class="px-4 md:px-6 py-3 border-b border-line flex items-center justify-between gap-3 shrink-0">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="font-brand font-semibold text-base md:text-lg">Manual · tasks 360</div>
+        <span class="text-[10px] uppercase tracking-wider text-muted font-mono hidden md:inline">como usar a ferramenta</span>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button class="btn btn-ghost text-xs" @click="shortcutsHelpOpen=true; helpOpen=false" title="Atalhos">⌨ atalhos</button>
+        <button class="text-muted hover:text-ink text-xl px-2" @click="closeHelp()" aria-label="Fechar">×</button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-hidden grid md:grid-cols-[220px_1fr]">
+      <!-- TOC desktop -->
+      <aside class="hidden md:block border-r border-line overflow-y-auto bg-bg">
+        <div class="px-4 py-3 text-[10px] uppercase tracking-wider text-muted font-mono font-semibold border-b border-line">índice</div>
+        <nav class="py-2 text-sm">
+          <template x-for="h in helpToc" :key="h.id">
+            <a :href="'#' + h.id"
+               @click.prevent="scrollHelpTo(h.id)"
+               class="block px-4 py-1.5 hover:bg-brand-tint hover:text-brand-dark transition-colors text-ink-soft"
+               x-text="h.text"></a>
+          </template>
+        </nav>
+      </aside>
+      <!-- Conteúdo -->
+      <div id="helpScroll" class="overflow-y-auto px-5 md:px-8 py-5 md:py-7">
+        <div x-show="helpLoading" class="text-center text-muted py-12">carregando manual…</div>
+        <div x-show="helpError" class="text-center py-12">
+          <div class="text-[color:var(--p0)] mb-2">não foi possível carregar o manual</div>
+          <div class="text-xs text-muted" x-text="helpError"></div>
+          <a class="btn btn-ghost text-xs mt-3" href="HOWTO.md" target="_blank">abrir HOWTO.md em nova aba</a>
+        </div>
+        <article class="help-md" x-html="helpHtml" x-show="!helpLoading && !helpError"></article>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ AJUDA DE ATALHOS (?) ============ -->
 <div x-show="shortcutsHelpOpen" x-transition.opacity class="fixed inset-0 z-[80] bg-black/40 flex items-center justify-center px-4" @click="shortcutsHelpOpen=false">
   <div class="bg-elev border border-line rounded-lg shadow-2xl w-full max-w-[420px] overflow-hidden" @click.stop>
@@ -2123,6 +2191,12 @@ function app() {
     // Meu foco: pessoa que está atuando (workaround enquanto auth está off)
     focusPessoaId: '',
     mobileNavOpen: false,
+    helpOpen: false,
+    helpHtml: '',
+    helpToc: [],
+    helpLoading: false,
+    helpError: '',
+    _helpLoaded: false,
     tabsList: [
       { key: 'foco',    label: 'Meu foco' },
       { key: 'backlog', label: 'Backlog' },
@@ -3151,6 +3225,7 @@ function app() {
         { id: 'act-clear',  kind: 'ação', label: 'Limpar filtros',        hint: 'reseta busca, cliente, etc.',    action: () => this.clearFilters() },
         { id: 'act-theme',  kind: 'ação', label: 'Alternar tema',         hint: 'claro / escuro',                 action: () => this.toggleTheme() },
         { id: 'act-reload', kind: 'ação', label: 'Recarregar dados',      hint: 'busca tudo do Supabase',         action: () => this.load() },
+        { id: 'act-manual', kind: 'ação', label: 'Manual da ferramenta',  hint: 'como usar · HOWTO completo',     action: () => this.openHelp() },
         { id: 'act-help',   kind: 'ação', label: 'Atalhos de teclado',    hint: 'ver lista completa',             action: () => this.shortcutsHelpOpen = true },
       ];
       for (const a of actions) {
@@ -3164,6 +3239,46 @@ function app() {
       const fn = item.action;
       this.closePalette();
       this.$nextTick(() => fn());
+    },
+
+    // ===================== AJUDA / MANUAL =====================
+    async openHelp() {
+      this.helpOpen = true;
+      if (this._helpLoaded) return;
+      this.helpLoading = true; this.helpError = '';
+      try {
+        const r = await fetch('HOWTO.md', { cache: 'no-cache' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const md = await r.text();
+        // Remove o título/subtítulo top-of-file pra não duplicar com o header do overlay
+        const cleaned = md.replace(/^#\s+tasks 360 — manual do usuário[\s\S]*?\n---\s*\n/m, '').trim();
+        const tmp = document.createElement('div');
+        tmp.innerHTML = marked.parse(cleaned, { gfm: true });
+        const slug = (s) => String(s).toLowerCase().normalize('NFD').replace(/\p{M}/gu,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+        const toc = [];
+        const used = new Set();
+        tmp.querySelectorAll('h1, h2').forEach(h => {
+          let id = slug(h.textContent || '');
+          if (!id) return;
+          let n = 1; const base = id; while (used.has(id)) { id = base + '-' + (++n); }
+          used.add(id);
+          h.id = id;
+          toc.push({ id, text: h.textContent, depth: parseInt(h.tagName[1]) });
+        });
+        this.helpHtml = tmp.innerHTML;
+        this.helpToc = toc;
+        this._helpLoaded = true;
+      } catch (e) {
+        this.helpError = (e && e.message) || 'erro desconhecido';
+      } finally {
+        this.helpLoading = false;
+      }
+    },
+    closeHelp() { this.helpOpen = false; },
+    scrollHelpTo(id) {
+      const root = document.getElementById('helpScroll');
+      const el = root && root.querySelector('#' + CSS.escape(id));
+      if (el && root) root.scrollTo({ top: el.offsetTop - 8, behavior: 'smooth' });
     },
 
     // ===================== NAVEGAÇÃO =====================
