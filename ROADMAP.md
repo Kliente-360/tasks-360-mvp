@@ -515,12 +515,55 @@ Entregas:
 
 **Objetivo**: usar a história acumulada do app para virar diferencial competitivo.
 
-Possíveis entregas (ordem a definir conforme aprendizado):
-- **Estimativa de esforço por IA** baseada em histórico de tarefas similares.
-- **Sugestão de priorização** com base em SLA, capacidade do time e prazos.
-- **Resumos automáticos** para o cliente (toda sexta, gerar resumo da semana por projeto).
-- **Previsão de entrega** com confiança baseada em throughput histórico.
-- **Detecção de risco** (projetos com sinais de atraso antes de ficarem oficialmente atrasados).
+#### Stack proposta
+
+- **API**: Anthropic API (chave `ANTHROPIC_API_KEY` em env do Supabase).
+- **Modelos**: Sonnet 4.6 para análise de prosa/contexto longo; Haiku 4.5 para tarefas curtas e baratas (classificação, extração).
+- **Prompt caching** ligado em todas as chamadas — corta drasticamente o custo de jobs recorrentes (resumo semanal etc).
+- **Onde rodar**: Edge Functions do Supabase, mesmo padrão dos endpoints existentes (`ingest-task`, `delete-task`).
+- **Orçamento estimado**: <$20/mês mesmo com uso intenso, dado o volume atual e prompt caching.
+
+#### Frentes ranqueadas (custo × valor)
+
+**1. Sugestão de complexidade + esforço ao criar/editar task** ⭐ — *começar aqui*
+
+- Usuário digita título + descrição → Claude propõe `complexidade` e `esforco`.
+- RAG simples: usa tarefas fechadas do mesmo cliente/projeto como contexto.
+- Botão "✨ sugerir" no form, não-intrusivo. Sempre revisável pelo humano.
+- **Por que primeiro**: custo baixo, valor visível imediato, ótimo pitch de "IA preenche pra você". Risco de qualidade percebida mínimo (a sugestão é opcional).
+- **Edge function nova**: `ai-suggest`.
+
+**2. Resumo executivo semanal por projeto** ⭐⭐
+
+- Cron sexta na edge function: para cada projeto ativo, gera 4-6 bullets — o que avançou, o que ficou para trás, riscos, próximos marcos.
+- Aparece numa aba nova "Insights" e/ou seção opcional no PDF executivo.
+- **Por que segundo**: maior impacto pro CEO/cliente. É o tipo de coisa que vende e pode ser entregue ao cliente final.
+
+**3. Detector de risco antecipado** ⭐⭐
+
+- Job diário olhando aging + bloqueios + atrasos crescentes + texto de comentários.
+- Produz lista priorizada de "olhar aqui" com explicação contextualizada (ex.: "Cliente X: 3 tasks em homologação há +14d, comentário recente cita 'aguardando aprovação jurídica'").
+- Aparece como banner no Dashboard ou em "Insights".
+- **Por que terceiro**: protege operação e justifica renovação. Alta percepção de inteligência.
+
+**4. Auto-categorização de tags + clusters**
+
+- Ao criar task, Claude sugere tags coerentes com o padrão do projeto.
+- Periodicamente, sugere fundir tags duplicadas (`bug-front`/`frontend-bug`).
+- Reduz fricção. Valor médio.
+
+**5. Chat com seu backlog** (tool use)
+
+- Caixa de chat onde se pergunta "quais tasks do cliente X estão em risco?", "mostra o que tá parado há +10d".
+- Claude usa tool calls em queries do Supabase pra responder com dados reais.
+- **Cuidados**: prompt injection se aceitar texto de comments na query — manejar privilégio com tool defs restritas e schema-only nos resultados.
+- Coolest demo. Maior esforço de engenharia.
+
+#### Pré-requisitos pra começar
+
+1. Chave Anthropic em env do Supabase.
+2. Definir orçamento mensal aceitável.
+3. Detalhar arquitetura e prompt do **item 1** (`ai-suggest`).
 
 ---
 
