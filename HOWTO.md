@@ -97,7 +97,28 @@ Três sub-abas: Clientes · Projetos · Pessoas. Cadastre antes de criar tarefas
 
 ### Adoption
 
-Métricas de uso interno do app (DAUs, eventos, comentários). Pra acompanhar adoção do protótipo.
+Métricas de uso interno do app (DAUs, eventos, comentários). Pra acompanhar adoção do protótipo. *Visível apenas para `admin`.*
+
+### Portal cliente
+
+Aba dedicada para o cliente externo. Layout simples com 4 cards (Aguardando você, Em andamento, Próximas 14d, Entregues 30d) sem jargão de PM. Click numa tarefa abre detalhe simplificado com linha do tempo humanizada, comentários públicos e caixa de novo comentário. Quando uma tarefa está bloqueada por aguardar resposta do cliente, aparece o botão **"Já respondi"** que cria um comentário marcado e sinaliza ao time pra triar.
+
+- *Admin/Interno*: aparece um seletor "visualizar como cliente" — escolhe qual cliente simular. Persistido no localStorage.
+- *Cliente* (futuro, com auth): seletor some, ele só vê o próprio cliente.
+
+---
+
+## Perfis e permissões
+
+3 roles em `pessoas`:
+
+| Role | Vê | Limita |
+|---|---|---|
+| **admin** | Tudo (todas abas + Cadastros + Adoption) | — |
+| **interno** | Foco · Backlog · Kanban · Calendário · Dashboard · Portal cliente | Sem Cadastros, Adoption. **Não pode excluir tasks.** |
+| **cliente** | Apenas Portal cliente, escopado ao próprio cliente | Não cria task, não edita, não move etapa. |
+
+> Enquanto auth não está ativo, todo usuário é `admin` por default e o seletor do Portal permite simular qualquer cliente. Quando auth voltar, o role é derivado automaticamente da pessoa logada.
 
 ---
 

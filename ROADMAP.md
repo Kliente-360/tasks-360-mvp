@@ -519,6 +519,97 @@ Entregas:
     - (b) tela dedicada "Arquivo" com tabelão único (clientes, projetos, tasks) + filtros (tipo, cliente, período, busca) e ação de desarquivar
   - **Impacto**: Backlog/Kanban/Dashboard/Adoption ganham filtro automático `arquivado_em is null`. Edit form: botão "arquivar" ao invés de excluir (manter excluir só pra erro). Realtime continua propagando.
 
+### Roles + Portal do cliente (a implementar)
+
+Decisão tomada em maio/2026, piloto Pão e Talho.
+
+#### Modelo
+
+- **3 roles em `pessoas`**: `admin` (full), `interno` (sem Cadastros e Adoption, sem deletar), `cliente` (só Portal, escopado ao próprio cliente).
+- **Coluna nova**: `pessoas.role text not null default 'interno' check (role in ('admin','interno','cliente'))`.
+- **Coluna nova**: `pessoas.cliente_id uuid references clientes(id)` — só preenchido quando `role='cliente'`; identifica o cliente externo dela.
+- **Coluna nova em comments**: `comments.visivel_cliente boolean not null default false` — controla quais comentários aparecem no Portal.
+- **Coluna nova em comments**: `comments.from_cliente boolean not null default false` — sinaliza que veio do Portal (ou simulação dele); usado no widget "Aguardando triagem" do time.
+- **Coluna nova em tasks**: `tasks.bloqueado_por text check (bloqueado_por in ('nos','cliente','terceiro'))` — só faz sentido com `subetapa='bloqueado'`. `null` quando não classificado. Drives a seção "Aguardando você" do Portal.
+- **Coluna nova em tasks**: `tasks.visivel_cliente boolean not null default true` — permite ocultar tasks técnicas do Portal.
+
+#### Permissão (pragmatismo)
+
+- **RLS apertada SOMENTE pra `role='cliente'`** (impede leak via anon key). Internos e admin continuam abertos — gating no front. Onda 0 (rebuild Next) aperta tudo.
+- **Sem auth**: durante o protótipo, todo usuário é `admin` por default (acesso total). Portal e seleção de cliente acessíveis via "simulação" — mesmo padrão do "Meu foco" simulando pessoa.
+
+#### Front gating
+
+- `viewerRole` derivado do `currentPessoa` quando auth ligado; default `admin` enquanto auth desligado.
+- Abas visíveis por role:
+  - `admin`: tudo (Foco, Backlog, Kanban, Calendário, Dashboard, Cadastros, Adoption, Portal)
+  - `interno`: tudo MENOS Cadastros e Adoption
+  - `cliente`: só Portal (sem botão de filtrar cliente — ele só vê o dele)
+- Botão excluir tasks: só `admin`.
+
+#### Portal do cliente — escopo MVP
+
+**Layout**: header simples + 4 cards na home + detalhe simplificado da task.
+
+**4 cards**:
+1. Em andamento agora — N tarefas com breve descrição
+2. Próximas entregas — tasks com prazo nos próximos 14d
+3. **Aguardando você** ⚠️ — tasks `subetapa='bloqueado'` AND `bloqueado_por='cliente'` (gera urgência boa)
+4. Entregues recentemente — concluídas nos últimos 30d
+
+**Detalhe da task** (modal/drawer simplificado):
+- Título · descrição · projeto · responsável (primeiro nome) · prazo · status macro
+- Linha do tempo humanizada (não a status_history bruta)
+- Conversa pública (comments com `visivel_cliente=true`)
+- Caixa de "adicionar comentário" — sempre vira público (`visivel_cliente=true`, `from_cliente=true`)
+- Botão **"Já respondi"** quando task está bloqueada por cliente — abre textarea, cria comment marcado, **task continua bloqueada**, time triaga
+
+**Sem jargão**: zero P0/P1, complexidade, esforço em horas, aging técnico, sub-etapas. Linguagem do cliente.
+
+**O que cliente PODE fazer**:
+- Ver tasks ativas dele (filtradas por `cliente_id` + `visivel_cliente=true`)
+- Ver detalhe + linha do tempo + comments públicos
+- Adicionar comentário público
+- Marcar "Já respondi" em tasks `bloqueado_por='cliente'`
+
+**O que cliente NÃO faz**: criar task, editar campos, mover etapa, excluir, ver outros clientes, ver tasks/comments internos, ver outras abas.
+
+**Time interno ganha**:
+- Edit form: dropdown `bloqueado_por` quando subetapa='bloqueado' + checkbox "tarefa visível ao cliente"
+- Comments: checkbox "público (cliente vê)" no input
+- Aba "Meu foco" ganha seção **"Aguardando triagem"** — tasks `bloqueado_por='cliente'` que receberam comment `from_cliente=true` nas últimas 72h
+
+#### Roteiro de execução
+
+**Fase 0** (caminho crítico — pendente):
+- Resolver os 2 bugs do magic link e reativar `AUTH_ENABLED`. Piloto sem auth real é teatro.
+
+**Fase 1** (pode rodar agora, sem auth):
+- Patch SQL `roles_portal_patch.sql` com colunas novas em pessoas, comments e tasks.
+- Front: data layer (taskFromDb/toDb, commentFromDb/toDb), edit form (bloqueado_por, visivel_cliente), comments (visivel_cliente toggle).
+- Aba Portal nova com seleção "Visualizando como cliente: [select]" persistida em localStorage.
+- Gating de tabs implementado mas inerte (todos são admin enquanto auth desligado).
+
+**Fase 2** (depende de auth):
+- RLS apertada pro role=cliente.
+- viewerRole derivado de currentPessoa.
+- Selector de cliente some pro role=cliente, fica visível pra admin/interno.
+- Cadastrar pessoa Pão e Talho com role=cliente, cliente_id, convidar via magic link.
+
+#### Decisões fechadas
+
+| # | Decisão |
+|---|---|
+| 1 | Interno NÃO deleta — só admin |
+| 2 | Cliente vê primeiro nome do responsável |
+| 3 | Cliente NÃO vê esforço em horas, complexidade ou prioridade técnica |
+| 4 | Cliente NÃO cria tasks — pede via comentário |
+| 5 | `bloqueado_por` como coluna nova (`nos`/`cliente`/`terceiro`) |
+| 6 | Comments públicos com bool `visivel_cliente` (não tabela separada) |
+| 7 | SEM notificação por email/push no MVP — cliente acessa quando quiser |
+| 8 | "Já respondi" cria comment + task continua bloqueada → time triaga manualmente |
+| + | Adoption também escondida pro role=interno |
+
 ### Onda 5+ — Diferenciação com IA
 
 **Objetivo**: usar a história acumulada do app para virar diferencial competitivo.
