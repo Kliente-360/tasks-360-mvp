@@ -1385,7 +1385,7 @@
                     <span class="font-medium text-ink" x-text="c.author || '—'"></span>
                     <span class="text-muted font-mono" x-text="fmtPostedEm(c.posted_em || c.criado_em)"></span>
                   </div>
-                  <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-text="c.body"></div>
+                  <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-text="stripHtml(c.body)"></div>
                 </div>
               </template>
               <div x-show="portalTaskComments.length === 0" class="text-xs text-muted italic">Nenhum comentário ainda.</div>
@@ -2231,7 +2231,7 @@
                   </span>
                   <span class="text-muted font-mono" x-text="fmtPostedEm(c.posted_em || c.criado_em)"></span>
                 </div>
-                <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-text="c.body"></div>
+                <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-text="stripHtml(c.body)"></div>
                 <div class="mt-1">
                   <button x-show="replyingToId !== c.id" class="text-[11px] text-muted hover:text-brand-dark" @click="startReply(c.id)">↳ responder</button>
                 </div>
@@ -2246,7 +2246,7 @@
                     </span>
                     <span class="text-muted font-mono" x-text="fmtPostedEm(r.posted_em || r.criado_em)"></span>
                   </div>
-                  <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-text="r.body"></div>
+                  <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-text="stripHtml(r.body)"></div>
                 </div>
               </template>
               <!-- input de reply, inline abaixo das replies existentes -->
@@ -2863,6 +2863,24 @@ function app() {
       const hh = String(d.getHours()).padStart(2,'0');
       const mi = String(d.getMinutes()).padStart(2,'0');
       return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+    },
+    // Converte HTML rich text (vindo do Salesforce Chatter) em texto plano,
+    // preservando quebras de linha. Comments com HTML viram texto legível;
+    // comments já em plain text passam intactos.
+    stripHtml(s) {
+      if (!s) return '';
+      const str = String(s);
+      // Curto-circuito: sem qualquer tag, retorna como veio.
+      if (!/<[a-z!\/]/i.test(str)) return str;
+      const tmp = document.createElement('div');
+      tmp.innerHTML = str
+        .replace(/<\/p\s*>/gi, '\n\n')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/li\s*>/gi, '\n')
+        .replace(/<li[^>]*>/gi, '• ')
+        .replace(/<\/(div|h[1-6]|tr)\s*>/gi, '\n');
+      // textContent strips remaining tags + decodifica entidades (&amp; etc.)
+      return (tmp.textContent || '').replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim();
     },
     async load() {
       try {
