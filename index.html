@@ -762,7 +762,8 @@
       <span x-show="sortKey==='manual'">✓ ordem manual</span>
     </button>
     <span class="text-muted text-[11px] uppercase tracking-wider font-semibold hidden md:inline">mostrando</span>
-    <span class="font-mono text-sm hidden md:inline" x-text="filtered.length + ' / ' + tasks.length"></span>
+    <span class="font-mono text-sm hidden md:inline" x-text="filtered.length + ' visíveis / ' + tasks.length + ' total'"></span>
+    <span class="font-mono text-xs text-muted hidden md:inline" x-show="tasks.length - filtered.length > 0" x-text="'· ' + (tasks.length - filtered.length) + ' ocultas'"></span>
   </div>
 
   <!-- Filtros — ordem espelha colunas da tabela: Tarefa · Cliente · Projeto · Resp · Pri · Cmplx · Status · Tag -->
