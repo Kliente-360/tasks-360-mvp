@@ -95,6 +95,8 @@ Filtros de cliente e responsável afetam tudo.
 
 Três sub-abas: Clientes · Projetos · Pessoas. Cadastre antes de criar tarefas que dependam.
 
+Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (admin / interno / cliente) e — quando perfil for "cliente" — o cliente externo vinculado. Esse vínculo determina o que a pessoa vê no Portal quando o login estiver ativo.
+
 ### Adoption
 
 Métricas de uso interno do app (DAUs, eventos, comentários). Pra acompanhar adoção do protótipo. *Visível apenas para `admin`.*

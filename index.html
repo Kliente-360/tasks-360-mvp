@@ -1682,6 +1682,8 @@
             <div class="min-w-0">
               <div class="text-sm font-medium flex items-center gap-2 flex-wrap">
                 <span x-text="p.nome"></span>
+                <span x-show="p.role === 'admin'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)" title="Acesso total">admin</span>
+                <span x-show="p.role === 'cliente'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309" title="Cliente externo — só vê o Portal">cliente</span>
                 <span x-show="p.invited_at && p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)">acesso ativo</span>
                 <span x-show="p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">convidada</span>
                 <span x-show="!p.invited_at && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">sem convite</span>
@@ -1689,6 +1691,7 @@
               <div class="text-xs text-muted truncate">
                 <span x-show="p.email" class="font-mono" x-text="p.email"></span>
                 <span x-show="p.email"> · </span>
+                <span x-show="p.role === 'cliente' && p.cliente_id" x-text="nomeCliente(p.cliente_id) + ' · '"></span>
                 <span x-text="contarTarefasPessoa(p.id) + ' tarefas ativas'"></span>
               </div>
             </div>
@@ -1697,7 +1700,7 @@
             <button class="btn btn-ghost text-xs" x-show="p.email && !p.invited_at" @click="convidarPessoa(p)" title="Marcar como convidada e enviar magic link">convidar</button>
             <button class="btn btn-ghost text-xs" x-show="p.email && p.invited_at" @click="convidarPessoa(p)" title="Reenviar magic link">reenviar link</button>
             <button class="btn btn-ghost text-xs" x-show="p.invited_at" @click="desconvidarPessoa(p)" title="Revogar acesso">desconvidar</button>
-            <button class="btn btn-ghost text-xs" @click="renomeiaPessoa(p)">renomear</button>
+            <button class="btn btn-ghost text-xs" @click="openEditPessoa(p)">editar</button>
             <button class="btn btn-danger text-xs" @click="deletePessoa(p)">excluir</button>
           </div>
         </div>
@@ -2326,6 +2329,54 @@
   </div>
 </div>
 
+<!-- ============ MODAL EDITAR PESSOA ============ -->
+<div x-show="modalPessoa" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modalPessoa=false" @keydown.escape.window="modalPessoa=false" x-transition.opacity>
+  <div class="modal-card bg-elev border border-line rounded-xl shadow-xl w-full max-w-[480px] overflow-hidden flex flex-col">
+    <div class="px-5 md:px-6 py-3 border-b border-line flex items-center justify-between">
+      <div>
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">pessoa</div>
+        <div class="font-brand font-semibold text-base mt-0.5" x-text="editingPessoa && (editingPessoa.id ? editingPessoa.nome : 'Nova pessoa')"></div>
+      </div>
+      <button class="text-muted hover:text-ink text-2xl px-2" @click="modalPessoa=false" aria-label="Fechar">×</button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-5 md:px-6 py-4 space-y-3" x-show="editingPessoa">
+      <div>
+        <label class="lbl">Nome</label>
+        <input type="text" class="inp" x-model="editingPessoa.nome" placeholder="Ex: Maria Silva">
+      </div>
+      <div>
+        <label class="lbl">Email</label>
+        <input type="email" inputmode="email" class="inp" x-model="editingPessoa.email" placeholder="maria@empresa.com">
+        <div class="text-[10px] text-muted mt-1">usado pra login com magic link.</div>
+      </div>
+      <div>
+        <label class="lbl">Perfil</label>
+        <select class="inp" x-model="editingPessoa.role" @change="editingPessoa.role !== 'cliente' && (editingPessoa.cliente_id = null)">
+          <option value="admin">admin · acesso total</option>
+          <option value="interno">interno · time da consultoria</option>
+          <option value="cliente">cliente · externo (só Portal)</option>
+        </select>
+      </div>
+      <div x-show="editingPessoa.role === 'cliente'">
+        <label class="lbl">Cliente vinculado</label>
+        <select class="inp" x-model="editingPessoa.cliente_id">
+          <option :value="null">— selecionar cliente —</option>
+          <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+        </select>
+        <div class="text-[10px] text-muted mt-1">o Portal mostra apenas tarefas deste cliente.</div>
+      </div>
+      <div x-show="editingPessoa.id" class="text-[10px] font-mono text-muted pt-2 border-t border-line">
+        <div>id: <span x-text="editingPessoa.id"></span></div>
+        <div x-show="editingPessoa.invited_at">convidada em: <span x-text="new Date(editingPessoa.invited_at).toLocaleString('pt-BR')"></span></div>
+      </div>
+    </div>
+    <div class="px-5 md:px-6 py-3 border-t border-line flex items-center justify-end gap-2">
+      <button class="btn btn-ghost text-sm" @click="modalPessoa=false">cancelar</button>
+      <button class="btn btn-primary text-sm" @click="savePessoa()">salvar alterações</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ MODAL CONFIRMAÇÃO ============ -->
 <div x-show="confirmTarget" class="fixed inset-0 z-[58] flex items-center justify-center modal-bg p-4" @click.self="confirmTarget=null" @keyup.escape.window="confirmTarget=null" x-transition.opacity>
   <div class="bg-elev rounded-lg w-full max-w-sm modal-card" x-transition>
@@ -2446,6 +2497,8 @@ function app() {
     draggingId: '',
     dragOverCol: '',
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true },
+    editingPessoa: null,
+    modalPessoa: false,
     kanbanView: 'op', // 'op' (operacional, nível 2) | 'exec' (executiva, nível 1)
     isMobileViewport: typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
     quickAddSub: '',
@@ -2600,7 +2653,7 @@ function app() {
       console.log('[auth] resolving pessoa for', { userId, email });
 
       // 1) por user_id já vinculado
-      const r1 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at').eq('user_id', userId).maybeSingle();
+      const r1 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at, role, cliente_id').eq('user_id', userId).maybeSingle();
       if (r1.error) {
         console.error('[auth] lookup by user_id failed:', r1.error);
         this.toast('error', 'Erro ao buscar usuário: ' + r1.error.message, 20000);
@@ -2620,7 +2673,7 @@ function app() {
 
       // 2) por email (case-insensitive) — vincula se for primeiro login
       if (email) {
-        const r2 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at').ilike('email', email).maybeSingle();
+        const r2 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at, role, cliente_id').ilike('email', email).maybeSingle();
         if (r2.error) {
           console.error('[auth] lookup by email failed:', r2.error);
           this.toast('error', 'Erro ao buscar usuário: ' + r2.error.message, 20000);
@@ -2830,7 +2883,7 @@ function app() {
         const [c, p, ps, t, h] = await Promise.all([
           sb.from('clientes').select('id,nome').order('nome'),
           sb.from('projetos').select('id,nome,cliente_id').order('nome'),
-          sb.from('pessoas').select('id,nome,email,user_id,invited_at').order('nome'),
+          sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id').order('nome'),
           sb.from('tasks').select('*').order('criado_em', { ascending: false }),
           sb.from('task_status_history')
             .select('task_id, from_status, to_status, actor_pessoa_id, actor_source, occurred_at')
@@ -2862,7 +2915,7 @@ function app() {
       if (!error) this.projetos = data.map(projetoFromDb);
     },
     async refreshPessoas() {
-      const { data, error } = await sb.from('pessoas').select('id,nome,email,user_id,invited_at').order('nome');
+      const { data, error } = await sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id').order('nome');
       if (!error) this.pessoas = data;
     },
     async convidarPessoa(p) {
@@ -4681,6 +4734,47 @@ function app() {
       }
     },
     renomeiaPessoa(p) { this.openRename('pessoa', p); },
+    openEditPessoa(p) {
+      this.editingPessoa = {
+        id: p.id,
+        nome: p.nome || '',
+        email: p.email || '',
+        role: p.role || 'interno',
+        cliente_id: p.cliente_id || null,
+        invited_at: p.invited_at,
+        user_id: p.user_id,
+      };
+      this.modalPessoa = true;
+    },
+    async savePessoa() {
+      const e = this.editingPessoa;
+      if (!e) return;
+      const nome = (e.nome || '').trim();
+      const email = (e.email || '').trim();
+      if (!nome) { this.toast('error', 'Dê um nome à pessoa.'); return; }
+      if (e.role === 'cliente' && !e.cliente_id) {
+        this.toast('error', 'Pessoa com perfil "cliente" precisa de um cliente vinculado.');
+        return;
+      }
+      const payload = {
+        nome,
+        email: email || null,
+        role: e.role || 'interno',
+        cliente_id: e.role === 'cliente' ? e.cliente_id : null,
+      };
+      // Optimistic
+      const i = this.pessoas.findIndex(x => x.id === e.id);
+      const prev = i >= 0 ? this.pessoas[i] : null;
+      if (i >= 0) this.pessoas[i] = { ...prev, ...payload };
+      this.modalPessoa = false;
+      const { error } = await sb.from('pessoas').update(payload).eq('id', e.id);
+      if (error) {
+        if (prev) this.pessoas[i] = prev;
+        this.toast('error', 'Erro ao salvar: ' + error.message);
+        return;
+      }
+      this.toast('success', 'Pessoa atualizada.');
+    },
     openRename(kind, item) {
       this.renameTarget = { kind, item };
       this.renameValue = item.nome;
