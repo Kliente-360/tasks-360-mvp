@@ -1699,7 +1699,7 @@
           <div class="flex gap-1 flex-wrap">
             <button class="btn btn-ghost text-xs" x-show="p.email && !p.invited_at" @click="convidarPessoa(p)" title="Marcar como convidada e enviar magic link">convidar</button>
             <button class="btn btn-ghost text-xs" x-show="p.email && p.invited_at" @click="convidarPessoa(p)" title="Reenviar magic link">reenviar link</button>
-            <button class="btn btn-ghost text-xs" x-show="p.invited_at" @click="desconvidarPessoa(p)" title="Revogar acesso">desconvidar</button>
+            <button class="btn btn-ghost text-xs" x-show="p.invited_at" @click="desconvidarPessoa(p)" title="Revogar acesso">inativar</button>
             <button class="btn btn-ghost text-xs" @click="openEditPessoa(p)">editar</button>
             <button class="btn btn-danger text-xs" @click="deletePessoa(p)">excluir</button>
           </div>
