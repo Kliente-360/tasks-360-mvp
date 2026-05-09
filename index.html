@@ -1659,20 +1659,8 @@
 
   <!-- pessoas -->
   <div x-show="cadTab==='pessoas'">
-    <div class="card p-4 md:p-5 mb-4">
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-        <div class="md:col-span-5">
-          <label class="lbl">Nome da pessoa</label>
-          <input class="inp" x-model="newPes" x-ref="newPesInput" placeholder="Ex: Maria Silva" @keyup.enter="addPessoa()">
-        </div>
-        <div class="md:col-span-4">
-          <label class="lbl">Email (pra login)</label>
-          <input type="email" inputmode="email" class="inp" x-model="newPesEmail" placeholder="maria@empresa.com" @keyup.enter="addPessoa()">
-        </div>
-        <div class="md:col-span-3">
-          <button class="btn btn-primary w-full justify-center" @click="addPessoa()">+ Adicionar pessoa</button>
-        </div>
-      </div>
+    <div class="flex items-center justify-end mb-4">
+      <button class="btn btn-primary text-sm" @click="openNewPessoa()">+ Nova pessoa</button>
     </div>
     <div class="card">
       <template x-for="p in pessoas" :key="p.id">
@@ -1707,7 +1695,7 @@
       </template>
       <div x-show="pessoas.length===0" class="text-center py-10">
         <div class="text-sm text-muted mb-3 italic">Nenhuma pessoa cadastrada.</div>
-        <button class="btn btn-primary" @click="$refs.newPesInput.focus()">+ Adicionar primeira pessoa</button>
+        <button class="btn btn-primary" @click="openNewPessoa()">+ Adicionar primeira pessoa</button>
       </div>
     </div>
   </div>
@@ -2566,8 +2554,6 @@ function app() {
     replyingToId: '',
     newReply: '',
     newCli: '',
-    newPes: '',
-    newPesEmail: '',
     newProj: { nome: '', clienteId: '' },
     historyAll: [],
     mvpComments: [],
@@ -4670,12 +4656,17 @@ function app() {
     async addCliente() {
       const n = (this.newCli || '').trim();
       if (!n) return;
-      const { data, error } = await sb.from('clientes').insert({ nome: n }).select('id, nome').single();
-      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
       this.newCli = '';
-      if (data && !this.clientes.some(c => c.id === data.id)) {
-        this.clientes = [...this.clientes, data].sort((a,b) => a.nome.localeCompare(b.nome));
+      const tempId = 'tmp-' + Math.random().toString(36).slice(2, 8);
+      const optimistic = { id: tempId, nome: n };
+      this.clientes = [...this.clientes, optimistic].sort((a,b) => a.nome.localeCompare(b.nome));
+      const { data, error } = await sb.from('clientes').insert({ nome: n }).select('id, nome').single();
+      if (error) {
+        this.clientes = this.clientes.filter(c => c.id !== tempId);
+        this.toast('error', 'Erro: ' + error.message);
+        return;
       }
+      this.clientes = this.clientes.map(c => c.id === tempId ? data : c).sort((a,b) => a.nome.localeCompare(b.nome));
     },
     renomeiaCliente(c) { this.openRename('cliente', c); },
     async deleteCliente(c) {
@@ -4698,14 +4689,20 @@ function app() {
       const n = (this.newProj.nome || '').trim();
       if (!n) return;
       if (!this.newProj.clienteId) { this.toast('error', 'Selecione o cliente do projeto.'); return; }
-      const { data, error } = await sb.from('projetos')
-        .insert({ nome: n, cliente_id: this.newProj.clienteId })
-        .select('id, nome, cliente_id').single();
-      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
+      const cid = this.newProj.clienteId;
       this.newProj = { nome: '', clienteId: '' };
-      if (data && !this.projetos.some(p => p.id === data.id)) {
-        this.projetos = [...this.projetos, projetoFromDb(data)].sort((a,b) => a.nome.localeCompare(b.nome));
+      const tempId = 'tmp-' + Math.random().toString(36).slice(2, 8);
+      const optimistic = { id: tempId, nome: n, clienteId: cid };
+      this.projetos = [...this.projetos, optimistic].sort((a,b) => a.nome.localeCompare(b.nome));
+      const { data, error } = await sb.from('projetos')
+        .insert({ nome: n, cliente_id: cid })
+        .select('id, nome, cliente_id').single();
+      if (error) {
+        this.projetos = this.projetos.filter(p => p.id !== tempId);
+        this.toast('error', 'Erro: ' + error.message);
+        return;
       }
+      this.projetos = this.projetos.map(p => p.id === tempId ? projetoFromDb(data) : p).sort((a,b) => a.nome.localeCompare(b.nome));
     },
     renomeiaProjeto(p) { this.openRename('projeto', p); },
     async deleteProjeto(p) {
@@ -4720,18 +4717,17 @@ function app() {
       });
     },
 
-    async addPessoa() {
-      const n = (this.newPes || '').trim();
-      if (!n) return;
-      const email = (this.newPesEmail || '').trim().toLowerCase();
-      const payload = { nome: n };
-      if (email) payload.email = email;
-      const { data, error } = await sb.from('pessoas').insert(payload).select('id, nome, email, user_id').single();
-      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
-      this.newPes = ''; this.newPesEmail = '';
-      if (data && !this.pessoas.some(p => p.id === data.id)) {
-        this.pessoas = [...this.pessoas, data].sort((a,b) => a.nome.localeCompare(b.nome));
-      }
+    openNewPessoa() {
+      this.editingPessoa = {
+        id: '',
+        nome: '',
+        email: '',
+        role: 'interno',
+        cliente_id: null,
+        invited_at: null,
+        user_id: null,
+      };
+      this.modalPessoa = true;
     },
     renomeiaPessoa(p) { this.openRename('pessoa', p); },
     openEditPessoa(p) {
@@ -4750,10 +4746,14 @@ function app() {
       const e = this.editingPessoa;
       if (!e) return;
       const nome = (e.nome || '').trim();
-      const email = (e.email || '').trim();
+      const email = (e.email || '').trim().toLowerCase();
       if (!nome) { this.toast('error', 'Dê um nome à pessoa.'); return; }
       if (e.role === 'cliente' && !e.cliente_id) {
-        this.toast('error', 'Pessoa com perfil "cliente" precisa de um cliente vinculado.');
+        this.toast('error', 'Cliente externo precisa de um cliente vinculado.');
+        return;
+      }
+      if (e.role === 'cliente' && !email) {
+        this.toast('error', 'Cliente externo precisa de email pra poder ser convidado.');
         return;
       }
       const payload = {
@@ -4762,18 +4762,34 @@ function app() {
         role: e.role || 'interno',
         cliente_id: e.role === 'cliente' ? e.cliente_id : null,
       };
-      // Optimistic
-      const i = this.pessoas.findIndex(x => x.id === e.id);
-      const prev = i >= 0 ? this.pessoas[i] : null;
-      if (i >= 0) this.pessoas[i] = { ...prev, ...payload };
-      this.modalPessoa = false;
-      const { error } = await sb.from('pessoas').update(payload).eq('id', e.id);
-      if (error) {
-        if (prev) this.pessoas[i] = prev;
-        this.toast('error', 'Erro ao salvar: ' + error.message);
-        return;
+      if (e.id) {
+        // Update
+        const i = this.pessoas.findIndex(x => x.id === e.id);
+        const prev = i >= 0 ? this.pessoas[i] : null;
+        if (i >= 0) this.pessoas[i] = { ...prev, ...payload };
+        this.modalPessoa = false;
+        const { error } = await sb.from('pessoas').update(payload).eq('id', e.id);
+        if (error) {
+          if (prev) this.pessoas[i] = prev;
+          this.toast('error', 'Erro ao salvar: ' + error.message);
+          return;
+        }
+        this.toast('success', 'Pessoa atualizada.');
+      } else {
+        // Insert
+        const tempId = 'tmp-' + Math.random().toString(36).slice(2, 8);
+        const optimistic = { id: tempId, ...payload, invited_at: null, user_id: null };
+        this.pessoas = [...this.pessoas, optimistic].sort((a,b) => a.nome.localeCompare(b.nome));
+        this.modalPessoa = false;
+        const { data, error } = await sb.from('pessoas').insert(payload).select('id, nome, email, user_id, invited_at, role, cliente_id').single();
+        if (error) {
+          this.pessoas = this.pessoas.filter(p => p.id !== tempId);
+          this.toast('error', 'Erro: ' + error.message);
+          return;
+        }
+        this.pessoas = this.pessoas.map(p => p.id === tempId ? data : p).sort((a,b) => a.nome.localeCompare(b.nome));
+        this.toast('success', 'Pessoa criada.');
       }
-      this.toast('success', 'Pessoa atualizada.');
     },
     openRename(kind, item) {
       this.renameTarget = { kind, item };
