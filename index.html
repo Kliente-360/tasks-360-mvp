@@ -4752,10 +4752,6 @@ function app() {
         this.toast('error', 'Cliente externo precisa de um cliente vinculado.');
         return;
       }
-      if (e.role === 'cliente' && !email) {
-        this.toast('error', 'Cliente externo precisa de email pra poder ser convidado.');
-        return;
-      }
       const payload = {
         nome,
         email: email || null,
