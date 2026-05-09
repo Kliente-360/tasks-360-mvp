@@ -750,6 +750,17 @@
 <!-- ============ BACKLOG ============ -->
 <section x-show="tab==='backlog'" class="fade-up">
   <div class="flex items-center justify-end gap-2 mb-4 md:mb-5 flex-wrap text-sm">
+    <label class="text-[11px] uppercase tracking-wider text-muted font-semibold hidden md:inline">agrupar</label>
+    <select class="inp text-xs py-1 w-auto" x-model="groupBy" @change="collapsedGroups = []" title="Agrupar tarefas por…">
+      <option value="">— sem agrupamento</option>
+      <option value="pessoa">Responsável</option>
+      <option value="cliente">Cliente</option>
+      <option value="projeto">Projeto</option>
+      <option value="status">Status (macro)</option>
+      <option value="subetapa">Etapa</option>
+      <option value="prioridade">Prioridade</option>
+      <option value="complexidade">Complexidade</option>
+    </select>
     <button class="btn btn-ghost text-xs" x-show="activeFiltersCount > 0 || f.q || f.tag"
             @click="clearFilters()"
             title="Limpar todos os filtros aplicados">
@@ -855,69 +866,86 @@
           <th class="w-8"></th>
         </tr>
       </thead>
-      <tbody>
-        <template x-for="t in filtered" :key="t.id">
-          <tr @click="openEdit(t)"
-              :draggable="sortKey==='manual'"
-              :class="[sortKey==='manual' && 'manual-row', selectedIds.includes(t.id) && 'bg-brand-tint']"
-              @dragstart.stop="onBacklogDragStart($event, t)"
-              @dragover.prevent="onBacklogDragOver($event, t)"
-              @drop.stop.prevent="onBacklogDrop($event, t)"
-              @dragend="backlogDragId=''">
-            <td @click.stop>
-              <input type="checkbox" class="cursor-pointer"
-                     :checked="selectedIds.includes(t.id)"
-                     @change="toggleSelect(t.id)">
-            </td>
-            <td>
-              <div class="font-medium text-ink" x-text="t.titulo"></div>
-              <div x-show="(t.tags || []).length>0" class="flex flex-wrap gap-1 mt-1">
-                <template x-for="tag in (t.tags || [])" :key="tag">
-                  <span class="tag-chip tag-chip-link" @click.stop="f.tag = tag" x-text="'#' + tag"></span>
-                </template>
+      <!-- 1 tbody por grupo. Quando groupBy='', existe um único grupo "todas" sem header. -->
+      <template x-for="g in groupedFiltered" :key="g.key">
+        <tbody>
+          <tr x-show="!g.isAll" class="group-header cursor-pointer" @click="toggleGroup(g.key)">
+            <td colspan="11" class="bg-bg-elev hover:bg-brand-tint transition-colors py-2 px-3 border-y border-line">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="text-muted font-mono text-xs w-3 inline-block" x-text="collapsedGroups.includes(g.key) ? '▸' : '▾'"></span>
+                  <span class="font-semibold text-sm text-ink truncate" x-text="g.label"></span>
+                </div>
+                <span class="text-xs font-mono text-muted shrink-0" x-text="g.tasks.length + ' · ' + g.tasks.reduce((a,b)=>a+(+b.esforco||0),0) + 'h'"></span>
               </div>
-              <div class="text-xs text-muted mt-0.5 hidden md:block" x-text="t.descricao ? t.descricao.slice(0,80) + (t.descricao.length>80?'…':'') : ''"></div>
-            </td>
-            <td class="text-ink-soft" x-text="nomeCliente(t.clienteId)"></td>
-            <td class="text-ink-soft" x-text="nomeProjeto(t.projetoId)"></td>
-            <td class="text-ink-soft" x-text="nomePessoa(t.pessoaId)"></td>
-            <td>
-              <span class="pri" :class="'pri-'+t.prioridade">
-                <span class="pri-dot"></span>
-                <span x-text="t.prioridade"></span>
-              </span>
-            </td>
-            <td class="font-mono text-ink-soft text-right" x-text="t.esforco + 'h'"></td>
-            <td>
-              <span class="cx" :class="'cx-'+(t.complexidade||'media')">
-                <span class="cx-bar">
-                  <i :class="(t.complexidade==='baixa'||t.complexidade==='media'||t.complexidade==='alta') && 'on'" style="height:6px"></i>
-                  <i :class="(t.complexidade==='media'||t.complexidade==='alta') && 'on'" style="height:9px"></i>
-                  <i :class="t.complexidade==='alta' && 'on'" style="height:12px"></i>
-                </span>
-                <span x-text="lblComplex(t.complexidade)"></span>
-              </span>
-            </td>
-            <td>
-              <span :class="atrasada(t) && 'late'" x-text="t.prazo ? fmtDate(t.prazo) : '—'"></span>
-            </td>
-            <td>
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="status" :data-s="t.status">
-                  <span class="status-dot"></span>
-                  <span x-text="lblStatus(t.status)"></span>
-                </span>
-                <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias neste status'" x-text="agingDays(t)+'d'"></span>
-              </div>
-              <div class="text-[10px] text-muted font-mono mt-1" x-text="tempoNaEtapa(t)"></div>
-            </td>
-            <td class="text-right">
-              <button class="btn btn-ghost btn-icon text-muted hover:text-danger" title="Excluir tarefa" @click.stop="deleteTaskById(t.id)">✕</button>
             </td>
           </tr>
-        </template>
-        <tr x-show="filtered.length===0">
-          <td colspan="10" class="text-center py-12 md:py-16">
+          <template x-for="t in g.tasks" :key="t.id">
+            <tr x-show="g.isAll || !collapsedGroups.includes(g.key)"
+                @click="openEdit(t)"
+                :draggable="sortKey==='manual' && !groupBy"
+                :class="[sortKey==='manual' && !groupBy && 'manual-row', selectedIds.includes(t.id) && 'bg-brand-tint']"
+                @dragstart.stop="onBacklogDragStart($event, t)"
+                @dragover.prevent="onBacklogDragOver($event, t)"
+                @drop.stop.prevent="onBacklogDrop($event, t)"
+                @dragend="backlogDragId=''">
+              <td @click.stop>
+                <input type="checkbox" class="cursor-pointer"
+                       :checked="selectedIds.includes(t.id)"
+                       @change="toggleSelect(t.id)">
+              </td>
+              <td>
+                <div class="font-medium text-ink" x-text="t.titulo"></div>
+                <div x-show="(t.tags || []).length>0" class="flex flex-wrap gap-1 mt-1">
+                  <template x-for="tag in (t.tags || [])" :key="tag">
+                    <span class="tag-chip tag-chip-link" @click.stop="f.tag = tag" x-text="'#' + tag"></span>
+                  </template>
+                </div>
+                <div class="text-xs text-muted mt-0.5 hidden md:block" x-text="t.descricao ? t.descricao.slice(0,80) + (t.descricao.length>80?'…':'') : ''"></div>
+              </td>
+              <td class="text-ink-soft" x-text="nomeCliente(t.clienteId)"></td>
+              <td class="text-ink-soft" x-text="nomeProjeto(t.projetoId)"></td>
+              <td class="text-ink-soft" x-text="nomePessoa(t.pessoaId)"></td>
+              <td>
+                <span class="pri" :class="'pri-'+t.prioridade">
+                  <span class="pri-dot"></span>
+                  <span x-text="t.prioridade"></span>
+                </span>
+              </td>
+              <td class="font-mono text-ink-soft text-right" x-text="t.esforco + 'h'"></td>
+              <td>
+                <span class="cx" :class="'cx-'+(t.complexidade||'media')">
+                  <span class="cx-bar">
+                    <i :class="(t.complexidade==='baixa'||t.complexidade==='media'||t.complexidade==='alta') && 'on'" style="height:6px"></i>
+                    <i :class="(t.complexidade==='media'||t.complexidade==='alta') && 'on'" style="height:9px"></i>
+                    <i :class="t.complexidade==='alta' && 'on'" style="height:12px"></i>
+                  </span>
+                  <span x-text="lblComplex(t.complexidade)"></span>
+                </span>
+              </td>
+              <td>
+                <span :class="atrasada(t) && 'late'" x-text="t.prazo ? fmtDate(t.prazo) : '—'"></span>
+              </td>
+              <td>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="status" :data-s="t.status">
+                    <span class="status-dot"></span>
+                    <span x-text="lblStatus(t.status)"></span>
+                  </span>
+                  <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias neste status'" x-text="agingDays(t)+'d'"></span>
+                </div>
+                <div class="text-[10px] text-muted font-mono mt-1" x-text="tempoNaEtapa(t)"></div>
+              </td>
+              <td class="text-right">
+                <button class="btn btn-ghost btn-icon text-muted hover:text-danger" title="Excluir tarefa" @click.stop="deleteTaskById(t.id)">✕</button>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </template>
+      <tbody x-show="filtered.length===0">
+        <tr>
+          <td colspan="11" class="text-center py-12 md:py-16">
             <div class="font-brand text-xl mb-2 text-ink">Nada por aqui.</div>
             <div class="text-sm text-muted mb-4">
               <span x-show="tasks.length>0">Tente ajustar os filtros…</span>
@@ -2235,6 +2263,8 @@ function app() {
     quickAddSub: '',
     quickAddTitle: '',
     selectedIds: [],
+    groupBy: 'pessoa', // '' | 'pessoa' | 'cliente' | 'projeto' | 'status' | 'subetapa' | 'prioridade' | 'complexidade'
+    collapsedGroups: [],
     // Calendário: mês corrente exibido (1º dia, normalizado)
     calCursor: (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d.getTime(); })(),
     calSelectedDate: '', // ISO YYYY-MM-DD do dia selecionado, '' = nenhum
@@ -3019,6 +3049,61 @@ function app() {
         return 0;
       });
       return arr;
+    },
+    // Agrupamento de 1 nível. Retorna sempre array de grupos; se groupBy
+    // estiver vazio, devolve um único grupo "todas" sem header.
+    get groupedFiltered() {
+      const arr = this.filtered;
+      if (!this.groupBy) return [{ key: '__all__', label: '', tasks: arr, isAll: true }];
+      const map = new Map();
+      for (const t of arr) {
+        let key, label;
+        switch (this.groupBy) {
+          case 'pessoa':       key = t.pessoaId  || '__none__'; label = t.pessoaId  ? this.nomePessoa(t.pessoaId)   : 'sem responsável'; break;
+          case 'cliente':      key = t.clienteId || '__none__'; label = t.clienteId ? this.nomeCliente(t.clienteId) : '— sem cliente';   break;
+          case 'projeto':      key = t.projetoId || '__none__'; label = t.projetoId ? this.nomeProjeto(t.projetoId) : '— sem projeto';   break;
+          case 'status':       key = t.status;                  label = this.lblStatus(t.status);                   break;
+          case 'subetapa':     key = t.subetapa;                label = this.lblSub(t.subetapa);                    break;
+          case 'prioridade':   key = t.prioridade;              label = t.prioridade;                                break;
+          case 'complexidade': key = t.complexidade || 'media'; label = this.lblComplex(t.complexidade);            break;
+          default:             key = '__all__';                 label = '';                                          break;
+        }
+        if (!map.has(key)) map.set(key, { key, label, tasks: [] });
+        map.get(key).tasks.push(t);
+      }
+      const groups = Array.from(map.values());
+      // Ordenação dos grupos por tipo
+      if (this.groupBy === 'prioridade') {
+        const order = { P0: 0, P1: 1, P2: 2, P3: 3 };
+        groups.sort((a, b) => (order[a.key] ?? 9) - (order[b.key] ?? 9));
+      } else if (this.groupBy === 'status') {
+        const order = { andamento: 0, bloqueado: 1, backlog: 2, concluido: 3 };
+        groups.sort((a, b) => (order[a.key] ?? 9) - (order[b.key] ?? 9));
+      } else if (this.groupBy === 'subetapa') {
+        const order = Object.fromEntries(this.SUBS_FLAT.map((s, i) => [s, i]));
+        groups.sort((a, b) => (order[a.key] ?? 99) - (order[b.key] ?? 99));
+      } else if (this.groupBy === 'complexidade') {
+        const order = { alta: 0, media: 1, baixa: 2 };
+        groups.sort((a, b) => (order[a.key] ?? 9) - (order[b.key] ?? 9));
+      } else {
+        groups.sort((a, b) => {
+          if (a.key === '__none__') return 1;
+          if (b.key === '__none__') return -1;
+          return (a.label || '').localeCompare(b.label || '');
+        });
+      }
+      return groups;
+    },
+    toggleGroup(key) {
+      const i = this.collapsedGroups.indexOf(key);
+      if (i >= 0) this.collapsedGroups.splice(i, 1);
+      else this.collapsedGroups.push(key);
+    },
+    collapseAllGroups() {
+      this.collapsedGroups = this.groupedFiltered.map(g => g.key);
+    },
+    expandAllGroups() {
+      this.collapsedGroups = [];
     },
     async setManualSort() {
       // Captura ordem atualmente visível e atribui ordem 1..N como baseline.
