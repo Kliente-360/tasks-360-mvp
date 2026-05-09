@@ -1683,7 +1683,7 @@
               <div class="text-sm font-medium flex items-center gap-2 flex-wrap">
                 <span x-text="p.nome"></span>
                 <span x-show="p.role === 'admin'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)" title="Acesso total">admin</span>
-                <span x-show="p.role === 'cliente'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309" title="Cliente externo — só vê o Portal">cliente</span>
+                <span x-show="p.role === 'cliente'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309" title="Cliente externo — só vê o Portal">cliente externo</span>
                 <span x-show="p.invited_at && p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)">acesso ativo</span>
                 <span x-show="p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">convidada</span>
                 <span x-show="!p.invited_at && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">sem convite</span>
@@ -2352,9 +2352,9 @@
       <div>
         <label class="lbl">Perfil</label>
         <select class="inp" x-model="editingPessoa.role" @change="editingPessoa.role !== 'cliente' && (editingPessoa.cliente_id = null)">
-          <option value="admin">admin · acesso total</option>
-          <option value="interno">interno · time da consultoria</option>
-          <option value="cliente">cliente · externo (só Portal)</option>
+          <option value="admin">Admin · acesso total</option>
+          <option value="interno">Time Kliente 360 · interno</option>
+          <option value="cliente">Cliente externo · só Portal</option>
         </select>
       </div>
       <div x-show="editingPessoa.role === 'cliente'">

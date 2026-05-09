@@ -95,7 +95,7 @@ Filtros de cliente e responsável afetam tudo.
 
 Três sub-abas: Clientes · Projetos · Pessoas. Cadastre antes de criar tarefas que dependam.
 
-Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (admin / interno / cliente) e — quando perfil for "cliente" — o cliente externo vinculado. Esse vínculo determina o que a pessoa vê no Portal quando o login estiver ativo.
+Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (Admin / Time Kliente 360 / Cliente externo) e — quando perfil for "Cliente externo" — o cliente vinculado. Esse vínculo determina o que a pessoa vê no Portal quando o login estiver ativo.
 
 ### Adoption
 
