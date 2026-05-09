@@ -6,10 +6,10 @@
 --   - Clientes / projetos / pessoas existentes são reaproveitados
 --     SEM CRIAR NOVOS, exceto a pessoa "Edu" (mapping para "Luis Eduardo"
 --     no CSV) que é criada idempotente.
---   - Pessoa: match pelo first name do CSV (Karen→Karen Muller,
---     Drieli→Drieli Louzada, Felipe→Felipe Silva, Elder→Elder Guerra,
---     Luis→Edu, Henrique→Henrique Barbosa, Fernando→Fernando Rodrigues,
---     João→João Augusto). Múltiplos responsáveis: pega o primeiro.
+--   - Pessoa: cadastros existentes são pelo primeiro nome
+--     (Karen, Drieli, Felipe, Elder, Edu, Henrique, Fernando, João).
+--     Múltiplos responsáveis no CSV: pega o primeiro nome.
+--     "Luis Eduardo" → Edu (criado idempotente neste script).
 --   - Datas DD/MM/YYYY → YYYY-MM-DD. Inválidas (asap, ND, sem data,
 --     "Não foi combinado data") → NULL.
 --   - "06/05/20226" (typo Indigo) → 2026-05-06.
@@ -53,15 +53,15 @@ declare
   v_p_pao        uuid := (select id from projetos where nome = 'Sustentação Pão' and cliente_id = v_pao);
   v_p_totalpass  uuid := (select id from projetos where nome = 'WhatsApp TPweb' and cliente_id = v_totalpass);
   v_p_vb         uuid := (select id from projetos where nome = 'Sustentação VB' and cliente_id = v_vb);
-  -- pessoas
-  v_karen        uuid := (select id from pessoas where nome = 'Karen Muller');
-  v_drieli       uuid := (select id from pessoas where nome = 'Drieli Louzada');
-  v_felipe       uuid := (select id from pessoas where nome = 'Felipe Silva');
-  v_elder        uuid := (select id from pessoas where nome = 'Elder Guerra');
+  -- pessoas (cadastros pelo primeiro nome)
+  v_karen        uuid := (select id from pessoas where nome = 'Karen');
+  v_drieli       uuid := (select id from pessoas where nome = 'Drieli');
+  v_felipe       uuid := (select id from pessoas where nome = 'Felipe');
+  v_elder        uuid := (select id from pessoas where nome = 'Elder');
   v_edu          uuid := (select id from pessoas where nome = 'Edu');
-  v_henrique     uuid := (select id from pessoas where nome = 'Henrique Barbosa');
-  v_fernando     uuid := (select id from pessoas where nome = 'Fernando Rodrigues');
-  v_joao         uuid := (select id from pessoas where nome = 'João Augusto');
+  v_henrique     uuid := (select id from pessoas where nome = 'Henrique');
+  v_fernando     uuid := (select id from pessoas where nome = 'Fernando');
+  v_joao         uuid := (select id from pessoas where nome = 'João');
 begin
   -- Sanity checks: aborta se algum cliente/projeto/pessoa-chave estiver
   -- faltando (evita inserir tasks com FKs erradas).
@@ -81,14 +81,14 @@ begin
   if v_p_pao is null         then raise exception 'projeto Sustentação Pão não encontrado';                   end if;
   if v_p_totalpass is null   then raise exception 'projeto WhatsApp TPweb (TotalPass) não encontrado';        end if;
   if v_p_vb is null          then raise exception 'projeto Sustentação VB não encontrado';                    end if;
-  if v_karen is null     then raise exception 'pessoa Karen Muller não encontrada';     end if;
-  if v_drieli is null    then raise exception 'pessoa Drieli Louzada não encontrada';   end if;
-  if v_felipe is null    then raise exception 'pessoa Felipe Silva não encontrada';     end if;
-  if v_elder is null     then raise exception 'pessoa Elder Guerra não encontrada';     end if;
+  if v_karen is null     then raise exception 'pessoa Karen não encontrada';     end if;
+  if v_drieli is null    then raise exception 'pessoa Drieli não encontrada';    end if;
+  if v_felipe is null    then raise exception 'pessoa Felipe não encontrada';    end if;
+  if v_elder is null     then raise exception 'pessoa Elder não encontrada';     end if;
   if v_edu is null       then raise exception 'pessoa Edu não encontrada (rodar a primeira parte do script)'; end if;
-  if v_henrique is null  then raise exception 'pessoa Henrique Barbosa não encontrada'; end if;
-  if v_fernando is null  then raise exception 'pessoa Fernando Rodrigues não encontrada'; end if;
-  if v_joao is null      then raise exception 'pessoa João Augusto não encontrada';     end if;
+  if v_henrique is null  then raise exception 'pessoa Henrique não encontrada'; end if;
+  if v_fernando is null  then raise exception 'pessoa Fernando não encontrada'; end if;
+  if v_joao is null      then raise exception 'pessoa João não encontrada';     end if;
 
   -- ============== AURORA (5) ==============
   insert into tasks (titulo, descricao, cliente_id, projeto_id, pessoa_id, prioridade, esforco, complexidade, prazo, subetapa) values
