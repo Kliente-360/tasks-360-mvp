@@ -362,6 +362,41 @@ Se o agente quiser propor mudanças de comportamento (não só visual), **sinali
 - `HOWTO.md` — manual do usuário (também renderizado dentro do app via `?`)
 - `index.html` — todo o app em um arquivo
 - `supabase/` — schema, patches, edge functions
+- **`docs/screenshots/`** — prints do estado atual (desktop + iPhone) — ver §11 abaixo
+
+---
+
+## 11. Screenshots do estado atual
+
+Prints "ANTES" pra o agente referenciar enquanto desenha o "DEPOIS". 16 arquivos em `docs/screenshots/`:
+
+### Desktop (1440×900)
+
+| Arquivo | Aba |
+|---|---|
+| `01-foco-desktop.png` | Meu foco |
+| `02-backlog-desktop.png` | Backlog (sem agrupamento) |
+| `03-backlog-grouped-desktop.png` | Backlog agrupado por Cliente |
+| `04-kanban-op-desktop.png` | Kanban operacional (11 cols) |
+| `05-kanban-exec-desktop.png` | Kanban executiva (4 macros) |
+| `06-calendar-desktop.png` | Calendário com dia selecionado |
+| `07-dashboard-desktop.png` | Dashboard com charts |
+| `08-portal-desktop.png` | Portal cliente (Pão e Talho) |
+
+### Mobile (iPhone Pro, 393×852)
+
+| Arquivo | Aba / componente |
+|---|---|
+| `09-foco-mobile.png` | Meu foco |
+| `10-backlog-mobile.png` | Backlog mobile |
+| `11-kanban-mobile.png` | Kanban (sempre executiva no mobile) |
+| `12-calendar-mobile.png` | Calendário |
+| `13-dashboard-mobile.png` | Dashboard |
+| `14-portal-mobile.png` | Portal cliente |
+| `15-modal-task-mobile.png` | Modal de edição de tarefa |
+| `16-cmdk-mobile.png` | Command palette aberto |
+
+> **Pro agente**: abrir cada print antes de desenhar a respectiva tela. Ver `docs/screenshots/README.md` pro contexto de cada estado.
 
 ---
 
