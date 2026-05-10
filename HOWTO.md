@@ -122,6 +122,10 @@ Filtros de cliente e responsável afetam tudo.
 
 Três sub-abas: Clientes · Projetos · Pessoas. Cadastre antes de criar tarefas que dependam.
 
+Em **Clientes**, o botão "editar" abre modal com nome e **tier** (estratégico / recorrente / spot). Tier alimenta a heurística "atrasada em cliente estratégico" e aparece como badge na listagem.
+
+Em **Projetos**, o botão "editar" abre modal com nome, cliente e atributos de **SLA + orçamento** (resposta em horas, entrega em dias, orçamento total em horas). SLA de entrega aciona a heurística "SLA iminente" entre 80% e 120% do prazo. Os atributos aparecem como badges discretas na listagem.
+
 Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (Admin / Time Kliente 360 / Cliente externo) e — quando perfil for "Cliente externo" — o cliente vinculado.
 
 Botões de acesso variam por perfil:

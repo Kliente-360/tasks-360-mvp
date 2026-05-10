@@ -347,21 +347,20 @@ Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
 #### 🟡 Anotado, não implementado (em ordem de execução sugerida)
 
 2. **Arquivamento** de clientes/projetos/tasks — coluna `arquivado_em`, manual pra cliente/projeto, automático pra tasks `concluido` há +14d. UI: tela dedicada "Arquivo" (leaning).
-3. **UI de `cliente.tier` e `projeto.sla_*`/`orcamento_horas` em Cadastros** — campos já existem no schema e alimentam as heurísticas Onda A; falta o form (hoje só Supabase Studio).
-4. **Heurísticas pré-IA · Onda B** — relacionamento e qualidade: senioridade da pessoa, `tipo_projeto`, `reopen_count` em tasks.
-5. **Heurísticas pré-IA · Onda C** — dependências e progresso: `depende_de`, `tipo_trabalho`, `tempo_real_gasto`.
+3. **Heurísticas pré-IA · Onda B** — relacionamento e qualidade: senioridade da pessoa, `tipo_projeto`, `reopen_count` em tasks.
+4. **Heurísticas pré-IA · Onda C** — dependências e progresso: `depende_de`, `tipo_trabalho`, `tempo_real_gasto`.
 
 #### 🟢 IA — depende de chave Anthropic + orçamento
 
-7. **Sugestão complexidade + esforço** (`ai-suggest`) — começar aqui (custo ~R$ 0,015/exec).
-8. **Resumo executivo semanal por projeto** — cron + LLM (~R$ 0,05/exec com cache).
-9. **Detector de risco antecipado** — cron diário (~R$ 0,07/exec com cache).
-10. **Auto-categorização de tags**.
-11. **Chat com seu backlog** (tool use).
+5. **Sugestão complexidade + esforço** (`ai-suggest`) — começar aqui (custo ~R$ 0,015/exec).
+6. **Resumo executivo semanal por projeto** — cron + LLM (~R$ 0,05/exec com cache).
+7. **Detector de risco antecipado** — cron diário (~R$ 0,07/exec com cache).
+8. **Auto-categorização de tags**.
+9. **Chat com seu backlog** (tool use).
 
 #### 🔵 Design
 
-12. **DESIGN_HANDOFF.md** está pronto pra entregar pra um agente de design (claude-design ou outro). Foco: tipografia + spacing + hierarquia. Tom: executivo + consultivo-produtivo. Notion como referência inicial.
+10. **DESIGN_HANDOFF.md** está pronto pra entregar pra um agente de design (claude-design ou outro). Foco: tipografia + spacing + hierarquia. Tom: executivo + consultivo-produtivo. Notion como referência inicial.
 
 #### ✅ Recém-fechados (maio/2026)
 
@@ -373,15 +372,16 @@ Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
 - Mobile header consolidado (exportar/manual/tema migrados pro menu do avatar).
 - Tamanho automático via `effEsforco` (default 4h se vazio); fora do form, só analytics.
 - Dashboard padronizado: `chartTheme()` central + **8/8 visões do §10** implementadas (capacidade por pessoa, saúde por projeto, aging do backlog, aguardando cliente, tendência de lead time por cliente).
+- UI de `cliente.tier` e `projeto.sla_*`/`orcamento_horas` em Cadastros (modais de editar com badges discretas na listagem).
 
 #### Ordem sugerida agora
 
 1. Pão e Talho real (item 1).
-2. Arquivamento + UI de tier/SLA (itens 2-3) — fechamento do caminho operacional.
-3. Onda B das heurísticas (item 4).
-4. Onda C das heurísticas (item 5).
-5. IA `ai-suggest` (item 6) — primeiro feature de IA que paga em adoção.
-6. Design overhaul com claude-design (item 11).
+2. Arquivamento (item 2).
+3. Onda B das heurísticas (item 3).
+4. Onda C das heurísticas (item 4).
+5. IA `ai-suggest` (item 5) — primeiro feature de IA que paga em adoção.
+6. Design overhaul com claude-design (item 10).
 
 ---
 
