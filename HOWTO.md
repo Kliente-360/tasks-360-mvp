@@ -47,7 +47,7 @@ O mesmo card visual aparece no **Backlog mobile**, **Meu foco**, **Calendário (
 
 ### Meu foco
 
-Painel curado pra começar o dia. No topo, escolha a pessoa em **"atuando como"** (seleção fica salva por navegador). Aparecem 4 KPIs e 4 listas, em ordem de urgência:
+Painel curado pra começar o dia. Quando você está logado, **mostra automaticamente o foco da pessoa logada** (admin pode escolher outra pessoa pra simular via selector). Se a sessão não está vinculada a uma pessoa cadastrada, banner explica. No topo, escolha a pessoa em **"atuando como"** (seleção fica salva por navegador). Aparecem 4 KPIs e 4 listas, em ordem de urgência:
 
 1. **Atrasadas** — prazo vencido, ordenadas por dias de atraso desc
 2. **Para hoje** — prazo é hoje
@@ -111,7 +111,7 @@ Métricas de uso interno do app (DAUs, eventos, comentários). Pra acompanhar ad
 Aba dedicada para o cliente externo. Layout simples com 4 cards (Aguardando você, Em andamento, Próximas 14d, Entregues 30d) sem jargão de PM. Click numa tarefa abre detalhe simplificado com linha do tempo humanizada, comentários públicos e caixa de novo comentário. Quando uma tarefa está bloqueada por aguardar resposta do cliente, aparece o botão **"Já respondi"** que cria um comentário marcado e sinaliza ao time pra triar.
 
 - *Admin/Interno*: aparece um seletor "visualizar como cliente" — escolhe qual cliente simular. Persistido no localStorage.
-- *Cliente* (futuro, com auth): seletor some, ele só vê o próprio cliente.
+- *Cliente externo logado*: seletor some, ele só vê o próprio cliente (vinculado via `pessoas.cliente_id`). Tab "Portal" é a única visível.
 
 ---
 
