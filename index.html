@@ -489,70 +489,56 @@
   .print-only .pr-delta-good { color: #166534; }
   .print-only .pr-delta-bad  { color: #b91c1c; }
 
-  /* Página executiva — 1 página A4, grid rígido pra preencher vertical sem overflow.
-     @page já dá 12mm/10mm de margem; aqui cabe na área útil A4 (273mm × 190mm).
-     Linhas: header · KPI strip · (eficiência | ações) · (clientes | time) · footer */
+  /* Página executiva — 1 página A4, grid rígido com altura conservadora */
   .print-only .pr-page-exec {
+    break-after: avoid-page; break-inside: avoid-page;
     page-break-after: avoid; page-break-inside: avoid;
-    display: grid; gap: 8px;
-    grid-template-rows: auto auto 1fr 1fr auto;
+    display: grid; gap: 6px;
+    grid-template-rows: auto auto minmax(0, 1fr) minmax(0, 1.5fr) auto;
     box-sizing: border-box; overflow: hidden;
   }
-  .print-only .pr-page-exec > .pr-split {
-    min-height: 0; align-items: stretch;
-  }
+  .print-only .pr-page-exec > .pr-split { min-height: 0; align-items: stretch; gap: 12px; }
   .print-only .pr-page-exec > .pr-split > .pr-split-col {
     min-height: 0; overflow: hidden; display: flex; flex-direction: column;
   }
-  .print-only .pr-page-exec > .pr-split > .pr-split-col > table { flex: 1 1 auto; }
-  /* Tabelas distribuem altura igual entre as linhas pra preencher a coluna */
-  .print-only .pr-page-exec > .pr-split > .pr-split-col > table tbody { height: 100%; }
-  .print-only .pr-page-exec > .pr-split > .pr-split-col > table tbody tr { height: auto; }
+  .print-only .pr-page-exec > .pr-split > .pr-split-col > table { flex: 0 0 auto; }
   .print-only .pr-page-exec .pr-section-title {
-    font-family: 'Manrope', sans-serif; font-size: 10.5px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.13em; color: #111;
-    margin: 12px 0 6px; padding-left: 8px; border-left: 3px solid #009900;
+    font-family: 'Manrope', sans-serif; font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em; color: #111;
+    margin: 6px 0 4px; padding-left: 6px; border-left: 2px solid #009900;
   }
-  .print-only .pr-head-compact { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid #009900; }
-  .print-only .pr-page-exec .pr-title { font-size: 20px; }
-  .print-only .pr-page-exec .pr-sub { font-size: 8.5px; margin-top: 3px; letter-spacing: 0.18em; }
-  .print-only .pr-page-exec .pr-stamp { font-size: 9.5px; line-height: 1.6; }
+  .print-only .pr-head-compact { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 2px solid #009900; }
+  .print-only .pr-page-exec .pr-title { font-size: 17px; line-height: 1; }
+  .print-only .pr-page-exec .pr-sub { font-size: 8px; margin-top: 2px; letter-spacing: 0.18em; }
+  .print-only .pr-page-exec .pr-stamp { font-size: 8.5px; line-height: 1.4; }
 
-  /* KPI strip mais respirado */
-  .print-only .pr-page-exec .pr-kpi-strip { gap: 8px; margin-bottom: 4px; }
-  .print-only .pr-page-exec .pr-kpi-compact { padding: 10px 12px; }
-  .print-only .pr-page-exec .pr-kpi-compact .pr-kpi-value { font-size: 26px; margin-top: 4px; }
-  .print-only .pr-page-exec .pr-kpi-label { font-size: 8.5px; }
-  .print-only .pr-page-exec .pr-kpi-foot { font-size: 8.5px; margin-top: 4px; line-height: 1.3; }
+  /* KPI strip compacto */
+  .print-only .pr-page-exec .pr-kpi-strip { gap: 6px; margin-bottom: 0; }
+  .print-only .pr-page-exec .pr-kpi-compact { padding: 7px 9px; }
+  .print-only .pr-page-exec .pr-kpi-compact .pr-kpi-value { font-size: 22px; margin-top: 2px; line-height: 1; }
+  .print-only .pr-page-exec .pr-kpi-label { font-size: 8px; }
+  .print-only .pr-page-exec .pr-kpi-foot { font-size: 8px; margin-top: 2px; line-height: 1.2; }
 
-  /* Split: colunas equilibradas com gap consistente */
-  .print-only .pr-page-exec .pr-split { gap: 16px; align-items: stretch; }
-  .print-only .pr-page-exec .pr-split-col { display: flex; flex-direction: column; }
-  .print-only .pr-page-exec .pr-split-col > .pr-section-title:first-child { margin-top: 0; }
+  /* Tabelas: compactas mas legíveis */
+  .print-only .pr-page-exec table.pr-tbl { font-size: 9px; }
+  .print-only .pr-page-exec table.pr-tbl tbody td { padding: 3.5px 6px; }
+  .print-only .pr-page-exec table.pr-tbl thead th { padding: 4px 6px; font-size: 8px; }
+  .print-only .pr-page-exec table.pr-tbl-eff td { padding: 3.5px 5px; font-size: 9px; }
+  .print-only .pr-page-exec .pr-eff-value { font-size: 9.5px; }
 
-  /* Tabelas: fontes maiores, linhas com respiro */
-  .print-only .pr-page-exec table.pr-tbl { font-size: 10px; }
-  .print-only .pr-page-exec table.pr-tbl tbody td { padding: 5px 7px; }
-  .print-only .pr-page-exec table.pr-tbl thead th { padding: 6px 7px; font-size: 9px; }
-  .print-only .pr-page-exec table.pr-tbl-eff td { padding: 5px 6px; font-size: 10px; }
-
-  /* Eficiência: alinhamento mais limpo */
-  .print-only .pr-page-exec .pr-eff-value { font-size: 10.5px; }
-
-  /* Ações: caixa com mais respiro vertical */
-  .print-only .pr-page-exec .pr-actions { padding: 8px 12px; flex: 1; display: flex; flex-direction: column; justify-content: flex-start; }
+  /* Ações */
+  .print-only .pr-page-exec .pr-actions { padding: 6px 10px; flex: 1; }
   .print-only .pr-page-exec .pr-actions ul { width: 100%; }
-  .print-only .pr-page-exec .pr-actions li { font-size: 9.5px; padding: 3px 0; line-height: 1.4; }
-  .print-only .pr-page-exec .pr-actions li + li { padding-top: 5px; margin-top: 3px; }
+  .print-only .pr-page-exec .pr-actions li { font-size: 9px; padding: 2px 0; line-height: 1.35; }
+  .print-only .pr-page-exec .pr-actions li + li { padding-top: 3px; margin-top: 2px; }
 
-  /* Sinais e tags — proporções harmônicas */
-  .print-only .pr-page-exec .pr-signal { width: 10px; height: 10px; }
-  .print-only .pr-page-exec .pr-signal-text { font-size: 9.5px; }
-  .print-only .pr-page-exec .pr-tag { font-size: 7.5px; padding: 1.5px 5px; }
+  /* Sinais e tags */
+  .print-only .pr-page-exec .pr-signal { width: 9px; height: 9px; }
+  .print-only .pr-page-exec .pr-signal-text { font-size: 8.5px; }
+  .print-only .pr-page-exec .pr-tag { font-size: 7px; padding: 1px 4px; margin-left: 4px; }
 
-  /* Footer pinned no bottom da página via flex-spacer */
-  .print-only .pr-page-exec .pr-foot { margin-top: auto; padding-top: 8px; font-size: 8px; border-top: 1px solid #e5e5e5; }
-  .print-only .pr-page-exec .pr-spacer { flex: 1 0 8px; }
+  /* Footer */
+  .print-only .pr-page-exec .pr-foot { margin-top: 0; padding-top: 4px; font-size: 7.5px; border-top: 1px solid #e5e5e5; }
 
   /* Split (eficiência + ações) */
   .print-only .pr-split { display: flex; gap: 14px; margin-bottom: 4px; }
@@ -664,14 +650,18 @@
   .print-only .pr-foot { display: flex; justify-content: space-between; font-size: 8px; color: #999; font-family: 'JetBrains Mono', monospace; margin-top: 12px; padding-top: 8px; border-top: 1px solid #e5e5e5; }
 
   @media print {
-    @page { size: A4 portrait; margin: 12mm 10mm; }
-    html, body { background: #fff !important; }
+    @page { size: A4 portrait; margin: 8mm 8mm; }
+    html, body { background: #fff !important; height: auto !important; }
     body > *:not(.print-only) { display: none !important; }
     .print-only { position: static !important; visibility: visible !important; width: auto !important; z-index: auto !important; pointer-events: auto !important; }
-    .print-only .pr-page { padding: 0 !important; }
-    .print-only .pr-page-exec { height: 273mm; }
-    .print-only table.pr-tbl thead { display: table-header-group; } /* repete header em cada página */
-    .print-only table.pr-tbl tr { page-break-inside: avoid; }
+    .print-only .pr-page { padding: 0 !important; page-break-after: auto !important; }
+    .print-only .pr-page-exec {
+      height: 281mm !important; max-height: 281mm !important;
+      page-break-after: avoid !important; page-break-inside: avoid !important;
+      break-after: avoid-page !important; break-inside: avoid-page !important;
+    }
+    .print-only table.pr-tbl thead { display: table-header-group; }
+    .print-only table.pr-tbl tr { page-break-inside: avoid; break-inside: avoid; }
   }
 </style>
 </head>
@@ -4317,12 +4307,12 @@ function app() {
         const dt = (tierRank[(a.tier || '').toLowerCase()] ?? 9) - (tierRank[(b.tier || '').toLowerCase()] ?? 9); if (dt) return dt;
         return b.horas - a.horas;
       });
-      return out.slice(0, 14);
+      return out.slice(0, 10);
     },
 
-    // Top do time pra cabe na página (12 pessoas)
+    // Top do time pra cabe na página (8 pessoas)
     get reportTeamCompact() {
-      return this.reportTeamLoad.slice(0, 12);
+      return this.reportTeamLoad.slice(0, 8);
     },
 
 
