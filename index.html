@@ -572,6 +572,12 @@
     <div x-show="!loginSent">
       <div class="font-brand text-lg font-semibold mb-1">Entrar</div>
       <div class="text-xs text-muted mb-4">Você recebe um link no email pra entrar sem senha.</div>
+      <div x-show="authBlock" class="mb-3 p-3 rounded-md text-xs leading-snug"
+           style="background:#fef2f2;color:#991b1b;border:1px solid #fca5a5">
+        <div class="font-semibold mb-1">⚠ Login validou mas acesso bloqueado</div>
+        <span x-text="authBlock"></span>
+        <button class="ml-2 underline text-[10px]" @click="authBlock=''">descartar</button>
+      </div>
       <label class="lbl">Email</label>
       <input type="email" inputmode="email" autocomplete="email" class="inp mb-3" x-model="loginEmail" @keyup.enter="sendMagicLink()" placeholder="voce@empresa.com">
       <div x-show="loginError" class="text-xs text-danger mb-3" x-text="loginError"></div>
@@ -2742,6 +2748,7 @@ function app() {
     loginError: '',
     loginCode: '',
     loginVerifying: false,
+    authBlock: '', // mensagem persistente quando o callback nega acesso (volta pra login)
     draggingId: '',
     dragOverCol: '',
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true },
@@ -2915,12 +2922,13 @@ function app() {
       if (r1.data) {
         if (!r1.data.invited_at) {
           console.warn('[auth] pessoa encontrada mas SEM invited_at → revogada');
-          this.toast('error', `Acesso revogado por admin. Peça novo convite.`, 20000);
+          this.authBlock = 'Acesso revogado. Sua pessoa existe no sistema mas o convite foi removido. Peça pro admin clicar em "convidar" novamente.';
+          this.toast('error', this.authBlock, 20000);
           await sb.auth.signOut();
           this.currentPessoa = null; this.session = null;
           return;
         }
-        this.currentPessoa = r1.data; return;
+        this.currentPessoa = r1.data; this.authBlock = ''; return;
       }
 
       // 2) por email (case-insensitive) — vincula se for primeiro login
@@ -2935,7 +2943,8 @@ function app() {
         if (r2.data) {
           if (!r2.data.invited_at) {
             console.warn('[auth] pessoa encontrada por email mas SEM invited_at');
-            this.toast('error', `Email '${email}' está cadastrado mas não foi convidado. Peça pro admin.`, 20000);
+            this.authBlock = `Email '${email}' está cadastrado mas não tem convite ativo. Peça pro admin clicar em "convidar" pra você no cadastro de Pessoas.`;
+            this.toast('error', this.authBlock, 20000);
             await sb.auth.signOut();
             this.currentPessoa = null; this.session = null;
             return;
@@ -2951,13 +2960,15 @@ function app() {
             console.warn('[auth] pessoa.user_id já está vinculado a outro auth user — usando mesmo assim');
           }
           this.currentPessoa = { ...r2.data, user_id: r2.data.user_id || userId };
+          this.authBlock = '';
           return;
         }
       }
 
       // 3) lista fechada — nega acesso
       console.warn('[auth] no pessoa found for email', email, '→ signing out');
-      this.toast('error', `Email '${email}' não está cadastrado em pessoas. Peça acesso ao admin.`, 20000);
+      this.authBlock = `Email '${email}' não está cadastrado em Pessoas. Peça pro admin te cadastrar antes (Cadastros → Pessoas → + Nova pessoa).`;
+      this.toast('error', this.authBlock, 20000);
       await sb.auth.signOut();
       this.currentPessoa = null;
       this.session = null;
