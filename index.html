@@ -739,21 +739,28 @@
 
 <!-- ============ MEU FOCO ============ -->
 <section x-show="tab==='foco'" class="fade-up">
-  <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 mb-5 md:mb-6">
+  <!-- Selector "atuando como" só pra admin (interno usa próprio currentPessoa) -->
+  <div x-show="viewerRole === 'admin'" class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 mb-5 md:mb-6">
     <select class="inp w-full md:w-[240px]" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
-      <option value="">— selecionar pessoa —</option>
+      <option value="">— atuando como (admin pode simular) —</option>
       <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
   </div>
 
-  <!-- Setup banner -->
-  <div x-show="!focusPessoaId" class="card p-6 md:p-10 text-center">
-    <div class="font-brand text-lg md:text-xl font-semibold mb-2">Quem é você hoje?</div>
-    <div class="text-ink-soft text-sm mb-4">Selecione a pessoa acima pra ver as tarefas que pedem sua atenção.<br>Quando o login estiver ativo, isso vai ser automático.</div>
+  <!-- Setup banner: aparece quando não há pessoa selecionada (admin) ou pessoa não logada -->
+  <div x-show="!effectiveFocusPessoaId" class="card p-6 md:p-10 text-center">
+    <div class="font-brand text-lg md:text-xl font-semibold mb-2">
+      <span x-show="viewerRole === 'admin'">Quem você quer ver?</span>
+      <span x-show="viewerRole !== 'admin'">Foco indisponível</span>
+    </div>
+    <div class="text-ink-soft text-sm mb-4">
+      <span x-show="viewerRole === 'admin'">Selecione a pessoa acima pra ver as tarefas que pedem atenção.</span>
+      <span x-show="viewerRole !== 'admin'">Sua sessão não está ligada a uma pessoa cadastrada. Peça pro admin verificar.</span>
+    </div>
   </div>
 
   <!-- Painel de foco -->
-  <div x-show="focusPessoaId" class="space-y-4 md:space-y-5">
+  <div x-show="effectiveFocusPessoaId" class="space-y-4 md:space-y-5">
     <!-- KPIs -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div class="card p-3 md:p-4">
@@ -1437,14 +1444,17 @@
     </select>
   </div>
 
-  <!-- Setup banner (sem cliente selecionado) -->
-  <div x-show="!portalClienteId" class="card p-6 md:p-10 text-center">
+  <!-- Setup banner (sem cliente disponível) -->
+  <div x-show="!effectivePortalClienteId" class="card p-6 md:p-10 text-center">
     <div class="font-brand text-lg md:text-xl font-semibold mb-2">Portal do cliente</div>
-    <div class="text-ink-soft text-sm">Selecione um cliente acima pra visualizar o portal como ele veria.<br>Quando o login estiver ativo e o usuário for um cliente, esse seletor some — ele só vê o dele.</div>
+    <div class="text-ink-soft text-sm">
+      <span x-show="viewerRole !== 'cliente'">Selecione um cliente acima pra visualizar o portal como ele veria.</span>
+      <span x-show="viewerRole === 'cliente'">Sua sessão não está vinculada a um cliente. Peça pro admin verificar o cadastro.</span>
+    </div>
   </div>
 
   <!-- Conteúdo do portal -->
-  <div x-show="portalClienteId" class="space-y-5">
+  <div x-show="effectivePortalClienteId" class="space-y-5">
     <!-- Header do cliente -->
     <div class="card p-4 md:p-5">
       <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Cliente</div>
@@ -2812,7 +2822,7 @@ function app() {
     portalTaskComments: [],
     portalNewComment: '',
     portalReplyText: '',
-    viewerRole: 'admin',  // 'admin' | 'interno' | 'cliente' — derivado de currentPessoa quando auth ligado
+    // viewerRole agora é getter, derivado de currentPessoa quando auth está on.
     mobileNavOpen: false,
     helpOpen: false,
     helpHtml: '',
@@ -2984,6 +2994,7 @@ function app() {
         }
         this.currentPessoa = r1.data; this.authBlock = '';
         try { localStorage.setItem('kliente360-current-pessoa', JSON.stringify(r1.data)); } catch(_) {}
+        this._redirectByRole();
         return;
       }
 
@@ -3018,6 +3029,7 @@ function app() {
           this.currentPessoa = { ...r2.data, user_id: r2.data.user_id || userId };
           this.authBlock = '';
           try { localStorage.setItem('kliente360-current-pessoa', JSON.stringify(this.currentPessoa)); } catch(_) {}
+          this._redirectByRole();
           return;
         }
       }
@@ -3029,6 +3041,16 @@ function app() {
       await sb.auth.signOut();
       this.currentPessoa = null;
       this.session = null;
+    },
+    _redirectByRole() {
+      // Se a aba ativa não é visível pro role atual, redireciona pra primeira visível.
+      // Útil principalmente pra cliente que cai em "foco" (default) mas só pode ver Portal.
+      if (!this.tab) return;
+      const ok = this.visibleTabs.some(t => t.key === this.tab);
+      if (!ok) {
+        const first = this.visibleTabs[0];
+        if (first) this.tab = first.key;
+      }
     },
     async signInWithGoogle() {
       if (this.loginGoogle) return;
@@ -4355,6 +4377,23 @@ function app() {
       const t = this.tabsList.find(x => x.key === key);
       return t ? t.label : key;
     },
+    // Derivado de currentPessoa quando auth on; default 'admin' (auth off ou pré-login).
+    get viewerRole() {
+      if (!this.authEnabled) return 'admin';
+      return (this.currentPessoa && this.currentPessoa.role) || 'admin';
+    },
+    // Pessoa que o "Meu foco" mostra. Admin pode simular via selector;
+    // interno usa o próprio currentPessoa automaticamente.
+    get effectiveFocusPessoaId() {
+      if (this.viewerRole === 'admin' || !this.authEnabled) return this.focusPessoaId;
+      return (this.currentPessoa && this.currentPessoa.id) || '';
+    },
+    // Cliente visualizado no Portal. Cliente real usa o cliente_id da própria pessoa
+    // (sem opção de simular). Admin/interno simulam via selector.
+    get effectivePortalClienteId() {
+      if (this.viewerRole === 'cliente') return (this.currentPessoa && this.currentPessoa.cliente_id) || '';
+      return this.portalClienteId;
+    },
     get visibleTabs() {
       return this.tabsList.filter(t =>
         (!t.roles || t.roles.includes(this.viewerRole))
@@ -4373,14 +4412,13 @@ function app() {
       try { localStorage.setItem('kliente360-portal-cliente', this.portalClienteId); } catch(_) {}
     },
     get portalCliente() {
-      return this.clientes.find(c => c.id === this.portalClienteId) || null;
+      return this.clientes.find(c => c.id === this.effectivePortalClienteId) || null;
     },
     get portalTasks() {
-      // Tasks do cliente selecionado, visíveis ao cliente, NÃO arquivadas (todas tasks).
-      // No Portal não filtramos por concluido — mostramos por cards (em andamento, próximas, aguardando, recentes).
-      if (!this.portalClienteId) return [];
+      const cid = this.effectivePortalClienteId;
+      if (!cid) return [];
       return this.tasks.filter(t =>
-        t.clienteId === this.portalClienteId
+        t.clienteId === cid
         && t.visivelCliente !== false
       );
     },
@@ -4492,8 +4530,9 @@ function app() {
     },
     get focusGroups() {
       const empty = { atrasadas: [], hoje: [], bloqueadas: [], urgentes: [] };
-      if (!this.focusPessoaId) return empty;
-      const mine = this.tasks.filter(t => t.pessoaId === this.focusPessoaId && t.status !== 'concluido');
+      const focusId = this.effectiveFocusPessoaId;
+      if (!focusId) return empty;
+      const mine = this.tasks.filter(t => t.pessoaId === focusId && t.status !== 'concluido');
       const todayIso = new Date().toISOString().slice(0,10);
       const prioRank = { P0: 0, P1: 1, P2: 2, P3: 3 };
       const sortPri = (a,b) => (prioRank[a.prioridade]??9) - (prioRank[b.prioridade]??9);
