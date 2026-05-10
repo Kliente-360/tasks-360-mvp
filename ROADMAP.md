@@ -336,7 +336,7 @@ Expandir conforme decisões surgirem.
 
 ## 9. Roadmap de ondas
 
-### Status do protótipo (último update: 10/05/2026)
+### Status do protótipo (último update: 10/05/2026 — pós-sessão tamanho/dashboard/UX/heurísticas B+C)
 
 Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
 
@@ -344,43 +344,45 @@ Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
 
 1. **Pão e Talho real** — cadastrar pessoa cliente externo com `role=cliente`, convidar via magic link, validar Portal end-to-end com cliente real. Tudo do lado técnico está pronto.
 
-#### 🟡 Anotado, não implementado (em ordem de execução sugerida)
-
-~~2. Heurísticas pré-IA · Onda B~~ ✅ — senioridade da pessoa, `tipo` em projetos, `reopen_count` em tasks (trigger). 2 heurísticas novas: júnior+complexidade alta, reaberturas crônicas.
-~~3. Heurísticas pré-IA · Onda C~~ ✅ — `tipo_trabalho`/`tempo_real_horas` em tasks + tabela `task_dependencies`. 2 heurísticas: `bloqueio-dependencia` (alta), `estimativa-furada` (média).
-
 #### 🟢 IA — depende de chave Anthropic + orçamento
 
-4. **Sugestão complexidade + esforço** (`ai-suggest`) — começar aqui (custo ~R$ 0,015/exec).
-5. **Resumo executivo semanal por projeto** — cron + LLM (~R$ 0,05/exec com cache).
-6. **Detector de risco antecipado** — cron diário (~R$ 0,07/exec com cache).
-7. **Auto-categorização de tags**.
-8. **Chat com seu backlog** (tool use).
+2. **Sugestão complexidade + esforço** (`ai-suggest`) — começar aqui (~R$ 0,015/exec).
+3. **Resumo executivo semanal por projeto** — cron + LLM (~R$ 0,05/exec com cache).
+4. **Detector de risco antecipado** — cron diário (~R$ 0,07/exec com cache).
+5. **Auto-categorização de tags**.
+6. **Chat com seu backlog** (tool use).
 
 #### 🔵 Design
 
-9. **DESIGN_HANDOFF.md** está pronto pra entregar pra um agente de design (claude-design ou outro). Foco: tipografia + spacing + hierarquia. Tom: executivo + consultivo-produtivo. Notion como referência inicial.
+7. **DESIGN_HANDOFF.md** pronto pra entregar pra um agente de design. Foco: tipografia + spacing + hierarquia. Tom executivo-consultivo. Notion como referência.
 
 #### ✅ Recém-fechados (maio/2026)
 
-- Auth definitivo: Google OAuth (time interno) + magic link (cliente externo), com cache de pessoa em localStorage e guard contra realtime duplicado.
-- 3 roles (admin / interno / cliente), `viewerRole` reativo, "Meu foco" e Portal automáticos por role.
-- Notifications in-app (sino + badge), mentions em comments com picker e highlight.
-- Heurísticas Onda A — 5 regras determinísticas no banner do Dashboard.
-- Pessoas: ativar/inativar pra time interno (sem reenviar link, já que login é Google).
+- Auth definitivo: Google OAuth interno + magic link cliente externo, cache de pessoa em localStorage, guard contra realtime duplicado.
+- 3 roles (admin / interno / cliente), `viewerRole` reativo, "Meu foco" e Portal automáticos.
+- Notifications in-app (sino + badge), mentions com picker + highlight.
+- **9 heurísticas pré-IA** ativas no banner do Dashboard:
+  - **Onda A** (5): grande sem início, sobrecarga, tier estratégico atrasado, bloqueio cliente +5d, SLA iminente.
+  - **Onda B** (2): júnior + complexidade alta, reaberturas crônicas (≥2 reopens).
+  - **Onda C** (2): bloqueio por dependência aberta com prazo ≤14d, estimativa furada (tempo real >1.5x estimado).
+- Pessoas: ativar/inativar interno; senioridade, skills, capacidade horas/semana, cliente principal/secundário no modal.
 - Mobile header consolidado (exportar/manual/tema migrados pro menu do avatar).
-- Tamanho automático via `effEsforco` (default 4h se vazio); fora do form, só analytics.
-- Dashboard padronizado: `chartTheme()` central + **8/8 visões do §10** implementadas (capacidade por pessoa, saúde por projeto, aging do backlog, aguardando cliente, tendência de lead time por cliente).
-- UI de `cliente.tier` e `projeto.sla_*`/`orcamento_horas` em Cadastros (modais de editar com badges discretas na listagem).
-- Arquivamento de clientes/projetos (`arquivado_em`): some dos selects/dashboards mas fica acessível via toggle "incluir arquivados" em Cadastros.
+- Tamanho de task automático via `effEsforco` (default 4h se vazio); fora do form, só analytics.
+- Dashboard padronizado: `chartTheme()` central + **8/8 visões do §10** (capacidade por pessoa, saúde por projeto, aging do backlog, aguardando cliente, tendência de lead time por cliente).
+- UI completa de Cadastros: `cliente.tier`, `projeto.tipo`/`sla_*`/`orcamento_horas` em modais com badges discretas.
+- Arquivamento de clientes/projetos (`arquivado_em`): some dos selects/dashboards mas acessível via toggle "incluir arquivados".
+- Tasks: `tipo_trabalho`, `tempo_real_horas`, `reopen_count` (trigger) e dependências via tabela `task_dependencies` com chips no modal.
 
 #### Ordem sugerida agora
 
-1. Pão e Talho real (item 1).
-2. Onda B das heurísticas (item 2).
-3. Onda C das heurísticas (item 3).
-4. IA `ai-suggest` (item 4) — primeiro feature de IA que paga em adoção.
-5. Design overhaul com claude-design (item 9).
+1. Pão e Talho real (item 1) — único bloqueador "produto".
+2. IA `ai-suggest` (item 2) — primeiro feature de IA que paga em adoção visível.
+3. Design overhaul com claude-design (item 7).
+4. Demais features de IA (itens 3-6) conforme orçamento.
+
+#### 🚫 Fora do protótipo (vai pra Onda 0+)
+
+Anexos (Storage), notificações email/push, recorrência, search FTS, RLS granular por papel, multi-responsável, histórico de campos não-status.
 
 ---
 
