@@ -579,9 +579,17 @@
         <button class="ml-2 underline text-[10px]" @click="authBlock=''">descartar</button>
       </div>
       <label class="lbl">Email</label>
-      <input type="email" inputmode="email" autocomplete="email" class="inp mb-3" x-model="loginEmail" @keyup.enter="sendMagicLink()" placeholder="voce@empresa.com">
+      <input type="email" inputmode="email" autocomplete="email" class="inp mb-3" x-model="loginEmail" @keyup.enter="sendMagicLink()" :disabled="loginSending" placeholder="voce@empresa.com">
       <div x-show="loginError" class="text-xs text-danger mb-3" x-text="loginError"></div>
-      <button class="btn btn-primary w-full justify-center" @click="sendMagicLink()">Enviar link</button>
+      <button class="btn btn-primary w-full justify-center"
+              @click="sendMagicLink()"
+              :disabled="loginSending || !loginEmail.trim()">
+        <span x-show="!loginSending">Enviar link</span>
+        <span x-show="loginSending" class="flex items-center gap-2">
+          <span class="k360-mark loading-pulse" style="width:14px;height:14px"><span style="width:4px;height:4px;background:currentColor"></span><span style="width:4px;height:4px;background:currentColor"></span><span style="width:4px;height:4px;background:currentColor"></span><span style="width:4px;height:4px;background:currentColor"></span></span>
+          enviando…
+        </span>
+      </button>
       <div class="text-[11px] text-muted mt-4 leading-relaxed">
         Acesso restrito à equipe Kliente 360. Se seu email não estiver cadastrado em <span class="font-mono">pessoas</span>, peça pro admin cadastrar antes.
       </div>
@@ -604,7 +612,10 @@
               @click="verifyLoginCode()"
               :disabled="loginVerifying || !/^\d{6}$/.test(loginCode)">
         <span x-show="!loginVerifying">Entrar com código</span>
-        <span x-show="loginVerifying">Verificando…</span>
+        <span x-show="loginVerifying" class="flex items-center gap-2">
+          <span class="k360-mark loading-pulse" style="width:14px;height:14px"><span style="width:4px;height:4px;background:currentColor"></span><span style="width:4px;height:4px;background:currentColor"></span><span style="width:4px;height:4px;background:currentColor"></span><span style="width:4px;height:4px;background:currentColor"></span></span>
+          verificando…
+        </span>
       </button>
 
       <button class="btn btn-ghost text-xs mt-4" @click="loginSent=false; loginCode=''; loginError=''">trocar email</button>
@@ -2748,6 +2759,7 @@ function app() {
     loginError: '',
     loginCode: '',
     loginVerifying: false,
+    loginSending: false,
     authBlock: '', // mensagem persistente quando o callback nega acesso (volta pra login)
     draggingId: '',
     dragOverCol: '',
@@ -2906,17 +2918,30 @@ function app() {
       }
     },
     async ensureCurrentPessoa(session) {
-      if (!session || !session.user) { this.currentPessoa = null; return; }
+      if (!session || !session.user) {
+        this.currentPessoa = null;
+        try { localStorage.removeItem('kliente360-current-pessoa'); } catch(_) {}
+        return;
+      }
       const userId = session.user.id;
       const email = (session.user.email || '').trim().toLowerCase();
       console.log('[auth] resolving pessoa for', { userId, email });
+
+      // Hidrata do cache primeiro pra evitar piscar tela de login em refresh
+      try {
+        const cached = JSON.parse(localStorage.getItem('kliente360-current-pessoa') || 'null');
+        if (cached && cached.user_id === userId) {
+          this.currentPessoa = cached;
+        }
+      } catch(_) {}
 
       // 1) por user_id já vinculado
       const r1 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at, role, cliente_id').eq('user_id', userId).maybeSingle();
       if (r1.error) {
         console.error('[auth] lookup by user_id failed:', r1.error);
-        this.toast('error', 'Erro ao buscar usuário: ' + r1.error.message, 20000);
-        return; // mantém estado anterior; não força signOut em erro de rede
+        this.toast('error', 'Erro ao buscar usuário: ' + r1.error.message, 8000);
+        // Se temos cache, mantém; não derruba sessão por erro de rede.
+        return;
       }
       console.log('[auth] by user_id →', r1.data);
       if (r1.data) {
@@ -2928,7 +2953,9 @@ function app() {
           this.currentPessoa = null; this.session = null;
           return;
         }
-        this.currentPessoa = r1.data; this.authBlock = ''; return;
+        this.currentPessoa = r1.data; this.authBlock = '';
+        try { localStorage.setItem('kliente360-current-pessoa', JSON.stringify(r1.data)); } catch(_) {}
+        return;
       }
 
       // 2) por email (case-insensitive) — vincula se for primeiro login
@@ -2961,6 +2988,7 @@ function app() {
           }
           this.currentPessoa = { ...r2.data, user_id: r2.data.user_id || userId };
           this.authBlock = '';
+          try { localStorage.setItem('kliente360-current-pessoa', JSON.stringify(this.currentPessoa)); } catch(_) {}
           return;
         }
       }
@@ -2974,46 +3002,49 @@ function app() {
       this.session = null;
     },
     async sendMagicLink() {
+      if (this.loginSending) return; // evita duplo clique
       const email = (this.loginEmail || '').trim().toLowerCase();
       this.loginError = '';
       if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
         this.loginError = 'Informe um email válido.';
         return;
       }
-      // Pré-check: pessoa precisa estar cadastrada COM email E convidada (invited_at not null)
-      const { data: pessoa, error: pErr } = await sb
-        .from('pessoas')
-        .select('id, nome, invited_at')
-        .ilike('email', email)
-        .maybeSingle();
-      if (pErr) { this.loginError = 'Erro ao validar acesso: ' + pErr.message; return; }
-      if (!pessoa) {
-        this.loginError = 'Email não está cadastrado. Peça pro admin cadastrar antes.';
-        return;
+      this.loginSending = true;
+      try {
+        const { data: pessoa, error: pErr } = await sb
+          .from('pessoas')
+          .select('id, nome, invited_at')
+          .ilike('email', email)
+          .maybeSingle();
+        if (pErr) { this.loginError = 'Erro ao validar acesso: ' + pErr.message; return; }
+        if (!pessoa) { this.loginError = 'Email não está cadastrado. Peça pro admin cadastrar antes.'; return; }
+        if (!pessoa.invited_at) { this.loginError = 'Email cadastrado mas sem convite ativo. Peça pro admin clicar em "convidar".'; return; }
+        const { error } = await sb.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: window.location.origin + window.location.pathname }
+        });
+        if (error) { this.loginError = error.message; return; }
+        this.loginSent = true;
+      } finally {
+        this.loginSending = false;
       }
-      if (!pessoa.invited_at) {
-        this.loginError = 'Email cadastrado mas sem convite ativo. Peça pro admin clicar em "convidar".';
-        return;
-      }
-      const { error } = await sb.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: window.location.origin + window.location.pathname }
-      });
-      if (error) { this.loginError = error.message; return; }
-      this.loginSent = true;
     },
     async verifyLoginCode() {
+      if (this.loginVerifying) return;
       const email = (this.loginEmail || '').trim().toLowerCase();
       const token = (this.loginCode || '').trim();
       this.loginError = '';
       if (!email) { this.loginError = 'Email perdido — recomeça.'; return; }
       if (!/^\d{6}$/.test(token)) { this.loginError = 'Código de 6 dígitos.'; return; }
       this.loginVerifying = true;
-      const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
-      this.loginVerifying = false;
-      if (error) { this.loginError = error.message; return; }
-      // sucesso → onAuthStateChange vai resolver currentPessoa e carregar
-      this.loginCode = '';
+      try {
+        const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
+        if (error) { this.loginError = error.message; return; }
+        this.loginCode = '';
+        // sucesso → onAuthStateChange vai resolver currentPessoa e carregar
+      } finally {
+        this.loginVerifying = false;
+      }
     },
     async signOut() {
       await sb.auth.signOut();
