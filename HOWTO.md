@@ -277,9 +277,13 @@ Botão **↓ exportar** no canto superior direito.
 
 ### PDF · relatório executivo
 
-- Snapshot **completo** (ignora filtros)
-- 2 páginas A4: capa com 6 KPIs + sinais de risco + 3 charts (status, clientes, throughput) · backlog priorizado (sem prazo no topo, depois prazo asc, atrasadas em vermelho)
-- Usa o diálogo nativo de impressão do navegador → **Salvar como PDF**
+Snapshot **completo** (ignora filtros). 3 páginas A4 desenhadas pra leitura executiva (CEO-first):
+
+1. **Snapshot** — 6 KPIs hero + sinais de risco + 3 charts (status, horas por cliente, throughput 8 sem.)
+2. **Saúde por cliente** — tabela com sinal semafórico (verde/amarelo/vermelho) por cliente: ativas, atrasadas, bloqueadas aguardando cliente, entregues 30d, tendência vs 30d anterior, lead time médio. Critério do sinal: vermelho se >30% atrasadas ou bloqueio com cliente há +5d; amarelo se há atraso ou bloqueio recente; verde caso contrário. Ordenado por gravidade.
+3. **Atenção máxima · Carga do time** — top 10 pendentes críticos (atrasadas ponderadas por dias e prioridade + bloqueadas pelo cliente + aging stale) e barras horizontais por pessoa mostrando carga total e quanto está em atraso (>50h sinaliza sobrecarga).
+
+Usa o diálogo nativo de impressão do navegador → **Salvar como PDF**.
 
 ### CSV (visão atual)
 

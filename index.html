@@ -505,6 +505,25 @@
   .print-only .pr-stchip[data-s="bloqueado"] { color: #b91c1c; border-color: #fca5a5; background: #fef2f2; }
   .print-only .pr-stchip[data-s="concluido"] { color: #6b7280; }
   .print-only .pr-late { color: #b91c1c; font-weight: 600; }
+  .print-only .pr-warn { color: #b45309; font-weight: 600; }
+  .print-only .pr-up   { color: #047857; font-weight: 600; }
+  .print-only .pr-down { color: #b91c1c; font-weight: 600; }
+  .print-only .pr-num  { text-align: right; font-family: 'JetBrains Mono', monospace; }
+  .print-only .pr-tbl thead th.pr-num { text-align: right; }
+
+  .print-only .pr-signal { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; }
+  .print-only .pr-signal-verde    { background: #16a34a; }
+  .print-only .pr-signal-amarelo  { background: #f59e0b; }
+  .print-only .pr-signal-vermelho { background: #dc2626; }
+
+  .print-only .pr-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 8.5px; color: #666; margin-top: 6px; align-items: center; }
+  .print-only .pr-legend .pr-signal { width: 8px; height: 8px; margin-right: 3px; }
+
+  .print-only .pr-bar { position: relative; width: 100%; height: 8px; background: #f3f4f6; border-radius: 2px; overflow: hidden; display: flex; }
+  .print-only .pr-bar-fill { height: 100%; background: #009900; }
+  .print-only .pr-bar-fill.late { background: #dc2626; }
+  .print-only .pr-bar-swatch { display: inline-block; width: 12px; height: 6px; background: #009900; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .print-only .pr-bar-swatch.late { background: #dc2626; }
 
   .print-only .pr-foot { display: flex; justify-content: space-between; font-size: 8px; color: #999; font-family: 'JetBrains Mono', monospace; margin-top: 12px; padding-top: 8px; border-top: 1px solid #e5e5e5; }
 
@@ -2145,56 +2164,142 @@
     </div>
   </div>
 
+  <!-- ============ PÁGINA 2 — Saúde por cliente ============ -->
   <div class="pr-page">
     <div class="pr-head">
       <div>
-        <div class="pr-title">Backlog priorizado</div>
-        <div class="pr-sub">sem prazo no topo · prazo crescente · atrasadas em vermelho</div>
+        <div class="pr-title">Saúde por cliente</div>
+        <div class="pr-sub">visão executiva · sinal semafórico</div>
       </div>
       <div class="pr-stamp">
         <div>snapshot · <strong x-text="reportStampDate"></strong></div>
-        <div x-text="reportBacklog.length + ' tarefas ativas'"></div>
+        <div x-text="reportClientHealth.length + ' clientes ativos'"></div>
       </div>
     </div>
 
     <table class="pr-tbl">
       <thead>
         <tr>
-          <th style="width:14%">Cliente</th>
-          <th style="width:14%">Projeto</th>
-          <th>Tarefa</th>
-          <th style="width:11%">Resp.</th>
-          <th style="width:5%">P</th>
-          <th style="width:9%">Status</th>
-          <th style="width:5%">h</th>
-          <th style="width:11%">Prazo</th>
+          <th style="width:6%"></th>
+          <th>Cliente</th>
+          <th style="width:8%" class="pr-num">Ativas</th>
+          <th style="width:10%" class="pr-num">Atrasadas</th>
+          <th style="width:14%" class="pr-num">Aguardando<br>cliente</th>
+          <th style="width:11%" class="pr-num">Entregues 30d</th>
+          <th style="width:11%" class="pr-num">vs 30d ant.</th>
+          <th style="width:11%">Lead médio</th>
         </tr>
       </thead>
       <tbody>
-        <template x-for="t in reportBacklog" :key="t.id">
-          <tr :class="atrasada(t) && 'late'">
-            <td x-text="nomeCliente(t.clienteId)"></td>
-            <td x-text="nomeProjeto(t.projetoId)"></td>
-            <td x-text="t.titulo"></td>
-            <td x-text="nomePessoa(t.pessoaId)"></td>
-            <td><span class="pr-pchip" :class="'pr-p-' + t.prioridade" x-text="t.prioridade"></span></td>
-            <td><span class="pr-stchip" :data-s="t.status" x-text="lblStatus(t.status)"></span></td>
-            <td x-text="t.esforco || ''"></td>
-            <td>
-              <template x-if="!t.prazo"><span style="color:#999">sem prazo</span></template>
-              <template x-if="t.prazo && !atrasada(t)"><span x-text="fmtDate(t.prazo)"></span></template>
-              <template x-if="t.prazo && atrasada(t)">
-                <span class="pr-late" x-text="fmtDate(t.prazo) + ' · +' + diasAtraso(t) + 'd'"></span>
-              </template>
-            </td>
+        <template x-for="c in reportClientHealth" :key="c.id">
+          <tr>
+            <td><span class="pr-signal" :class="'pr-signal-' + c.sinal" :title="c.sinalReason"></span></td>
+            <td><strong x-text="c.nome"></strong></td>
+            <td class="pr-num" x-text="c.ativas"></td>
+            <td class="pr-num" :class="c.atrasadas > 0 && 'pr-late'" x-text="c.atrasadas"></td>
+            <td class="pr-num" :class="c.bloqAguard > 0 && 'pr-warn'" x-text="c.bloqAguard"></td>
+            <td class="pr-num" x-text="c.entregues30d"></td>
+            <td class="pr-num" :class="c.delta > 0 ? 'pr-up' : (c.delta < 0 ? 'pr-down' : '')"
+                x-text="(c.delta > 0 ? '+' : '') + c.delta"></td>
+            <td class="pr-num" x-text="c.leadMedio != null ? c.leadMedio.toFixed(1) + 'd' : '—'"></td>
           </tr>
         </template>
       </tbody>
     </table>
 
+    <div class="pr-legend">
+      <span><span class="pr-signal pr-signal-verde"></span> saudável (sem atrasos, sem bloqueios pelo cliente)</span>
+      <span><span class="pr-signal pr-signal-amarelo"></span> atenção (até 30% atrasadas ou bloqueio &lt;5d)</span>
+      <span><span class="pr-signal pr-signal-vermelho"></span> crítico (&gt;30% atrasadas ou bloqueio &gt;5d)</span>
+    </div>
+
     <div class="pr-foot">
       <span>tasks 360 · gestão executiva · kliente 360</span>
       <span>página 2</span>
+    </div>
+  </div>
+
+  <!-- ============ PÁGINA 3 — Atenção máxima + Carga do time ============ -->
+  <div class="pr-page">
+    <div class="pr-head">
+      <div>
+        <div class="pr-title">Atenção máxima · Carga do time</div>
+        <div class="pr-sub">o que olhar agora · onde tá o gargalo</div>
+      </div>
+      <div class="pr-stamp">
+        <div>snapshot · <strong x-text="reportStampDate"></strong></div>
+      </div>
+    </div>
+
+    <div class="pr-section-title">Top 10 pendentes críticos</div>
+    <table class="pr-tbl">
+      <thead>
+        <tr>
+          <th style="width:13%">Cliente</th>
+          <th>Tarefa</th>
+          <th style="width:13%">Resp.</th>
+          <th style="width:6%">P</th>
+          <th style="width:11%">Sinal</th>
+          <th style="width:9%" class="pr-num">Parada</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="t in reportTopPendentes" :key="t.id">
+          <tr>
+            <td x-text="nomeCliente(t.clienteId)"></td>
+            <td x-text="t.titulo"></td>
+            <td x-text="nomePessoa(t.pessoaId) || '—'"></td>
+            <td><span class="pr-pchip" :class="'pr-p-' + t.prioridade" x-text="t.prioridade"></span></td>
+            <td>
+              <template x-if="atrasada(t)"><span class="pr-late" x-text="'Atrasada · ' + diasAtraso(t) + 'd'"></span></template>
+              <template x-if="!atrasada(t) && t.subetapa === 'bloqueado' && t.bloqueadoPor === 'cliente'"><span class="pr-warn">Aguardando cliente</span></template>
+              <template x-if="!atrasada(t) && t.subetapa === 'bloqueado' && t.bloqueadoPor !== 'cliente'"><span>Bloqueada</span></template>
+              <template x-if="!atrasada(t) && t.subetapa !== 'bloqueado' && agingLevel(t) === 'stale'"><span>Aging crítico</span></template>
+            </td>
+            <td class="pr-num" x-text="agingDays(t) + 'd'"></td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+    <div x-show="reportTopPendentes.length === 0" class="pr-risks empty">Sem pendentes críticos. Operação saudável.</div>
+
+    <div class="pr-section-title">Carga do time · horas alocadas em tarefas ativas</div>
+    <table class="pr-tbl">
+      <thead>
+        <tr>
+          <th>Pessoa</th>
+          <th style="width:10%" class="pr-num">Tasks</th>
+          <th style="width:10%" class="pr-num">Horas</th>
+          <th style="width:14%" class="pr-num">Atrasadas</th>
+          <th>Distribuição</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="p in reportTeamLoad" :key="p.id">
+          <tr>
+            <td><strong x-text="p.nome"></strong></td>
+            <td class="pr-num" x-text="p.tasks"></td>
+            <td class="pr-num" :class="p.sobrecarga && 'pr-warn'" x-text="p.horas + 'h'"></td>
+            <td class="pr-num" :class="p.atrasadas > 0 && 'pr-late'" x-text="p.atrasadas"></td>
+            <td>
+              <div class="pr-bar">
+                <div class="pr-bar-fill" :style="'width:' + p.barOk + '%'"></div>
+                <div class="pr-bar-fill late" :style="'width:' + p.barLate + '%'"></div>
+              </div>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+    <div class="pr-legend">
+      <span><span class="pr-bar-swatch"></span> horas no prazo</span>
+      <span><span class="pr-bar-swatch late"></span> horas atrasadas</span>
+      <span class="pr-warn">⚠ &gt;50h alocadas indica sobrecarga</span>
+    </div>
+
+    <div class="pr-foot">
+      <span>tasks 360 · gestão executiva · kliente 360</span>
+      <span>página 3</span>
     </div>
   </div>
 </section>
@@ -3228,6 +3333,107 @@ function app() {
       const semPrazo = ativas.filter(t => !t.prazo).length;
       if (semPrazo >= 5) out.push(semPrazo + ' tarefa(s) ativas sem prazo — risco de fila invisível.');
       return out;
+    },
+    // Saúde por cliente (página 2 do report).
+    get reportClientHealth() {
+      const now = Date.now();
+      const cutoff30 = now - 30 * 86400000;
+      const cutoff60 = now - 60 * 86400000;
+      const out = [];
+      for (const c of this.clientes) {
+        const allTasks = this.tasks.filter(t => t.clienteId === c.id);
+        if (allTasks.length === 0) continue; // pula clientes sem tarefas
+        const ativas = allTasks.filter(t => t.status !== 'concluido');
+        const atrasadas = ativas.filter(t => this.atrasada(t));
+        const bloqAguard = ativas.filter(t => t.subetapa === 'bloqueado' && t.bloqueadoPor === 'cliente');
+        const bloqAguardStale = bloqAguard.filter(t => this.agingDays(t) >= 5).length;
+        const entregues30d = allTasks.filter(t => t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff30).length;
+        const entregues30dPrev = allTasks.filter(t => t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff60 && t.statusEm < cutoff30).length;
+        const delta = entregues30d - entregues30dPrev;
+        // Lead time médio (criação → conclusão) das entregues nos últimos 30d
+        const leads = allTasks
+          .filter(t => t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff30 && t.criadoEm)
+          .map(t => (t.statusEm - t.criadoEm) / 86400000)
+          .filter(d => d > 0);
+        const leadMedio = leads.length ? leads.reduce((a,b) => a+b, 0) / leads.length : null;
+        // Sinal semafórico
+        let sinal = 'verde', sinalReason = 'tudo no prazo';
+        const pctAtrasadas = ativas.length ? atrasadas.length / ativas.length : 0;
+        if (pctAtrasadas > 0.30 || bloqAguardStale > 0) {
+          sinal = 'vermelho';
+          sinalReason = pctAtrasadas > 0.30 ? `${Math.round(pctAtrasadas*100)}% das ativas atrasadas` : 'bloqueio com cliente há +5d';
+        } else if (atrasadas.length > 0 || bloqAguard.length > 0) {
+          sinal = 'amarelo';
+          sinalReason = atrasadas.length > 0 ? `${atrasadas.length} atrasada(s)` : 'aguardando cliente';
+        }
+        out.push({
+          id: c.id, nome: c.nome,
+          ativas: ativas.length,
+          atrasadas: atrasadas.length,
+          bloqAguard: bloqAguard.length,
+          entregues30d,
+          delta,
+          leadMedio,
+          sinal, sinalReason,
+        });
+      }
+      // Ordena: vermelho → amarelo → verde, depois por # ativas desc
+      const sinalRank = { vermelho: 0, amarelo: 1, verde: 2 };
+      out.sort((a,b) => (sinalRank[a.sinal] - sinalRank[b.sinal]) || (b.ativas - a.ativas));
+      return out;
+    },
+    // Top pendentes críticos (página 3).
+    get reportTopPendentes() {
+      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+      const score = (t) => {
+        // Score maior = mais crítico
+        let s = 0;
+        if (this.atrasada(t)) s += 1000 + this.diasAtraso(t) * 5;
+        if (t.subetapa === 'bloqueado' && t.bloqueadoPor === 'cliente') s += 500 + this.agingDays(t) * 3;
+        if (t.subetapa === 'bloqueado' && t.bloqueadoPor !== 'cliente') s += 300 + this.agingDays(t) * 2;
+        if (this.agingLevel(t) === 'stale') s += 200;
+        // Boost por prioridade
+        if (t.prioridade === 'P0') s += 200;
+        else if (t.prioridade === 'P1') s += 100;
+        return s;
+      };
+      const candidatos = ativas
+        .map(t => ({ t, s: score(t) }))
+        .filter(x => x.s > 0)
+        .sort((a,b) => b.s - a.s)
+        .slice(0, 10)
+        .map(x => x.t);
+      return candidatos;
+    },
+    // Carga por pessoa (página 3).
+    get reportTeamLoad() {
+      const map = new Map();
+      for (const p of this.pessoas) {
+        if (p.role === 'cliente') continue; // não inclui clientes externos
+        map.set(p.id, { id: p.id, nome: p.nome, tasks: 0, horas: 0, atrasadas: 0, horasAtrasadas: 0 });
+      }
+      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+      for (const t of ativas) {
+        if (!t.pessoaId) continue;
+        const e = map.get(t.pessoaId);
+        if (!e) continue;
+        e.tasks++;
+        const h = +t.esforco || 0;
+        e.horas += h;
+        if (this.atrasada(t)) {
+          e.atrasadas++;
+          e.horasAtrasadas += h;
+        }
+      }
+      const arr = Array.from(map.values()).filter(x => x.tasks > 0);
+      const maxHoras = Math.max(1, ...arr.map(x => x.horas));
+      arr.forEach(x => {
+        x.barLate = Math.round((x.horasAtrasadas / maxHoras) * 100);
+        x.barOk   = Math.round(((x.horas - x.horasAtrasadas) / maxHoras) * 100);
+        x.sobrecarga = x.horas > 50;
+      });
+      arr.sort((a,b) => b.horas - a.horas);
+      return arr;
     },
     async exportPDF() {
       this.exportOpen = false;
