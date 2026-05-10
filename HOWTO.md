@@ -41,6 +41,12 @@ Quem você é determina como usa:
 
 Da esquerda pra direita no topo:
 
+### Mencionar pessoa em comentário
+
+No campo de comentário (modal de edição da tarefa), botão **"@ mencionar"** abre dropdown com filtragem de pessoas internas. Click na pessoa insere `@Primeiro_nome` no texto. Quando o comentário é exibido, qualquer `@nome` que case com pessoa cadastrada vira chip verde destacado.
+
+> Cliente externo não aparece no dropdown (pra evitar mention acidental). Mentions de pessoas que não existem ficam como texto normal.
+
 ### Card de tarefa (componente único)
 
 O mesmo card visual aparece no **Backlog mobile**, **Meu foco**, **Calendário (dia selecionado)** e **Kanban operacional**. Mudanças nele afetam todos os 4 lugares — comentários cruzados nos templates marcam isso. Estrutura: título + prioridade (topo), cliente · projeto, responsável + complexidade + prazo, status + aging badge.
