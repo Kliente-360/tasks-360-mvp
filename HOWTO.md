@@ -120,7 +120,17 @@ Filtros de cliente e responsável afetam tudo.
 
 Três sub-abas: Clientes · Projetos · Pessoas. Cadastre antes de criar tarefas que dependam.
 
-Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (Admin / Time Kliente 360 / Cliente externo) e — quando perfil for "Cliente externo" — o cliente vinculado. Esse vínculo determina o que a pessoa vê no Portal quando o login estiver ativo.
+Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (Admin / Time Kliente 360 / Cliente externo) e — quando perfil for "Cliente externo" — o cliente vinculado.
+
+Botões de acesso variam por perfil:
+- **Cliente externo** (login via magic link): "convidar" / "reenviar link" / "inativar"
+- **Time interno / Admin** (login via Google): "ativar" / "inativar" — sem reenviar link, porque o login não depende de email; basta a pessoa estar `ativa` (`invited_at` preenchido) pra entrar com Google.
+
+Badges:
+- *acesso ativo* — pessoa já logou pelo menos uma vez
+- *convidada · aguardando 1º login* — cliente externo recebeu o link mas ainda não usou
+- *ativa · ainda não logou* — interno habilitado mas que ainda não entrou
+- *sem convite* / *inativa* — sem permissão atual de acesso
 
 ### Adoption
 

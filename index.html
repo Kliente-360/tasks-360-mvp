@@ -1932,9 +1932,12 @@
                 <span x-text="p.nome"></span>
                 <span x-show="p.role === 'admin'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)" title="Acesso total">admin</span>
                 <span x-show="p.role === 'cliente'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309" title="Cliente externo — só vê o Portal">cliente externo</span>
+                <!-- Estado de acesso, semantizado por role -->
                 <span x-show="p.invited_at && p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)">acesso ativo</span>
-                <span x-show="p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">convidada</span>
-                <span x-show="!p.invited_at && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">sem convite</span>
+                <span x-show="p.role === 'cliente' && p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">convidada · aguardando 1º login</span>
+                <span x-show="p.role !== 'cliente' && p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">ativa · ainda não logou</span>
+                <span x-show="!p.invited_at && p.role === 'cliente' && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">sem convite</span>
+                <span x-show="!p.invited_at && p.role !== 'cliente' && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">inativa</span>
               </div>
               <div class="text-xs text-muted truncate">
                 <span x-show="p.email" class="font-mono" x-text="p.email"></span>
@@ -1945,8 +1948,12 @@
             </div>
           </div>
           <div class="flex gap-1 flex-wrap">
-            <button class="btn btn-ghost text-xs" x-show="p.email && !p.invited_at" @click="convidarPessoa(p)" title="Marcar como convidada e enviar magic link">convidar</button>
-            <button class="btn btn-ghost text-xs" x-show="p.email && p.invited_at" @click="convidarPessoa(p)" title="Reenviar magic link">reenviar link</button>
+            <!-- Cliente externo: precisa convite/reenviar link (magic link) -->
+            <button class="btn btn-ghost text-xs" x-show="p.role === 'cliente' && p.email && !p.invited_at" @click="convidarPessoa(p)" title="Marcar como convidada e enviar magic link">convidar</button>
+            <button class="btn btn-ghost text-xs" x-show="p.role === 'cliente' && p.email && p.invited_at" @click="convidarPessoa(p)" title="Reenviar magic link">reenviar link</button>
+            <!-- Interno/admin: ativar/inativar (sem menção a convite — login é via Google) -->
+            <button class="btn btn-ghost text-xs" x-show="p.role !== 'cliente' && !p.invited_at" @click="ativarPessoa(p)" title="Habilitar acesso">ativar</button>
+            <!-- Inativar serve pros dois cenários -->
             <button class="btn btn-ghost text-xs" x-show="p.invited_at" @click="desconvidarPessoa(p)" title="Revogar acesso">inativar</button>
             <button class="btn btn-ghost text-xs" @click="openEditPessoa(p)">editar</button>
             <button class="btn btn-danger text-xs" @click="deletePessoa(p)">excluir</button>
@@ -3625,6 +3632,24 @@ function app() {
         return;
       }
       this.toast('success', `Convite enviado para ${p.email}`);
+    },
+    async ativarPessoa(p) {
+      // Pra interno/admin: só marca invited_at (login é via Google, não precisa magic link).
+      if (!p.email) {
+        this.toast('error', `${p.nome} não tem email. Edite a pessoa antes de ativar.`);
+        return;
+      }
+      const nowIso = new Date().toISOString();
+      const i = this.pessoas.findIndex(x => x.id === p.id);
+      const prev = i >= 0 ? this.pessoas[i] : null;
+      if (i >= 0) this.pessoas[i] = { ...prev, invited_at: nowIso };
+      const { error } = await sb.from('pessoas').update({ invited_at: nowIso }).eq('id', p.id);
+      if (error) {
+        if (prev) this.pessoas[i] = prev;
+        this.toast('error', 'Erro ao ativar: ' + error.message);
+        return;
+      }
+      this.toast('success', `${p.nome} ativada. Já pode entrar com Google.`);
     },
     desconvidarPessoa(p) {
       this.askConfirm(
