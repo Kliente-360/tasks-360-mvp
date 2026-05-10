@@ -479,6 +479,10 @@
   .print-only .pr-risks.empty { background: #f0fdf4; border-color: #bbf7d0; color: #166534; font-size: 11px; }
 
   .print-only .pr-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .print-only .pr-charts-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; margin: 8px 0 12px; }
+  .print-only .pr-charts-grid .pr-chart-wrap { height: 130px; }
+  .print-only .pr-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 8px 0 12px; }
+  .print-only .pr-charts-row .pr-chart-wrap { height: 150px; }
   .print-only .pr-chart { border: 1px solid #e5e5e5; border-radius: 6px; padding: 10px 12px; }
   .print-only .pr-chart h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #666; font-weight: 600; margin: 0 0 6px; }
   .print-only .pr-chart-wrap { position: relative; height: 160px; }
@@ -2177,43 +2181,29 @@
       </div>
     </div>
 
-    <div class="pr-section-title">Carga atual · horas alocadas em tarefas ativas</div>
-    <table class="pr-tbl">
-      <thead>
-        <tr>
-          <th>Pessoa</th>
-          <th style="width:10%" class="pr-num">Tasks</th>
-          <th style="width:10%" class="pr-num">Horas</th>
-          <th style="width:14%" class="pr-num">Atrasadas</th>
-          <th>Distribuição</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template x-for="p in reportTeamLoad" :key="p.id">
-          <tr>
-            <td>
-              <strong x-text="p.nome"></strong>
-              <template x-if="p.sobrecarga"><span class="pr-warn" style="margin-left:6px"> · sobrecarga</span></template>
-              <template x-if="p.subutilizada"><span style="color:#16a34a;margin-left:6px"> · disponível</span></template>
-            </td>
-            <td class="pr-num" x-text="p.tasks"></td>
-            <td class="pr-num" :class="p.sobrecarga && 'pr-warn'" x-text="p.horas + 'h'"></td>
-            <td class="pr-num" :class="p.atrasadas > 0 && 'pr-late'" x-text="p.atrasadas"></td>
-            <td>
-              <div class="pr-bar">
-                <div class="pr-bar-fill" :style="'width:' + p.barOk + '%'"></div>
-                <div class="pr-bar-fill late" :style="'width:' + p.barLate + '%'"></div>
-              </div>
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+    <div class="pr-section-title">Distribuição por pessoa · top 8 com carga</div>
+    <div class="pr-charts-grid">
+      <div class="pr-chart">
+        <h4>Pessoa × Cliente · horas</h4>
+        <div class="pr-chart-wrap"><canvas id="printChartPesCliH"></canvas></div>
+      </div>
+      <div class="pr-chart">
+        <h4>Pessoa × Status · horas</h4>
+        <div class="pr-chart-wrap"><canvas id="printChartPesStatH"></canvas></div>
+      </div>
+      <div class="pr-chart">
+        <h4>Pessoa × Cliente · tarefas</h4>
+        <div class="pr-chart-wrap"><canvas id="printChartPesCliQ"></canvas></div>
+      </div>
+      <div class="pr-chart">
+        <h4>Pessoa × Status · tarefas</h4>
+        <div class="pr-chart-wrap"><canvas id="printChartPesStatQ"></canvas></div>
+      </div>
+    </div>
     <div class="pr-legend">
-      <span><span class="pr-bar-swatch"></span> horas no prazo</span>
-      <span><span class="pr-bar-swatch late"></span> horas atrasadas</span>
-      <span class="pr-warn">⚠ &gt;50h indica sobrecarga</span>
+      <span class="pr-warn">⚠ &gt;50h alocadas indica sobrecarga</span>
       <span style="color:#16a34a">● &lt;20h indica disponibilidade</span>
+      <span class="text-muted">tarefas com 0h consideradas como 4h padrão</span>
     </div>
 
     <div class="pr-section-title">Sugestões de redistribuição</div>
@@ -2245,6 +2235,18 @@
       </div>
     </div>
 
+    <div class="pr-section-title">Distribuição por cliente</div>
+    <div class="pr-charts-row">
+      <div class="pr-chart">
+        <h4>Tarefas concluídas · últimos 14 dias</h4>
+        <div class="pr-chart-wrap"><canvas id="printChartCliEntregues"></canvas></div>
+      </div>
+      <div class="pr-chart">
+        <h4>SLA médio · dias entre criação e conclusão (14d)</h4>
+        <div class="pr-chart-wrap"><canvas id="printChartCliSla"></canvas></div>
+      </div>
+    </div>
+
     <div class="pr-section-title">Saúde por cliente · sinal semafórico</div>
     <table class="pr-tbl">
       <thead>
@@ -2254,9 +2256,9 @@
           <th style="width:8%" class="pr-num">Ativas</th>
           <th style="width:10%" class="pr-num">Atrasadas</th>
           <th style="width:14%" class="pr-num">Aguardando<br>cliente</th>
-          <th style="width:11%" class="pr-num">Entregues 30d</th>
-          <th style="width:11%" class="pr-num">vs 30d ant.</th>
-          <th style="width:11%">Lead médio</th>
+          <th style="width:11%" class="pr-num">Entregues 14d</th>
+          <th style="width:11%" class="pr-num">vs 14d ant.</th>
+          <th style="width:11%">SLA médio</th>
         </tr>
       </thead>
       <tbody>
@@ -2267,10 +2269,10 @@
             <td class="pr-num" x-text="c.ativas"></td>
             <td class="pr-num" :class="c.atrasadas > 0 && 'pr-late'" x-text="c.atrasadas"></td>
             <td class="pr-num" :class="c.bloqAguard > 0 && 'pr-warn'" x-text="c.bloqAguard"></td>
-            <td class="pr-num" x-text="c.entregues30d"></td>
+            <td class="pr-num" x-text="c.entregues14d"></td>
             <td class="pr-num" :class="c.delta > 0 ? 'pr-up' : (c.delta < 0 ? 'pr-down' : '')"
                 x-text="(c.delta > 0 ? '+' : '') + c.delta"></td>
-            <td class="pr-num" x-text="c.leadMedio != null ? c.leadMedio.toFixed(1) + 'd' : '—'"></td>
+            <td class="pr-num" x-text="c.slaMedio != null ? c.slaMedio.toFixed(1) + 'd' : '—'"></td>
           </tr>
         </template>
       </tbody>
@@ -3316,7 +3318,7 @@ function app() {
       const now = Date.now();
       const concluidas7d = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) <= 7*86400000).length;
       const concluidas30d = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) <= 30*86400000).length;
-      const horasAtivas = ativas.reduce((s, x) => s + (+x.esforco || 0), 0);
+      const horasAtivas = ativas.reduce((s, x) => s + this.effEsforco(x), 0);
       return [
         { label: 'Ativas', value: ativas.length, foot: horasAtivas + 'h previstas' },
         { label: 'Em andamento', value: emAndamento, foot: ativas.length ? Math.round(emAndamento/ativas.length*100)+'% das ativas' : '—' },
@@ -3350,28 +3352,28 @@ function app() {
       if (semPrazo >= 5) out.push(semPrazo + ' tarefa(s) ativas sem prazo — risco de fila invisível.');
       return out;
     },
-    // Saúde por cliente (página 2 do report).
+    // Saúde por cliente (página 3 do report).
     get reportClientHealth() {
       const now = Date.now();
-      const cutoff30 = now - 30 * 86400000;
-      const cutoff60 = now - 60 * 86400000;
+      const cutoff14 = now - 14 * 86400000;
+      const cutoff28 = now - 28 * 86400000;
       const out = [];
       for (const c of this.clientes) {
         const allTasks = this.tasks.filter(t => t.clienteId === c.id);
-        if (allTasks.length === 0) continue; // pula clientes sem tarefas
+        if (allTasks.length === 0) continue;
         const ativas = allTasks.filter(t => t.status !== 'concluido');
         const atrasadas = ativas.filter(t => this.atrasada(t));
         const bloqAguard = ativas.filter(t => t.subetapa === 'bloqueado' && t.bloqueadoPor === 'cliente');
         const bloqAguardStale = bloqAguard.filter(t => this.agingDays(t) >= 5).length;
-        const entregues30d = allTasks.filter(t => t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff30).length;
-        const entregues30dPrev = allTasks.filter(t => t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff60 && t.statusEm < cutoff30).length;
-        const delta = entregues30d - entregues30dPrev;
-        // Lead time médio (criação → conclusão) das entregues nos últimos 30d
+        const entregues14d     = allTasks.filter(t => t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff14).length;
+        const entregues14dPrev = allTasks.filter(t => t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff28 && t.statusEm < cutoff14).length;
+        const delta = entregues14d - entregues14dPrev;
+        // SLA médio: criação → conclusão das entregues nos últimos 14d
         const leads = allTasks
-          .filter(t => t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff30 && t.criadoEm)
+          .filter(t => t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff14 && t.criadoEm)
           .map(t => (t.statusEm - t.criadoEm) / 86400000)
           .filter(d => d > 0);
-        const leadMedio = leads.length ? leads.reduce((a,b) => a+b, 0) / leads.length : null;
+        const slaMedio = leads.length ? leads.reduce((a,b) => a+b, 0) / leads.length : null;
         // Sinal semafórico
         let sinal = 'verde', sinalReason = 'tudo no prazo';
         const pctAtrasadas = ativas.length ? atrasadas.length / ativas.length : 0;
@@ -3387,13 +3389,11 @@ function app() {
           ativas: ativas.length,
           atrasadas: atrasadas.length,
           bloqAguard: bloqAguard.length,
-          entregues30d,
-          delta,
-          leadMedio,
+          entregues14d, delta,
+          slaMedio,
           sinal, sinalReason,
         });
       }
-      // Ordena: vermelho → amarelo → verde, depois por # ativas desc
       const sinalRank = { vermelho: 0, amarelo: 1, verde: 2 };
       out.sort((a,b) => (sinalRank[a.sinal] - sinalRank[b.sinal]) || (b.ativas - a.ativas));
       return out;
@@ -3434,7 +3434,7 @@ function app() {
         const e = map.get(t.pessoaId);
         if (!e) continue;
         e.tasks++;
-        const h = +t.esforco || 0;
+        const h = this.effEsforco(t);
         e.horas += h;
         if (this.atrasada(t)) {
           e.atrasadas++;
@@ -3478,11 +3478,12 @@ function app() {
           if (dispIdx >= disponiveis.length) break;
           const dest = disponiveis[dispIdx];
           const tag = this.atrasada(t) ? 'atrasada' : t.prioridade;
+          const h = this.effEsforco(t);
           out.push(
-            `Passar "${t.titulo.slice(0, 60)}${t.titulo.length>60?'…':''}" (${tag}, ${t.esforco||0}h) ` +
+            `Passar "${t.titulo.slice(0, 60)}${t.titulo.length>60?'…':''}" (${tag}, ${h}h) ` +
             `de ${sobre.nome.split(' ')[0]} (${sobre.horas}h) pra ${dest.nome.split(' ')[0]} (${dest.horas}h).`
           );
-          dest.horas += (+t.esforco || 0); // simulação local
+          dest.horas += h; // simulação local
           if (dest.horas >= 30) dispIdx++; // se ficou ocupado, próximo
         }
         if (out.length >= 5) break; // limite de sugestões por relatório
@@ -3536,7 +3537,7 @@ function app() {
 
       // 2) Horas por cliente (ativas)
       const porCliente = {};
-      ativas.forEach(t => { const n = this.nomeCliente(t.clienteId); porCliente[n] = (porCliente[n]||0) + (+t.esforco||0); });
+      ativas.forEach(t => { const n = this.nomeCliente(t.clienteId); porCliente[n] = (porCliente[n]||0) + this.effEsforco(t); });
       const cliEntries = Object.entries(porCliente).filter(([_,v]) => v > 0).sort((a,b) => b[1]-a[1]).slice(0, 8);
       const ctxC = document.getElementById('printChartClientes');
       if (ctxC) {
@@ -3553,6 +3554,12 @@ function app() {
           }
         });
       }
+
+      // === Charts pessoa × dimensão (página 2 do PDF) ===
+      this.buildPersonBreakdownCharts(ativas, baseFont);
+
+      // === Charts por cliente (página 3 do PDF) ===
+      this.buildClientCharts(baseFont);
 
       // 3) Throughput 8 semanas (sparkline)
       const ts = this.throughputSemanas;
@@ -3573,9 +3580,134 @@ function app() {
       }
     },
     destroyPrintCharts() {
-      ['status','clientes','throughput'].forEach(k => {
+      ['status','clientes','throughput','pesCliH','pesCliQ','pesStatH','pesStatQ','cliEntregues','cliSla'].forEach(k => {
         if (this.printCharts[k]) { try { this.printCharts[k].destroy(); } catch(_) {} this.printCharts[k] = null; }
       });
+    },
+    buildPersonBreakdownCharts(ativas, baseFont) {
+      // Limita às pessoas que aparecem nas tasks ativas
+      const pessoasMap = new Map();
+      for (const p of this.pessoas) {
+        if (p.role === 'cliente') continue;
+        pessoasMap.set(p.id, { id: p.id, nome: p.nome, total: 0 });
+      }
+      for (const t of ativas) {
+        if (!t.pessoaId) continue;
+        const p = pessoasMap.get(t.pessoaId);
+        if (p) p.total += this.effEsforco(t);
+      }
+      const topPessoas = Array.from(pessoasMap.values()).filter(p => p.total > 0).sort((a,b) => b.total - a.total).slice(0, 8);
+      const pessoaIds = topPessoas.map(p => p.id);
+      const pessoaLabels = topPessoas.map(p => (p.nome || '—').split(' ')[0]);
+
+      // Paleta determinística (verde brand + neutros + status semânticos)
+      const palette = ['#009900','#2D7AA8','#C77A1A','#6E7A72','#7C3AED','#0891B2','#BE185D','#65A30D','#0D9488','#9333EA'];
+
+      // ---- Por cliente ----
+      const clientesUsed = new Map();
+      for (const t of ativas) {
+        if (!t.pessoaId || !t.clienteId) continue;
+        if (!pessoaIds.includes(t.pessoaId)) continue;
+        const cn = this.nomeCliente(t.clienteId);
+        if (!clientesUsed.has(cn)) clientesUsed.set(cn, { hPorPes: {}, qPorPes: {} });
+        const e = clientesUsed.get(cn);
+        e.hPorPes[t.pessoaId] = (e.hPorPes[t.pessoaId] || 0) + this.effEsforco(t);
+        e.qPorPes[t.pessoaId] = (e.qPorPes[t.pessoaId] || 0) + 1;
+      }
+      const cliEntries = Array.from(clientesUsed.entries()); // [[nome, {hPorPes, qPorPes}], ...]
+      const datasetsCliH = cliEntries.map(([nome, info], i) => ({
+        label: nome,
+        data: pessoaIds.map(pid => info.hPorPes[pid] || 0),
+        backgroundColor: palette[i % palette.length],
+        borderWidth: 0,
+      }));
+      const datasetsCliQ = cliEntries.map(([nome, info], i) => ({
+        label: nome,
+        data: pessoaIds.map(pid => info.qPorPes[pid] || 0),
+        backgroundColor: palette[i % palette.length],
+        borderWidth: 0,
+      }));
+
+      // ---- Por status macro ----
+      const statusKeys = ['backlog','andamento','bloqueado'];
+      const statusColors = { backlog: '#9ca3af', andamento: '#009900', bloqueado: '#dc2626' };
+      const hPorStatusPes = {}, qPorStatusPes = {};
+      for (const k of statusKeys) { hPorStatusPes[k] = {}; qPorStatusPes[k] = {}; }
+      for (const t of ativas) {
+        if (!t.pessoaId || !pessoaIds.includes(t.pessoaId)) continue;
+        const k = t.status;
+        if (!hPorStatusPes[k]) continue;
+        hPorStatusPes[k][t.pessoaId] = (hPorStatusPes[k][t.pessoaId] || 0) + this.effEsforco(t);
+        qPorStatusPes[k][t.pessoaId] = (qPorStatusPes[k][t.pessoaId] || 0) + 1;
+      }
+      const datasetsStatH = statusKeys.map(k => ({
+        label: this.lblStatus(k),
+        data: pessoaIds.map(pid => hPorStatusPes[k][pid] || 0),
+        backgroundColor: statusColors[k],
+        borderWidth: 0,
+      }));
+      const datasetsStatQ = statusKeys.map(k => ({
+        label: this.lblStatus(k),
+        data: pessoaIds.map(pid => qPorStatusPes[k][pid] || 0),
+        backgroundColor: statusColors[k],
+        borderWidth: 0,
+      }));
+
+      const baseOptions = (axisLabel) => ({
+        responsive: true, maintainAspectRatio: false, animation: false, indexAxis: 'y',
+        plugins: {
+          legend: { position: 'bottom', labels: { font: baseFont, boxWidth: 8, padding: 4, color: '#333' } },
+          tooltip: { enabled: false },
+        },
+        scales: {
+          x: { stacked: true, grid: { color: '#eee' }, ticks: { font: { ...baseFont, size: 9 }, color: '#666', callback: v => v }, border: { display: false }, title: { display: !!axisLabel, text: axisLabel, font: { ...baseFont, size: 9 }, color: '#666' } },
+          y: { stacked: true, grid: { display: false }, ticks: { font: { ...baseFont, size: 10 }, color: '#111' }, border: { display: false } },
+        },
+      });
+
+      const mk = (id, datasets, axisLabel) => {
+        const ctx = document.getElementById(id);
+        if (!ctx) return null;
+        return new Chart(ctx, {
+          type: 'bar',
+          data: { labels: pessoaLabels, datasets },
+          options: baseOptions(axisLabel),
+        });
+      };
+
+      this.printCharts.pesCliH  = mk('printChartPesCliH',  datasetsCliH,  'horas');
+      this.printCharts.pesStatH = mk('printChartPesStatH', datasetsStatH, 'horas');
+      this.printCharts.pesCliQ  = mk('printChartPesCliQ',  datasetsCliQ,  'tarefas');
+      this.printCharts.pesStatQ = mk('printChartPesStatQ', datasetsStatQ, 'tarefas');
+    },
+    buildClientCharts(baseFont) {
+      const data = this.reportClientHealth;
+      if (!data.length) return;
+      const labels = data.map(c => c.nome);
+      const baseOpts = (axisLabel) => ({
+        responsive: true, maintainAspectRatio: false, animation: false, indexAxis: 'y',
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: {
+          x: { grid: { color: '#eee' }, ticks: { font: baseFont, color: '#666' }, border: { display: false }, title: { display: !!axisLabel, text: axisLabel, font: { ...baseFont, size: 9 }, color: '#666' } },
+          y: { grid: { display: false }, ticks: { font: baseFont, color: '#111' }, border: { display: false } },
+        },
+      });
+      const ctxE = document.getElementById('printChartCliEntregues');
+      if (ctxE) {
+        this.printCharts.cliEntregues = new Chart(ctxE, {
+          type: 'bar',
+          data: { labels, datasets: [{ data: data.map(c => c.entregues14d), backgroundColor: '#009900', borderRadius: 3, barThickness: 12 }] },
+          options: baseOpts('tarefas concluídas'),
+        });
+      }
+      const ctxS = document.getElementById('printChartCliSla');
+      if (ctxS) {
+        this.printCharts.cliSla = new Chart(ctxS, {
+          type: 'bar',
+          data: { labels, datasets: [{ data: data.map(c => c.slaMedio == null ? 0 : Math.round(c.slaMedio * 10) / 10), backgroundColor: '#2D7AA8', borderRadius: 3, barThickness: 12 }] },
+          options: baseOpts('dias'),
+        });
+      }
     },
 
     // ===================== HELPERS =====================
@@ -3603,6 +3735,13 @@ function app() {
     nomeCliente(id) { return (this.clientes.find(c => c.id === id) || {}).nome || '—'; },
     nomeProjeto(id) { return (this.projetos.find(p => p.id === id) || {}).nome || '—'; },
     nomePessoa(id)  { return (this.pessoas.find(p => p.id === id) || {}).nome || '—'; },
+    // Esforço efetivo pra charts/PDF/Dashboard: assume 4h quando esforço
+    // está em 0 (default convencional). Não afeta tabelas de detalhe
+    // (Backlog/Kanban) onde mostramos o valor real informado.
+    effEsforco(t) {
+      const v = +(t && t.esforco);
+      return v > 0 ? v : 4;
+    },
     lblComplex(c) {
       return ({ alta: 'Alta', media: 'Média', baixa: 'Baixa' })[c] || 'Média';
     },
@@ -4527,7 +4666,7 @@ function app() {
       const andamento = ativas.filter(t => t.status === 'andamento');
       const backlog   = ativas.filter(t => t.status === 'backlog');
       const bloqueado = ativas.filter(t => t.status === 'bloqueado');
-      const sum = arr => arr.reduce((a,b) => a + (+b.esforco || 0), 0);
+      const sum = arr => arr.reduce((a,b) => a + this.effEsforco(b), 0);
       return {
         andamento: andamento.length,
         andamentoH: sum(andamento),
@@ -4784,7 +4923,7 @@ function app() {
       this.clientes.forEach(c => porCliente[c.nome] = 0);
       ativas.forEach(t => {
         const n = this.nomeCliente(t.clienteId);
-        porCliente[n] = (porCliente[n] || 0) + (+t.esforco || 0);
+        porCliente[n] = (porCliente[n] || 0) + this.effEsforco(t);
       });
       const cliEntries = Object.entries(porCliente).filter(([_,v]) => v > 0).sort((a,b) => b[1] - a[1]);
 
@@ -4793,7 +4932,7 @@ function app() {
       this.pessoas.forEach(p => porPessoa[p.nome] = 0);
       ativas.forEach(t => {
         const n = this.nomePessoa(t.pessoaId);
-        porPessoa[n] = (porPessoa[n] || 0) + (+t.esforco || 0);
+        porPessoa[n] = (porPessoa[n] || 0) + this.effEsforco(t);
       });
       const pesEntries = Object.entries(porPessoa).filter(([_,v]) => v > 0).sort((a,b) => b[1] - a[1]);
 
@@ -4816,9 +4955,10 @@ function app() {
       ativas.forEach(t => {
         if (!t.prazo) return;
         const prazo = new Date(t.prazo + 'T00:00:00');
-        if (prazo < hojeWk) { atrasadasH += (+t.esforco||0); atrasadasN++; return; }
+        const h = this.effEsforco(t);
+        if (prazo < hojeWk) { atrasadasH += h; atrasadasN++; return; }
         const wk = semanas.find(s => prazo >= s.ini && prazo < s.fim);
-        if (wk) { wk.horas += (+t.esforco||0); wk.count++; }
+        if (wk) { wk.horas += h; wk.count++; }
       });
       const tlLabels = ['Atrasadas', ...semanas.map(s => s.label)];
       const tlData   = [atrasadasH, ...semanas.map(s => s.horas)];
