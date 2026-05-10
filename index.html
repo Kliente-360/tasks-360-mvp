@@ -489,9 +489,18 @@
   .print-only .pr-delta-good { color: #166534; }
   .print-only .pr-delta-bad  { color: #b91c1c; }
 
-  /* Header e página executiva */
-  .print-only .pr-page-exec { padding: 16mm 12mm 10mm; }
-  .print-only .pr-head-compact { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e5e5e5; }
+  /* Header e página executiva — apertados pra caber em 1 página A4 */
+  .print-only .pr-page-exec { padding: 10mm 10mm 6mm; page-break-after: avoid; }
+  .print-only .pr-page-exec .pr-section-title { font-size: 10px; margin: 8px 0 4px; padding-left: 6px; border-left-width: 2px; }
+  .print-only .pr-head-compact { margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #e5e5e5; }
+  .print-only .pr-page-exec .pr-title { font-size: 18px; }
+  .print-only .pr-page-exec .pr-sub { font-size: 8px; margin-top: 2px; }
+  .print-only .pr-page-exec .pr-stamp { font-size: 9px; }
+  .print-only .pr-page-exec table.pr-tbl tbody td { padding: 3px 5px; font-size: 9px; }
+  .print-only .pr-page-exec table.pr-tbl thead th { padding: 4px 5px; font-size: 8.5px; }
+  .print-only .pr-page-exec .pr-actions li { font-size: 9px; padding: 1px 0; }
+  .print-only .pr-page-exec .pr-actions { padding: 5px 9px; }
+  .print-only .pr-page-exec .pr-foot { margin-top: 8px; padding-top: 4px; font-size: 7.5px; }
 
   /* Split (eficiência + ações) */
   .print-only .pr-split { display: flex; gap: 14px; margin-bottom: 4px; }
@@ -2533,88 +2542,70 @@
       </div>
     </div>
 
-    <!-- Clientes -->
-    <div class="pr-section-title">Clientes · saúde, atrasos e consumo de horas orçadas</div>
-    <table class="pr-tbl pr-tbl-cli">
-      <thead>
-        <tr>
-          <th>Cliente</th>
-          <th style="width:11%">Tier</th>
-          <th style="width:7%" class="pr-num">Tasks</th>
-          <th style="width:8%" class="pr-num">Horas</th>
-          <th style="width:11%" class="pr-num">% Orç. (h)</th>
-          <th style="width:9%" class="pr-num">Atrasadas</th>
-          <th style="width:11%" class="pr-num">Aguard. cli.</th>
-          <th style="width:18%">Saúde</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template x-for="c in reportClientesExec" :key="c.id">
-          <tr>
-            <td><strong x-text="c.nome"></strong></td>
-            <td x-text="c.tier || '—'" :class="!c.tier && 'pr-muted'"></td>
-            <td class="pr-num" x-text="c.ativas"></td>
-            <td class="pr-num" x-text="c.horas + 'h'"></td>
-            <td class="pr-num">
-              <template x-if="c.pctOrc != null">
-                <span x-text="c.pctOrc + '%'" :class="c.pctOrc > 100 ? 'pr-warn' : (c.pctOrc > 80 ? 'pr-amber' : '')"></span>
-              </template>
-              <template x-if="c.pctOrc == null"><span class="pr-muted">—</span></template>
-            </td>
-            <td class="pr-num" :class="c.atrasadas > 0 && 'pr-late'" x-text="c.atrasadas"></td>
-            <td class="pr-num" :class="c.bloqAguard > 0 && 'pr-amber'" x-text="c.bloqAguard"></td>
-            <td>
-              <span class="pr-signal" :class="'pr-signal-' + c.sinal"></span>
-              <span class="pr-signal-text" x-text="c.sinalReason"></span>
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
-
-    <!-- Time -->
-    <div class="pr-section-title">Time interno · capacidade e sobrecarga</div>
-    <table class="pr-tbl pr-tbl-team">
-      <thead>
-        <tr>
-          <th>Pessoa</th>
-          <th style="width:10%">Nível</th>
-          <th style="width:7%" class="pr-num">Tasks</th>
-          <th style="width:8%" class="pr-num">Horas</th>
-          <th style="width:10%" class="pr-num">% Cap.</th>
-          <th style="width:9%" class="pr-num">Atrasadas</th>
-          <th style="width:30%">Distribuição</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template x-for="p in reportTeamCompact" :key="p.id">
-          <tr :class="'pr-row-' + p.cargaNivel">
-            <td>
-              <strong x-text="p.nome"></strong>
-              <template x-if="p.cargaNivel==='sobrecarga'"><span class="pr-tag pr-tag-danger">sobrecarga</span></template>
-              <template x-if="p.cargaNivel==='pressao'"><span class="pr-tag pr-tag-warn">pressão</span></template>
-              <template x-if="p.cargaNivel==='folga'"><span class="pr-tag pr-tag-ok">folga</span></template>
-            </td>
-            <td class="pr-muted" x-text="p.senioridade || '—'"></td>
-            <td class="pr-num" x-text="p.tasks"></td>
-            <td class="pr-num" x-text="p.horas + 'h'"></td>
-            <td class="pr-num">
-              <template x-if="p.pctCap != null">
-                <span x-text="p.pctCap + '%'" :class="p.cargaNivel==='sobrecarga' ? 'pr-warn' : (p.cargaNivel==='pressao' ? 'pr-amber' : (p.cargaNivel==='folga' ? 'pr-ok' : ''))"></span>
-              </template>
-              <template x-if="p.pctCap == null"><span class="pr-muted">—</span></template>
-            </td>
-            <td class="pr-num" :class="p.atrasadas > 0 && 'pr-late'" x-text="p.atrasadas"></td>
-            <td>
-              <div class="pr-bar">
-                <div class="pr-bar-fill" :style="'width:' + p.barOk + '%'"></div>
-                <div class="pr-bar-fill late" :style="'width:' + p.barLate + '%'"></div>
-              </div>
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+    <!-- Clientes + Time lado a lado -->
+    <div class="pr-split">
+      <div class="pr-split-col" style="flex: 1 1 50%">
+        <div class="pr-section-title">Clientes</div>
+        <table class="pr-tbl pr-tbl-cli">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th style="width:14%" class="pr-num">Tasks</th>
+              <th style="width:18%" class="pr-num">Horas</th>
+              <th style="width:32%">Saúde</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="c in reportClientesExec" :key="c.id">
+              <tr>
+                <td><strong x-text="c.nome"></strong></td>
+                <td class="pr-num" x-text="c.ativas"></td>
+                <td class="pr-num" x-text="c.horas + 'h'"></td>
+                <td>
+                  <span class="pr-signal" :class="'pr-signal-' + c.sinal"></span>
+                  <span class="pr-signal-text" x-text="c.sinalReason"></span>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <div class="pr-split-col" style="flex: 1 1 50%">
+        <div class="pr-section-title">Time interno</div>
+        <table class="pr-tbl pr-tbl-team">
+          <thead>
+            <tr>
+              <th>Pessoa</th>
+              <th style="width:18%" class="pr-num">Tasks / Atr.</th>
+              <th style="width:16%" class="pr-num">Horas</th>
+              <th style="width:18%" class="pr-num">% Cap.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="p in reportTeamCompact" :key="p.id">
+              <tr :class="'pr-row-' + p.cargaNivel">
+                <td>
+                  <strong x-text="p.nome"></strong>
+                  <template x-if="p.cargaNivel==='sobrecarga'"><span class="pr-tag pr-tag-danger">sobrecarga</span></template>
+                  <template x-if="p.cargaNivel==='pressao'"><span class="pr-tag pr-tag-warn">pressão</span></template>
+                  <template x-if="p.cargaNivel==='folga'"><span class="pr-tag pr-tag-ok">folga</span></template>
+                </td>
+                <td class="pr-num">
+                  <span x-text="p.tasks"></span><span class="pr-muted"> / </span><span :class="p.atrasadas > 0 && 'pr-late'" x-text="p.atrasadas"></span>
+                </td>
+                <td class="pr-num" x-text="p.horas + 'h'"></td>
+                <td class="pr-num">
+                  <template x-if="p.pctCap != null">
+                    <span x-text="p.pctCap + '%'" :class="p.cargaNivel==='sobrecarga' ? 'pr-warn' : (p.cargaNivel==='pressao' ? 'pr-amber' : (p.cargaNivel==='folga' ? 'pr-ok' : ''))"></span>
+                  </template>
+                  <template x-if="p.pctCap == null"><span class="pr-muted">—</span></template>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
     <div class="pr-foot">
       <span>tasks 360 · executivo · kliente 360 · só sócios</span>
