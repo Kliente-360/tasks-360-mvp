@@ -149,6 +149,26 @@ Aba dedicada para o cliente externo. Layout simples com 4 cards (Aguardando voc�
 
 ---
 
+## Heurísticas (sinais de risco)
+
+Banner no topo do **Dashboard** mostra alertas determinísticos (sem IA) baseados nos atributos da tarefa, pessoa, cliente e projeto. Severidade `alta` (vermelho) ou `media` (âmbar). Atualmente:
+
+- **Tarefa grande sem início** com prazo a ≤10 dias
+- **Sobrecarga real** — pessoa com horas alocadas > capacidade semanal
+- **Cliente estratégico com atrasada(s)**
+- **Bloqueio aguardando cliente há +5 dias**
+- **SLA contratado quase vencido** (projetos com `sla_entrega_dias` configurado)
+
+> Atributos novos disponíveis no patch `heuristicas_onda_a_patch.sql`:
+> - **Tasks**: `tamanho` (mini/small/medio/grande/mini_projeto)
+> - **Pessoas**: `cliente_principal_id`, `cliente_secundario_id`, `capacidade_horas_semana`, `skills[]`
+> - **Clientes**: `tier` (estratégico/regular/oportunidade)
+> - **Projetos**: `sla_resposta_horas`, `sla_entrega_dias`, `orcamento_horas`
+>
+> UI inicial: **task.tamanho** no form de edição da tarefa; **pessoa.\*** no modal de pessoa. **cliente.tier** e **projeto.sla\*** ainda sem UI dedicada — setar via Supabase Studio direto, ou aguardar próxima iteração.
+
+---
+
 ## Modelo de uma tarefa
 
 Campos:
