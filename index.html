@@ -917,7 +917,7 @@
           <th class="sortable text-right" @click="sortBy('esforco')">Hrs <span x-text="sortIcon('esforco')" class="text-[9px] ml-1"></span></th>
           <th class="sortable" @click="sortBy('complexidade')">Cmplx <span x-text="sortIcon('complexidade')" class="text-[9px] ml-1"></span></th>
           <th class="sortable" @click="sortBy('prazo')">Prazo <span x-text="sortIcon('prazo')" class="text-[9px] ml-1"></span></th>
-          <th class="sortable" @click="sortBy('status')">Status <span x-text="sortIcon('status')" class="text-[9px] ml-1"></span></th>
+          <th class="sortable" @click="sortBy('subetapa')">Status <span x-text="sortIcon('subetapa')" class="text-[9px] ml-1"></span></th>
           <th class="w-8"></th>
         </tr>
       </thead>
@@ -2592,7 +2592,6 @@ function app() {
       { key: 'prazo',         label: 'Prazo' },
       { key: 'prioridade',    label: 'Prioridade' },
       { key: 'subetapa',      label: 'Etapa' },
-      { key: 'status',        label: 'Status macro' },
       { key: 'esforco',       label: 'Esforço' },
       { key: 'complexidade',  label: 'Complexidade' },
       { key: 'titulo',        label: 'Título' },
