@@ -870,36 +870,24 @@
       <option value="prioridade">Agrupar: Prioridade</option>
       <option value="complexidade">Agrupar: Complexidade</option>
     </select>
-    <select class="inp text-xs py-1.5" :value="sortKey + '|' + sortDir" @change="const [k,d] = $event.target.value.split('|'); sortKey = k; sortDir = d;" title="Ordenar por…">
-      <optgroup label="Prazo">
-        <option value="prazo|asc">Prazo · mais próximo</option>
-        <option value="prazo|desc">Prazo · mais distante</option>
-      </optgroup>
-      <optgroup label="Prioridade">
-        <option value="prioridade|asc">Prioridade · P0 → P3</option>
-        <option value="prioridade|desc">Prioridade · P3 → P0</option>
-      </optgroup>
-      <optgroup label="Etapa">
-        <option value="subetapa|asc">Etapa · backlog → concluído</option>
-        <option value="subetapa|desc">Etapa · concluído → backlog</option>
-        <option value="status|asc">Status macro · andamento → concluído</option>
-      </optgroup>
-      <optgroup label="Esforço">
-        <option value="esforco|asc">Esforço · menor → maior</option>
-        <option value="esforco|desc">Esforço · maior → menor</option>
-      </optgroup>
-      <optgroup label="Complexidade">
-        <option value="complexidade|asc">Complexidade · alta → baixa</option>
-        <option value="complexidade|desc">Complexidade · baixa → alta</option>
-      </optgroup>
-      <optgroup label="Alfabética">
-        <option value="titulo|asc">Título · A → Z</option>
-        <option value="titulo|desc">Título · Z → A</option>
-        <option value="clienteId|asc">Cliente · A → Z</option>
-        <option value="projetoId|asc">Projeto · A → Z</option>
-        <option value="pessoaId|asc">Responsável · A → Z</option>
-      </optgroup>
-    </select>
+    <!-- Sort: botão + popover. Click em opção ativa alterna asc/desc; em outra, vai pra asc. -->
+    <div class="relative" @click.outside="sortPanelOpen = false">
+      <button class="inp text-xs py-1.5 w-full text-left flex items-center justify-between gap-1" @click="sortPanelOpen = !sortPanelOpen" type="button">
+        <span class="truncate" x-text="'Ordenar: ' + sortLabel(sortKey)"></span>
+        <span class="text-muted shrink-0" x-text="sortDir === 'asc' ? '↑' : '↓'"></span>
+      </button>
+      <div x-show="sortPanelOpen" x-transition.opacity class="absolute right-0 top-full mt-1 bg-elev border border-line rounded-md shadow-xl z-40 w-[220px] py-1 max-h-[60vh] overflow-y-auto">
+        <template x-for="opt in sortOptions" :key="opt.key">
+          <button type="button"
+                  class="w-full flex items-center justify-between gap-2 px-3 py-2 text-xs text-left hover:bg-brand-tint transition-colors"
+                  :class="opt.key === sortKey && '!bg-brand-tint !text-brand-dark font-medium'"
+                  @click="pickSort(opt.key)">
+            <span x-text="opt.label"></span>
+            <span x-show="opt.key === sortKey" class="font-mono text-muted text-[11px]" x-text="sortDir === 'asc' ? '↑' : '↓'"></span>
+          </button>
+        </template>
+      </div>
+    </div>
     <button class="btn btn-ghost text-xs col-span-2" x-show="activeFiltersCount > 0 || f.q || f.tag"
             @click="clearFilters()">
       ✕ limpar filtros<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
@@ -2593,6 +2581,19 @@ function app() {
     newTag: '',
     sortKey: 'prazo',
     sortDir: 'asc',
+    sortPanelOpen: false,
+    sortOptions: [
+      { key: 'prazo',         label: 'Prazo' },
+      { key: 'prioridade',    label: 'Prioridade' },
+      { key: 'subetapa',      label: 'Etapa' },
+      { key: 'status',        label: 'Status macro' },
+      { key: 'esforco',       label: 'Esforço' },
+      { key: 'complexidade',  label: 'Complexidade' },
+      { key: 'titulo',        label: 'Título' },
+      { key: 'clienteId',     label: 'Cliente' },
+      { key: 'projetoId',     label: 'Projeto' },
+      { key: 'pessoaId',      label: 'Responsável' },
+    ],
     backlogDragId: '',
     modal: false,
     loading: true,
@@ -3588,6 +3589,20 @@ function app() {
     sortIcon(key) {
       if (this.sortKey !== key) return '';
       return this.sortDir === 'asc' ? '▲' : '▼';
+    },
+    sortLabel(key) {
+      const opt = this.sortOptions.find(o => o.key === key);
+      return opt ? opt.label : key;
+    },
+    pickSort(key) {
+      // Se for a mesma chave, alterna direção. Se for outra, vai pra asc.
+      if (this.sortKey === key) {
+        this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortKey = key;
+        this.sortDir = 'asc';
+      }
+      this.sortPanelOpen = false;
     },
 
     // ===================== KANBAN =====================

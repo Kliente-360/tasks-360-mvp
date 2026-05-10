@@ -63,7 +63,7 @@ Tabela mestre. Cabeçalho ordenável por qualquer coluna (clique). Colunas: Tare
 - Atrasadas em vermelho
 - Aging badge em laranja/vermelho quando uma tarefa está parada além do limite saudável
 - **Agrupar por** (no topo da tabela): default sem agrupamento (lista plana). Opções: Responsável · Cliente · Projeto · Status · Etapa · Prioridade · Complexidade. Cada grupo vira um header colapsável (clique pra expandir/recolher) com contagem e total de horas.
-- **Ordenar**: no desktop, click no cabeçalho da coluna alterna asc/desc/none. No mobile, use o select **"Ordenar: ..."** com a direção embutida em cada opção (ex.: "Prazo · mais próximo", "Etapa · backlog → concluído"). Etapa segue ordem natural do fluxo, não alfabética.
+- **Ordenar**: no desktop, click no cabeçalho da coluna alterna asc/desc/none. No mobile, botão "Ordenar: [chave] ↑↓" abre painel com 10 opções; click na mesma chave alterna direção, click em outra ativa em ascendente. Etapa segue ordem natural do fluxo, não alfabética.
 - **Ordem manual**: botão "≡ ordem manual" → arraste linhas pra reordenar (desabilitado quando há agrupamento; só desktop)
 - **Filtros**: cliente, projeto, pessoa, status, prioridade, tag (ver [Filtros](#filtros-e-busca))
 - **Bulk actions**: checkbox por linha (ver [Bulk actions](#bulk-actions-na-tabela))
