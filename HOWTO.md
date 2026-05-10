@@ -365,7 +365,7 @@ Se o login validar mas a pessoa não estiver cadastrada/convidada, banner vermel
 ## Tema, mobile, PWA
 
 - **Tema**: ☾/☀ no topo. Respeita preferência do sistema na primeira visita.
-- **Mobile**: layout adapta — barra de abas vira **dropdown** (botão com aba atual + ▾ abre lista completa), **Kanban some** (executiva pouco prática em tela pequena; usa Backlog), **Backlog vira lista de cards** (mesmo card do Kanban e Calendário pra consistência), filtros viram drawer, dropdown de exportar fica colado à borda direita.
+- **Mobile**: layout adapta. Barra de abas vira **dropdown** (botão com aba atual + ▾ abre lista completa). **Kanban some** (executiva pouco prática em tela pequena; usa Backlog). **Backlog vira lista de cards**. Filtros viram drawer. **Header compacto**: visível só logo, +Nova, sino e avatar — exportar, tema e manual ficam dentro do menu do avatar.
 - **PWA**: no iPhone, "Adicionar à tela de início" instala como app com ícone próprio.
 - **Realtime**: qualquer mudança feita por outra pessoa aparece pra você em segundos sem refresh.
 - **Recarregar dados**: toca na **logo "tasks 360"** no canto superior esquerdo (a marca de 4 quadradinhos vai pulsar enquanto carrega). Útil no PWA onde refresh do navegador é difícil. Alternativas: F5 no navegador ou ⌘K → "Recarregar dados".

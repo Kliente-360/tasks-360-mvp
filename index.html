@@ -679,7 +679,8 @@
       </div>
     </button>
     <div class="flex items-center gap-1 shrink-0">
-      <div class="relative" @click.outside="exportOpen=false">
+      <!-- Exportar / Manual / Tema: visíveis no desktop, escondidos no mobile (mover pro menu do avatar) -->
+      <div class="relative hidden md:block" @click.outside="exportOpen=false">
         <button class="btn btn-ghost btn-icon text-xs" @click="exportOpen = !exportOpen" title="Exportar" aria-label="Exportar"><span class="md:hidden">↓</span><span class="hidden md:inline">↓ exportar</span></button>
         <div x-show="exportOpen" x-transition.opacity
              class="fixed md:absolute top-14 md:top-full right-3 md:right-0 mt-0 md:mt-2 bg-elev border border-line rounded-lg shadow-xl z-50 text-left overflow-hidden w-[280px] max-w-[calc(100vw-24px)] md:w-[240px]">
@@ -695,9 +696,9 @@
           </button>
         </div>
       </div>
-      <button class="btn btn-ghost btn-icon text-xs" @click="openHelp()" title="Manual da ferramenta" aria-label="Manual"><span>?</span></button>
-      <button class="btn btn-ghost btn-icon text-xs" @click="toggleTheme()" :title="theme==='dark' ? 'Mudar para claro' : 'Mudar para escuro'" aria-label="Alternar tema"><span x-text="theme==='dark' ? '☀' : '☾'"></span></button>
-      <div class="w-px h-6 bg-line mx-1 md:mx-2"></div>
+      <button class="btn btn-ghost btn-icon text-xs hidden md:inline-flex" @click="openHelp()" title="Manual da ferramenta" aria-label="Manual"><span>?</span></button>
+      <button class="btn btn-ghost btn-icon text-xs hidden md:inline-flex" @click="toggleTheme()" :title="theme==='dark' ? 'Mudar para claro' : 'Mudar para escuro'" aria-label="Alternar tema"><span x-text="theme==='dark' ? '☀' : '☾'"></span></button>
+      <div class="w-px h-6 bg-line mx-1 md:mx-2 hidden md:block"></div>
       <button class="btn btn-primary text-xs md:text-sm" @click="openNew()"><span class="md:hidden">+ Nova</span><span class="hidden md:inline">+ Nova tarefa</span></button>
 
       <!-- Notifications -->
@@ -738,12 +739,33 @@
         <button class="btn btn-ghost btn-icon text-xs" @click="userMenuOpen=!userMenuOpen" :title="currentPessoa && currentPessoa.nome" aria-label="Conta">
           <span class="w-6 h-6 rounded-full bg-brand-soft text-brand font-brand font-semibold text-xs flex items-center justify-center" x-text="currentPessoa ? currentPessoa.nome.charAt(0).toUpperCase() : '?'"></span>
         </button>
-        <div x-show="userMenuOpen" x-transition.opacity class="absolute right-0 top-full mt-1 bg-elev border border-line rounded-md shadow-lg py-2 min-w-[200px] z-50">
+        <div x-show="userMenuOpen" x-transition.opacity class="fixed md:absolute top-14 md:top-full right-3 md:right-0 mt-0 md:mt-1 bg-elev border border-line rounded-md shadow-xl py-2 w-[260px] max-w-[calc(100vw-24px)] md:w-[220px] z-50">
           <div class="px-3 py-1 text-xs text-muted">logado como</div>
           <div class="px-3 pb-2 text-sm font-medium text-ink" x-text="currentPessoa && currentPessoa.nome"></div>
-          <div class="px-3 pb-2 text-[11px] text-muted font-mono" x-text="session && session.user && session.user.email"></div>
-          <div class="border-t border-line"></div>
-          <button class="block w-full text-left px-3 py-2 text-xs hover:bg-brand-tint" @click="signOut(); userMenuOpen=false">sair</button>
+          <div class="px-3 pb-2 text-[11px] text-muted font-mono truncate" x-text="session && session.user && session.user.email"></div>
+          <!-- Mobile-only: ações que ficam fora do header -->
+          <div class="md:hidden">
+            <div class="border-t border-line my-1"></div>
+            <button class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-brand-tint" @click="exportCSV(); userMenuOpen=false">
+              <span>Exportar CSV</span>
+              <span class="text-muted text-xs">visão atual</span>
+            </button>
+            <button class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-brand-tint" @click="exportPDF(); userMenuOpen=false">
+              <span>Exportar PDF</span>
+              <span class="text-muted text-xs">relatório</span>
+            </button>
+            <div class="border-t border-line my-1"></div>
+            <button class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-brand-tint" @click="toggleTheme(); userMenuOpen=false">
+              <span>Tema</span>
+              <span class="text-muted text-xs" x-text="theme==='dark' ? 'escuro · trocar' : 'claro · trocar'"></span>
+            </button>
+            <button class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-brand-tint" @click="openHelp(); userMenuOpen=false">
+              <span>Manual da ferramenta</span>
+              <span class="text-muted text-xs">?</span>
+            </button>
+          </div>
+          <div class="border-t border-line my-1"></div>
+          <button class="block w-full text-left px-3 py-2 text-sm hover:bg-brand-tint" @click="signOut(); userMenuOpen=false">sair</button>
         </div>
       </div>
     </div>
