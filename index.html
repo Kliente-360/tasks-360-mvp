@@ -2847,19 +2847,33 @@
 
       <div x-show="editing.id" class="pt-4 mt-2 border-t border-line">
         <div class="flex items-center justify-between mb-2">
-          <label class="lbl !mb-0">Histórico de status</label>
+          <label class="lbl !mb-0">Histórico</label>
           <span class="text-[11px] font-mono text-muted" x-text="editingHistory.length"></span>
         </div>
         <div class="space-y-2 max-h-[30vh] overflow-y-auto pr-1">
-          <template x-for="h in editingHistory" :key="h.id">
+          <template x-for="h in editingHistory" :key="(h.kind || 'status') + ':' + h.id">
             <div class="flex items-start gap-2 text-xs py-1">
               <span class="font-mono text-muted shrink-0" x-text="fmtPostedEm(h.occurred_at)"></span>
               <div class="flex-1 min-w-0">
                 <span class="font-medium text-ink" x-text="h.actor_pessoa_id ? (nomePessoa(h.actor_pessoa_id)) : (h.actor_source === 'salesforce' ? 'Salesforce' : '—')"></span>
-                <span class="text-muted">moveu de</span>
-                <span class="font-medium" x-text="h.from_status ? lblStatus(h.from_status) : '∅'"></span>
-                <span class="text-muted">→</span>
-                <span class="font-medium" x-text="lblStatus(h.to_status)"></span>
+                <template x-if="h.kind !== 'field'">
+                  <span>
+                    <span class="text-muted"> moveu de </span>
+                    <span class="font-medium" x-text="h.from_status ? lblStatus(h.from_status) : '∅'"></span>
+                    <span class="text-muted"> → </span>
+                    <span class="font-medium" x-text="lblStatus(h.to_status)"></span>
+                  </span>
+                </template>
+                <template x-if="h.kind === 'field'">
+                  <span>
+                    <span class="text-muted"> mudou </span>
+                    <span class="font-medium" x-text="lblField(h.field)"></span>
+                    <span class="text-muted"> de </span>
+                    <span class="font-medium" x-text="fmtFieldValue(h.field, h.from_value)"></span>
+                    <span class="text-muted"> → </span>
+                    <span class="font-medium" x-text="fmtFieldValue(h.field, h.to_value)"></span>
+                  </span>
+                </template>
               </div>
             </div>
           </template>
@@ -3310,7 +3324,7 @@ function app() {
     },
     SUBS_FLAT: ['backlog','priorizado','em_definicao','escopo_definido','em_desenvolvimento','em_homologacao','em_revisao','pronto_producao','em_implantacao','bloqueado','concluido'],
     editingComments: [],
-    editingHistory: [],
+    editingHistory: [], // unificada: status + campos. Cada item tem `kind`
     newComment: '',
     newCommentPublico: false,
     mentionPickerFor: '',  // '' | 'newComment' | 'newReply' | 'portalNewComment' | 'portalReplyText'
@@ -3750,6 +3764,10 @@ function app() {
           } else if (payload.eventType === 'DELETE' && payload.old) {
             this.historyAll = this.historyAll.filter(h => h.id !== payload.old.id);
           }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'task_field_history' }, (payload) => {
+          const tid = (payload.new && payload.new.task_id) || (payload.old && payload.old.task_id);
+          if (this.modal && this.editing.id && this.editing.id === tid) this.loadHistory(this.editing.id);
         })
         .subscribe();
     },
@@ -4547,6 +4565,26 @@ function app() {
     },
     lblStatus(s) {
       return ({ backlog: 'Backlog', andamento: 'Em andamento', bloqueado: 'Bloqueado', concluido: 'Concluído' })[s] || s;
+    },
+    lblField(f) {
+      return ({
+        prazo: 'prazo', esforco: 'esforço', prioridade: 'prioridade',
+        complexidade: 'complexidade', pessoa: 'responsável', subetapa: 'etapa',
+        tipo_trabalho: 'tipo de trabalho', tempo_real_horas: 'tempo real',
+        bloqueado_por: 'bloqueado por',
+      })[f] || f;
+    },
+    // Formata valor de mudança baseado no campo. UUIDs viram nome.
+    // Datas viram dd/mm/yyyy. Status enums viram label.
+    fmtFieldValue(field, v) {
+      if (v == null || v === '') return '∅';
+      if (field === 'prazo') return this.fmtDate(v);
+      if (field === 'pessoa') return this.nomePessoa(v);
+      if (field === 'prioridade') return v;
+      if (field === 'complexidade') return this.lblComplex(v);
+      if (field === 'subetapa') return this.lblSub ? this.lblSub(v) : v;
+      if (field === 'esforco' || field === 'tempo_real_horas') return v + 'h';
+      return String(v);
     },
     fmtDate(d) {
       if (!d) return '—';
@@ -6432,11 +6470,19 @@ function app() {
     },
     async loadHistory(taskId) {
       if (!taskId) { this.editingHistory = []; return; }
-      const { data, error } = await sb.from('task_status_history')
-        .select('id, from_status, to_status, actor_pessoa_id, actor_source, occurred_at')
-        .eq('task_id', taskId)
-        .order('occurred_at', { ascending: false });
-      if (!error) this.editingHistory = data || [];
+      const [s, f] = await Promise.all([
+        sb.from('task_status_history')
+          .select('id, from_status, to_status, actor_pessoa_id, actor_source, occurred_at')
+          .eq('task_id', taskId),
+        sb.from('task_field_history')
+          .select('id, field, from_value, to_value, actor_pessoa_id, actor_source, occurred_at')
+          .eq('task_id', taskId),
+      ]);
+      const status = (s.data || []).map(r => ({ ...r, kind: 'status' }));
+      const fields = (f.data || []).map(r => ({ ...r, kind: 'field' }));
+      this.editingHistory = [...status, ...fields].sort(
+        (a, b) => new Date(b.occurred_at) - new Date(a.occurred_at)
+      );
     },
     async saveTask() {
       const e = this.editing;
@@ -6492,6 +6538,8 @@ function app() {
             actor_source: 'app', occurred_at: nowIso,
           });
         }
+        // Loga mudanças de campos não-status (prazo, esforço etc).
+        await this._logFieldChanges(e.id, prev, e, nowIso);
         // Notifica novo responsável (assignment)
         try {
           if (prev && prev.pessoaId !== e.pessoaId) {
@@ -6520,6 +6568,39 @@ function app() {
           await this._syncDependencias(data.id, e.dependencias || []);
         }
       }
+    },
+    // Compara prev vs next e insere uma row em task_field_history pra
+    // cada campo rastreado que mudou. Status fica fora (já logado em
+    // task_status_history).
+    async _logFieldChanges(taskId, prev, next, nowIso) {
+      if (!taskId || !prev || !next) return;
+      const norm = (v) => v === '' || v == null ? null : String(v);
+      const TRACKED = [
+        ['prazo',          'prazo',           v => v || null],
+        ['esforco',        'esforco',         v => v == null ? null : String(v)],
+        ['prioridade',     'prioridade',      v => v || null],
+        ['complexidade',   'complexidade',    v => v || null],
+        ['pessoaId',       'pessoa',          v => v || null],
+        ['subetapa',       'subetapa',        v => v || null],
+        ['tipoTrabalho',   'tipo_trabalho',   v => v || null],
+        ['tempoRealHoras', 'tempo_real_horas',v => v == null ? null : String(v)],
+        ['bloqueadoPor',   'bloqueado_por',   v => v || null],
+      ];
+      const rows = [];
+      const actor = this.currentPessoa ? this.currentPessoa.id : null;
+      for (const [key, field, fmt] of TRACKED) {
+        const fromV = fmt(prev[key]);
+        const toV   = fmt(next[key]);
+        if (norm(fromV) === norm(toV)) continue;
+        rows.push({
+          task_id: taskId, field,
+          from_value: fromV, to_value: toV,
+          actor_pessoa_id: actor, actor_source: 'app', occurred_at: nowIso,
+        });
+      }
+      if (!rows.length) return;
+      const { error } = await sb.from('task_field_history').insert(rows);
+      if (error) console.warn('[history] field log failed:', error);
     },
     async _syncDependencias(taskId, dependeDeIds) {
       const wanted = new Set(dependeDeIds.filter(Boolean));

@@ -390,6 +390,7 @@ Se o login validar mas a pessoa não estiver cadastrada/convidada, banner vermel
 ## Glossário
 
 - **Aging** — quanto tempo a tarefa está parada na etapa atual. Vira badge laranja (warn) e depois vermelho (stale) quando passa do limite saudável daquela etapa.
+- **Histórico de tarefa** — timeline unificada no rodapé do modal: mudanças de status (de `task_status_history`) + mudanças de campos rastreados (de `task_field_history`: prazo, esforço, prioridade, complexidade, responsável, etapa, tipo de trabalho, tempo real, bloqueado por). Cada linha mostra autor + mudança "de X → para Y" formatada (datas legíveis, UUIDs viram nomes).
 - **Atrasada** — `prazo` passou e `status` ≠ `concluido`.
 - **Cycle time** — tempo médio que uma tarefa leva entre `andamento` e `concluido`.
 - **Lead time** — tempo médio entre criação e conclusão.
