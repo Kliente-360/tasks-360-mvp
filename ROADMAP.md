@@ -872,23 +872,29 @@ Decisão: 8 visões fixas, dentro do app, sem ferramenta externa de BI.
 
 ### Para liderança e sócios
 
-1. **Throughput semanal** — itens entregues por semana, série de 12 semanas. Linha simples. Permite ver tendência de capacidade.
+1. **Throughput semanal** ✅ — 8 semanas, bar chart com semana atual destacada (`brandDark`).
 
-2. **Lead time médio por cliente** — do momento que tarefa entra "em andamento" até "concluída". Barras horizontais. Mostra quais clientes drenam mais tempo.
+2. **Lead time médio por cliente** ⚠️ — KPI agregado existe (criação→concluído). Falta gráfico de tendência por cliente.
 
-3. **Carga por pessoa** — horas planejadas vs. capacidade configurada, semana atual e próximas 2. Heatmap ou barras com linha de capacidade. Sinaliza quem está sobrecarregado.
+3. **Capacidade por pessoa** ✅ — % de capacidade semanal alocada, stacked horizontal com overflow em vermelho. Substituiu "Carga por pessoa" cega à capacidade.
 
-4. **Itens atrasados** — lista priorizada, ordenada por dias de atraso × prioridade × cliente. Gráfico complementar: contagem de atrasados por cliente.
+4. **Itens atrasados** ✅ — lista priorizada por dias de atraso + prioridade.
 
 ### Para gestão operacional
 
-5. **Saúde por projeto** — semáforo por projeto (verde / amarelo / vermelho). Critérios: % de itens atrasados, tendência de throughput, presença de bloqueios. Lista de projetos com indicador.
+5. **Saúde por projeto** ✅ — semáforo (verde/âmbar/vermelho). Critérios determinísticos: vermelho se atrasadas/SLA quase vencido/bloqueio +5d; âmbar se aguardando cliente ou aging warn; verde caso contrário.
 
-6. **Distribuição de esforço por cliente** — horas por cliente no mês corrente. Pizza ou barras. Insumo para conversa comercial e renegociação de escopo.
+6. **Distribuição de esforço por cliente** ✅ — bar horizontal "Volume por cliente" (horas por cliente em tarefas abertas).
 
-7. **Aging do backlog** — há quanto tempo cada item está parado em cada status. Histograma por status. Indica fricções no fluxo (ex: muito tempo em "andamento" = falta de foco; muito tempo em "bloqueado" = problema crônico).
+7. **Aging do backlog** ✅ — stacked horizontal por status (backlog/andamento/bloqueado) × faixa (0-7 / 8-30 / 30-60 / 60+).
 
-8. **Itens aguardando cliente** — bloqueios externos, ordenados por dias parados e por cliente. **A visão mais subestimada**: operações geralmente não medem isso e é onde mais escapa prazo. Vira ouro para cobrar cliente sem fricção.
+8. **Itens aguardando cliente** ✅ — lista de tarefas `subetapa=bloqueado AND bloqueado_por=cliente` ordenada por aging desc.
+
+### Implementação técnica
+
+- Tudo via getters Alpine + Chart.js, `chartTheme()` central com paleta semântica (brand/danger/warn/info/neutral) e `baseOpts` padronizadas.
+- Sem cache: getters reagem direto a `dashTasks` (filtro cliente/pessoa).
+- Visão 2 (lead time por cliente) ainda como KPI; falta gráfico de tendência.
 
 ### Implementação técnica
 

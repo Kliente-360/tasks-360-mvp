@@ -1803,15 +1803,64 @@
       <div style="height:260px"><canvas id="chartClientes"></canvas></div>
     </div>
     <div class="card p-4 md:p-6">
-      <div class="mb-4">
-        <div class="font-brand text-xl font-semibold">Carga por pessoa</div>
-        <div class="text-xs text-muted mt-0.5">horas alocadas em tarefas não concluídas</div>
+      <div class="mb-4 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <div class="font-brand text-xl font-semibold">Capacidade por pessoa</div>
+          <div class="text-xs text-muted mt-0.5">% da capacidade semanal alocada · vermelho = acima de 100%</div>
+        </div>
+        <div class="flex items-center gap-2 text-[10px] uppercase tracking-wider font-semibold text-muted">
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm" style="background:var(--brand)"></span>&lt;80%</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm" style="background:var(--p1)"></span>80–99%</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm" style="background:var(--p0)"></span>≥100%</span>
+        </div>
       </div>
-      <div style="height:260px"><canvas id="chartPessoas"></canvas></div>
+      <div style="height:260px"><canvas id="chartCapacidade"></canvas></div>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 mb-5 md:mb-6">
+    <div class="card p-4 md:p-6">
+      <div class="mb-4">
+        <div class="font-brand text-xl font-semibold">Saúde por projeto</div>
+        <div class="text-xs text-muted mt-0.5">semáforo: vermelho = atrasadas / SLA / bloqueio &gt;5d · âmbar = aguardando cliente ou aging warn</div>
+      </div>
+      <template x-if="saudeProjetos.length===0">
+        <div class="text-sm text-muted italic py-6">Nenhum projeto com tarefas abertas.</div>
+      </template>
+      <ul class="divide-y divide-line">
+        <template x-for="p in saudeProjetos" :key="p.id">
+          <li class="py-2.5 flex items-start gap-3">
+            <span class="inline-block w-2.5 h-2.5 rounded-full mt-1.5 shrink-0"
+                  :style="p.status === 'vermelho' ? 'background:var(--p0)' : (p.status === 'ambar' ? 'background:var(--p1)' : 'background:var(--brand)')"></span>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium truncate" x-text="p.nome"></div>
+              <div class="text-xs text-muted truncate" x-text="p.cliente"></div>
+            </div>
+            <div class="text-right text-xs font-mono shrink-0 flex flex-col items-end gap-0.5">
+              <span class="text-muted" x-text="p.total + ' aberta(s)'"></span>
+              <span class="flex items-center gap-2">
+                <template x-if="p.atrasadas > 0"><span class="text-[color:var(--p0)]" x-text="p.atrasadas + ' atras.'"></span></template>
+                <template x-if="p.aguardCli > 0"><span class="text-[color:var(--p1)]" x-text="p.aguardCli + ' aguard.'"></span></template>
+                <template x-if="p.slaQuase > 0"><span class="text-[color:var(--p0)]">SLA</span></template>
+              </span>
+            </div>
+          </li>
+        </template>
+      </ul>
+    </div>
+
+    <div class="card p-4 md:p-6">
+      <div class="mb-4 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <div class="font-brand text-xl font-semibold">Aging do backlog</div>
+          <div class="text-xs text-muted mt-0.5">tempo parado no status atual · faixas em dias</div>
+        </div>
+      </div>
+      <div style="height:260px"><canvas id="chartAging"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
     <div class="card p-4 md:p-6">
       <div class="font-brand text-xl font-semibold mb-1">Atrasadas</div>
       <div class="text-xs text-muted mb-4">prazo vencido e ainda abertas</div>
@@ -1846,6 +1895,26 @@
           </div>
           <div class="text-right ml-3 flex flex-col items-end gap-1">
             <span class="font-mono text-xs text-muted" x-text="t.esforco + 'h'"></span>
+            <span class="pri" :class="'pri-'+t.prioridade"><span class="pri-dot"></span><span x-text="t.prioridade"></span></span>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div class="card p-4 md:p-6">
+      <div class="font-brand text-xl font-semibold mb-1">Aguardando cliente</div>
+      <div class="text-xs text-muted mb-4">bloqueadas no cliente · ordenadas por dias parado</div>
+      <template x-if="aguardandoClienteList.length===0">
+        <div class="text-sm text-muted italic py-6">Nenhuma tarefa aguardando cliente.</div>
+      </template>
+      <template x-for="t in aguardandoClienteList" :key="t.id">
+        <div class="flex items-center justify-between py-3 border-b border-line last:border-0 cursor-pointer hover:bg-brand-tint -mx-3 px-3 rounded transition-colors" @click="openEdit(t)">
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium truncate" x-text="t.titulo"></div>
+            <div class="text-xs text-muted truncate" x-text="nomeCliente(t.clienteId) + ' · ' + nomePessoa(t.pessoaId)"></div>
+          </div>
+          <div class="text-right ml-3 flex flex-col items-end gap-1">
+            <span class="font-mono text-xs" :class="agingDays(t) >= 5 ? 'text-[color:var(--p0)]' : 'text-muted'" x-text="agingDays(t) + 'd parada'"></span>
             <span class="pri" :class="'pri-'+t.prioridade"><span class="pri-dot"></span><span x-text="t.prioridade"></span></span>
           </div>
         </div>
@@ -2592,18 +2661,6 @@
             <option value="alta">Alta</option>
           </select>
         </div>
-        <div>
-          <label class="lbl">Tamanho</label>
-          <select class="inp" x-model="editing.tamanho">
-            <option value="">— a classificar</option>
-            <option value="mini">Mini · &lt;2h</option>
-            <option value="small">Small · 2-8h</option>
-            <option value="medio">Médio · 8-24h</option>
-            <option value="grande">Grande · 24-80h</option>
-            <option value="mini_projeto">Mini-projeto · 80h+</option>
-          </select>
-          <div class="text-[10px] text-muted mt-1">"Grande" e "Mini-projeto" sem início viram alerta antes do prazo vencer.</div>
-        </div>
         <div class="sm:col-span-2">
           <label class="lbl">Prazo</label>
           <input type="date" class="inp" x-model="editing.prazo">
@@ -2861,7 +2918,6 @@ function taskFromDb(r) {
     prioridade: r.prioridade,
     esforco: Number(r.esforco) || 0,
     complexidade: r.complexidade || 'media',
-    tamanho: r.tamanho || '',
     prazo: r.prazo || '',
     status: r.status,
     subetapa: r.subetapa || 'backlog',
@@ -2884,7 +2940,6 @@ function taskToDb(t) {
     prioridade: t.prioridade,
     esforco: Number(t.esforco) || 0,
     complexidade: t.complexidade || 'media',
-    tamanho: t.tamanho || null,
     prazo: t.prazo || null,
     status: t.status,
     subetapa: t.subetapa || 'backlog',
@@ -2953,7 +3008,7 @@ function app() {
     authBlock: '', // mensagem persistente quando o callback nega acesso (volta pra login)
     draggingId: '',
     dragOverCol: '',
-    editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', tamanho: '', bloqueadoPor: '', visivelCliente: true },
+    editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true },
     editingPessoa: null,
     modalPessoa: false,
     kanbanView: 'op', // 'op' (operacional, nível 2) | 'exec' (executiva, nível 1)
@@ -3032,7 +3087,7 @@ function app() {
     historyAll: [],
     mvpComments: [],
     mvpLoadedAt: 0,
-    charts: { clientes: null, pessoas: null, timeline: null, throughput: null, mvpVolume: null, mvpDau: null },
+    charts: { clientes: null, capacidade: null, aging: null, timeline: null, throughput: null, mvpVolume: null, mvpDau: null },
     printCharts: { status: null, clientes: null, throughput: null },
     reportStampDate: '',
     reportStampTime: '',
@@ -4164,7 +4219,7 @@ function app() {
 
     // ===================== HELPERS =====================
     blankTask() {
-      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', tamanho: '', bloqueadoPor: '', visivelCliente: true, tags: [] };
+      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true, tags: [] };
     },
     normalizeTag(s) {
       return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24);
@@ -4193,6 +4248,16 @@ function app() {
     effEsforco(t) {
       const v = +(t && t.esforco);
       return v > 0 ? v : 4;
+    },
+    // Tamanho derivado automaticamente do esforço efetivo. Usado só
+    // em analytics/heurísticas — não vai pro card nem pro form.
+    effTamanho(t) {
+      const h = this.effEsforco(t);
+      if (h < 2)  return 'mini';
+      if (h < 8)  return 'small';
+      if (h < 24) return 'medio';
+      if (h < 80) return 'grande';
+      return 'mini_projeto';
     },
     lblComplex(c) {
       return ({ alta: 'Alta', media: 'Média', baixa: 'Baixa' })[c] || 'Média';
@@ -5342,11 +5407,12 @@ function app() {
       const ativas = this.tasks.filter(t => t.status !== 'concluido');
 
       // 1. Tarefa grande/mini-projeto sem início, prazo em até 10d
-      const grandes = ativas.filter(t =>
-        (t.tamanho === 'grande' || t.tamanho === 'mini_projeto') &&
-        t.subetapa === 'backlog' &&
-        t.prazo && t.prazo >= todayIso && t.prazo <= in10Iso
-      );
+      const grandes = ativas.filter(t => {
+        const sz = this.effTamanho(t);
+        return (sz === 'grande' || sz === 'mini_projeto') &&
+          t.subetapa === 'backlog' &&
+          t.prazo && t.prazo >= todayIso && t.prazo <= in10Iso;
+      });
       if (grandes.length) {
         out.push({
           severity: 'alta',
@@ -5509,9 +5575,93 @@ function app() {
       }).slice(0, 8);
     },
 
+    // Saúde por projeto — semáforo determinístico baseado em
+    // atrasadas, bloqueios longos, SLA e volume aberto.
+    // verde: nada urgente · âmbar: atenção · vermelho: ação imediata.
+    get saudeProjetos() {
+      const now = Date.now();
+      const ativas = this.dashTasks.filter(t => t.status !== 'concluido');
+      const porProj = new Map();
+      for (const t of ativas) {
+        if (!t.projetoId) continue;
+        if (!porProj.has(t.projetoId)) porProj.set(t.projetoId, []);
+        porProj.get(t.projetoId).push(t);
+      }
+      const out = [];
+      for (const proj of this.projetos) {
+        const tasks = porProj.get(proj.id) || [];
+        if (!tasks.length) continue;
+        const atrasadas  = tasks.filter(t => this.atrasada(t)).length;
+        const bloqLongo  = tasks.filter(t => t.status === 'bloqueado' && this.agingDays(t) >= 5).length;
+        const aguardCli  = tasks.filter(t => t.subetapa === 'bloqueado' && t.bloqueadoPor === 'cliente').length;
+        const slaQuase   = proj.slaEntregaDias ? tasks.filter(t => {
+          if (!t.criadoEm) return false;
+          const aging = (now - t.criadoEm) / 86400000;
+          return aging >= proj.slaEntregaDias * 0.8;
+        }).length : 0;
+        let status = 'verde';
+        if (atrasadas > 0 || bloqLongo > 0 || slaQuase > 0) status = 'vermelho';
+        else if (aguardCli > 0 || tasks.some(t => this.agingLevel(t) === 'warn')) status = 'ambar';
+        out.push({
+          id: proj.id,
+          nome: proj.nome,
+          cliente: this.nomeCliente(proj.clienteId),
+          total: tasks.length,
+          atrasadas, bloqLongo, aguardCli, slaQuase,
+          status,
+        });
+      }
+      const ord = { vermelho: 0, ambar: 1, verde: 2 };
+      return out.sort((a,b) => ord[a.status] - ord[b.status] || b.atrasadas - a.atrasadas || b.total - a.total);
+    },
+
+    // Tarefas bloqueadas aguardando cliente — ordenadas por aging desc.
+    get aguardandoClienteList() {
+      return this.dashTasks
+        .filter(t => t.status !== 'concluido' && t.subetapa === 'bloqueado' && t.bloqueadoPor === 'cliente')
+        .sort((a,b) => this.agingDays(b) - this.agingDays(a))
+        .slice(0, 8);
+    },
+
     // ===================== CHARTS =====================
+    // Tema central — paleta + opções base padronizadas. Todos os
+    // gráficos do dashboard partem daqui pra ter mesma fonte, grid,
+    // tooltip e cores semânticas.
+    chartTheme() {
+      const css = getComputedStyle(document.documentElement);
+      const v = (n) => css.getPropertyValue(n).trim();
+      const palette = {
+        brand: v('--brand'), brandDark: v('--brand-dark'),
+        danger: v('--p0'), warn: v('--p1'), info: v('--p2'), neutral: v('--p3'),
+        ink: v('--ink'), inkSoft: v('--ink-soft'), muted: v('--muted'),
+        line: v('--line'), bgElev: v('--bg-elev'),
+      };
+      const fontBrand = 'Manrope';
+      const fontMono  = 'JetBrains Mono';
+      const baseOpts = {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: palette.ink, titleColor: palette.bgElev, bodyColor: palette.bgElev,
+            padding: 10,
+            titleFont: { family: fontBrand, size: 12, weight: 600 },
+            bodyFont:  { family: fontMono,  size: 11 },
+            displayColors: false,
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: palette.muted,   font: { family: fontMono, size: 11 } }, border: { display: false } },
+          y: { grid: { color: palette.line }, ticks: { color: palette.inkSoft, font: { family: fontMono, size: 11 } }, border: { display: false } }
+        }
+      };
+      return { palette, fontBrand, fontMono, baseOpts };
+    },
+
     renderCharts() {
       const ativas = this.dashTasks.filter(t => t.status !== 'concluido');
+      const theme = this.chartTheme();
+      const { palette, baseOpts } = theme;
 
       // por cliente
       const porCliente = {};
@@ -5522,19 +5672,27 @@ function app() {
       });
       const cliEntries = Object.entries(porCliente).filter(([_,v]) => v > 0).sort((a,b) => b[1] - a[1]);
 
-      // por pessoa
-      const porPessoa = {};
-      this.pessoas.forEach(p => porPessoa[p.nome] = 0);
+      // capacidade vs alocação por pessoa (% de capacity, com overflow em vermelho)
+      const cargaPorPes = new Map();
       ativas.forEach(t => {
-        const n = this.nomePessoa(t.pessoaId);
-        porPessoa[n] = (porPessoa[n] || 0) + this.effEsforco(t);
+        if (!t.pessoaId) return;
+        cargaPorPes.set(t.pessoaId, (cargaPorPes.get(t.pessoaId) || 0) + this.effEsforco(t));
       });
-      const pesEntries = Object.entries(porPessoa).filter(([_,v]) => v > 0).sort((a,b) => b[1] - a[1]);
+      const capRows = this.pessoas
+        .filter(p => p.role !== 'cliente')
+        .map(p => {
+          const horas = cargaPorPes.get(p.id) || 0;
+          const cap   = +p.capacidade_horas_semana || 40;
+          const pct   = cap ? Math.round((horas / cap) * 100) : 0;
+          return { nome: p.nome, horas, cap, pct };
+        })
+        .filter(r => r.horas > 0)
+        .sort((a,b) => b.pct - a.pct);
 
       // entregas — próximas 8 semanas (1ª barra = atrasadas)
       const startOfWeek = (d) => {
         const dt = new Date(d); dt.setHours(0,0,0,0);
-        const diff = (dt.getDay() + 6) % 7; // segunda como início
+        const diff = (dt.getDay() + 6) % 7;
         dt.setDate(dt.getDate() - diff);
         return dt;
       };
@@ -5559,28 +5717,41 @@ function app() {
       const tlData   = [atrasadasH, ...semanas.map(s => s.horas)];
       const tlCounts = [atrasadasN, ...semanas.map(s => s.count)];
 
+      // aging do backlog — para tarefas abertas, agrupa por status macro
+      // em faixas de aging (0-7 / 8-30 / 30-60 / 60+)
+      const agingStatuses = ['backlog','andamento','bloqueado'];
+      const agingBands = [
+        { key: '0-7d',   max: 7,   color: palette.brand },
+        { key: '8-30d',  max: 30,  color: palette.neutral },
+        { key: '30-60d', max: 60,  color: palette.warn },
+        { key: '60d+',   max: Infinity, color: palette.danger },
+      ];
+      const agingMatrix = agingStatuses.map(() => agingBands.map(() => 0));
+      ativas.forEach(t => {
+        const si = agingStatuses.indexOf(t.status);
+        if (si < 0) return;
+        const d = this.agingDays(t);
+        const bi = agingBands.findIndex(b => d <= b.max);
+        if (bi >= 0) agingMatrix[si][bi]++;
+      });
+
       // destruir charts anteriores
-      if (this.charts.clientes)   this.charts.clientes.destroy();
-      if (this.charts.pessoas)    this.charts.pessoas.destroy();
-      if (this.charts.timeline)   this.charts.timeline.destroy();
-      if (this.charts.throughput) this.charts.throughput.destroy();
+      ['clientes','capacidade','timeline','throughput','aging'].forEach(k => {
+        if (this.charts[k]) { this.charts[k].destroy(); this.charts[k] = null; }
+      });
 
-      const css = getComputedStyle(document.documentElement);
-      const v = (n) => css.getPropertyValue(n).trim();
-      const brand = v('--brand'), brandDark = v('--brand-dark'), bgElev = v('--bg-elev');
-      const ink = v('--ink'), inkSoft = v('--ink-soft'), muted = v('--muted'), line = v('--line'), p0 = v('--p0');
-
-      const baseOpts = {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: {
-          backgroundColor: ink, titleColor: bgElev, bodyColor: bgElev,
-          padding: 10, titleFont: { family: 'Manrope', size: 12, weight: 600 },
-          bodyFont: { family: 'JetBrains Mono', size: 11 }, displayColors: false,
-          callbacks: { label: (c) => c.parsed.x + 'h' }
-        }},
+      const horizBarOpts = {
+        ...baseOpts, indexAxis: 'y',
         scales: {
-          x: { grid: { color: line }, ticks: { color: muted, font: { family: 'JetBrains Mono', size: 11 } }, border: { display: false } },
-          y: { grid: { display: false }, ticks: { color: inkSoft, font: { family: 'Manrope', size: 12 } }, border: { display: false } }
+          x: { ...baseOpts.scales.x, beginAtZero: true },
+          y: { ...baseOpts.scales.y, grid: { display: false } },
+        },
+        plugins: {
+          ...baseOpts.plugins,
+          tooltip: {
+            ...baseOpts.plugins.tooltip,
+            callbacks: { label: (c) => c.parsed.x + 'h' }
+          }
         }
       };
 
@@ -5590,23 +5761,62 @@ function app() {
           type: 'bar',
           data: {
             labels: cliEntries.map(e => e[0]),
-            datasets: [{ data: cliEntries.map(e => e[1]), backgroundColor: brand, borderRadius: 4, barThickness: 22 }]
+            datasets: [{ data: cliEntries.map(e => e[1]), backgroundColor: palette.brand, borderRadius: 4, barThickness: 22 }]
           },
-          options: { ...baseOpts, indexAxis: 'y' }
+          options: horizBarOpts,
         });
       }
-      const ctxP = document.getElementById('chartPessoas');
-      if (ctxP) {
-        this.charts.pessoas = new Chart(ctxP, {
+
+      const ctxCap = document.getElementById('chartCapacidade');
+      if (ctxCap && capRows.length) {
+        const colorPct = (pct) => pct >= 100 ? palette.danger : pct >= 80 ? palette.warn : palette.brand;
+        this.charts.capacidade = new Chart(ctxCap, {
           type: 'bar',
           data: {
-            labels: pesEntries.map(e => e[0]),
-            datasets: [{ data: pesEntries.map(e => e[1]), backgroundColor: brandDark, borderRadius: 4, barThickness: 22 }]
+            labels: capRows.map(r => r.nome),
+            datasets: [
+              {
+                label: 'Dentro da capacidade',
+                data: capRows.map(r => Math.min(r.pct, 100)),
+                backgroundColor: capRows.map(r => colorPct(r.pct)),
+                borderRadius: { topLeft: 4, bottomLeft: 4 },
+                barThickness: 22,
+                stack: 's',
+              },
+              {
+                label: 'Acima',
+                data: capRows.map(r => Math.max(0, r.pct - 100)),
+                backgroundColor: palette.danger,
+                borderRadius: { topRight: 4, bottomRight: 4 },
+                barThickness: 22,
+                stack: 's',
+              },
+            ]
           },
-          options: { ...baseOpts, indexAxis: 'y' }
+          options: {
+            ...baseOpts, indexAxis: 'y',
+            scales: {
+              x: { ...baseOpts.scales.x, beginAtZero: true, suggestedMax: 120, ticks: { ...baseOpts.scales.x.ticks, callback: (v) => v + '%' } },
+              y: { ...baseOpts.scales.y, grid: { display: false }, stacked: true },
+            },
+            plugins: {
+              ...baseOpts.plugins,
+              tooltip: {
+                ...baseOpts.plugins.tooltip,
+                filter: (item) => item.datasetIndex === 0, // só uma linha de tooltip
+                callbacks: {
+                  title: (items) => capRows[items[0].dataIndex].nome,
+                  label: (c) => {
+                    const r = capRows[c.dataIndex];
+                    return `${r.horas}h / ${r.cap}h · ${r.pct}%`;
+                  }
+                }
+              }
+            }
+          }
         });
       }
-      // Throughput semanal (8 semanas, com base no histórico)
+
       const ts = this.throughputSemanas;
       const ctxTh = document.getElementById('chartThroughput');
       if (ctxTh) {
@@ -5616,9 +5826,8 @@ function app() {
             labels: ts.map(s => s.label),
             datasets: [{
               data: ts.map(s => s.count),
-              backgroundColor: ts.map((_, i) => i === ts.length - 1 ? brandDark : brand),
-              borderRadius: 4,
-              maxBarThickness: 36,
+              backgroundColor: ts.map((_, i) => i === ts.length - 1 ? palette.brandDark : palette.brand),
+              borderRadius: 4, maxBarThickness: 36,
             }]
           },
           options: {
@@ -5634,8 +5843,8 @@ function app() {
               }
             },
             scales: {
-              x: { grid: { display: false }, ticks: { color: muted, font: { family: 'JetBrains Mono', size: 11 } }, border: { display: false } },
-              y: { grid: { color: line }, ticks: { color: inkSoft, font: { family: 'JetBrains Mono', size: 11 }, stepSize: 1, precision: 0 }, border: { display: false } }
+              x: baseOpts.scales.x,
+              y: { ...baseOpts.scales.y, ticks: { ...baseOpts.scales.y.ticks, stepSize: 1, precision: 0 } }
             }
           }
         });
@@ -5649,9 +5858,8 @@ function app() {
             labels: tlLabels,
             datasets: [{
               data: tlData,
-              backgroundColor: tlLabels.map((_,i) => i === 0 ? p0 : brand),
-              borderRadius: 4,
-              maxBarThickness: 36,
+              backgroundColor: tlLabels.map((_,i) => i === 0 ? palette.danger : palette.brand),
+              borderRadius: 4, maxBarThickness: 36,
             }]
           },
           options: {
@@ -5668,13 +5876,53 @@ function app() {
                     const fim = new Date(s.fim); fim.setDate(fim.getDate()-1);
                     return 'Semana de ' + fmtSem(s.ini) + ' a ' + fmtSem(fim);
                   },
-                  label: (c) => tlCounts[c.dataIndex] + ' tarefas · ' + c.parsed.y + 'h',
+                  label: (c) => tlCounts[c.dataIndex] + ' tarefa(s) · ' + c.parsed.y + 'h',
                 }
               }
             },
             scales: {
-              x: { grid: { display: false }, ticks: { color: muted, font: { family: 'JetBrains Mono', size: 11 } }, border: { display: false } },
-              y: { grid: { color: line }, ticks: { color: inkSoft, font: { family: 'JetBrains Mono', size: 11 }, callback: (v) => v + 'h' }, border: { display: false } }
+              x: baseOpts.scales.x,
+              y: { ...baseOpts.scales.y, ticks: { ...baseOpts.scales.y.ticks, callback: (v) => v + 'h' } }
+            }
+          }
+        });
+      }
+
+      const ctxAg = document.getElementById('chartAging');
+      if (ctxAg) {
+        const lblStatus = (s) => ({ backlog: 'Backlog', andamento: 'Em andamento', bloqueado: 'Bloqueado' })[s] || s;
+        this.charts.aging = new Chart(ctxAg, {
+          type: 'bar',
+          data: {
+            labels: agingStatuses.map(lblStatus),
+            datasets: agingBands.map((b, bi) => ({
+              label: b.key,
+              data: agingStatuses.map((_, si) => agingMatrix[si][bi]),
+              backgroundColor: b.color,
+              borderRadius: 2,
+              barThickness: 26,
+              stack: 'a',
+            })),
+          },
+          options: {
+            ...baseOpts, indexAxis: 'y',
+            plugins: {
+              ...baseOpts.plugins,
+              legend: {
+                display: true, position: 'bottom',
+                labels: { color: palette.muted, font: { family: this.chartTheme().fontMono, size: 11 }, boxWidth: 10, boxHeight: 10 }
+              },
+              tooltip: {
+                ...baseOpts.plugins.tooltip,
+                callbacks: {
+                  title: (items) => lblStatus(agingStatuses[items[0].dataIndex]),
+                  label: (c) => `${agingBands[c.datasetIndex].key} · ${c.parsed.x} tarefa(s)`,
+                }
+              }
+            },
+            scales: {
+              x: { ...baseOpts.scales.x, stacked: true, beginAtZero: true, ticks: { ...baseOpts.scales.x.ticks, stepSize: 1, precision: 0 } },
+              y: { ...baseOpts.scales.y, stacked: true, grid: { display: false } },
             }
           }
         });
@@ -5777,7 +6025,6 @@ function app() {
             prioridade: e.prioridade, esforco: +e.esforco || 0,
             prazo: e.prazo || '', status: e.status, subetapa: e.subetapa,
             complexidade: e.complexidade || 'media',
-            tamanho: e.tamanho || '',
             bloqueadoPor: e.subetapa === 'bloqueado' ? (e.bloqueadoPor || '') : '',
             visivelCliente: e.visivelCliente !== false,
             tags: Array.isArray(e.tags) ? [...e.tags] : [],
