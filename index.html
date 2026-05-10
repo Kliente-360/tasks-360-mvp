@@ -246,6 +246,15 @@
   .tag-chip button:hover { opacity: 1; }
   .tag-chip-link { cursor: pointer; }
   .tag-chip-link:hover { background: var(--brand-soft); }
+  .tag-chip-suggest {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 10px; font-family: var(--font-mono); font-weight: 500;
+    padding: 1px 7px; border-radius: 999px;
+    background: var(--bg-elev); color: var(--muted);
+    border: 1px dashed var(--line); line-height: 1.5; white-space: nowrap;
+    cursor: pointer; transition: all 0.12s;
+  }
+  .tag-chip-suggest:hover { background: var(--brand-tint); color: var(--brand-dark); border-style: solid; border-color: var(--brand-soft); }
 
   /* drag manual no backlog */
   .manual-row { cursor: grab; }
@@ -2618,11 +2627,12 @@
                  @keydown.enter.prevent="addTag()"
                  @keydown.,.prevent="addTag()"
                  @keydown.tab.prevent="addTag()"
-                 @blur="addTag()"
-                 list="taglist">
-          <datalist id="taglist">
-            <template x-for="t in allTags" :key="t"><option :value="t"></option></template>
-          </datalist>
+                 @blur="setTimeout(() => addTag(), 120)">
+        </div>
+        <div x-show="suggest(newTag, allTags, editing.tags).length > 0" class="flex flex-wrap gap-1 mt-1.5">
+          <template x-for="t in suggest(newTag, allTags, editing.tags)" :key="t">
+            <button type="button" class="tag-chip-suggest" @mousedown.prevent="addExistingTag(t)" x-text="'+ #' + t"></button>
+          </template>
         </div>
         <div class="text-[10px] text-muted mt-1">letras, números e hífen. lowercase automático. máx 24 chars.</div>
       </div>
@@ -2946,8 +2956,27 @@
         </div>
         <div>
           <label class="lbl">Skills</label>
-          <input type="text" class="inp" x-model="editingPessoa._skillsRaw" placeholder="sales-cloud, lwc, apex, integracao">
-          <div class="text-[10px] text-muted mt-1">separadas por vírgula. Lowercase, sem acento, hífen no lugar de espaço.</div>
+          <div class="flex flex-wrap items-center gap-1.5 p-2 inp" style="min-height: 38px; cursor: text;" @click="$refs.skillInput && $refs.skillInput.focus()">
+            <template x-for="sk in (editingPessoa.skills || [])" :key="sk">
+              <span class="tag-chip">
+                <span x-text="sk"></span>
+                <button type="button" @click.stop="removeSkill(sk)" aria-label="remover">✕</button>
+              </span>
+            </template>
+            <input x-ref="skillInput" type="text" x-model="editingPessoa._skillsInput"
+                   class="bg-transparent border-0 outline-none text-sm flex-1 min-w-[100px] p-0"
+                   placeholder="adicionar skill (enter ou vírgula)…"
+                   @keydown.enter.prevent="addSkill()"
+                   @keydown.,.prevent="addSkill()"
+                   @keydown.tab.prevent="addSkill()"
+                   @blur="setTimeout(() => addSkill(), 120)">
+          </div>
+          <div x-show="suggest(editingPessoa._skillsInput, allSkills, editingPessoa.skills).length > 0" class="flex flex-wrap gap-1 mt-1.5">
+            <template x-for="sk in suggest(editingPessoa._skillsInput, allSkills, editingPessoa.skills)" :key="sk">
+              <button type="button" class="tag-chip-suggest" @mousedown.prevent="addExistingSkill(sk)" x-text="'+ ' + sk"></button>
+            </template>
+          </div>
+          <div class="text-[10px] text-muted mt-1">letras, números e hífen. lowercase automático. máx 24 chars.</div>
         </div>
       </div>
       <div x-show="editingPessoa.id" class="text-[10px] font-mono text-muted pt-2 border-t border-line">
@@ -4451,6 +4480,47 @@ function app() {
       const s = new Set();
       for (const t of this.tasks) for (const tag of (t.tags || [])) s.add(tag);
       return Array.from(s).sort();
+    },
+    get allSkills() {
+      const s = new Set();
+      for (const p of this.pessoas) for (const sk of (p.skills || [])) s.add(sk);
+      return Array.from(s).sort();
+    },
+    // Filtra um vocabulário (allTags / allSkills) pelo input atual,
+    // exclui os já adicionados, e limita a 12 sugestões.
+    suggest(input, all, current) {
+      const q = String(input || '').trim().toLowerCase();
+      const cur = new Set(current || []);
+      const filt = (all || []).filter(t => !cur.has(t));
+      if (!q) return filt.slice(0, 12);
+      const startsWith = filt.filter(t => t.startsWith(q));
+      const contains   = filt.filter(t => !t.startsWith(q) && t.includes(q));
+      return [...startsWith, ...contains].slice(0, 12);
+    },
+    addExistingTag(t) {
+      this.editing.tags = this.editing.tags || [];
+      if (!this.editing.tags.includes(t)) this.editing.tags.push(t);
+      this.newTag = '';
+      this.$nextTick(() => this.$refs.tagInput && this.$refs.tagInput.focus());
+    },
+    addSkill() {
+      if (!this.editingPessoa) return;
+      const s = this.normalizeTag(this.editingPessoa._skillsInput || '');
+      if (!s) { this.editingPessoa._skillsInput = ''; return; }
+      this.editingPessoa.skills = this.editingPessoa.skills || [];
+      if (!this.editingPessoa.skills.includes(s)) this.editingPessoa.skills.push(s);
+      this.editingPessoa._skillsInput = '';
+    },
+    addExistingSkill(s) {
+      if (!this.editingPessoa) return;
+      this.editingPessoa.skills = this.editingPessoa.skills || [];
+      if (!this.editingPessoa.skills.includes(s)) this.editingPessoa.skills.push(s);
+      this.editingPessoa._skillsInput = '';
+      this.$nextTick(() => this.$refs.skillInput && this.$refs.skillInput.focus());
+    },
+    removeSkill(s) {
+      if (!this.editingPessoa) return;
+      this.editingPessoa.skills = (this.editingPessoa.skills || []).filter(x => x !== s);
     },
     nomeCliente(id) { return (this.clientes.find(c => c.id === id) || {}).nome || '—'; },
     nomeProjeto(id) { return (this.projetos.find(p => p.id === id) || {}).nome || '—'; },
@@ -6720,7 +6790,7 @@ function app() {
         cliente_secundario_id: null,
         capacidade_horas_semana: 40,
         skills: [],
-        _skillsRaw: '',
+        _skillsInput: '',
         senioridade: '',
         invited_at: null,
         user_id: null,
@@ -6740,7 +6810,7 @@ function app() {
         cliente_secundario_id: p.cliente_secundario_id || null,
         capacidade_horas_semana: p.capacidade_horas_semana == null ? 40 : +p.capacidade_horas_semana,
         skills,
-        _skillsRaw: skills.join(', '),
+        _skillsInput: '',
         senioridade: p.senioridade || '',
         invited_at: p.invited_at,
         user_id: p.user_id,
@@ -6757,11 +6827,11 @@ function app() {
         this.toast('error', 'Cliente externo precisa de um cliente vinculado.');
         return;
       }
-      // Skills: parse do _skillsRaw (string CSV) → array normalizado
-      const rawSkills = (e._skillsRaw || '').toString();
-      const skills = rawSkills.split(/[,;]/)
-        .map(s => s.trim().toLowerCase().replace(/\s+/g, '-'))
-        .filter(Boolean);
+      // Skills: já vêm como array (chips). Mantém o que tem +
+      // se sobrou texto digitado sem confirmar, normaliza e adiciona.
+      const skills = Array.isArray(e.skills) ? [...e.skills] : [];
+      const pending = this.normalizeTag(e._skillsInput || '');
+      if (pending && !skills.includes(pending)) skills.push(pending);
       const payload = {
         nome,
         email: email || null,
