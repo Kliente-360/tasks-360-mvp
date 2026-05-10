@@ -489,11 +489,25 @@
   .print-only .pr-delta-good { color: #166534; }
   .print-only .pr-delta-bad  { color: #b91c1c; }
 
-  /* Página executiva — 1 página A4 com bom aproveitamento vertical */
+  /* Página executiva — 1 página A4, grid rígido pra preencher vertical sem overflow.
+     @page já dá 12mm/10mm de margem; aqui cabe na área útil A4 (273mm × 190mm).
+     Linhas: header · KPI strip · (eficiência | ações) · (clientes | time) · footer */
   .print-only .pr-page-exec {
-    padding: 12mm 11mm 8mm; page-break-after: avoid;
-    display: flex; flex-direction: column; min-height: calc(297mm - 20mm);
+    page-break-after: avoid; page-break-inside: avoid;
+    display: grid; gap: 8px;
+    grid-template-rows: auto auto 1fr 1fr auto;
+    box-sizing: border-box; overflow: hidden;
   }
+  .print-only .pr-page-exec > .pr-split {
+    min-height: 0; align-items: stretch;
+  }
+  .print-only .pr-page-exec > .pr-split > .pr-split-col {
+    min-height: 0; overflow: hidden; display: flex; flex-direction: column;
+  }
+  .print-only .pr-page-exec > .pr-split > .pr-split-col > table { flex: 1 1 auto; }
+  /* Tabelas distribuem altura igual entre as linhas pra preencher a coluna */
+  .print-only .pr-page-exec > .pr-split > .pr-split-col > table tbody { height: 100%; }
+  .print-only .pr-page-exec > .pr-split > .pr-split-col > table tbody tr { height: auto; }
   .print-only .pr-page-exec .pr-section-title {
     font-family: 'Manrope', sans-serif; font-size: 10.5px; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.13em; color: #111;
@@ -655,6 +669,7 @@
     body > *:not(.print-only) { display: none !important; }
     .print-only { position: static !important; visibility: visible !important; width: auto !important; z-index: auto !important; pointer-events: auto !important; }
     .print-only .pr-page { padding: 0 !important; }
+    .print-only .pr-page-exec { height: 273mm; }
     .print-only table.pr-tbl thead { display: table-header-group; } /* repete header em cada página */
     .print-only table.pr-tbl tr { page-break-inside: avoid; }
   }
