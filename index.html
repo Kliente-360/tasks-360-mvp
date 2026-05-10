@@ -774,6 +774,11 @@
             </button>
           </div>
           <div class="border-t border-line my-1"></div>
+          <button class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-brand-tint" @click="openOnboarding(); userMenuOpen=false">
+            <span>Guia de onboarding</span>
+            <span class="text-muted text-xs">3 perspectivas</span>
+          </button>
+          <div class="border-t border-line my-1"></div>
           <button class="block w-full text-left px-3 py-2 text-sm hover:bg-brand-tint" @click="signOut(); userMenuOpen=false">sair</button>
         </div>
       </div>
@@ -2239,6 +2244,37 @@
   </div>
 </div>
 
+<!-- ============ ONBOARDING (3 perspectivas) ============ -->
+<div x-show="onboardingOpen" x-transition.opacity class="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center px-2 md:px-4 py-4" @click="closeOnboarding()" @keydown.escape.window="closeOnboarding()">
+  <div class="bg-elev border border-line rounded-lg shadow-2xl w-full max-w-[920px] h-[92vh] flex flex-col overflow-hidden" @click.stop>
+    <div class="px-4 md:px-6 py-3 border-b border-line flex items-center justify-between gap-3 shrink-0">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="font-brand font-semibold text-base md:text-lg">Onboarding · tasks 360</div>
+        <span class="text-[10px] uppercase tracking-wider text-muted font-mono hidden md:inline">guia por perspectiva</span>
+      </div>
+      <button class="text-muted hover:text-ink text-xl px-2" @click="closeOnboarding()" aria-label="Fechar">×</button>
+    </div>
+    <!-- Tabs de perspectiva -->
+    <div class="px-4 md:px-6 pt-3 pb-2 border-b border-line shrink-0 flex gap-1 flex-wrap">
+      <template x-for="p in [{key:'ceo',label:'CEO · gestão'},{key:'gerente',label:'Gerente de projetos'},{key:'analista',label:'Analista'}]" :key="p.key">
+        <button class="text-xs md:text-sm px-3 py-1.5 rounded-md border transition-colors"
+                :class="onboardingPersona===p.key ? 'bg-brand-tint border-brand text-brand-dark font-medium' : 'border-line hover:bg-bg-elev text-ink-soft'"
+                @click="setOnboardingPersona(p.key)"
+                x-text="p.label"></button>
+      </template>
+    </div>
+    <div id="onboardingScroll" class="flex-1 overflow-y-auto px-5 md:px-8 py-5 md:py-7">
+      <div x-show="onboardingLoading" class="text-center text-muted py-12">carregando guia…</div>
+      <div x-show="onboardingError" class="text-center py-12">
+        <div class="text-[color:var(--p0)] mb-2">não foi possível carregar o guia</div>
+        <div class="text-xs text-muted" x-text="onboardingError"></div>
+        <a class="btn btn-ghost text-xs mt-3" href="ONBOARDING.md" target="_blank">abrir ONBOARDING.md em nova aba</a>
+      </div>
+      <article class="help-md" x-html="onboardingHtml[onboardingPersona]" x-show="!onboardingLoading && !onboardingError"></article>
+    </div>
+  </div>
+</div>
+
 <!-- ============ AJUDA DE ATALHOS (?) ============ -->
 <div x-show="shortcutsHelpOpen" x-transition.opacity class="fixed inset-0 z-[80] bg-black/40 flex items-center justify-center px-4" @click="shortcutsHelpOpen=false">
   <div class="bg-elev border border-line rounded-lg shadow-2xl w-full max-w-[420px] overflow-hidden" @click.stop>
@@ -3284,6 +3320,12 @@ function app() {
     // viewerRole agora é getter, derivado de currentPessoa quando auth está on.
     mobileNavOpen: false,
     helpOpen: false,
+    onboardingOpen: false,
+    onboardingPersona: 'analista',
+    onboardingHtml: { ceo: '', gerente: '', analista: '' },
+    onboardingLoading: false,
+    onboardingError: '',
+    _onboardingLoaded: false,
     helpHtml: '',
     helpToc: [],
     helpLoading: false,
@@ -5119,6 +5161,50 @@ function app() {
       }
     },
     closeHelp() { this.helpOpen = false; },
+
+    // ===================== ONBOARDING (3 perspectivas) =====================
+    async openOnboarding() {
+      // default por role: admin → CEO, interno → analista, cliente → analista
+      const role = this.viewerRole;
+      this.onboardingPersona = role === 'admin' ? 'ceo' : 'analista';
+      this.onboardingOpen = true;
+      if (this._onboardingLoaded) return;
+      this.onboardingLoading = true; this.onboardingError = '';
+      try {
+        const r = await fetch('ONBOARDING.md', { cache: 'no-cache' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const md = await r.text();
+        // Remove preâmbulo (título top + blockquote inicial até a primeira H1 de persona)
+        const cleaned = md.replace(/^[\s\S]*?(?=^# CEO)/m, '').trim();
+        // Splita em 3 blocos por '# CEO', '# Gerente', '# Analista'
+        const parts = cleaned.split(/^---\s*$\s*(?=^# (?:CEO|Gerente|Analista))/m);
+        const map = { ceo: '', gerente: '', analista: '' };
+        for (const part of parts) {
+          const head = part.match(/^# (CEO|Gerente|Analista)/m);
+          if (!head) continue;
+          const key = head[1].toLowerCase().startsWith('c') ? 'ceo'
+                    : head[1].toLowerCase().startsWith('g') ? 'gerente'
+                    : 'analista';
+          // Tira o trailer de outras personas se grudou
+          const block = part.split(/^---\s*$/m)[0];
+          map[key] = marked.parse(block, { gfm: true });
+        }
+        this.onboardingHtml = map;
+        this._onboardingLoaded = true;
+      } catch (e) {
+        this.onboardingError = (e && e.message) || 'erro desconhecido';
+      } finally {
+        this.onboardingLoading = false;
+      }
+    },
+    closeOnboarding() { this.onboardingOpen = false; },
+    setOnboardingPersona(p) {
+      this.onboardingPersona = p;
+      this.$nextTick(() => {
+        const el = document.getElementById('onboardingScroll');
+        if (el) el.scrollTop = 0;
+      });
+    },
     scrollHelpTo(id) {
       const root = document.getElementById('helpScroll');
       const el = root && root.querySelector('#' + CSS.escape(id));
