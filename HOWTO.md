@@ -279,9 +279,9 @@ Botão **↓ exportar** no canto superior direito.
 
 Snapshot **completo** (ignora filtros). 3 páginas A4 desenhadas pra leitura executiva (CEO-first):
 
-1. **Snapshot** — 6 KPIs hero + sinais de risco + 3 charts (status, horas por cliente, throughput 8 sem.)
-2. **Saúde por cliente** — tabela com sinal semafórico (verde/amarelo/vermelho) por cliente: ativas, atrasadas, bloqueadas aguardando cliente, entregues 30d, tendência vs 30d anterior, lead time médio. Critério do sinal: vermelho se >30% atrasadas ou bloqueio com cliente há +5d; amarelo se há atraso ou bloqueio recente; verde caso contrário. Ordenado por gravidade.
-3. **Atenção máxima · Carga do time** — top 10 pendentes críticos (atrasadas ponderadas por dias e prioridade + bloqueadas pelo cliente + aging stale) e barras horizontais por pessoa mostrando carga total e quanto está em atraso (>50h sinaliza sobrecarga).
+1. **Resumo executivo** — 6 KPIs hero + sinais de risco + 3 charts (status, horas por cliente, throughput 8 sem.)
+2. **Gestão do time** — tabela de carga atual por pessoa com tasks/horas/atrasadas/distribuição visual. Marca pessoas com >50h como **sobrecarga** e <20h como **disponível**. Bloco final com **sugestões de redistribuição** geradas automaticamente: "Passar X (atrasada, 8h) de Karen (60h) pra Drieli (15h)", até 5 sugestões.
+3. **Gestão dos clientes** — tabela com sinal semafórico por cliente (ativas, atrasadas, aguardando cliente, entregues 30d, tendência vs período anterior, lead time médio) + top 10 pendentes críticos (score ponderado: atrasadas por dias e prioridade, bloqueadas pelo cliente, aging stale).
 
 Usa o diálogo nativo de impressão do navegador → **Salvar como PDF**.
 
