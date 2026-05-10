@@ -41,6 +41,20 @@ Quem você é determina como usa:
 
 Da esquerda pra direita no topo:
 
+### Notificações
+
+Sino 🔔 no header (ao lado do avatar) com badge vermelho mostrando o número de notificações não lidas. Click abre painel com últimas 50.
+
+Tipos disparados automaticamente:
+- **Mention**: alguém te menciona em um comentário (`@SeuNome`)
+- **Atribuição**: você foi atribuído como responsável de uma task
+- **Comentário em task sua**: outra pessoa comentou em uma task que você é responsável
+- **Cliente respondeu**: cliente externo comentou ou marcou "Já respondi" em uma task que é sua
+
+Click numa notificação marca como lida e abre a task referenciada. Botão "marcar tudo lido" pra zerar o badge.
+
+> Implementado in-app via Realtime — sem email push. Quando o app está aberto, notificação chega instantaneamente com toast leve. Quando fechado, aparece ao reabrir.
+
 ### Mencionar pessoa em comentário
 
 No campo de comentário (modal de edição da tarefa), botão **"@ mencionar"** abre dropdown com filtragem de pessoas internas. Click na pessoa insere `@Primeiro_nome` no texto. Quando o comentário é exibido, qualquer `@nome` que case com pessoa cadastrada vira chip verde destacado.

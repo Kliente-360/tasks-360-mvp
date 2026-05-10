@@ -699,6 +699,41 @@
       <button class="btn btn-ghost btn-icon text-xs" @click="toggleTheme()" :title="theme==='dark' ? 'Mudar para claro' : 'Mudar para escuro'" aria-label="Alternar tema"><span x-text="theme==='dark' ? '☀' : '☾'"></span></button>
       <div class="w-px h-6 bg-line mx-1 md:mx-2"></div>
       <button class="btn btn-primary text-xs md:text-sm" @click="openNew()"><span class="md:hidden">+ Nova</span><span class="hidden md:inline">+ Nova tarefa</span></button>
+
+      <!-- Notifications -->
+      <div class="relative" x-show="authEnabled && currentPessoa" @click.outside="notifPanelOpen=false">
+        <button class="btn btn-ghost btn-icon text-xs relative" @click="notifPanelOpen=!notifPanelOpen; if(notifPanelOpen) loadNotifications()" aria-label="Notificações">
+          <span aria-hidden="true">🔔</span>
+          <span x-show="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full text-[9px] font-bold text-white px-1 flex items-center justify-center" style="background:var(--p0)">
+            <span x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
+          </span>
+        </button>
+        <div x-show="notifPanelOpen" x-transition.opacity
+             class="fixed md:absolute top-14 md:top-full right-3 md:right-0 md:mt-2 bg-elev border border-line rounded-lg shadow-xl z-50 w-[320px] max-w-[calc(100vw-24px)] max-h-[70vh] overflow-hidden flex flex-col">
+          <div class="px-3 py-2 border-b border-line flex items-center justify-between">
+            <div class="font-brand font-semibold text-sm">Notificações</div>
+            <button x-show="unreadCount > 0" class="text-[10px] text-muted hover:text-brand-dark" @click="markAllNotificationsRead()">marcar tudo lido</button>
+          </div>
+          <div class="flex-1 overflow-y-auto">
+            <template x-for="n in notifications" :key="n.id">
+              <button class="w-full text-left px-3 py-2.5 border-b border-line last:border-0 hover:bg-brand-tint transition-colors"
+                      :class="!n.read_at && 'bg-brand-tint/30'"
+                      @click="openNotification(n)">
+                <div class="flex items-start gap-2">
+                  <span class="mt-1 shrink-0 w-2 h-2 rounded-full" :class="n.read_at ? 'bg-line' : 'bg-brand'"></span>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm text-ink truncate" x-text="notifSummary(n)"></div>
+                    <div x-show="n.payload && n.payload.preview" class="text-xs text-muted mt-0.5 truncate" x-text="n.payload && n.payload.preview"></div>
+                    <div class="text-[10px] font-mono text-muted mt-0.5" x-text="fmtPostedEm(n.criado_em)"></div>
+                  </div>
+                </div>
+              </button>
+            </template>
+            <div x-show="notifications.length === 0" class="px-4 py-8 text-center text-xs text-muted italic">Sem notificações ainda.</div>
+          </div>
+        </div>
+      </div>
+
       <div class="relative" x-show="authEnabled" @click.outside="userMenuOpen=false">
         <button class="btn btn-ghost btn-icon text-xs" @click="userMenuOpen=!userMenuOpen" :title="currentPessoa && currentPessoa.nome" aria-label="Conta">
           <span class="w-6 h-6 rounded-full bg-brand-soft text-brand font-brand font-semibold text-xs flex items-center justify-center" x-text="currentPessoa ? currentPessoa.nome.charAt(0).toUpperCase() : '?'"></span>
@@ -2884,6 +2919,9 @@ function app() {
     newCommentPublico: false,
     mentionPickerFor: '',  // '' | 'newComment' | 'newReply' | 'portalNewComment' | 'portalReplyText'
     mentionPickerQuery: '',
+    notifications: [],
+    notifPanelOpen: false,
+    _notifsSubscribed: false,
     replyingToId: '',
     newReply: '',
     newCli: '',
@@ -2945,9 +2983,12 @@ function app() {
           if (this.session && this.currentPessoa && this.tasks.length === 0) {
             await this.load();
             this.subscribeRealtime();
+            this.loadNotifications();
+            this.subscribeNotifications();
           }
           if (event === 'SIGNED_OUT') {
             this.tasks = []; this.clientes = []; this.projetos = []; this.pessoas = [];
+            this.notifications = [];
           }
         });
 
@@ -2955,6 +2996,8 @@ function app() {
           try {
             await this.load();
             this.subscribeRealtime();
+            this.loadNotifications();
+            this.subscribeNotifications();
           } finally {
             this.loading = false;
           }
@@ -3161,6 +3204,129 @@ function app() {
       const url = window.location.pathname + (qs ? '?' + qs : '');
       history.replaceState(null, '', url);
     },
+    // ===================== NOTIFICATIONS =====================
+    get unreadNotifications() {
+      return this.notifications.filter(n => !n.read_at);
+    },
+    get unreadCount() { return this.unreadNotifications.length; },
+    async loadNotifications() {
+      if (!this.currentPessoa) { this.notifications = []; return; }
+      const { data, error } = await sb
+        .from('notifications')
+        .select('id, recipient_pessoa_id, kind, payload, source_task_id, source_comment_id, criado_em, read_at')
+        .eq('recipient_pessoa_id', this.currentPessoa.id)
+        .order('criado_em', { ascending: false })
+        .limit(50);
+      if (error) { console.error('[notif] load failed:', error); return; }
+      this.notifications = data || [];
+    },
+    subscribeNotifications() {
+      if (this._notifsSubscribed || !this.currentPessoa) return;
+      this._notifsSubscribed = true;
+      sb.channel('notif-' + this.currentPessoa.id)
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'notifications',
+          filter: `recipient_pessoa_id=eq.${this.currentPessoa.id}`,
+        }, (payload) => {
+          const n = payload.new;
+          this.notifications = [n, ...this.notifications].slice(0, 50);
+          // Toast leve apenas como sinal — UX silenciosa
+          this.toast('info', this.notifSummary(n), 6000);
+        })
+        .subscribe();
+    },
+    notifSummary(n) {
+      const p = n.payload || {};
+      const who = p.author || 'alguém';
+      switch (n.kind) {
+        case 'mention':            return `${who} te mencionou em uma tarefa`;
+        case 'assigned':           return `${who} te atribuiu a uma tarefa`;
+        case 'comment_on_my_task': return `${who} comentou em uma tarefa sua`;
+        case 'cliente_respondeu':  return `Cliente respondeu em uma tarefa sua`;
+        default:                   return 'nova notificação';
+      }
+    },
+    async openNotification(n) {
+      // Marca como lida e abre a task referenciada (se houver).
+      await this.markNotificationRead(n.id);
+      this.notifPanelOpen = false;
+      if (n.source_task_id) {
+        const t = this.tasks.find(x => x.id === n.source_task_id);
+        if (t) this.openEdit(t);
+      }
+    },
+    async markNotificationRead(id) {
+      const i = this.notifications.findIndex(n => n.id === id);
+      if (i < 0) return;
+      const prev = this.notifications[i];
+      if (prev.read_at) return;
+      const nowIso = new Date().toISOString();
+      this.notifications[i] = { ...prev, read_at: nowIso };
+      const { error } = await sb.from('notifications').update({ read_at: nowIso }).eq('id', id);
+      if (error) { this.notifications[i] = prev; }
+    },
+    async markAllNotificationsRead() {
+      const ids = this.unreadNotifications.map(n => n.id);
+      if (!ids.length) return;
+      const nowIso = new Date().toISOString();
+      this.notifications = this.notifications.map(n => n.read_at ? n : { ...n, read_at: nowIso });
+      await sb.from('notifications').update({ read_at: nowIso }).in('id', ids);
+    },
+    // ----- helpers pra criar notificações -----
+    async _notifyMentions(taskId, commentId, body) {
+      if (!this.currentPessoa || !body) return;
+      const re = /@([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9]*)/g;
+      const found = new Set();
+      let m;
+      while ((m = re.exec(body)) !== null) found.add(m[1]);
+      if (!found.size) return;
+      const recipients = this.pessoas
+        .filter(p => p.role !== 'cliente')
+        .filter(p => found.has((p.nome || '').split(/\s+/)[0]))
+        .filter(p => p.id !== this.currentPessoa.id) // não notifica a si mesmo
+        .map(p => p.id);
+      if (!recipients.length) return;
+      const rows = recipients.map(rid => ({
+        recipient_pessoa_id: rid,
+        kind: 'mention',
+        payload: { author: this.currentPessoa.nome, task_id: taskId, comment_id: commentId },
+        source_task_id: taskId,
+        source_comment_id: commentId,
+      }));
+      await sb.from('notifications').insert(rows);
+    },
+    async _notifyAssignment(taskId, newPessoaId, oldPessoaId) {
+      if (!newPessoaId || newPessoaId === oldPessoaId) return;
+      if (this.currentPessoa && newPessoaId === this.currentPessoa.id) return; // self-assign não notifica
+      await sb.from('notifications').insert({
+        recipient_pessoa_id: newPessoaId,
+        kind: 'assigned',
+        payload: { author: this.currentPessoa ? this.currentPessoa.nome : 'app', task_id: taskId },
+        source_task_id: taskId,
+      });
+    },
+    async _notifyCommentOnTaskOwner(taskId, commentId, body, ownerPessoaId) {
+      if (!ownerPessoaId) return;
+      if (this.currentPessoa && ownerPessoaId === this.currentPessoa.id) return; // próprio dono comentando
+      await sb.from('notifications').insert({
+        recipient_pessoa_id: ownerPessoaId,
+        kind: 'comment_on_my_task',
+        payload: { author: this.currentPessoa ? this.currentPessoa.nome : 'app', task_id: taskId, comment_id: commentId, preview: (body || '').slice(0, 80) },
+        source_task_id: taskId,
+        source_comment_id: commentId,
+      });
+    },
+    async _notifyClienteRespondeu(taskId, commentId, body, ownerPessoaId) {
+      if (!ownerPessoaId) return;
+      await sb.from('notifications').insert({
+        recipient_pessoa_id: ownerPessoaId,
+        kind: 'cliente_respondeu',
+        payload: { task_id: taskId, comment_id: commentId, preview: (body || '').slice(0, 80) },
+        source_task_id: taskId,
+        source_comment_id: commentId,
+      });
+    },
+
     subscribeRealtime() {
       // Idempotente: se já assinou, não tenta de novo.
       // Sem isso, segundas chamadas (init + onAuthStateChange) crashavam
@@ -4526,35 +4692,46 @@ function app() {
       const body = (this.portalNewComment || '').trim();
       if (!body || !this.portalTask) return;
       const cliNome = (this.portalCliente && this.portalCliente.nome) || 'cliente';
-      const { error } = await sb.from('task_comments').insert({
+      const { data, error } = await sb.from('task_comments').insert({
         task_id: this.portalTask.id,
         author: cliNome,
         body,
         author_pessoa_id: null,
         visivel_cliente: true,
         from_cliente: true,
-      });
+      }).select('id').single();
       if (error) { this.toast('error', 'Erro ao comentar: ' + error.message); return; }
       this.portalNewComment = '';
       await this.loadPortalComments(this.portalTask.id);
       this.toast('success', 'Comentário enviado.');
+      // Notifica responsável da task que cliente comentou
+      try {
+        if (this.portalTask.pessoaId) {
+          await this._notifyClienteRespondeu(this.portalTask.id, data && data.id, body, this.portalTask.pessoaId);
+        }
+      } catch (e) { console.warn('[notif] portal comment notify failed:', e); }
     },
     async submitJaRespondi() {
       const body = (this.portalReplyText || '').trim();
       if (!body || !this.portalTask) return;
       const cliNome = (this.portalCliente && this.portalCliente.nome) || 'cliente';
-      const { error } = await sb.from('task_comments').insert({
+      const { data, error } = await sb.from('task_comments').insert({
         task_id: this.portalTask.id,
         author: cliNome,
         body: '✓ Já respondi: ' + body,
         author_pessoa_id: null,
         visivel_cliente: true,
         from_cliente: true,
-      });
+      }).select('id').single();
       if (error) { this.toast('error', 'Erro: ' + error.message); return; }
       this.portalReplyText = '';
       await this.loadPortalComments(this.portalTask.id);
       this.toast('success', 'Sua resposta foi enviada ao time. Eles vão verificar.');
+      try {
+        if (this.portalTask.pessoaId) {
+          await this._notifyClienteRespondeu(this.portalTask.id, data && data.id, body, this.portalTask.pessoaId);
+        }
+      } catch (e) { console.warn('[notif] já respondi notify failed:', e); }
     },
     portalTaskTimeline(t) {
       // Linha do tempo simplificada e humanizada
@@ -5318,6 +5495,12 @@ function app() {
       }
       // Substitui temp pelo registro real (realtime também trariam, mas evita duplicar visual)
       this.editingComments = this.editingComments.map(c => c.id === tempId ? data : c);
+      // Notificações: mentions + dono da task (se outro)
+      try {
+        await this._notifyMentions(this.editing.id, data.id, body);
+        const owner = this.editing.pessoaId;
+        if (owner) await this._notifyCommentOnTaskOwner(this.editing.id, data.id, body, owner);
+      } catch (e) { console.warn('[notif] postComment notify failed:', e); }
     },
     async loadHistory(taskId) {
       if (!taskId) { this.editingHistory = []; return; }
@@ -5379,6 +5562,12 @@ function app() {
             actor_source: 'app', occurred_at: nowIso,
           });
         }
+        // Notifica novo responsável (assignment)
+        try {
+          if (prev && prev.pessoaId !== e.pessoaId) {
+            await this._notifyAssignment(e.id, e.pessoaId, prev.pessoaId);
+          }
+        } catch (err) { console.warn('[notif] assignment notify failed:', err); }
       } else {
         // Insert
         payload.status_em = nowIso;
