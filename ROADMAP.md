@@ -353,15 +353,15 @@ Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
 
 #### 🟢 IA — depende de chave Anthropic + orçamento
 
-6. **Sugestão complexidade + esforço** (`ai-suggest`) — começar aqui (custo ~R$ 0,015/exec).
-7. **Resumo executivo semanal por projeto** — cron + LLM (~R$ 0,05/exec com cache).
-8. **Detector de risco antecipado** — cron diário (~R$ 0,07/exec com cache).
-9. **Auto-categorização de tags**.
-10. **Chat com seu backlog** (tool use).
+7. **Sugestão complexidade + esforço** (`ai-suggest`) — começar aqui (custo ~R$ 0,015/exec).
+8. **Resumo executivo semanal por projeto** — cron + LLM (~R$ 0,05/exec com cache).
+9. **Detector de risco antecipado** — cron diário (~R$ 0,07/exec com cache).
+10. **Auto-categorização de tags**.
+11. **Chat com seu backlog** (tool use).
 
 #### 🔵 Design
 
-11. **DESIGN_HANDOFF.md** está pronto pra entregar pra um agente de design (claude-design ou outro). Foco: tipografia + spacing + hierarquia. Tom: executivo + consultivo-produtivo. Notion como referência inicial.
+12. **DESIGN_HANDOFF.md** está pronto pra entregar pra um agente de design (claude-design ou outro). Foco: tipografia + spacing + hierarquia. Tom: executivo + consultivo-produtivo. Notion como referência inicial.
 
 #### ✅ Recém-fechados (maio/2026)
 
