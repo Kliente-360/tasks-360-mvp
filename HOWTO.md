@@ -41,6 +41,20 @@ Quem você é determina como usa:
 
 Da esquerda pra direita no topo:
 
+### Notificações
+
+Sino 🔔 no header (ao lado do avatar) com badge vermelho mostrando o número de notificações não lidas. Click abre painel com últimas 50.
+
+Tipos disparados automaticamente:
+- **Mention**: alguém te menciona em um comentário (`@SeuNome`)
+- **Atribuição**: você foi atribuído como responsável de uma task
+- **Comentário em task sua**: outra pessoa comentou em uma task que você é responsável
+- **Cliente respondeu**: cliente externo comentou ou marcou "Já respondi" em uma task que é sua
+
+Click numa notificação marca como lida e abre a task referenciada. Botão "marcar tudo lido" pra zerar o badge.
+
+> Implementado in-app via Realtime — sem email push. Quando o app está aberto, notificação chega instantaneamente com toast leve. Quando fechado, aparece ao reabrir.
+
 ### Mencionar pessoa em comentário
 
 No campo de comentário (modal de edição da tarefa), botão **"@ mencionar"** abre dropdown com filtragem de pessoas internas. Click na pessoa insere `@Primeiro_nome` no texto. Quando o comentário é exibido, qualquer `@nome` que case com pessoa cadastrada vira chip verde destacado.
@@ -106,7 +120,17 @@ Filtros de cliente e responsável afetam tudo.
 
 Três sub-abas: Clientes · Projetos · Pessoas. Cadastre antes de criar tarefas que dependam.
 
-Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (Admin / Time Kliente 360 / Cliente externo) e — quando perfil for "Cliente externo" — o cliente vinculado. Esse vínculo determina o que a pessoa vê no Portal quando o login estiver ativo.
+Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (Admin / Time Kliente 360 / Cliente externo) e — quando perfil for "Cliente externo" — o cliente vinculado.
+
+Botões de acesso variam por perfil:
+- **Cliente externo** (login via magic link): "convidar" / "reenviar link" / "inativar"
+- **Time interno / Admin** (login via Google): "ativar" / "inativar" — sem reenviar link, porque o login não depende de email; basta a pessoa estar `ativa` (`invited_at` preenchido) pra entrar com Google.
+
+Badges:
+- *acesso ativo* — pessoa já logou pelo menos uma vez
+- *convidada · aguardando 1º login* — cliente externo recebeu o link mas ainda não usou
+- *ativa · ainda não logou* — interno habilitado mas que ainda não entrou
+- *sem convite* / *inativa* — sem permissão atual de acesso
 
 ### Adoption
 
@@ -132,6 +156,26 @@ Aba dedicada para o cliente externo. Layout simples com 4 cards (Aguardando voc�
 | **cliente** | Apenas Portal cliente, escopado ao próprio cliente | Não cria task, não edita, não move etapa. |
 
 > Enquanto auth não está ativo, todo usuário é `admin` por default e o seletor do Portal permite simular qualquer cliente. Quando auth voltar, o role é derivado automaticamente da pessoa logada.
+
+---
+
+## Heurísticas (sinais de risco)
+
+Banner no topo do **Dashboard** mostra alertas determinísticos (sem IA) baseados nos atributos da tarefa, pessoa, cliente e projeto. Severidade `alta` (vermelho) ou `media` (âmbar). Atualmente:
+
+- **Tarefa grande sem início** com prazo a ≤10 dias
+- **Sobrecarga real** — pessoa com horas alocadas > capacidade semanal
+- **Cliente estratégico com atrasada(s)**
+- **Bloqueio aguardando cliente há +5 dias**
+- **SLA contratado quase vencido** (projetos com `sla_entrega_dias` configurado)
+
+> Atributos novos disponíveis no patch `heuristicas_onda_a_patch.sql`:
+> - **Tasks**: `tamanho` (mini/small/medio/grande/mini_projeto)
+> - **Pessoas**: `cliente_principal_id`, `cliente_secundario_id`, `capacidade_horas_semana`, `skills[]`
+> - **Clientes**: `tier` (estratégico/regular/oportunidade)
+> - **Projetos**: `sla_resposta_horas`, `sla_entrega_dias`, `orcamento_horas`
+>
+> UI inicial: **task.tamanho** no form de edição da tarefa; **pessoa.\*** no modal de pessoa. **cliente.tier** e **projeto.sla\*** ainda sem UI dedicada — setar via Supabase Studio direto, ou aguardar próxima iteração.
 
 ---
 

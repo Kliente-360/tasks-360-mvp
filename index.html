@@ -699,6 +699,41 @@
       <button class="btn btn-ghost btn-icon text-xs" @click="toggleTheme()" :title="theme==='dark' ? 'Mudar para claro' : 'Mudar para escuro'" aria-label="Alternar tema"><span x-text="theme==='dark' ? '☀' : '☾'"></span></button>
       <div class="w-px h-6 bg-line mx-1 md:mx-2"></div>
       <button class="btn btn-primary text-xs md:text-sm" @click="openNew()"><span class="md:hidden">+ Nova</span><span class="hidden md:inline">+ Nova tarefa</span></button>
+
+      <!-- Notifications -->
+      <div class="relative" x-show="authEnabled && currentPessoa" @click.outside="notifPanelOpen=false">
+        <button class="btn btn-ghost btn-icon text-xs relative" @click="notifPanelOpen=!notifPanelOpen; if(notifPanelOpen) loadNotifications()" aria-label="Notificações">
+          <span aria-hidden="true">🔔</span>
+          <span x-show="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full text-[9px] font-bold text-white px-1 flex items-center justify-center" style="background:var(--p0)">
+            <span x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
+          </span>
+        </button>
+        <div x-show="notifPanelOpen" x-transition.opacity
+             class="fixed md:absolute top-14 md:top-full right-3 md:right-0 md:mt-2 bg-elev border border-line rounded-lg shadow-xl z-50 w-[320px] max-w-[calc(100vw-24px)] max-h-[70vh] overflow-hidden flex flex-col">
+          <div class="px-3 py-2 border-b border-line flex items-center justify-between">
+            <div class="font-brand font-semibold text-sm">Notificações</div>
+            <button x-show="unreadCount > 0" class="text-[10px] text-muted hover:text-brand-dark" @click="markAllNotificationsRead()">marcar tudo lido</button>
+          </div>
+          <div class="flex-1 overflow-y-auto">
+            <template x-for="n in notifications" :key="n.id">
+              <button class="w-full text-left px-3 py-2.5 border-b border-line last:border-0 hover:bg-brand-tint transition-colors"
+                      :class="!n.read_at && 'bg-brand-tint/30'"
+                      @click="openNotification(n)">
+                <div class="flex items-start gap-2">
+                  <span class="mt-1 shrink-0 w-2 h-2 rounded-full" :class="n.read_at ? 'bg-line' : 'bg-brand'"></span>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm text-ink truncate" x-text="notifSummary(n)"></div>
+                    <div x-show="n.payload && n.payload.preview" class="text-xs text-muted mt-0.5 truncate" x-text="n.payload && n.payload.preview"></div>
+                    <div class="text-[10px] font-mono text-muted mt-0.5" x-text="fmtPostedEm(n.criado_em)"></div>
+                  </div>
+                </div>
+              </button>
+            </template>
+            <div x-show="notifications.length === 0" class="px-4 py-8 text-center text-xs text-muted italic">Sem notificações ainda.</div>
+          </div>
+        </div>
+      </div>
+
       <div class="relative" x-show="authEnabled" @click.outside="userMenuOpen=false">
         <button class="btn btn-ghost btn-icon text-xs" @click="userMenuOpen=!userMenuOpen" :title="currentPessoa && currentPessoa.nome" aria-label="Conta">
           <span class="w-6 h-6 rounded-full bg-brand-soft text-brand font-brand font-semibold text-xs flex items-center justify-center" x-text="currentPessoa ? currentPessoa.nome.charAt(0).toUpperCase() : '?'"></span>
@@ -1608,6 +1643,27 @@
 
 <!-- ============ DASHBOARD ============ -->
 <section x-show="tab==='dash'" class="fade-up">
+  <!-- Heurísticas pré-IA: banner de alertas no topo (Dashboard) -->
+  <div x-show="heuristicAlerts.length > 0" class="card mb-4 md:mb-5 overflow-hidden" style="border-left: 4px solid var(--p0)">
+    <div class="px-4 py-3 border-b border-line flex items-center justify-between">
+      <div class="font-brand font-semibold text-sm text-[color:var(--p0)]">⚠ Sinais de risco · heurísticas</div>
+      <span class="text-xs font-mono text-muted" x-text="heuristicAlerts.length + ' alerta(s)'"></span>
+    </div>
+    <ul class="divide-y divide-line">
+      <template x-for="a in heuristicAlerts" :key="a.kind + a.titulo">
+        <li class="px-4 py-2.5 flex items-start gap-3">
+          <span class="text-xs uppercase tracking-wider font-mono font-semibold shrink-0 mt-0.5"
+                :style="a.severity === 'alta' ? 'color:var(--p0)' : (a.severity === 'media' ? 'color:#b45309' : 'color:var(--muted)')"
+                x-text="a.severity"></span>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-ink" x-text="a.titulo"></div>
+            <div x-show="a.detalhe" class="text-xs text-muted mt-0.5" x-text="a.detalhe"></div>
+          </div>
+        </li>
+      </template>
+    </ul>
+  </div>
+
   <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 md:gap-3 mb-5 md:mb-6">
     <select class="inp w-full md:w-[200px]" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
       <option value="">Todos os clientes</option>
@@ -1876,9 +1932,12 @@
                 <span x-text="p.nome"></span>
                 <span x-show="p.role === 'admin'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)" title="Acesso total">admin</span>
                 <span x-show="p.role === 'cliente'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309" title="Cliente externo — só vê o Portal">cliente externo</span>
+                <!-- Estado de acesso, semantizado por role -->
                 <span x-show="p.invited_at && p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)">acesso ativo</span>
-                <span x-show="p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">convidada</span>
-                <span x-show="!p.invited_at && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">sem convite</span>
+                <span x-show="p.role === 'cliente' && p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">convidada · aguardando 1º login</span>
+                <span x-show="p.role !== 'cliente' && p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">ativa · ainda não logou</span>
+                <span x-show="!p.invited_at && p.role === 'cliente' && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">sem convite</span>
+                <span x-show="!p.invited_at && p.role !== 'cliente' && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">inativa</span>
               </div>
               <div class="text-xs text-muted truncate">
                 <span x-show="p.email" class="font-mono" x-text="p.email"></span>
@@ -1889,8 +1948,12 @@
             </div>
           </div>
           <div class="flex gap-1 flex-wrap">
-            <button class="btn btn-ghost text-xs" x-show="p.email && !p.invited_at" @click="convidarPessoa(p)" title="Marcar como convidada e enviar magic link">convidar</button>
-            <button class="btn btn-ghost text-xs" x-show="p.email && p.invited_at" @click="convidarPessoa(p)" title="Reenviar magic link">reenviar link</button>
+            <!-- Cliente externo: precisa convite/reenviar link (magic link) -->
+            <button class="btn btn-ghost text-xs" x-show="p.role === 'cliente' && p.email && !p.invited_at" @click="convidarPessoa(p)" title="Marcar como convidada e enviar magic link">convidar</button>
+            <button class="btn btn-ghost text-xs" x-show="p.role === 'cliente' && p.email && p.invited_at" @click="convidarPessoa(p)" title="Reenviar magic link">reenviar link</button>
+            <!-- Interno/admin: ativar/inativar (sem menção a convite — login é via Google) -->
+            <button class="btn btn-ghost text-xs" x-show="p.role !== 'cliente' && !p.invited_at" @click="ativarPessoa(p)" title="Habilitar acesso">ativar</button>
+            <!-- Inativar serve pros dois cenários -->
             <button class="btn btn-ghost text-xs" x-show="p.invited_at" @click="desconvidarPessoa(p)" title="Revogar acesso">inativar</button>
             <button class="btn btn-ghost text-xs" @click="openEditPessoa(p)">editar</button>
             <button class="btn btn-danger text-xs" @click="deletePessoa(p)">excluir</button>
@@ -2507,6 +2570,18 @@
             <option value="alta">Alta</option>
           </select>
         </div>
+        <div>
+          <label class="lbl">Tamanho</label>
+          <select class="inp" x-model="editing.tamanho">
+            <option value="">— a classificar</option>
+            <option value="mini">Mini · &lt;2h</option>
+            <option value="small">Small · 2-8h</option>
+            <option value="medio">Médio · 8-24h</option>
+            <option value="grande">Grande · 24-80h</option>
+            <option value="mini_projeto">Mini-projeto · 80h+</option>
+          </select>
+          <div class="text-[10px] text-muted mt-1">"Grande" e "Mini-projeto" sem início viram alerta antes do prazo vencer.</div>
+        </div>
         <div class="sm:col-span-2">
           <label class="lbl">Prazo</label>
           <input type="date" class="inp" x-model="editing.prazo">
@@ -2668,6 +2743,36 @@
         </select>
         <div class="text-[10px] text-muted mt-1">o Portal mostra apenas tarefas deste cliente.</div>
       </div>
+      <!-- Atributos de heurística (apenas pra time interno/admin) -->
+      <div x-show="editingPessoa.role !== 'cliente'" class="space-y-3 pt-3 border-t border-line">
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono font-semibold">heurísticas</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="lbl">Cliente principal</label>
+            <select class="inp" x-model="editingPessoa.cliente_principal_id">
+              <option :value="null">—</option>
+              <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Cliente secundário</label>
+            <select class="inp" x-model="editingPessoa.cliente_secundario_id">
+              <option :value="null">—</option>
+              <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="lbl">Capacidade · horas por semana</label>
+          <input type="number" min="0" step="1" class="inp" x-model.number="editingPessoa.capacidade_horas_semana" placeholder="40">
+          <div class="text-[10px] text-muted mt-1">base do "% alocado" e detecção de sobrecarga.</div>
+        </div>
+        <div>
+          <label class="lbl">Skills</label>
+          <input type="text" class="inp" x-model="editingPessoa._skillsRaw" placeholder="sales-cloud, lwc, apex, integracao">
+          <div class="text-[10px] text-muted mt-1">separadas por vírgula. Lowercase, sem acento, hífen no lugar de espaço.</div>
+        </div>
+      </div>
       <div x-show="editingPessoa.id" class="text-[10px] font-mono text-muted pt-2 border-t border-line">
         <div>id: <span x-text="editingPessoa.id"></span></div>
         <div x-show="editingPessoa.invited_at">convidada em: <span x-text="new Date(editingPessoa.invited_at).toLocaleString('pt-BR')"></span></div>
@@ -2734,6 +2839,7 @@ function taskFromDb(r) {
     prioridade: r.prioridade,
     esforco: Number(r.esforco) || 0,
     complexidade: r.complexidade || 'media',
+    tamanho: r.tamanho || '',
     prazo: r.prazo || '',
     status: r.status,
     subetapa: r.subetapa || 'backlog',
@@ -2756,6 +2862,7 @@ function taskToDb(t) {
     prioridade: t.prioridade,
     esforco: Number(t.esforco) || 0,
     complexidade: t.complexidade || 'media',
+    tamanho: t.tamanho || null,
     prazo: t.prazo || null,
     status: t.status,
     subetapa: t.subetapa || 'backlog',
@@ -2764,7 +2871,16 @@ function taskToDb(t) {
     tags: Array.isArray(t.tags) ? t.tags : [],
   };
 }
-function projetoFromDb(r) { return { id: r.id, nome: r.nome, clienteId: r.cliente_id }; }
+function projetoFromDb(r) {
+  return {
+    id: r.id,
+    nome: r.nome,
+    clienteId: r.cliente_id,
+    slaRespostaHoras: r.sla_resposta_horas == null ? null : +r.sla_resposta_horas,
+    slaEntregaDias:   r.sla_entrega_dias   == null ? null : +r.sla_entrega_dias,
+    orcamentoHoras:   r.orcamento_horas    == null ? null : +r.orcamento_horas,
+  };
+}
 
 function app() {
   return {
@@ -2815,7 +2931,7 @@ function app() {
     authBlock: '', // mensagem persistente quando o callback nega acesso (volta pra login)
     draggingId: '',
     dragOverCol: '',
-    editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true },
+    editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', tamanho: '', bloqueadoPor: '', visivelCliente: true },
     editingPessoa: null,
     modalPessoa: false,
     kanbanView: 'op', // 'op' (operacional, nível 2) | 'exec' (executiva, nível 1)
@@ -2884,6 +3000,9 @@ function app() {
     newCommentPublico: false,
     mentionPickerFor: '',  // '' | 'newComment' | 'newReply' | 'portalNewComment' | 'portalReplyText'
     mentionPickerQuery: '',
+    notifications: [],
+    notifPanelOpen: false,
+    _notifsSubscribed: false,
     replyingToId: '',
     newReply: '',
     newCli: '',
@@ -2945,9 +3064,12 @@ function app() {
           if (this.session && this.currentPessoa && this.tasks.length === 0) {
             await this.load();
             this.subscribeRealtime();
+            this.loadNotifications();
+            this.subscribeNotifications();
           }
           if (event === 'SIGNED_OUT') {
             this.tasks = []; this.clientes = []; this.projetos = []; this.pessoas = [];
+            this.notifications = [];
           }
         });
 
@@ -2955,6 +3077,8 @@ function app() {
           try {
             await this.load();
             this.subscribeRealtime();
+            this.loadNotifications();
+            this.subscribeNotifications();
           } finally {
             this.loading = false;
           }
@@ -2991,7 +3115,7 @@ function app() {
       } catch(_) {}
 
       // 1) por user_id já vinculado
-      const r1 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at, role, cliente_id').eq('user_id', userId).maybeSingle();
+      const r1 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at, role, cliente_id, cliente_principal_id, cliente_secundario_id, capacidade_horas_semana, skills').eq('user_id', userId).maybeSingle();
       if (r1.error) {
         console.error('[auth] lookup by user_id failed:', r1.error);
         this.toast('error', 'Erro ao buscar usuário: ' + r1.error.message, 8000);
@@ -3016,7 +3140,7 @@ function app() {
 
       // 2) por email (case-insensitive) — vincula se for primeiro login
       if (email) {
-        const r2 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at, role, cliente_id').ilike('email', email).maybeSingle();
+        const r2 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at, role, cliente_id, cliente_principal_id, cliente_secundario_id, capacidade_horas_semana, skills').ilike('email', email).maybeSingle();
         if (r2.error) {
           console.error('[auth] lookup by email failed:', r2.error);
           this.toast('error', 'Erro ao buscar usuário: ' + r2.error.message, 20000);
@@ -3161,6 +3285,129 @@ function app() {
       const url = window.location.pathname + (qs ? '?' + qs : '');
       history.replaceState(null, '', url);
     },
+    // ===================== NOTIFICATIONS =====================
+    get unreadNotifications() {
+      return this.notifications.filter(n => !n.read_at);
+    },
+    get unreadCount() { return this.unreadNotifications.length; },
+    async loadNotifications() {
+      if (!this.currentPessoa) { this.notifications = []; return; }
+      const { data, error } = await sb
+        .from('notifications')
+        .select('id, recipient_pessoa_id, kind, payload, source_task_id, source_comment_id, criado_em, read_at')
+        .eq('recipient_pessoa_id', this.currentPessoa.id)
+        .order('criado_em', { ascending: false })
+        .limit(50);
+      if (error) { console.error('[notif] load failed:', error); return; }
+      this.notifications = data || [];
+    },
+    subscribeNotifications() {
+      if (this._notifsSubscribed || !this.currentPessoa) return;
+      this._notifsSubscribed = true;
+      sb.channel('notif-' + this.currentPessoa.id)
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'notifications',
+          filter: `recipient_pessoa_id=eq.${this.currentPessoa.id}`,
+        }, (payload) => {
+          const n = payload.new;
+          this.notifications = [n, ...this.notifications].slice(0, 50);
+          // Toast leve apenas como sinal — UX silenciosa
+          this.toast('info', this.notifSummary(n), 6000);
+        })
+        .subscribe();
+    },
+    notifSummary(n) {
+      const p = n.payload || {};
+      const who = p.author || 'alguém';
+      switch (n.kind) {
+        case 'mention':            return `${who} te mencionou em uma tarefa`;
+        case 'assigned':           return `${who} te atribuiu a uma tarefa`;
+        case 'comment_on_my_task': return `${who} comentou em uma tarefa sua`;
+        case 'cliente_respondeu':  return `Cliente respondeu em uma tarefa sua`;
+        default:                   return 'nova notificação';
+      }
+    },
+    async openNotification(n) {
+      // Marca como lida e abre a task referenciada (se houver).
+      await this.markNotificationRead(n.id);
+      this.notifPanelOpen = false;
+      if (n.source_task_id) {
+        const t = this.tasks.find(x => x.id === n.source_task_id);
+        if (t) this.openEdit(t);
+      }
+    },
+    async markNotificationRead(id) {
+      const i = this.notifications.findIndex(n => n.id === id);
+      if (i < 0) return;
+      const prev = this.notifications[i];
+      if (prev.read_at) return;
+      const nowIso = new Date().toISOString();
+      this.notifications[i] = { ...prev, read_at: nowIso };
+      const { error } = await sb.from('notifications').update({ read_at: nowIso }).eq('id', id);
+      if (error) { this.notifications[i] = prev; }
+    },
+    async markAllNotificationsRead() {
+      const ids = this.unreadNotifications.map(n => n.id);
+      if (!ids.length) return;
+      const nowIso = new Date().toISOString();
+      this.notifications = this.notifications.map(n => n.read_at ? n : { ...n, read_at: nowIso });
+      await sb.from('notifications').update({ read_at: nowIso }).in('id', ids);
+    },
+    // ----- helpers pra criar notificações -----
+    async _notifyMentions(taskId, commentId, body) {
+      if (!this.currentPessoa || !body) return;
+      const re = /@([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9]*)/g;
+      const found = new Set();
+      let m;
+      while ((m = re.exec(body)) !== null) found.add(m[1]);
+      if (!found.size) return;
+      const recipients = this.pessoas
+        .filter(p => p.role !== 'cliente')
+        .filter(p => found.has((p.nome || '').split(/\s+/)[0]))
+        .filter(p => p.id !== this.currentPessoa.id) // não notifica a si mesmo
+        .map(p => p.id);
+      if (!recipients.length) return;
+      const rows = recipients.map(rid => ({
+        recipient_pessoa_id: rid,
+        kind: 'mention',
+        payload: { author: this.currentPessoa.nome, task_id: taskId, comment_id: commentId },
+        source_task_id: taskId,
+        source_comment_id: commentId,
+      }));
+      await sb.from('notifications').insert(rows);
+    },
+    async _notifyAssignment(taskId, newPessoaId, oldPessoaId) {
+      if (!newPessoaId || newPessoaId === oldPessoaId) return;
+      if (this.currentPessoa && newPessoaId === this.currentPessoa.id) return; // self-assign não notifica
+      await sb.from('notifications').insert({
+        recipient_pessoa_id: newPessoaId,
+        kind: 'assigned',
+        payload: { author: this.currentPessoa ? this.currentPessoa.nome : 'app', task_id: taskId },
+        source_task_id: taskId,
+      });
+    },
+    async _notifyCommentOnTaskOwner(taskId, commentId, body, ownerPessoaId) {
+      if (!ownerPessoaId) return;
+      if (this.currentPessoa && ownerPessoaId === this.currentPessoa.id) return; // próprio dono comentando
+      await sb.from('notifications').insert({
+        recipient_pessoa_id: ownerPessoaId,
+        kind: 'comment_on_my_task',
+        payload: { author: this.currentPessoa ? this.currentPessoa.nome : 'app', task_id: taskId, comment_id: commentId, preview: (body || '').slice(0, 80) },
+        source_task_id: taskId,
+        source_comment_id: commentId,
+      });
+    },
+    async _notifyClienteRespondeu(taskId, commentId, body, ownerPessoaId) {
+      if (!ownerPessoaId) return;
+      await sb.from('notifications').insert({
+        recipient_pessoa_id: ownerPessoaId,
+        kind: 'cliente_respondeu',
+        payload: { task_id: taskId, comment_id: commentId, preview: (body || '').slice(0, 80) },
+        source_task_id: taskId,
+        source_comment_id: commentId,
+      });
+    },
+
     subscribeRealtime() {
       // Idempotente: se já assinou, não tenta de novo.
       // Sem isso, segundas chamadas (init + onAuthStateChange) crashavam
@@ -3327,9 +3574,9 @@ function app() {
     async load() {
       try {
         const [c, p, ps, t, h] = await Promise.all([
-          sb.from('clientes').select('id,nome').order('nome'),
-          sb.from('projetos').select('id,nome,cliente_id').order('nome'),
-          sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id').order('nome'),
+          sb.from('clientes').select('id,nome,tier').order('nome'),
+          sb.from('projetos').select('id,nome,cliente_id,sla_resposta_horas,sla_entrega_dias,orcamento_horas').order('nome'),
+          sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id,cliente_principal_id,cliente_secundario_id,capacidade_horas_semana,skills').order('nome'),
           sb.from('tasks').select('*').order('criado_em', { ascending: false }),
           sb.from('task_status_history')
             .select('task_id, from_status, to_status, actor_pessoa_id, actor_source, occurred_at')
@@ -3353,15 +3600,15 @@ function app() {
       if (!error) this.tasks = data.map(taskFromDb);
     },
     async refreshClientes() {
-      const { data, error } = await sb.from('clientes').select('id,nome').order('nome');
+      const { data, error } = await sb.from('clientes').select('id,nome,tier').order('nome');
       if (!error) this.clientes = data;
     },
     async refreshProjetos() {
-      const { data, error } = await sb.from('projetos').select('id,nome,cliente_id').order('nome');
+      const { data, error } = await sb.from('projetos').select('id,nome,cliente_id,sla_resposta_horas,sla_entrega_dias,orcamento_horas').order('nome');
       if (!error) this.projetos = data.map(projetoFromDb);
     },
     async refreshPessoas() {
-      const { data, error } = await sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id').order('nome');
+      const { data, error } = await sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id,cliente_principal_id,cliente_secundario_id,capacidade_horas_semana,skills').order('nome');
       if (!error) this.pessoas = data;
     },
     async convidarPessoa(p) {
@@ -3385,6 +3632,24 @@ function app() {
         return;
       }
       this.toast('success', `Convite enviado para ${p.email}`);
+    },
+    async ativarPessoa(p) {
+      // Pra interno/admin: só marca invited_at (login é via Google, não precisa magic link).
+      if (!p.email) {
+        this.toast('error', `${p.nome} não tem email. Edite a pessoa antes de ativar.`);
+        return;
+      }
+      const nowIso = new Date().toISOString();
+      const i = this.pessoas.findIndex(x => x.id === p.id);
+      const prev = i >= 0 ? this.pessoas[i] : null;
+      if (i >= 0) this.pessoas[i] = { ...prev, invited_at: nowIso };
+      const { error } = await sb.from('pessoas').update({ invited_at: nowIso }).eq('id', p.id);
+      if (error) {
+        if (prev) this.pessoas[i] = prev;
+        this.toast('error', 'Erro ao ativar: ' + error.message);
+        return;
+      }
+      this.toast('success', `${p.nome} ativada. Já pode entrar com Google.`);
     },
     desconvidarPessoa(p) {
       this.askConfirm(
@@ -3877,7 +4142,7 @@ function app() {
 
     // ===================== HELPERS =====================
     blankTask() {
-      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true, tags: [] };
+      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', tamanho: '', bloqueadoPor: '', visivelCliente: true, tags: [] };
     },
     normalizeTag(s) {
       return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24);
@@ -4526,35 +4791,46 @@ function app() {
       const body = (this.portalNewComment || '').trim();
       if (!body || !this.portalTask) return;
       const cliNome = (this.portalCliente && this.portalCliente.nome) || 'cliente';
-      const { error } = await sb.from('task_comments').insert({
+      const { data, error } = await sb.from('task_comments').insert({
         task_id: this.portalTask.id,
         author: cliNome,
         body,
         author_pessoa_id: null,
         visivel_cliente: true,
         from_cliente: true,
-      });
+      }).select('id').single();
       if (error) { this.toast('error', 'Erro ao comentar: ' + error.message); return; }
       this.portalNewComment = '';
       await this.loadPortalComments(this.portalTask.id);
       this.toast('success', 'Comentário enviado.');
+      // Notifica responsável da task que cliente comentou
+      try {
+        if (this.portalTask.pessoaId) {
+          await this._notifyClienteRespondeu(this.portalTask.id, data && data.id, body, this.portalTask.pessoaId);
+        }
+      } catch (e) { console.warn('[notif] portal comment notify failed:', e); }
     },
     async submitJaRespondi() {
       const body = (this.portalReplyText || '').trim();
       if (!body || !this.portalTask) return;
       const cliNome = (this.portalCliente && this.portalCliente.nome) || 'cliente';
-      const { error } = await sb.from('task_comments').insert({
+      const { data, error } = await sb.from('task_comments').insert({
         task_id: this.portalTask.id,
         author: cliNome,
         body: '✓ Já respondi: ' + body,
         author_pessoa_id: null,
         visivel_cliente: true,
         from_cliente: true,
-      });
+      }).select('id').single();
       if (error) { this.toast('error', 'Erro: ' + error.message); return; }
       this.portalReplyText = '';
       await this.loadPortalComments(this.portalTask.id);
       this.toast('success', 'Sua resposta foi enviada ao time. Eles vão verificar.');
+      try {
+        if (this.portalTask.pessoaId) {
+          await this._notifyClienteRespondeu(this.portalTask.id, data && data.id, body, this.portalTask.pessoaId);
+        }
+      } catch (e) { console.warn('[notif] já respondi notify failed:', e); }
     },
     portalTaskTimeline(t) {
       // Linha do tempo simplificada e humanizada
@@ -5032,6 +5308,121 @@ function app() {
       }
     },
 
+    // Heurísticas pré-IA — Onda A. Detector determinístico (sem LLM).
+    // Retorna lista ordenada de alertas pra mostrar no banner do Dashboard.
+    get heuristicAlerts() {
+      const out = [];
+      const now = Date.now();
+      const today = new Date(); today.setHours(0,0,0,0);
+      const todayIso = today.toISOString().slice(0,10);
+      const in10 = new Date(today); in10.setDate(today.getDate() + 10);
+      const in10Iso = in10.toISOString().slice(0,10);
+      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+
+      // 1. Tarefa grande/mini-projeto sem início, prazo em até 10d
+      const grandes = ativas.filter(t =>
+        (t.tamanho === 'grande' || t.tamanho === 'mini_projeto') &&
+        t.subetapa === 'backlog' &&
+        t.prazo && t.prazo >= todayIso && t.prazo <= in10Iso
+      );
+      if (grandes.length) {
+        out.push({
+          severity: 'alta',
+          kind: 'grande-sem-inicio',
+          titulo: `${grandes.length} tarefa(s) grande(s) sem início e prazo a ≤10 dias`,
+          detalhe: 'Iniciar agora ou redimensionar. Tarefas grandes/mini-projeto demandam buffer.',
+          taskIds: grandes.map(t => t.id),
+        });
+      }
+
+      // 2. Sobrecarga real: pessoa com horas alocadas > capacidade
+      const cargaPorPessoa = new Map();
+      for (const t of ativas) {
+        if (!t.pessoaId) continue;
+        const cur = cargaPorPessoa.get(t.pessoaId) || 0;
+        cargaPorPessoa.set(t.pessoaId, cur + this.effEsforco(t));
+      }
+      const sobrecarregados = [];
+      for (const p of this.pessoas) {
+        if (p.role === 'cliente') continue;
+        const cap = +p.capacidade_horas_semana || 40;
+        const horas = cargaPorPessoa.get(p.id) || 0;
+        if (horas > cap) {
+          sobrecarregados.push({ p, horas, cap, pct: Math.round((horas / cap) * 100) });
+        }
+      }
+      if (sobrecarregados.length) {
+        sobrecarregados.sort((a,b) => b.pct - a.pct);
+        const top = sobrecarregados.slice(0, 3).map(s => `${s.p.nome.split(' ')[0]} (${s.pct}%)`).join(', ');
+        out.push({
+          severity: 'alta',
+          kind: 'sobrecarga',
+          titulo: `${sobrecarregados.length} pessoa(s) acima da capacidade semanal`,
+          detalhe: `Top: ${top}. Considerar redistribuição.`,
+          pessoaIds: sobrecarregados.map(s => s.p.id),
+        });
+      }
+
+      // 3. Cliente estratégico com atrasada(s)
+      const tierMap = new Map(this.clientes.map(c => [c.id, c.tier]));
+      const atrasadasEstrategicas = ativas
+        .filter(t => this.atrasada(t) && tierMap.get(t.clienteId) === 'estrategico');
+      if (atrasadasEstrategicas.length) {
+        const porCli = {};
+        atrasadasEstrategicas.forEach(t => {
+          const n = this.nomeCliente(t.clienteId);
+          porCli[n] = (porCli[n] || 0) + 1;
+        });
+        const detalhe = Object.entries(porCli).map(([n,q]) => `${n}: ${q}`).join(' · ');
+        out.push({
+          severity: 'alta',
+          kind: 'tier-estrategico-atrasado',
+          titulo: `${atrasadasEstrategicas.length} tarefa(s) atrasada(s) em cliente(s) estratégico(s)`,
+          detalhe,
+          taskIds: atrasadasEstrategicas.map(t => t.id),
+        });
+      }
+
+      // 4. Bloqueio aguardando cliente há +5 dias
+      const bloqLongos = ativas.filter(t =>
+        t.subetapa === 'bloqueado' &&
+        t.bloqueadoPor === 'cliente' &&
+        this.agingDays(t) >= 5
+      );
+      if (bloqLongos.length) {
+        out.push({
+          severity: 'media',
+          kind: 'bloqueio-cliente-longo',
+          titulo: `${bloqLongos.length} tarefa(s) aguardando cliente há +5 dias`,
+          detalhe: 'Escalação direta com sponsor recomendada.',
+          taskIds: bloqLongos.map(t => t.id),
+        });
+      }
+
+      // 5. SLA de entrega quase vencido (projeto com sla_entrega_dias)
+      const projMap = new Map(this.projetos.map(p => [p.id, p]));
+      const slaQuaseVencido = ativas.filter(t => {
+        const proj = projMap.get(t.projetoId);
+        if (!proj || !proj.slaEntregaDias) return false;
+        if (!t.criadoEm) return false;
+        const aging = (now - t.criadoEm) / 86400000;
+        return aging >= proj.slaEntregaDias * 0.8 && aging < proj.slaEntregaDias * 1.2;
+      });
+      if (slaQuaseVencido.length) {
+        out.push({
+          severity: 'media',
+          kind: 'sla-iminente',
+          titulo: `${slaQuaseVencido.length} tarefa(s) próximas do SLA contratado`,
+          detalhe: 'Verificar entrega em projetos com SLA configurado.',
+          taskIds: slaQuaseVencido.map(t => t.id),
+        });
+      }
+
+      // Ordena por severity (alta antes)
+      const sevRank = { alta: 0, media: 1, baixa: 2 };
+      out.sort((a,b) => (sevRank[a.severity] ?? 9) - (sevRank[b.severity] ?? 9));
+      return out;
+    },
     get throughputSemanas() {
       // últimas 8 semanas (seg-dom), ordem: mais antiga → atual
       const completed = this._completedWithTimes;
@@ -5318,6 +5709,12 @@ function app() {
       }
       // Substitui temp pelo registro real (realtime também trariam, mas evita duplicar visual)
       this.editingComments = this.editingComments.map(c => c.id === tempId ? data : c);
+      // Notificações: mentions + dono da task (se outro)
+      try {
+        await this._notifyMentions(this.editing.id, data.id, body);
+        const owner = this.editing.pessoaId;
+        if (owner) await this._notifyCommentOnTaskOwner(this.editing.id, data.id, body, owner);
+      } catch (e) { console.warn('[notif] postComment notify failed:', e); }
     },
     async loadHistory(taskId) {
       if (!taskId) { this.editingHistory = []; return; }
@@ -5358,6 +5755,7 @@ function app() {
             prioridade: e.prioridade, esforco: +e.esforco || 0,
             prazo: e.prazo || '', status: e.status, subetapa: e.subetapa,
             complexidade: e.complexidade || 'media',
+            tamanho: e.tamanho || '',
             bloqueadoPor: e.subetapa === 'bloqueado' ? (e.bloqueadoPor || '') : '',
             visivelCliente: e.visivelCliente !== false,
             tags: Array.isArray(e.tags) ? [...e.tags] : [],
@@ -5379,6 +5777,12 @@ function app() {
             actor_source: 'app', occurred_at: nowIso,
           });
         }
+        // Notifica novo responsável (assignment)
+        try {
+          if (prev && prev.pessoaId !== e.pessoaId) {
+            await this._notifyAssignment(e.id, e.pessoaId, prev.pessoaId);
+          }
+        } catch (err) { console.warn('[notif] assignment notify failed:', err); }
       } else {
         // Insert
         payload.status_em = nowIso;
@@ -5500,6 +5904,11 @@ function app() {
         email: '',
         role: 'interno',
         cliente_id: null,
+        cliente_principal_id: null,
+        cliente_secundario_id: null,
+        capacidade_horas_semana: 40,
+        skills: [],
+        _skillsRaw: '',
         invited_at: null,
         user_id: null,
       };
@@ -5507,12 +5916,18 @@ function app() {
     },
     renomeiaPessoa(p) { this.openRename('pessoa', p); },
     openEditPessoa(p) {
+      const skills = Array.isArray(p.skills) ? p.skills : [];
       this.editingPessoa = {
         id: p.id,
         nome: p.nome || '',
         email: p.email || '',
         role: p.role || 'interno',
         cliente_id: p.cliente_id || null,
+        cliente_principal_id: p.cliente_principal_id || null,
+        cliente_secundario_id: p.cliente_secundario_id || null,
+        capacidade_horas_semana: p.capacidade_horas_semana == null ? 40 : +p.capacidade_horas_semana,
+        skills,
+        _skillsRaw: skills.join(', '),
         invited_at: p.invited_at,
         user_id: p.user_id,
       };
@@ -5528,11 +5943,20 @@ function app() {
         this.toast('error', 'Cliente externo precisa de um cliente vinculado.');
         return;
       }
+      // Skills: parse do _skillsRaw (string CSV) → array normalizado
+      const rawSkills = (e._skillsRaw || '').toString();
+      const skills = rawSkills.split(/[,;]/)
+        .map(s => s.trim().toLowerCase().replace(/\s+/g, '-'))
+        .filter(Boolean);
       const payload = {
         nome,
         email: email || null,
         role: e.role || 'interno',
         cliente_id: e.role === 'cliente' ? e.cliente_id : null,
+        cliente_principal_id: e.role !== 'cliente' ? (e.cliente_principal_id || null) : null,
+        cliente_secundario_id: e.role !== 'cliente' ? (e.cliente_secundario_id || null) : null,
+        capacidade_horas_semana: e.role !== 'cliente' ? (+e.capacidade_horas_semana || 40) : 40,
+        skills: e.role !== 'cliente' ? skills : [],
       };
       if (e.id) {
         // Update
@@ -5553,7 +5977,7 @@ function app() {
         const optimistic = { id: tempId, ...payload, invited_at: null, user_id: null };
         this.pessoas = [...this.pessoas, optimistic].sort((a,b) => a.nome.localeCompare(b.nome));
         this.modalPessoa = false;
-        const { data, error } = await sb.from('pessoas').insert(payload).select('id, nome, email, user_id, invited_at, role, cliente_id').single();
+        const { data, error } = await sb.from('pessoas').insert(payload).select('id, nome, email, user_id, invited_at, role, cliente_id, cliente_principal_id, cliente_secundario_id, capacidade_horas_semana, skills').single();
         if (error) {
           this.pessoas = this.pessoas.filter(p => p.id !== tempId);
           this.toast('error', 'Erro: ' + error.message);
