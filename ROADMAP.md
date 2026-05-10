@@ -610,6 +610,92 @@ Decisão tomada em maio/2026, piloto Pão e Talho.
 | 8 | "Já respondi" cria comment + task continua bloqueada → time triaga manualmente |
 | + | Adoption também escondida pro role=interno |
 
+### Heurísticas avançadas (pré-IA)
+
+Camada de atributos novos + regras determinísticas que aumentam a capacidade de análise antes de entrar com IA. Custo de implementação baixo a médio, valor analítico alto.
+
+#### Atributos a adicionar
+
+##### Em `tasks`
+
+| Campo | Tipo | Descrição | ROI |
+|---|---|---|---|
+| `tamanho` | enum (`mini`/`small`/`medio`/`grande`/`mini_projeto`) | Ortogonal a esforço; muda regra de "está em risco?" — grande sem início é vermelho mesmo com prazo distante. | ⭐⭐⭐ |
+| `tipo_trabalho` | enum (`config`/`dev`/`analise`/`teste`/`treinamento`/`escrita`/`comunicacao`) | Match com skill da pessoa; balanceia carga por especialidade. | ⭐⭐ |
+| `depende_de` | uuid → tasks(id), nullable | Detecta cadeias travadas; mostra "X tasks esperando essa". | ⭐⭐ |
+| `reopen_count` | int default 0 (incrementa via trigger ao sair de `concluido`) | Sinal de qualidade frágil; alerta se ≥2 no mês. | ⭐⭐ |
+| `tempo_real_gasto` | numeric, opcional | Calibra esforço, alimenta sugestão futura de estimativa. | ⭐ |
+| `entregavel_cliente` | bool | Separa milestone de tarefa interna; só os `true` viram destaque no Portal. | ⭐ |
+| `tag_risco` | text array | jurídico / compliance / dependência externa / técnico. | ⭐ |
+
+##### Em `pessoas` (apenas `interno`/`admin`)
+
+| Campo | Tipo | Descrição | ROI |
+|---|---|---|---|
+| `cliente_principal_id` | uuid → clientes | Quem é dono primário desse cliente. | ⭐⭐⭐ |
+| `cliente_secundario_id` | uuid → clientes | Backup / dono secundário. | ⭐⭐⭐ |
+| `capacidade_horas_semana` | int default 40 | Base do "% alocado"; alimenta sobrecarga real. | ⭐⭐⭐ |
+| `skills` | text array | sales-cloud, service-cloud, apex, lwc, integração, marketing-cloud, dataloader, etc. | ⭐⭐⭐ |
+| `senioridade` | enum (`jr`/`pl`/`sr`/`lider`) | Heurísticas de "sr ocupado com mini" e "jr sem revisor". | ⭐⭐ |
+| `disponibilidade` | jsonb (`{ tipo: 'full'/'part'/'ferias', inicio?, fim? }`) | Silencia alertas durante ausência. | ⭐⭐ |
+
+##### Em `projetos`
+
+| Campo | Tipo | Descrição | ROI |
+|---|---|---|---|
+| `tipo` | enum (`sustentacao`/`projeto`/`evolucao`) | Diferencia regime contratual e expectativa. | ⭐⭐ |
+| `sla_resposta_horas` / `sla_entrega_dias` | int, nullable | Alimenta breach automático. | ⭐⭐⭐ |
+| `inicio_previsto` / `fim_previsto` | date | Burndown e % executado. | ⭐⭐ |
+| `orcamento_horas` | int, nullable | Acompanhamento contratual; margem em risco. | ⭐⭐⭐ |
+| `status_comercial` | enum (`ativo`/`em_renovacao`/`em_cobranca`/`encerrando`) | Sinal soft para CEO. | ⭐ |
+| `decisor_nome` / `decisor_email` | text | Quem aprovar / fuso horário. | ⭐ |
+
+##### Em `clientes`
+
+| Campo | Tipo | Descrição | ROI |
+|---|---|---|---|
+| `tier` | enum (`estrategico`/`regular`/`oportunidade`) | Pondera atenção e severidade de alertas. | ⭐⭐⭐ |
+| `cadencia_reuniao` | enum (`semanal`/`quinzenal`/`mensal`/`adhoc`) + `ultima_reuniao_em` | Alerta de relacionamento frio. | ⭐⭐⭐ |
+| `mrr` ou `ticket_medio` | numeric | Pondera cliente em alertas (vermelho num estratégico vale mais). | ⭐ |
+| `risco_churn` | int 1-5 (manual) | Input executivo; vira filtro/realce. | ⭐ |
+
+#### Heurísticas habilitadas
+
+Com os atributos acima, podemos gerar alertas determinísticos (sem IA):
+
+- **Risco mesmo com prazo futuro**: "Task `grande` ou `mini_projeto` sem `data_inicio_real`, prazo a ≤10d → vermelho"
+- **SLA breach**: "Cliente Beta tem `sla_resposta_horas=24`, ticket há 36h → breach"
+- **Cadeia travada**: "3 tasks com `depende_de` na #Y, parada há 8d → escalar #Y"
+- **Sobrecarga real**: "Karen 60h alocadas vs `capacidade=40h` → 150% (vermelho); ignorar quando `disponibilidade.tipo='ferias'`"
+- **Skill mismatch**: "Task `tipo_trabalho='dev'` + tag `lwc` atribuída a alguém sem `lwc` no `skills` → sugerir realocar"
+- **Senioridade malalocada**: "`sr/lider` com >2 tasks `mini` no mês → desperdício"
+- **Jr sem revisor**: "`jr` com task `grande` → exigir mentor (campo a definir) ou alertar"
+- **Relacionamento frio**: "Cliente com `cadencia_reuniao='semanal'` e `ultima_reuniao_em` há +14d → amarelo; `tier=estrategico` → vermelho"
+- **Margem em risco**: "Projeto consumiu ≥80% de `orcamento_horas` com escopo restante >20% → alerta"
+- **Qualidade frágil**: "`reopen_count` ≥2 no mês ou ≥1 em task `tipo_trabalho='dev'` → revisar QA"
+- **Cliente em fricção**: "Cliente com ≥5 tasks `bloqueado_por='cliente'` há +7d → CEO ouvir o sponsor"
+
+#### Roteiro sugerido (3 ondas curtas)
+
+1. **Onda A — atributos baratos com alto ROI** (~1 semana de patch + UI):
+   - tasks.tamanho, pessoas.cliente_principal/secundario, pessoas.capacidade_horas_semana, pessoas.skills, clientes.tier, projetos.sla_*, projetos.orcamento_horas
+   - Filtros e visualizações novas no Backlog/Foco
+   - 4-5 heurísticas no detector (banner Dashboard) — sobrecarga real, skill mismatch básico, SLA breach, tier × atraso
+
+2. **Onda B — relacionamento e qualidade** (~1 semana):
+   - clientes.cadencia_reuniao + ultima_reuniao_em + alertas
+   - tasks.reopen_count via trigger
+   - pessoas.senioridade + heurísticas de alocação
+   - projetos.tipo + status_comercial
+
+3. **Onda C — dependências e progresso** (~2 semanas):
+   - tasks.depende_de (UI da relação é o esforço)
+   - tasks.tipo_trabalho
+   - tasks.tempo_real_gasto (input mínimo)
+   - Burndown e % executado por projeto
+
+Onda A já entrega valor mensurável; B e C escalonam.
+
 ### Onda 5+ — Diferenciação com IA
 
 **Objetivo**: usar a história acumulada do app para virar diferencial competitivo.
