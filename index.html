@@ -3124,6 +3124,11 @@ function app() {
       history.replaceState(null, '', url);
     },
     subscribeRealtime() {
+      // Idempotente: se já assinou, não tenta de novo.
+      // Sem isso, segundas chamadas (init + onAuthStateChange) crashavam
+      // com "cannot add postgres_changes callbacks ... after subscribe()".
+      if (this._realtimeSubscribed) return;
+      this._realtimeSubscribed = true;
       // Qualquer alteração nas tabelas → refetch da afetada.
       // Pré-requisito: rodar supabase/realtime.sql + api_patch_comments.sql.
       sb.channel('kliente360-changes')
