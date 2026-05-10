@@ -568,6 +568,13 @@
   .print-only .memo-amber { color: #b45309; font-weight: 600; }
   .print-only .memo-muted { color: #888; }
 
+  .print-only .memo-bar {
+    position: relative; width: 100%; height: 8px;
+    background: #f3f4f6; border-radius: 2px; overflow: hidden; display: flex;
+  }
+  .print-only .memo-bar-fill { height: 100%; background: #009900; }
+  .print-only .memo-bar-fill.late { background: #dc2626; }
+
   .print-only .memo-foot {
     margin-top: 18px; padding-top: 8px; border-top: 1px solid #e5e5e5;
     font-size: 8.5px; color: #999; font-family: 'JetBrains Mono', monospace;
@@ -1032,16 +1039,11 @@
         <h2 class="font-brand text-lg font-semibold">Capacidade vs demanda</h2>
         <span class="text-xs text-muted font-mono">decisão de contratar/cortar</span>
       </div>
-      <div class="grid grid-cols-3 gap-3 mb-3">
+      <div class="grid grid-cols-2 gap-3 md:gap-4 mb-3">
         <div class="brief-kpi">
           <div class="brief-kpi-label">Horas alocadas</div>
           <div class="brief-kpi-value" x-text="briefingCapacidade.alocado + 'h'"></div>
-          <div class="brief-kpi-delta text-muted">em tasks ativas</div>
-        </div>
-        <div class="brief-kpi">
-          <div class="brief-kpi-label">Capacidade do time</div>
-          <div class="brief-kpi-value" x-text="briefingCapacidade.capacidade + 'h/sem'"></div>
-          <div class="brief-kpi-delta text-muted" x-text="briefingCapacidade.pessoasComCap + ' pessoas com capacidade declarada'"></div>
+          <div class="brief-kpi-delta text-muted" x-text="'em tasks ativas · contra ' + briefingCapacidade.capacidade + 'h/sem disponíveis'"></div>
         </div>
         <div class="brief-kpi" :class="briefingCapacidade.utilizacaoNivel === 'alta' ? 'brief-kpi-danger' : (briefingCapacidade.utilizacaoNivel === 'baixa' ? 'brief-kpi-warn' : '')">
           <div class="brief-kpi-label">Utilização</div>
@@ -2619,14 +2621,17 @@
     </section>
 
     <section class="memo-block memo-block-table">
-      <h2>Time interno · capacidade</h2>
+      <h2>Time interno · capacidade e sobrecarga</h2>
       <table class="memo-tbl">
         <thead>
           <tr>
             <th>Pessoa</th>
-            <th class="memo-num">Tasks / Atr.</th>
-            <th class="memo-num">Horas</th>
-            <th class="memo-num">% Cap.</th>
+            <th style="width:11%">Nível</th>
+            <th style="width:7%" class="memo-num">Tasks</th>
+            <th style="width:9%" class="memo-num">Horas</th>
+            <th style="width:10%" class="memo-num">% Cap.</th>
+            <th style="width:10%" class="memo-num">Atrasadas</th>
+            <th style="width:26%">Distribuição</th>
           </tr>
         </thead>
         <tbody>
@@ -2634,19 +2639,25 @@
             <tr>
               <td>
                 <strong x-text="p.nome"></strong>
-                <span class="memo-muted" x-text="p.senioridade ? '· ' + p.senioridade : ''"></span>
                 <template x-if="p.cargaNivel==='sobrecarga'"><span class="memo-tag memo-tag-vermelho">sobrec</span></template>
                 <template x-if="p.cargaNivel==='pressao'"><span class="memo-tag memo-tag-amarelo">pressão</span></template>
+                <template x-if="p.cargaNivel==='folga'"><span class="memo-tag memo-tag-verde">folga</span></template>
               </td>
-              <td class="memo-num">
-                <span x-text="p.tasks"></span><span class="memo-muted"> / </span><span :class="p.atrasadas > 0 && 'memo-bad'" x-text="p.atrasadas"></span>
-              </td>
+              <td class="memo-muted" x-text="p.senioridade || '—'"></td>
+              <td class="memo-num" x-text="p.tasks"></td>
               <td class="memo-num" x-text="p.horas + 'h'"></td>
               <td class="memo-num">
                 <template x-if="p.pctCap != null">
                   <span x-text="p.pctCap + '%'" :class="p.cargaNivel==='sobrecarga' ? 'memo-bad' : (p.cargaNivel==='pressao' ? 'memo-amber' : (p.cargaNivel==='folga' ? 'memo-good' : ''))"></span>
                 </template>
                 <template x-if="p.pctCap == null"><span class="memo-muted">—</span></template>
+              </td>
+              <td class="memo-num" :class="p.atrasadas > 0 && 'memo-bad'" x-text="p.atrasadas"></td>
+              <td>
+                <div class="memo-bar">
+                  <div class="memo-bar-fill" :style="'width:' + p.barOk + '%'"></div>
+                  <div class="memo-bar-fill late" :style="'width:' + p.barLate + '%'"></div>
+                </div>
               </td>
             </tr>
           </template>
@@ -2655,22 +2666,35 @@
     </section>
 
     <section class="memo-block memo-block-table">
-      <h2>Clientes ativos · saúde</h2>
+      <h2>Clientes ativos · saúde, atrasos e consumo de horas orçadas</h2>
       <table class="memo-tbl">
         <thead>
           <tr>
             <th>Cliente</th>
-            <th class="memo-num">Tasks</th>
-            <th class="memo-num">Horas</th>
-            <th>Saúde</th>
+            <th style="width:11%">Tier</th>
+            <th style="width:7%" class="memo-num">Tasks</th>
+            <th style="width:8%" class="memo-num">Horas</th>
+            <th style="width:11%" class="memo-num">% Orç. (h)</th>
+            <th style="width:9%" class="memo-num">Atrasadas</th>
+            <th style="width:11%" class="memo-num">Aguard. cli.</th>
+            <th style="width:18%">Saúde</th>
           </tr>
         </thead>
         <tbody>
           <template x-for="c in reportClientesExec" :key="c.id">
             <tr>
-              <td><strong x-text="c.nome"></strong> <span class="memo-muted" x-text="c.tier ? '· ' + c.tier : ''"></span></td>
+              <td><strong x-text="c.nome"></strong></td>
+              <td x-text="c.tier || '—'" :class="!c.tier && 'memo-muted'"></td>
               <td class="memo-num" x-text="c.ativas"></td>
               <td class="memo-num" x-text="c.horas + 'h'"></td>
+              <td class="memo-num">
+                <template x-if="c.pctOrc != null">
+                  <span x-text="c.pctOrc + '%'" :class="c.pctOrc > 100 ? 'memo-bad' : (c.pctOrc > 80 ? 'memo-amber' : '')"></span>
+                </template>
+                <template x-if="c.pctOrc == null"><span class="memo-muted">—</span></template>
+              </td>
+              <td class="memo-num" :class="c.atrasadas > 0 && 'memo-bad'" x-text="c.atrasadas"></td>
+              <td class="memo-num" :class="c.bloqAguard > 0 && 'memo-amber'" x-text="c.bloqAguard"></td>
               <td>
                 <span class="memo-signal" :class="'memo-signal-' + c.sinal"></span>
                 <span x-text="c.sinalReason"></span>
