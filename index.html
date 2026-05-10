@@ -759,8 +759,13 @@
 
 <!-- ============ BACKLOG ============ -->
 <section x-show="tab==='backlog'" class="fade-up">
-  <div class="flex items-center justify-end gap-2 mb-4 md:mb-5 flex-wrap text-sm">
-    <label class="text-[11px] uppercase tracking-wider text-muted font-semibold hidden md:inline">agrupar</label>
+  <!-- ======= CONTROLES DO BACKLOG =======
+       Desktop (md+): row única à direita com agrupar + limpar + ordem manual + contador.
+       Mobile: 3 linhas claras (busca · ações com filtros e limpar · agrupar e ordenar).
+  -->
+  <!-- Linha de ações desktop -->
+  <div class="hidden md:flex items-center justify-end gap-2 mb-4 md:mb-5 flex-wrap text-sm">
+    <label class="text-[11px] uppercase tracking-wider text-muted font-semibold">agrupar</label>
     <select class="inp text-xs py-1 w-auto" x-model="groupBy" @change="collapsedGroups = []" title="Agrupar tarefas por…">
       <option value="">— sem agrupamento</option>
       <option value="pessoa">Responsável</option>
@@ -771,35 +776,20 @@
       <option value="prioridade">Prioridade</option>
       <option value="complexidade">Complexidade</option>
     </select>
-    <!-- Ordenar (somente mobile — desktop usa click no cabeçalho da coluna) -->
-    <select class="inp text-xs py-1 w-auto md:hidden" x-model="sortKey" title="Ordenar por…">
-      <option value="prazo">Ordenar: Prazo</option>
-      <option value="prioridade">Ordenar: Prioridade</option>
-      <option value="titulo">Ordenar: Título</option>
-      <option value="clienteId">Ordenar: Cliente</option>
-      <option value="projetoId">Ordenar: Projeto</option>
-      <option value="pessoaId">Ordenar: Responsável</option>
-      <option value="esforco">Ordenar: Esforço</option>
-      <option value="complexidade">Ordenar: Complexidade</option>
-      <option value="status">Ordenar: Status</option>
-    </select>
-    <button class="btn btn-ghost text-xs md:hidden" @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'" :title="sortDir === 'asc' ? 'crescente' : 'decrescente'">
-      <span x-text="sortDir === 'asc' ? '↑' : '↓'"></span>
-    </button>
     <button class="btn btn-ghost text-xs" x-show="activeFiltersCount > 0 || f.q || f.tag"
             @click="clearFilters()"
             title="Limpar todos os filtros aplicados">
       ✕ limpar filtros<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
     </button>
-    <button class="btn btn-ghost text-xs hidden md:inline-flex" :class="sortKey==='manual' && '!text-brand-dark !bg-brand-tint'"
+    <button class="btn btn-ghost text-xs" :class="sortKey==='manual' && '!text-brand-dark !bg-brand-tint'"
             @click="sortKey==='manual' ? clearManualSort() : setManualSort()"
             :title="sortKey==='manual' ? 'Sair da ordenação manual' : 'Ordenar manualmente (arrastar para reordenar)'">
       <span x-show="sortKey!=='manual'">≡ ordem manual</span>
       <span x-show="sortKey==='manual'">✓ ordem manual</span>
     </button>
-    <span class="text-muted text-[11px] uppercase tracking-wider font-semibold hidden md:inline">mostrando</span>
-    <span class="font-mono text-sm hidden md:inline" x-text="filtered.length + ' visíveis / ' + tasks.length + ' total'"></span>
-    <span class="font-mono text-xs text-muted hidden md:inline" x-show="tasks.length - filtered.length > 0" x-text="'· ' + (tasks.length - filtered.length) + ' ocultas'"></span>
+    <span class="text-muted text-[11px] uppercase tracking-wider font-semibold">mostrando</span>
+    <span class="font-mono text-sm" x-text="filtered.length + ' visíveis / ' + tasks.length + ' total'"></span>
+    <span class="font-mono text-xs text-muted" x-show="tasks.length - filtered.length > 0" x-text="'· ' + (tasks.length - filtered.length) + ' ocultas'"></span>
   </div>
 
   <!-- Filtros — ordem espelha colunas da tabela: Tarefa · Cliente · Projeto · Resp · Pri · Cmplx · Status · Tag -->
@@ -865,6 +855,55 @@
         <template x-for="t in allTags" :key="t"><option :value="t" x-text="'#' + t"></option></template>
       </select>
     </div>
+  </div>
+
+  <!-- Mobile: agrupar + ordenar (direção embutida no select) + limpar.
+       Aparece logo acima da lista de cards, depois de explorar (busca + filtros). -->
+  <div class="md:hidden grid grid-cols-2 gap-2 mb-3">
+    <select class="inp text-xs py-1.5" x-model="groupBy" @change="collapsedGroups = []" title="Agrupar tarefas por…">
+      <option value="">Agrupar: nenhum</option>
+      <option value="pessoa">Agrupar: Responsável</option>
+      <option value="cliente">Agrupar: Cliente</option>
+      <option value="projeto">Agrupar: Projeto</option>
+      <option value="status">Agrupar: Status</option>
+      <option value="subetapa">Agrupar: Etapa</option>
+      <option value="prioridade">Agrupar: Prioridade</option>
+      <option value="complexidade">Agrupar: Complexidade</option>
+    </select>
+    <select class="inp text-xs py-1.5" :value="sortKey + '|' + sortDir" @change="const [k,d] = $event.target.value.split('|'); sortKey = k; sortDir = d;" title="Ordenar por…">
+      <optgroup label="Prazo">
+        <option value="prazo|asc">Prazo · mais próximo</option>
+        <option value="prazo|desc">Prazo · mais distante</option>
+      </optgroup>
+      <optgroup label="Prioridade">
+        <option value="prioridade|asc">Prioridade · P0 → P3</option>
+        <option value="prioridade|desc">Prioridade · P3 → P0</option>
+      </optgroup>
+      <optgroup label="Etapa">
+        <option value="subetapa|asc">Etapa · backlog → concluído</option>
+        <option value="subetapa|desc">Etapa · concluído → backlog</option>
+        <option value="status|asc">Status macro · andamento → concluído</option>
+      </optgroup>
+      <optgroup label="Esforço">
+        <option value="esforco|asc">Esforço · menor → maior</option>
+        <option value="esforco|desc">Esforço · maior → menor</option>
+      </optgroup>
+      <optgroup label="Complexidade">
+        <option value="complexidade|asc">Complexidade · alta → baixa</option>
+        <option value="complexidade|desc">Complexidade · baixa → alta</option>
+      </optgroup>
+      <optgroup label="Alfabética">
+        <option value="titulo|asc">Título · A → Z</option>
+        <option value="titulo|desc">Título · Z → A</option>
+        <option value="clienteId|asc">Cliente · A → Z</option>
+        <option value="projetoId|asc">Projeto · A → Z</option>
+        <option value="pessoaId|asc">Responsável · A → Z</option>
+      </optgroup>
+    </select>
+    <button class="btn btn-ghost text-xs col-span-2" x-show="activeFiltersCount > 0 || f.q || f.tag"
+            @click="clearFilters()">
+      ✕ limpar filtros<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
+    </button>
   </div>
 
   <div class="card tbl-wrap hidden md:block">
@@ -1019,13 +1058,14 @@
                   <span class="cx" :class="'cx-'+(t.complexidade||'media')">
                     <span x-text="lblComplex(t.complexidade)"></span>
                   </span>
+                  <span class="font-mono text-muted" x-text="(t.esforco||0) + 'h'"></span>
                   <span :class="atrasada(t) && 'late'" class="font-mono" x-text="t.prazo ? fmtDateShort(t.prazo) : '—'"></span>
                 </div>
               </div>
               <div class="flex items-center gap-1.5 mt-2">
                 <span class="status text-[10px]" :data-s="t.status">
                   <span class="status-dot"></span>
-                  <span x-text="lblStatus(t.status)"></span>
+                  <span x-text="lblSub(t.subetapa)"></span>
                 </span>
                 <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" x-text="agingDays(t)+'d'"></span>
               </div>
@@ -3400,6 +3440,11 @@ function app() {
         if (k === 'status') {
           const order = { andamento:0, bloqueado:1, backlog:2, concluido:3 };
           av = order[av]; bv = order[bv];
+        }
+        if (k === 'subetapa') {
+          // Ordem natural do fluxo (não alfabética)
+          const order = Object.fromEntries(this.SUBS_FLAT.map((s, i) => [s, i]));
+          av = order[av] ?? 99; bv = order[bv] ?? 99;
         }
         if (k === 'prioridade') { av = +av.slice(1); bv = +bv.slice(1); }
         if (k === 'complexidade') {
