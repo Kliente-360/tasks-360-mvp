@@ -384,6 +384,34 @@ Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
 
 Anexos (Storage), notificações email/push, recorrência, search FTS, RLS granular por papel, multi-responsável, histórico de campos não-status.
 
+#### 📚 Backlog de benchmark (mercado) — não priorizado
+
+Lista levantada via comparação com Linear, Asana, ClickUp, Height, Motion, Jira, Notion. **Não está priorizado nem no caminho crítico** — serve como menu pra futuras ondas quando surgir dor real ou quando o produto buscar diferenciação. Reavaliar a cada 1–2 ondas.
+
+**Já temos** (riscar quando confirmado): bulk actions na tabela (etapa/pessoa/prioridade/excluir), kanban, calendário, histórico unificado de status + 9 campos, heurísticas pré-IA, multi-tenancy + RLS, realtime, Portal cliente, dependências, reopen_count, SLA por projeto.
+
+**Alto impacto, baixo esforço**
+- **Command palette (Cmd+K)** — Linear-style. Buscar task, pular pra cliente/projeto, ações rápidas (criar, mudar status). Mata fricção de navegação no single-page.
+- **Anexos** (Supabase Storage) em tasks/comments — quase obrigatório pra consultoria (briefs, prints, docs). Já listado em "Fora do protótipo".
+- **@mentions com notificação** — parser `@nome` em comments + notif. (Nota: já existe mention picker; falta validar o disparo de notif no comment.)
+- **Saved views / filtros nomeados** — "Minhas tasks atrasadas", "Aguardando cliente X". Hoje filtro é volátil.
+
+**Médio impacto, médio esforço**
+- **Recurring tasks** — reuniões semanais, relatórios mensais. Template + cron edge function.
+- **Time tracking real** (start/stop timer) vs. só `tempo_real_horas` manual. Tabela `time_entries`. Habilita billing real e relatório de utilização.
+- **iCal feed por pessoa** — sync com Google Cal/Outlook do prazo das tasks atribuídas. (Calendário in-app já existe.)
+- **Templates de projeto** — "Novo projeto Pão e Talho" instancia N tasks padrão. Onboarding de cliente novo cai de horas pra minutos.
+- **Triage inbox** (Linear-style) — fila de tasks novas sem responsável/projeto pra triar em lote.
+
+**Estratégico (depende de IA, casa com Onda 5+)**
+- **Auto-triage com IA** — IA classifica task nova (tipo_trabalho, complexidade, projeto, responsável) baseado no título/descrição. Já tem campos, falta o agente.
+- **SLA breach alerts proativos** — job que dispara notif antes de estourar `sla_*`. Não precisa de IA, mas combina com risk-scanner.
+
+**Avaliados e descartados (por ora)**
+- **Wiki/docs por projeto** (Notion-style) — fora do escopo "task manager opinativo". Cliente continua usando Notion/Drive pra docs.
+- **Mobile app nativo / PWA offline** — overhead alto vs. ganho. Web responsivo já cobre.
+- **Integrações Slack/email pra criar task** — avaliar só se virar pedido recorrente do time.
+
 ---
 
 ### Premissas de timeline
