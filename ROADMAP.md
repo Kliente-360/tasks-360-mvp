@@ -336,6 +336,47 @@ Expandir conforme decisões surgirem.
 
 ## 9. Roadmap de ondas
 
+### Status do protótipo (último update: 09/05/2026)
+
+Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
+
+#### 🔴 Caminho crítico
+
+1. **Auth (magic link)** — desligado por 2 bugs:
+   - Magic link redireciona pro app mas volta pra tela de login.
+   - `{{ .Token }}` no template do Supabase não renderiza o código no email.
+   Sem resolver, nada relacionado a roles/portal/piloto cliente faz sentido. Bloqueador real para piloto Pão e Talho.
+
+#### 🟡 Anotado, não implementado (em ordem de execução sugerida)
+
+2. **Arquivamento** de clientes/projetos/tasks — coluna `arquivado_em`, manual pra cliente/projeto, automático pra tasks `concluido` há +14d. UI: tela dedicada "Arquivo" (leaning).
+3. **Heurísticas pré-IA · Onda A** — atributos baratos com alto ROI: `tasks.tamanho`, `pessoas.cliente_principal/secundario`, `pessoas.capacidade_horas_semana`, `pessoas.skills`, `clientes.tier`, `projetos.sla_*`, `projetos.orcamento_horas`. 4-5 heurísticas novas no detector.
+4. **Heurísticas pré-IA · Onda B** — relacionamento e qualidade: cadência reunião + última reunião, `reopen_count`, senioridade, tipo de projeto.
+5. **Heurísticas pré-IA · Onda C** — dependências e progresso: `depende_de`, `tipo_trabalho`, `tempo_real_gasto`, burndown por projeto.
+
+#### 🟢 IA — depende de auth + chave Anthropic
+
+6. **Sugestão complexidade + esforço** (`ai-suggest`) — começar aqui (custo ~R$ 0,015/exec).
+7. **Resumo executivo semanal por projeto** — cron + LLM (~R$ 0,05/exec com cache).
+8. **Detector de risco antecipado** — cron diário (~R$ 0,07/exec com cache).
+9. **Auto-categorização de tags**.
+10. **Chat com seu backlog** (tool use).
+
+#### 🔵 Design
+
+11. **DESIGN_HANDOFF.md** está pronto pra entregar pra um agente de design (claude-design ou outro). Foco: tipografia + spacing + hierarquia. Tom: executivo + consultivo-produtivo. Notion como referência inicial.
+
+#### Ordem sugerida quando o auth voltar
+
+1. Resolver os 2 bugs do magic link.
+2. Cadastrar pessoa cliente externo do Pão e Talho com role=cliente; convidar.
+3. Validar Portal real com cliente (piloto).
+4. Onda A das heurísticas (semana de patch + UI, ganho mensurável).
+5. Item 1 da IA (`ai-suggest`) — primeiro feature que paga em adoção visível.
+6. Design overhaul com claude-design.
+
+---
+
 ### Premissas de timeline
 
 - **1 dev full-time competente**: MVP usável internamente em ~6 semanas; portal cliente em produção em ~9 semanas; versão completa com analytics em ~13 semanas.
