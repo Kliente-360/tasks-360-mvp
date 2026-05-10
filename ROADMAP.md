@@ -348,21 +348,20 @@ Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
 
 2. **Arquivamento** de clientes/projetos/tasks — coluna `arquivado_em`, manual pra cliente/projeto, automático pra tasks `concluido` há +14d. UI: tela dedicada "Arquivo" (leaning).
 3. **UI de `cliente.tier` e `projeto.sla_*`/`orcamento_horas` em Cadastros** — campos já existem no schema e alimentam as heurísticas Onda A; falta o form (hoje só Supabase Studio).
-4. **Tendência de lead time por cliente** (visão #2 do §10) — KPI agregado já existe; falta line/bar usando `task_status_history`. Última visão pendente do §10.
-5. **Heurísticas pré-IA · Onda B** — relacionamento e qualidade: cadência reunião + última reunião, `reopen_count`, senioridade, tipo de projeto.
-6. **Heurísticas pré-IA · Onda C** — dependências e progresso: `depende_de`, `tipo_trabalho`, `tempo_real_gasto`, burndown por projeto.
+4. **Heurísticas pré-IA · Onda B** — relacionamento e qualidade: senioridade da pessoa, `tipo_projeto`, `reopen_count` em tasks.
+5. **Heurísticas pré-IA · Onda C** — dependências e progresso: `depende_de`, `tipo_trabalho`, `tempo_real_gasto`.
 
 #### 🟢 IA — depende de chave Anthropic + orçamento
 
-7. **Sugestão complexidade + esforço** (`ai-suggest`) — começar aqui (custo ~R$ 0,015/exec).
-8. **Resumo executivo semanal por projeto** — cron + LLM (~R$ 0,05/exec com cache).
-9. **Detector de risco antecipado** — cron diário (~R$ 0,07/exec com cache).
-10. **Auto-categorização de tags**.
-11. **Chat com seu backlog** (tool use).
+6. **Sugestão complexidade + esforço** (`ai-suggest`) — começar aqui (custo ~R$ 0,015/exec).
+7. **Resumo executivo semanal por projeto** — cron + LLM (~R$ 0,05/exec com cache).
+8. **Detector de risco antecipado** — cron diário (~R$ 0,07/exec com cache).
+9. **Auto-categorização de tags**.
+10. **Chat com seu backlog** (tool use).
 
 #### 🔵 Design
 
-12. **DESIGN_HANDOFF.md** está pronto pra entregar pra um agente de design (claude-design ou outro). Foco: tipografia + spacing + hierarquia. Tom: executivo + consultivo-produtivo. Notion como referência inicial.
+11. **DESIGN_HANDOFF.md** está pronto pra entregar pra um agente de design (claude-design ou outro). Foco: tipografia + spacing + hierarquia. Tom: executivo + consultivo-produtivo. Notion como referência inicial.
 
 #### ✅ Recém-fechados (maio/2026)
 
@@ -373,16 +372,16 @@ Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
 - Pessoas: ativar/inativar pra time interno (sem reenviar link, já que login é Google).
 - Mobile header consolidado (exportar/manual/tema migrados pro menu do avatar).
 - Tamanho automático via `effEsforco` (default 4h se vazio); fora do form, só analytics.
-- Dashboard padronizado: `chartTheme()` central + 7 das 8 visões do §10 implementadas (capacidade por pessoa, saúde por projeto, aging do backlog, aguardando cliente).
+- Dashboard padronizado: `chartTheme()` central + **8/8 visões do §10** implementadas (capacidade por pessoa, saúde por projeto, aging do backlog, aguardando cliente, tendência de lead time por cliente).
 
 #### Ordem sugerida agora
 
 1. Pão e Talho real (item 1).
 2. Arquivamento + UI de tier/SLA (itens 2-3) — fechamento do caminho operacional.
-3. Tendência de lead time (item 4) — fecha o §10.
-4. Onda B das heurísticas (item 5).
-5. IA `ai-suggest` (item 7) — primeiro feature de IA que paga em adoção.
-6. Design overhaul com claude-design (item 12).
+3. Onda B das heurísticas (item 4).
+4. Onda C das heurísticas (item 5).
+5. IA `ai-suggest` (item 6) — primeiro feature de IA que paga em adoção.
+6. Design overhaul com claude-design (item 11).
 
 ---
 
@@ -883,7 +882,7 @@ Decisão: 8 visões fixas, dentro do app, sem ferramenta externa de BI.
 
 1. **Throughput semanal** ✅ — 8 semanas, bar chart com semana atual destacada (`brandDark`).
 
-2. **Lead time médio por cliente** ⚠️ — KPI agregado existe (criação→concluído). Falta gráfico de tendência por cliente.
+2. **Lead time médio por cliente** ✅ — bar horizontal com média (dias) por cliente nos últimos 90 dias, dentro do card "Velocidade da operação".
 
 3. **Capacidade por pessoa** ✅ — % de capacidade semanal alocada, stacked horizontal com overflow em vermelho. Substituiu "Carga por pessoa" cega à capacidade.
 
@@ -903,7 +902,7 @@ Decisão: 8 visões fixas, dentro do app, sem ferramenta externa de BI.
 
 - Tudo via getters Alpine + Chart.js, `chartTheme()` central com paleta semântica (brand/danger/warn/info/neutral) e `baseOpts` padronizadas.
 - Sem cache: getters reagem direto a `dashTasks` (filtro cliente/pessoa).
-- Visão 2 (lead time por cliente) ainda como KPI; falta gráfico de tendência.
+- 8/8 visões implementadas.
 
 ### Implementação técnica
 

@@ -112,7 +112,7 @@ Grid mensal. Cada dia mostra as tarefas com prazo nele. No desktop, chips com t�
 
 ### Dashboard
 
-Banner de heurísticas no topo (alertas determinísticos de risco) + KPIs hero (em andamento, backlog, bloqueadas, atrasadas) + entregas 5 semanas + calendário + velocidade (throughput 7d/30d, lead time, cycle time + bar 8 semanas) + **volume por cliente** + **capacidade por pessoa** (% da capacidade semanal alocada, vermelho ≥100%) + **saúde por projeto** (semáforo verde/âmbar/vermelho) + **aging do backlog** (faixas 0-7/8-30/30-60/60+ por status) + listas de atrasadas, bloqueadas e aguardando cliente.
+Banner de heurísticas no topo (alertas determinísticos de risco) + KPIs hero (em andamento, backlog, bloqueadas, atrasadas) + entregas 5 semanas + calendário + velocidade (throughput 7d/30d, lead time, cycle time + bar 8 semanas) + **lead time médio por cliente** (90d) + **volume por cliente** + **capacidade por pessoa** (% da capacidade semanal alocada, vermelho ≥100%) + **saúde por projeto** (semáforo verde/âmbar/vermelho) + **aging do backlog** (faixas 0-7/8-30/30-60/60+ por status) + listas de atrasadas, bloqueadas e aguardando cliente.
 
 Todos os gráficos compartilham o `chartTheme()` central — paleta semântica (brand/danger/warn/info/neutral), grid, fontes e tooltip padronizados.
 

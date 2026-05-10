@@ -1792,6 +1792,17 @@
     </div>
     <div style="height:200px"><canvas id="chartThroughput"></canvas></div>
     <div class="text-[11px] text-muted mt-2">8 semanas, segunda a domingo. Histórico começa quando o registro de status foi habilitado.</div>
+
+    <div class="border-t border-line mt-5 pt-5">
+      <div class="mb-4">
+        <div class="font-brand text-base font-semibold">Lead time médio por cliente</div>
+        <div class="text-xs text-muted mt-0.5">média de dias da criação à conclusão · últimos 90 dias</div>
+      </div>
+      <template x-if="leadTimePorCliente.length===0">
+        <div class="text-sm text-muted italic py-6">Sem tarefas concluídas no período.</div>
+      </template>
+      <div x-show="leadTimePorCliente.length>0" style="height:240px"><canvas id="chartLeadTime"></canvas></div>
+    </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-5 md:mb-6">
@@ -3087,7 +3098,7 @@ function app() {
     historyAll: [],
     mvpComments: [],
     mvpLoadedAt: 0,
-    charts: { clientes: null, capacidade: null, aging: null, timeline: null, throughput: null, mvpVolume: null, mvpDau: null },
+    charts: { clientes: null, capacidade: null, aging: null, timeline: null, throughput: null, leadtime: null, mvpVolume: null, mvpDau: null },
     printCharts: { status: null, clientes: null, throughput: null },
     reportStampDate: '',
     reportStampTime: '',
@@ -5262,6 +5273,28 @@ function app() {
         cycleTime: avg(last30.filter(c => c.cycleDays != null).map(c => c.cycleDays)),
       };
     },
+    // Lead time médio por cliente (últimos 90 dias). Insumo da visão #2
+    // do §10. Só inclui cliente com 1+ task concluída no período.
+    get leadTimePorCliente() {
+      const now = Date.now();
+      const cutoff = 90 * 86400000;
+      const taskById = new Map(this.tasks.map(t => [t.id, t]));
+      const buckets = new Map(); // cliente nome → [leadDays...]
+      for (const c of this._completedWithTimes) {
+        if (now - new Date(c.completedAt).getTime() > cutoff) continue;
+        const t = taskById.get(c.taskId);
+        if (!t) continue;
+        const nome = this.nomeCliente(t.clienteId);
+        if (!buckets.has(nome)) buckets.set(nome, []);
+        buckets.get(nome).push(c.leadDays);
+      }
+      const out = [];
+      for (const [nome, arr] of buckets.entries()) {
+        const avg = arr.reduce((a,b) => a+b, 0) / arr.length;
+        out.push({ cliente: nome, leadDays: Math.round(avg * 10) / 10, count: arr.length });
+      }
+      return out.sort((a,b) => b.leadDays - a.leadDays);
+    },
     // ====== Dados MVP ======
     async loadMvpDados() {
       // Carrega comments do app dos últimos 60 dias (com author_pessoa_id)
@@ -5736,7 +5769,7 @@ function app() {
       });
 
       // destruir charts anteriores
-      ['clientes','capacidade','timeline','throughput','aging'].forEach(k => {
+      ['clientes','capacidade','timeline','throughput','aging','leadtime'].forEach(k => {
         if (this.charts[k]) { this.charts[k].destroy(); this.charts[k] = null; }
       });
 
@@ -5883,6 +5916,42 @@ function app() {
             scales: {
               x: baseOpts.scales.x,
               y: { ...baseOpts.scales.y, ticks: { ...baseOpts.scales.y.ticks, callback: (v) => v + 'h' } }
+            }
+          }
+        });
+      }
+
+      const ltRows = this.leadTimePorCliente;
+      const ctxLT = document.getElementById('chartLeadTime');
+      if (ctxLT && ltRows.length) {
+        this.charts.leadtime = new Chart(ctxLT, {
+          type: 'bar',
+          data: {
+            labels: ltRows.map(r => r.cliente),
+            datasets: [{
+              data: ltRows.map(r => r.leadDays),
+              backgroundColor: palette.info,
+              borderRadius: 4, barThickness: 22,
+            }]
+          },
+          options: {
+            ...horizBarOpts,
+            plugins: {
+              ...baseOpts.plugins,
+              tooltip: {
+                ...baseOpts.plugins.tooltip,
+                callbacks: {
+                  title: (items) => ltRows[items[0].dataIndex].cliente,
+                  label: (c) => {
+                    const r = ltRows[c.dataIndex];
+                    return `${r.leadDays}d · ${r.count} tarefa(s)`;
+                  }
+                }
+              }
+            },
+            scales: {
+              ...horizBarOpts.scales,
+              x: { ...horizBarOpts.scales.x, ticks: { ...baseOpts.scales.x.ticks, callback: (v) => v + 'd' } },
             }
           }
         });
