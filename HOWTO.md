@@ -126,7 +126,16 @@ Em **Clientes**, o botão "editar" abre modal com nome e **tier** (estratégico 
 
 Em **Projetos**, o botão "editar" abre modal com nome, cliente e atributos de **SLA + orçamento** (resposta em horas, entrega em dias, orçamento total em horas). SLA de entrega aciona a heurística "SLA iminente" entre 80% e 120% do prazo. Os atributos aparecem como badges discretas na listagem. **Arquivar** funciona igual ao de cliente — esconde do radar, sem deletar.
 
-Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (Admin / Time Kliente 360 / Cliente externo) e — quando perfil for "Cliente externo" — o cliente vinculado.
+Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (Admin / Time Kliente 360 / Cliente externo) e — quando perfil for "Cliente externo" — o cliente vinculado. Pra time interno: capacidade semanal, skills e **senioridade** (júnior/pleno/sênior/lead). Júnior + complexidade alta vira alerta na heurística.
+
+Em **Projetos**, agora também tem **tipo** (implantação/sustentação/discovery/projeto), badge na lista.
+
+Tasks têm contador `reopenCount` automático (incrementado por trigger SQL quando voltam de "concluído" pra qualquer outro status). Aparece como badge "reaberta Nx" no header do modal. Tarefas reabertas 2+ vezes viram alerta na heurística.
+
+Tasks também ganham 3 atributos extras (Onda C):
+- **Tipo de trabalho** (bug/feature/discovery/manutenção/admin) — analytics + futura IA.
+- **Tempo real (horas)** — opcional, manual. Se >1.5x do esforço estimado, vira alerta.
+- **Dependências** — chips com tasks que precisam ser concluídas antes. Candidatas filtram por mesmo cliente, exceto a própria e as já concluídas. Se uma task em backlog tem dependência aberta e prazo ≤14d, vira alerta de severidade alta.
 
 Botões de acesso variam por perfil:
 - **Cliente externo** (login via magic link): "convidar" / "reenviar link" / "inativar"

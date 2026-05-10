@@ -2024,6 +2024,7 @@
           <div class="min-w-0">
             <div class="text-sm font-medium flex items-center gap-2 flex-wrap">
               <span x-text="p.nome"></span>
+              <span x-show="p.tipo" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" x-text="p.tipo"></span>
               <span x-show="p.slaEntregaDias" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" :title="'SLA de entrega: ' + p.slaEntregaDias + ' dias'" x-text="'SLA ' + p.slaEntregaDias + 'd'"></span>
               <span x-show="p.orcamentoHoras" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" :title="'Orçamento: ' + p.orcamentoHoras + ' horas'" x-text="p.orcamentoHoras + 'h'"></span>
               <span x-show="p.arquivadoEm" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Projeto arquivado">arquivado</span>
@@ -2061,6 +2062,7 @@
                 <span x-text="p.nome"></span>
                 <span x-show="p.role === 'admin'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)" title="Acesso total">admin</span>
                 <span x-show="p.role === 'cliente'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309" title="Cliente externo — só vê o Portal">cliente externo</span>
+                <span x-show="p.senioridade && p.role !== 'cliente'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" x-text="p.senioridade"></span>
                 <!-- Estado de acesso, semantizado por role -->
                 <span x-show="p.invited_at && p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)">acesso ativo</span>
                 <span x-show="p.role === 'cliente' && p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">convidada · aguardando 1º login</span>
@@ -2586,7 +2588,10 @@
 <div x-show="modal" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modal=false" x-transition.opacity>
   <div class="bg-elev rounded-lg w-full max-w-2xl modal-card" x-transition>
     <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-line">
-      <div class="font-brand text-lg md:text-xl font-semibold" x-text="editing.id ? 'Editar tarefa' : 'Nova tarefa'"></div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="font-brand text-lg md:text-xl font-semibold" x-text="editing.id ? 'Editar tarefa' : 'Nova tarefa'"></span>
+        <span x-show="editing.id && (editing.reopenCount || 0) > 0" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--p1-soft);color:var(--p1)" :title="'Reaberta ' + editing.reopenCount + ' vez(es)'" x-text="'reaberta ' + editing.reopenCount + 'x'"></span>
+      </div>
       <button class="btn btn-ghost btn-icon" @click="modal=false">✕</button>
     </div>
     <div class="px-4 md:px-6 py-4 md:py-5 space-y-4 overflow-y-auto" style="max-height:70vh">
@@ -2706,6 +2711,48 @@
         <div class="sm:col-span-2 flex items-center gap-2 pt-1">
           <input type="checkbox" id="visivelClienteCk" class="cursor-pointer" x-model="editing.visivelCliente">
           <label for="visivelClienteCk" class="text-sm text-ink-soft cursor-pointer select-none">Tarefa visível ao cliente no Portal</label>
+        </div>
+      </div>
+
+      <!-- Onda C: tipo de trabalho, tempo real, dependências -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 pt-3 mt-2 border-t border-line">
+        <div>
+          <label class="lbl">Tipo de trabalho</label>
+          <select class="inp" x-model="editing.tipoTrabalho">
+            <option value="">—</option>
+            <option value="bug">Bug</option>
+            <option value="feature">Feature</option>
+            <option value="discovery">Discovery</option>
+            <option value="manutencao">Manutenção</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Tempo real · horas</label>
+          <input type="number" min="0" step="0.5" class="inp" x-model="editing.tempoRealHoras" placeholder="—">
+          <div class="text-[10px] text-muted mt-1">se &gt;1.5x do esforço estimado, vira alerta.</div>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="lbl">Dependências</label>
+          <div class="flex flex-wrap gap-1.5 mb-2" x-show="editing.dependencias && editing.dependencias.length > 0">
+            <template x-for="depId in (editing.dependencias || [])" :key="depId">
+              <span class="text-xs px-2 py-1 rounded font-mono inline-flex items-center gap-1.5"
+                    :style="statusTask(depId) === 'concluido' ? 'background:var(--brand-soft);color:var(--brand-dark)' : 'background:var(--p1-soft);color:var(--p1)'">
+                <span x-text="(statusTask(depId) === 'concluido' ? '✓ ' : '○ ') + nomeTask(depId)"></span>
+                <button type="button" class="text-base leading-none opacity-60 hover:opacity-100" @click="removeDependencia(depId)" title="remover">×</button>
+              </span>
+            </template>
+          </div>
+          <div class="flex gap-2">
+            <select class="inp flex-1" x-model="newDepId">
+              <option value="">— adicionar dependência —</option>
+              <template x-for="t in _candidatesDependencia" :key="t.id">
+                <option :value="t.id" x-text="t.titulo + ' · ' + (nomeProjeto(t.projetoId) || nomeCliente(t.clienteId) || 'sem projeto')"></option>
+              </template>
+            </select>
+            <button type="button" class="btn btn-ghost text-sm" @click="addDependencia()" :disabled="!newDepId">+ adicionar</button>
+          </div>
+          <div class="text-[10px] text-muted mt-1">tarefas em backlog cuja dependência ainda não foi concluída e tem prazo em ≤14d viram alerta.</div>
         </div>
       </div>
 
@@ -2879,10 +2926,23 @@
             </select>
           </div>
         </div>
-        <div>
-          <label class="lbl">Capacidade · horas por semana</label>
-          <input type="number" min="0" step="1" class="inp" x-model.number="editingPessoa.capacidade_horas_semana" placeholder="40">
-          <div class="text-[10px] text-muted mt-1">base do "% alocado" e detecção de sobrecarga.</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="lbl">Capacidade · horas/semana</label>
+            <input type="number" min="0" step="1" class="inp" x-model.number="editingPessoa.capacidade_horas_semana" placeholder="40">
+            <div class="text-[10px] text-muted mt-1">base do "% alocado".</div>
+          </div>
+          <div>
+            <label class="lbl">Senioridade</label>
+            <select class="inp" x-model="editingPessoa.senioridade">
+              <option value="">—</option>
+              <option value="junior">Júnior</option>
+              <option value="pleno">Pleno</option>
+              <option value="senior">Sênior</option>
+              <option value="lead">Lead</option>
+            </select>
+            <div class="text-[10px] text-muted mt-1">júnior + complexidade alta = alerta.</div>
+          </div>
         </div>
         <div>
           <label class="lbl">Skills</label>
@@ -2955,6 +3015,16 @@
         <select class="inp" x-model="editingProjeto.clienteId">
           <option value="">— selecionar cliente —</option>
           <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+        </select>
+      </div>
+      <div>
+        <label class="lbl">Tipo</label>
+        <select class="inp" x-model="editingProjeto.tipo">
+          <option value="">—</option>
+          <option value="implantacao">Implantação · entrega de uma frente</option>
+          <option value="sustentacao">Sustentação · contínuo</option>
+          <option value="discovery">Discovery · investigação</option>
+          <option value="projeto">Projeto · escopo fechado</option>
         </select>
       </div>
       <div class="space-y-3 pt-3 border-t border-line">
@@ -3047,6 +3117,9 @@ function taskFromDb(r) {
     subetapaEm: r.subetapa_em ? new Date(r.subetapa_em).getTime() : 0,
     ordem: r.ordem == null ? null : Number(r.ordem),
     tags: Array.isArray(r.tags) ? r.tags : [],
+    reopenCount: Number(r.reopen_count) || 0,
+    tipoTrabalho: r.tipo_trabalho || '',
+    tempoRealHoras: r.tempo_real_horas == null ? null : +r.tempo_real_horas,
   };
 }
 function taskToDb(t) {
@@ -3065,6 +3138,8 @@ function taskToDb(t) {
     bloqueado_por: t.bloqueadoPor || null,
     visivel_cliente: t.visivelCliente !== false,
     tags: Array.isArray(t.tags) ? t.tags : [],
+    tipo_trabalho: t.tipoTrabalho || null,
+    tempo_real_horas: t.tempoRealHoras == null || t.tempoRealHoras === '' ? null : +t.tempoRealHoras,
   };
 }
 function projetoFromDb(r) {
@@ -3075,6 +3150,7 @@ function projetoFromDb(r) {
     slaRespostaHoras: r.sla_resposta_horas == null ? null : +r.sla_resposta_horas,
     slaEntregaDias:   r.sla_entrega_dias   == null ? null : +r.sla_entrega_dias,
     orcamentoHoras:   r.orcamento_horas    == null ? null : +r.orcamento_horas,
+    tipo:             r.tipo || '',
     arquivadoEm:      r.arquivado_em || null,
   };
 }
@@ -3218,6 +3294,8 @@ function app() {
     newCli: '',
     newProj: { nome: '', clienteId: '' },
     historyAll: [],
+    taskDeps: [], // [{task_id, depende_de_id}, ...] do banco, fonte da verdade
+    newDepId: '', // select de adicionar dependência no modal
     mvpComments: [],
     mvpLoadedAt: 0,
     charts: { clientes: null, capacidade: null, aging: null, timeline: null, throughput: null, leadtime: null, mvpVolume: null, mvpDau: null },
@@ -3325,7 +3403,7 @@ function app() {
       } catch(_) {}
 
       // 1) por user_id já vinculado
-      const r1 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at, role, cliente_id, cliente_principal_id, cliente_secundario_id, capacidade_horas_semana, skills').eq('user_id', userId).maybeSingle();
+      const r1 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at, role, cliente_id, cliente_principal_id, cliente_secundario_id, capacidade_horas_semana,skills,senioridade').eq('user_id', userId).maybeSingle();
       if (r1.error) {
         console.error('[auth] lookup by user_id failed:', r1.error);
         this.toast('error', 'Erro ao buscar usuário: ' + r1.error.message, 8000);
@@ -3350,7 +3428,7 @@ function app() {
 
       // 2) por email (case-insensitive) — vincula se for primeiro login
       if (email) {
-        const r2 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at, role, cliente_id, cliente_principal_id, cliente_secundario_id, capacidade_horas_semana, skills').ilike('email', email).maybeSingle();
+        const r2 = await sb.from('pessoas').select('id, nome, email, user_id, invited_at, role, cliente_id, cliente_principal_id, cliente_secundario_id, capacidade_horas_semana,skills,senioridade').ilike('email', email).maybeSingle();
         if (r2.error) {
           console.error('[auth] lookup by email failed:', r2.error);
           this.toast('error', 'Erro ao buscar usuário: ' + r2.error.message, 20000);
@@ -3783,23 +3861,25 @@ function app() {
     },
     async load() {
       try {
-        const [c, p, ps, t, h] = await Promise.all([
+        const [c, p, ps, t, h, td] = await Promise.all([
           sb.from('clientes').select('id,nome,tier,arquivado_em').order('nome'),
-          sb.from('projetos').select('id,nome,cliente_id,sla_resposta_horas,sla_entrega_dias,orcamento_horas,arquivado_em').order('nome'),
-          sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id,cliente_principal_id,cliente_secundario_id,capacidade_horas_semana,skills').order('nome'),
+          sb.from('projetos').select('id,nome,cliente_id,sla_resposta_horas,sla_entrega_dias,orcamento_horas,tipo,arquivado_em').order('nome'),
+          sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id,cliente_principal_id,cliente_secundario_id,capacidade_horas_semana,skills,senioridade').order('nome'),
           sb.from('tasks').select('*').order('criado_em', { ascending: false }),
           sb.from('task_status_history')
             .select('task_id, from_status, to_status, actor_pessoa_id, actor_source, occurred_at')
             .order('occurred_at', { ascending: false })
             .limit(5000),
+          sb.from('task_dependencies').select('task_id, depende_de_id'),
         ]);
-        const err = c.error || p.error || ps.error || t.error || h.error;
+        const err = c.error || p.error || ps.error || t.error || h.error || td.error;
         if (err) throw err;
         this.clientes = c.data.map(clienteFromDb);
         this.projetos = p.data.map(projetoFromDb);
         this.pessoas  = ps.data;
         this.tasks    = t.data.map(taskFromDb);
         this.historyAll = h.data || [];
+        this.taskDeps = td.data || [];
       } catch (e) {
         console.error('Falha ao carregar do Supabase', e);
         this.toast('error', 'Falha ao carregar: ' + (e.message || e));
@@ -3814,11 +3894,11 @@ function app() {
       if (!error) this.clientes = data.map(clienteFromDb);
     },
     async refreshProjetos() {
-      const { data, error } = await sb.from('projetos').select('id,nome,cliente_id,sla_resposta_horas,sla_entrega_dias,orcamento_horas,arquivado_em').order('nome');
+      const { data, error } = await sb.from('projetos').select('id,nome,cliente_id,sla_resposta_horas,sla_entrega_dias,orcamento_horas,tipo,arquivado_em').order('nome');
       if (!error) this.projetos = data.map(projetoFromDb);
     },
     async refreshPessoas() {
-      const { data, error } = await sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id,cliente_principal_id,cliente_secundario_id,capacidade_horas_semana,skills').order('nome');
+      const { data, error } = await sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id,cliente_principal_id,cliente_secundario_id,capacidade_horas_semana,skills,senioridade').order('nome');
       if (!error) this.pessoas = data;
     },
     async convidarPessoa(p) {
@@ -4352,7 +4432,7 @@ function app() {
 
     // ===================== HELPERS =====================
     blankTask() {
-      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true, tags: [] };
+      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true, tags: [], reopenCount: 0, tipoTrabalho: '', tempoRealHoras: '', dependencias: [] };
     },
     normalizeTag(s) {
       return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24);
@@ -4450,6 +4530,25 @@ function app() {
       const ativos = this.projetosAtivos;
       if (!cid) return ativos;
       return ativos.filter(p => p.clienteId === cid);
+    },
+    get _depsByTask() {
+      const m = new Map();
+      for (const d of this.taskDeps) {
+        if (!m.has(d.task_id)) m.set(d.task_id, []);
+        m.get(d.task_id).push(d.depende_de_id);
+      }
+      return m;
+    },
+    getDependencias(taskId) {
+      return this._depsByTask.get(taskId) || [];
+    },
+    nomeTask(id) {
+      const t = this.tasks.find(x => x.id === id);
+      return t ? t.titulo : '(removida)';
+    },
+    statusTask(id) {
+      const t = this.tasks.find(x => x.id === id);
+      return t ? t.status : '';
     },
     get clientesAtivos() {
       return this.clientes.filter(c => !c.arquivadoEm);
@@ -5674,6 +5773,73 @@ function app() {
         });
       }
 
+      // 6. Onda B — complexidade alta atribuída a júnior
+      const pessoaMap = new Map(this.pessoas.map(p => [p.id, p]));
+      const juniorComplex = ativas.filter(t => {
+        if (t.complexidade !== 'alta' || !t.pessoaId) return false;
+        const p = pessoaMap.get(t.pessoaId);
+        return p && p.senioridade === 'junior';
+      });
+      if (juniorComplex.length) {
+        out.push({
+          severity: 'media',
+          kind: 'junior-complexidade-alta',
+          titulo: `${juniorComplex.length} tarefa(s) de complexidade alta atribuída(s) a júnior`,
+          detalhe: 'Considerar par com sênior, mentoria ou redistribuição.',
+          taskIds: juniorComplex.map(t => t.id),
+        });
+      }
+
+      // 7. Onda B — qualidade: tarefas reabertas 2+ vezes
+      const reabertasCronicas = ativas.filter(t => (t.reopenCount || 0) >= 2);
+      if (reabertasCronicas.length) {
+        out.push({
+          severity: 'media',
+          kind: 'reaberturas-cronicas',
+          titulo: `${reabertasCronicas.length} tarefa(s) reabertas 2+ vezes`,
+          detalhe: 'Investigar critério de "concluído" ou qualidade de entrega.',
+          taskIds: reabertasCronicas.map(t => t.id),
+        });
+      }
+
+      // 8. Onda C — bloqueio por dependência: task em backlog com prazo
+      // ≤14d cujas dependências ainda NÃO foram concluídas.
+      const taskById = new Map(this.tasks.map(t => [t.id, t]));
+      const in14 = new Date(today); in14.setDate(today.getDate() + 14);
+      const in14Iso = in14.toISOString().slice(0,10);
+      const bloqDep = ativas.filter(t => {
+        if (t.subetapa !== 'backlog') return false;
+        if (!t.prazo || t.prazo > in14Iso) return false;
+        const deps = this._depsByTask.get(t.id) || [];
+        return deps.some(depId => {
+          const dep = taskById.get(depId);
+          return dep && dep.status !== 'concluido';
+        });
+      });
+      if (bloqDep.length) {
+        out.push({
+          severity: 'alta',
+          kind: 'bloqueio-dependencia',
+          titulo: `${bloqDep.length} tarefa(s) com dependência aberta e prazo ≤14d`,
+          detalhe: 'Iniciar a dependente ou renegociar prazo da posterior.',
+          taskIds: bloqDep.map(t => t.id),
+        });
+      }
+
+      // 9. Onda C — estimativa furada: tempo real > 1.5x do esforço.
+      const estimativaFurada = ativas.filter(t =>
+        t.tempoRealHoras != null && t.esforco > 0 && t.tempoRealHoras > t.esforco * 1.5
+      );
+      if (estimativaFurada.length) {
+        out.push({
+          severity: 'media',
+          kind: 'estimativa-furada',
+          titulo: `${estimativaFurada.length} tarefa(s) com tempo real >1.5x do estimado`,
+          detalhe: 'Calibrar estimativa pra próxima similar; entender o gap.',
+          taskIds: estimativaFurada.map(t => t.id),
+        });
+      }
+
       // Ordena por severity (alta antes)
       const sevRank = { alta: 0, media: 1, baixa: 2 };
       out.sort((a,b) => (sevRank[a.severity] ?? 9) - (sevRank[b.severity] ?? 9));
@@ -6141,11 +6307,15 @@ function app() {
       this.newComment = '';
       this.replyingToId = '';
       this.newReply = '';
+      this.newDepId = '';
       this.modal = true;
       this.$nextTick(() => this.$refs.tituloInput && this.$refs.tituloInput.focus());
     },
     openEdit(t) {
       this.editing = JSON.parse(JSON.stringify(t));
+      this.editing.tempoRealHoras = this.editing.tempoRealHoras == null ? '' : this.editing.tempoRealHoras;
+      this.editing.dependencias = [...this.getDependencias(t.id)];
+      this.newDepId = '';
       this.editingComments = [];
       this.editingHistory = [];
       this.newComment = '';
@@ -6232,6 +6402,8 @@ function app() {
             bloqueadoPor: e.subetapa === 'bloqueado' ? (e.bloqueadoPor || '') : '',
             visivelCliente: e.visivelCliente !== false,
             tags: Array.isArray(e.tags) ? [...e.tags] : [],
+            tipoTrabalho: e.tipoTrabalho || '',
+            tempoRealHoras: e.tempoRealHoras === '' || e.tempoRealHoras == null ? null : +e.tempoRealHoras,
             statusEm:   statusChanged ? nowMs : prev.statusEm,
             subetapaEm: subChanged    ? nowMs : prev.subetapaEm,
           };
@@ -6256,6 +6428,8 @@ function app() {
             await this._notifyAssignment(e.id, e.pessoaId, prev.pessoaId);
           }
         } catch (err) { console.warn('[notif] assignment notify failed:', err); }
+        // Sincroniza dependências (diff vs prev)
+        await this._syncDependencias(e.id, e.dependencias || []);
       } else {
         // Insert
         payload.status_em = nowIso;
@@ -6273,8 +6447,59 @@ function app() {
             actor_pessoa_id: this.currentPessoa ? this.currentPessoa.id : null,
             actor_source: 'app', occurred_at: nowIso,
           });
+          await this._syncDependencias(data.id, e.dependencias || []);
         }
       }
+    },
+    async _syncDependencias(taskId, dependeDeIds) {
+      const wanted = new Set(dependeDeIds.filter(Boolean));
+      const current = new Set(this.getDependencias(taskId));
+      const toAdd = [...wanted].filter(id => !current.has(id));
+      const toDel = [...current].filter(id => !wanted.has(id));
+      if (toAdd.length) {
+        const rows = toAdd.map(depende_de_id => ({ task_id: taskId, depende_de_id }));
+        const { error } = await sb.from('task_dependencies').insert(rows);
+        if (error) { this.toast('error', 'Erro ao salvar dependências: ' + error.message); return; }
+      }
+      for (const depId of toDel) {
+        const { error } = await sb.from('task_dependencies').delete()
+          .eq('task_id', taskId).eq('depende_de_id', depId);
+        if (error) { this.toast('error', 'Erro ao remover dependência: ' + error.message); return; }
+      }
+      if (toAdd.length || toDel.length) {
+        // Recarrega taskDeps pra refletir o estado novo
+        const { data, error } = await sb.from('task_dependencies').select('task_id, depende_de_id');
+        if (!error) this.taskDeps = data || [];
+      }
+    },
+    addDependencia() {
+      const id = this.newDepId;
+      if (!id) return;
+      if (this.editing.id && id === this.editing.id) {
+        this.toast('error', 'Tarefa não pode depender de si mesma.');
+        this.newDepId = '';
+        return;
+      }
+      this.editing.dependencias = this.editing.dependencias || [];
+      if (!this.editing.dependencias.includes(id)) {
+        this.editing.dependencias.push(id);
+      }
+      this.newDepId = '';
+    },
+    removeDependencia(id) {
+      this.editing.dependencias = (this.editing.dependencias || []).filter(d => d !== id);
+    },
+    get _candidatesDependencia() {
+      // Candidatos: tasks do mesmo cliente, exceto a própria e as já dependentes.
+      const e = this.editing;
+      if (!e) return [];
+      const already = new Set(e.dependencias || []);
+      return this.tasks.filter(t =>
+        t.id !== e.id &&
+        !already.has(t.id) &&
+        t.status !== 'concluido' &&
+        (!e.clienteId || t.clienteId === e.clienteId)
+      );
     },
     deleteTask() {
       this.askConfirm('Excluir esta tarefa? Esta ação não pode ser desfeita.', async () => {
@@ -6395,7 +6620,7 @@ function app() {
       this.projetos = [...this.projetos, optimistic].sort((a,b) => a.nome.localeCompare(b.nome));
       const { data, error } = await sb.from('projetos')
         .insert({ nome: n, cliente_id: cid })
-        .select('id,nome,cliente_id,sla_resposta_horas,sla_entrega_dias,orcamento_horas,arquivado_em').single();
+        .select('id,nome,cliente_id,sla_resposta_horas,sla_entrega_dias,orcamento_horas,tipo,arquivado_em').single();
       if (error) {
         this.projetos = this.projetos.filter(p => p.id !== tempId);
         this.toast('error', 'Erro: ' + error.message);
@@ -6412,6 +6637,7 @@ function app() {
         slaRespostaHoras: p.slaRespostaHoras == null ? '' : p.slaRespostaHoras,
         slaEntregaDias:   p.slaEntregaDias   == null ? '' : p.slaEntregaDias,
         orcamentoHoras:   p.orcamentoHoras   == null ? '' : p.orcamentoHoras,
+        tipo:             p.tipo || '',
       };
       this.modalProjeto = true;
     },
@@ -6428,6 +6654,7 @@ function app() {
         sla_resposta_horas: numOrNull(e.slaRespostaHoras),
         sla_entrega_dias:   numOrNull(e.slaEntregaDias),
         orcamento_horas:    numOrNull(e.orcamentoHoras),
+        tipo:               e.tipo || null,
       };
       const i = this.projetos.findIndex(x => x.id === e.id);
       const prev = i >= 0 ? this.projetos[i] : null;
@@ -6438,6 +6665,7 @@ function app() {
           slaRespostaHoras: payload.sla_resposta_horas,
           slaEntregaDias:   payload.sla_entrega_dias,
           orcamentoHoras:   payload.orcamento_horas,
+          tipo:             payload.tipo || '',
         };
       }
       this.modalProjeto = false;
@@ -6493,6 +6721,7 @@ function app() {
         capacidade_horas_semana: 40,
         skills: [],
         _skillsRaw: '',
+        senioridade: '',
         invited_at: null,
         user_id: null,
       };
@@ -6512,6 +6741,7 @@ function app() {
         capacidade_horas_semana: p.capacidade_horas_semana == null ? 40 : +p.capacidade_horas_semana,
         skills,
         _skillsRaw: skills.join(', '),
+        senioridade: p.senioridade || '',
         invited_at: p.invited_at,
         user_id: p.user_id,
       };
@@ -6541,6 +6771,7 @@ function app() {
         cliente_secundario_id: e.role !== 'cliente' ? (e.cliente_secundario_id || null) : null,
         capacidade_horas_semana: e.role !== 'cliente' ? (+e.capacidade_horas_semana || 40) : 40,
         skills: e.role !== 'cliente' ? skills : [],
+        senioridade: e.role !== 'cliente' ? (e.senioridade || null) : null,
       };
       if (e.id) {
         // Update
@@ -6561,7 +6792,7 @@ function app() {
         const optimistic = { id: tempId, ...payload, invited_at: null, user_id: null };
         this.pessoas = [...this.pessoas, optimistic].sort((a,b) => a.nome.localeCompare(b.nome));
         this.modalPessoa = false;
-        const { data, error } = await sb.from('pessoas').insert(payload).select('id, nome, email, user_id, invited_at, role, cliente_id, cliente_principal_id, cliente_secundario_id, capacidade_horas_semana, skills').single();
+        const { data, error } = await sb.from('pessoas').insert(payload).select('id, nome, email, user_id, invited_at, role, cliente_id, cliente_principal_id, cliente_secundario_id, capacidade_horas_semana,skills,senioridade').single();
         if (error) {
           this.pessoas = this.pessoas.filter(p => p.id !== tempId);
           this.toast('error', 'Erro: ' + error.message);
