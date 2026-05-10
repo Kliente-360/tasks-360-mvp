@@ -449,219 +449,139 @@
 
   [x-cloak] { display: none !important; }
 
-  /* ============ RELATÓRIO EXECUTIVO (PDF via print) ============ */
-  /* Sempre no DOM, posicionado fora-da-tela pra Chart.js poder medir os canvases. */
+  /* ============ BRIEFING EXECUTIVO ============ */
+  .brief-signal { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .brief-signal-verde     { background: #16a34a; }
+  .brief-signal-amarelo   { background: #f59e0b; }
+  .brief-signal-vermelho  { background: #dc2626; }
+  .brief-tag {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    padding: 2px 7px; border-radius: 4px; text-transform: uppercase;
+    letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0; min-width: 60px; text-align: center;
+  }
+  .brief-tag-sobrecarga { background: #dc2626; color: #fff; }
+  .brief-tag-pressao    { background: #f59e0b; color: #fff; }
+  .brief-tag-folga      { background: #bbf7d0; color: #166534; }
+
+  .brief-kpi {
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+    background: var(--bg);
+  }
+  .brief-kpi-danger { border-color: var(--p0); background: color-mix(in srgb, var(--p0) 8%, var(--bg)); }
+  .brief-kpi-warn   { border-color: #f59e0b; background: #fff7ed; }
+  .brief-kpi-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .brief-kpi-value { font-family: 'Manrope', sans-serif; font-size: 26px; font-weight: 700; line-height: 1.1; margin-top: 2px; color: var(--ink); }
+  .brief-kpi-delta { font-size: 10px; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+
+  /* ============ MEMO EXECUTIVO (PDF via print) ============
+     Layout linear, narrativo. Flui em 1-2 páginas naturalmente.
+     Sem grid, sem altura forçada, sem briga com o renderer. */
   .print-only {
     position: fixed; top: 0; left: 0;
-    width: 794px;            /* A4 retrato @ 96dpi */
+    width: 794px;
     visibility: hidden; pointer-events: none; z-index: -1;
     background: #fff; color: #111;
     font-family: 'Inter', system-ui, sans-serif;
   }
   .print-only * { box-sizing: border-box; }
-  .print-only .pr-page { padding: 28px 32px; page-break-after: always; }
-  .print-only .pr-page:last-child { page-break-after: auto; }
-  .print-only .pr-head {
-    display: flex; align-items: flex-end; justify-content: space-between;
-    border-bottom: 2px solid #009900; padding-bottom: 10px; margin-bottom: 18px;
+  .print-only .memo { padding: 14mm 16mm; max-width: 100%; }
+  .print-only .memo-head {
+    border-bottom: 2px solid #009900; padding-bottom: 10px; margin-bottom: 16px;
   }
-  .print-only .pr-title { font-family: 'Manrope', 'Inter', sans-serif; font-size: 22px; font-weight: 700; color: #009900; line-height: 1; }
-  .print-only .pr-sub { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: #666; margin-top: 4px; }
-  .print-only .pr-stamp { font-size: 10px; color: #555; text-align: right; line-height: 1.5; font-family: 'JetBrains Mono', monospace; }
-  .print-only .pr-stamp strong { color: #111; font-weight: 600; }
+  .print-only .memo-title {
+    font-family: 'Manrope', 'Inter', sans-serif; font-size: 22px;
+    font-weight: 700; color: #009900; line-height: 1.1;
+  }
+  .print-only .memo-meta {
+    display: flex; justify-content: space-between; font-size: 9.5px;
+    color: #666; margin-top: 6px; font-family: 'JetBrains Mono', monospace;
+  }
+  .print-only .memo-meta strong { color: #111; }
 
-  .print-only .pr-kpi-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px;
-  }
-  .print-only .pr-kpi-strip { grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 10px; }
-  .print-only .pr-kpi {
-    border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px 14px;
-    background: #fafafa;
-  }
-  .print-only .pr-kpi-compact { padding: 8px 10px; }
-  .print-only .pr-kpi.danger { border-color: #dc2626; background: #fef2f2; }
-  .print-only .pr-kpi-label { font-size: 8.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #666; font-weight: 600; }
-  .print-only .pr-kpi-value { font-family: 'Manrope', sans-serif; font-size: 30px; font-weight: 700; line-height: 1.05; margin-top: 4px; color: #111; }
-  .print-only .pr-kpi-compact .pr-kpi-value { font-size: 22px; margin-top: 2px; }
-  .print-only .pr-kpi.danger .pr-kpi-value { color: #b91c1c; }
-  .print-only .pr-kpi-foot { font-size: 9px; color: #888; margin-top: 2px; font-family: 'JetBrains Mono', monospace; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
-  .print-only .pr-delta { font-size: 9px; font-weight: 700; }
-  .print-only .pr-delta-good { color: #166534; }
-  .print-only .pr-delta-bad  { color: #b91c1c; }
-
-  /* Página executiva — 1 página A4, grid rígido com altura conservadora */
-  .print-only .pr-page-exec {
-    break-after: avoid-page; break-inside: avoid-page;
-    page-break-after: avoid; page-break-inside: avoid;
-    display: grid; gap: 6px;
-    grid-template-rows: auto auto minmax(0, 1fr) minmax(0, 1.5fr) auto;
-    box-sizing: border-box; overflow: hidden;
-  }
-  .print-only .pr-page-exec > .pr-split { min-height: 0; align-items: stretch; gap: 12px; }
-  .print-only .pr-page-exec > .pr-split > .pr-split-col {
-    min-height: 0; overflow: hidden; display: flex; flex-direction: column;
-  }
-  .print-only .pr-page-exec > .pr-split > .pr-split-col > table { flex: 0 0 auto; }
-  .print-only .pr-page-exec .pr-section-title {
-    font-family: 'Manrope', sans-serif; font-size: 9px; font-weight: 700;
+  .print-only .memo-block { margin-bottom: 14px; page-break-inside: avoid; break-inside: avoid; }
+  .print-only .memo-block-table { page-break-inside: auto; }
+  .print-only .memo-block h2 {
+    font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.12em; color: #111;
-    margin: 6px 0 4px; padding-left: 6px; border-left: 2px solid #009900;
+    margin: 0 0 8px; padding-left: 8px; border-left: 3px solid #009900;
   }
-  .print-only .pr-head-compact { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 2px solid #009900; }
-  .print-only .pr-page-exec .pr-title { font-size: 17px; line-height: 1; }
-  .print-only .pr-page-exec .pr-sub { font-size: 8px; margin-top: 2px; letter-spacing: 0.18em; }
-  .print-only .pr-page-exec .pr-stamp { font-size: 8.5px; line-height: 1.4; }
-
-  /* KPI strip compacto */
-  .print-only .pr-page-exec .pr-kpi-strip { gap: 6px; margin-bottom: 0; }
-  .print-only .pr-page-exec .pr-kpi-compact { padding: 7px 9px; }
-  .print-only .pr-page-exec .pr-kpi-compact .pr-kpi-value { font-size: 22px; margin-top: 2px; line-height: 1; }
-  .print-only .pr-page-exec .pr-kpi-label { font-size: 8px; }
-  .print-only .pr-page-exec .pr-kpi-foot { font-size: 8px; margin-top: 2px; line-height: 1.2; }
-
-  /* Tabelas: compactas mas legíveis */
-  .print-only .pr-page-exec table.pr-tbl { font-size: 9px; }
-  .print-only .pr-page-exec table.pr-tbl tbody td { padding: 3.5px 6px; }
-  .print-only .pr-page-exec table.pr-tbl thead th { padding: 4px 6px; font-size: 8px; }
-  .print-only .pr-page-exec table.pr-tbl-eff td { padding: 3.5px 5px; font-size: 9px; }
-  .print-only .pr-page-exec .pr-eff-value { font-size: 9.5px; }
-
-  /* Ações */
-  .print-only .pr-page-exec .pr-actions { padding: 6px 10px; flex: 1; }
-  .print-only .pr-page-exec .pr-actions ul { width: 100%; }
-  .print-only .pr-page-exec .pr-actions li { font-size: 9px; padding: 2px 0; line-height: 1.35; }
-  .print-only .pr-page-exec .pr-actions li + li { padding-top: 3px; margin-top: 2px; }
-
-  /* Sinais e tags */
-  .print-only .pr-page-exec .pr-signal { width: 9px; height: 9px; }
-  .print-only .pr-page-exec .pr-signal-text { font-size: 8.5px; }
-  .print-only .pr-page-exec .pr-tag { font-size: 7px; padding: 1px 4px; margin-left: 4px; }
-
-  /* Footer */
-  .print-only .pr-page-exec .pr-foot { margin-top: 0; padding-top: 4px; font-size: 7.5px; border-top: 1px solid #e5e5e5; }
-
-  /* Split (eficiência + ações) */
-  .print-only .pr-split { display: flex; gap: 14px; margin-bottom: 4px; }
-  .print-only .pr-split-col { min-width: 0; }
-
-  /* Tabela de eficiência */
-  .print-only table.pr-tbl-eff { font-size: 9.5px; }
-  .print-only table.pr-tbl-eff td { padding: 3px 6px; border: 0; border-bottom: 1px solid #f0f0f0; }
-  .print-only table.pr-tbl-eff tr:last-child td { border-bottom: 0; }
-  .print-only .pr-eff-label { color: #444; }
-  .print-only .pr-eff-value { font-weight: 600; font-family: 'JetBrains Mono', monospace; width: 32%; }
-  .print-only .pr-eff-delta { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; width: 18%; }
+  .print-only .memo-count { color: #888; font-weight: 500; letter-spacing: normal; text-transform: none; font-size: 10px; margin-left: 4px; }
+  .print-only .memo-lead { font-size: 11.5px; line-height: 1.55; color: #1f2937; margin: 0; }
+  .print-only .memo-block p { font-size: 11px; line-height: 1.55; color: #1f2937; margin: 0 0 6px; }
+  .print-only .memo-block p strong { color: #111; }
+  .print-only .memo-rec { padding: 8px 12px; background: #f8fafc; border-left: 3px solid #2563eb; color: #1e293b; font-size: 10.5px; }
 
   /* Lista de ações */
-  .print-only .pr-actions { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; padding: 8px 12px; }
-  .print-only .pr-actions ul { margin: 0; padding-left: 0; list-style: none; }
-  .print-only .pr-actions li { font-size: 10px; color: #1f2937; line-height: 1.45; padding: 2px 0; display: flex; gap: 6px; align-items: baseline; }
-  .print-only .pr-actions li + li { border-top: 1px dotted #fed7aa; padding-top: 4px; margin-top: 2px; }
-  .print-only .pr-actions.empty { background: #f0fdf4; border-color: #bbf7d0; color: #166534; font-size: 10px; padding: 10px 14px; }
-  .print-only .pr-action-tag { display: inline-block; font-size: 7.5px; font-weight: 700; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
-  .print-only .pr-action-danger { background: #dc2626; color: #fff; }
-  .print-only .pr-action-warn   { background: #f59e0b; color: #fff; }
-  .print-only .pr-action-info   { background: #e5e7eb; color: #374151; }
+  .print-only .memo-actions ul, .print-only .memo-trend { list-style: none; margin: 0; padding: 0; }
+  .print-only .memo-actions li {
+    font-size: 10.5px; line-height: 1.5; color: #1f2937;
+    padding: 5px 0; border-bottom: 1px dotted #e5e7eb;
+  }
+  .print-only .memo-actions li:last-child { border-bottom: 0; }
+  .print-only .memo-actions li strong { color: #111; }
+  .print-only .memo-actions li em { color: #b45309; font-style: normal; font-weight: 600; }
+  .print-only .memo-empty {
+    background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534;
+    padding: 10px 14px; border-radius: 6px; font-size: 10.5px;
+  }
 
-  /* Sinal semafórico inline */
-  .print-only .pr-signal { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; margin-right: 5px; }
-  .print-only .pr-signal-verde     { background: #16a34a; }
-  .print-only .pr-signal-amarelo   { background: #f59e0b; }
-  .print-only .pr-signal-vermelho  { background: #dc2626; }
-  .print-only .pr-signal-text { font-size: 9px; color: #555; }
+  /* Tag verde/amarelo/vermelho */
+  .print-only .memo-tag {
+    display: inline-block; font-size: 8.5px; font-weight: 700;
+    padding: 1.5px 6px; border-radius: 3px; margin-right: 6px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    font-family: 'JetBrains Mono', monospace; vertical-align: middle;
+    min-width: 48px; text-align: center;
+  }
+  .print-only .memo-tag-vermelho { background: #dc2626; color: #fff; }
+  .print-only .memo-tag-amarelo  { background: #f59e0b; color: #fff; }
+  .print-only .memo-tag-verde    { background: #bbf7d0; color: #166534; }
 
-  .print-only .pr-section-title { font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #111; margin: 18px 0 8px; border-left: 3px solid #009900; padding-left: 8px; }
+  /* Tendência: lista inline */
+  .print-only .memo-trend li {
+    font-size: 11px; line-height: 1.6; padding: 3px 0;
+    display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap;
+  }
+  .print-only .memo-trend-label { color: #555; min-width: 130px; }
+  .print-only .memo-trend strong { color: #111; font-family: 'JetBrains Mono', monospace; }
+  .print-only .memo-trend-delta { font-size: 10px; font-family: 'JetBrains Mono', monospace; }
 
-  .print-only .pr-risks { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; }
-  .print-only .pr-risks ul { margin: 0; padding-left: 18px; }
-  .print-only .pr-risks li { font-size: 11px; color: #7c2d12; line-height: 1.55; }
-  .print-only .pr-risks.empty { background: #f0fdf4; border-color: #bbf7d0; color: #166534; font-size: 11px; }
-
-  .print-only .pr-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-  .print-only .pr-charts-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; margin: 8px 0 12px; }
-  .print-only .pr-charts-grid .pr-chart-wrap { height: 130px; }
-  .print-only .pr-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 8px 0 12px; }
-  .print-only .pr-charts-row .pr-chart-wrap { height: 150px; }
-  .print-only .pr-chart { border: 1px solid #e5e5e5; border-radius: 6px; padding: 10px 12px; }
-  .print-only .pr-chart h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #666; font-weight: 600; margin: 0 0 6px; }
-  .print-only .pr-chart-wrap { position: relative; height: 160px; }
-  .print-only .pr-chart-wrap.tall { height: 110px; }
-
-  .print-only table.pr-tbl { width: 100%; border-collapse: collapse; font-size: 9.5px; }
-  .print-only table.pr-tbl thead th {
-    text-align: left; padding: 6px 6px; background: #f3f4f6; color: #111;
+  /* Tabelas memo */
+  .print-only table.memo-tbl { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .print-only table.memo-tbl thead th {
+    text-align: left; padding: 5px 6px; background: #f3f4f6; color: #111;
     font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;
     border-bottom: 1px solid #d1d5db;
   }
-  .print-only table.pr-tbl tbody td {
+  .print-only table.memo-tbl tbody td {
     padding: 5px 6px; border-bottom: 1px solid #eee; vertical-align: top;
   }
-  .print-only table.pr-tbl tbody tr:nth-child(even) td { background: #fafafa; }
-  .print-only table.pr-tbl tbody tr.late td { background: #fef2f2; }
-  .print-only .pr-pchip { display: inline-block; font-size: 8.5px; font-weight: 700; padding: 1px 5px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; }
-  .print-only .pr-p-P0 { background: #dc2626; color: #fff; }
-  .print-only .pr-p-P1 { background: #ea580c; color: #fff; }
-  .print-only .pr-p-P2 { background: #e5e7eb; color: #111; }
-  .print-only .pr-p-P3 { background: #f3f4f6; color: #6b7280; }
-  .print-only .pr-stchip { display: inline-block; font-size: 8.5px; padding: 1px 5px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; border: 1px solid #d1d5db; color: #374151; background: #fff; }
-  .print-only .pr-stchip[data-s="andamento"] { color: #047857; border-color: #6ee7b7; background: #ecfdf5; }
-  .print-only .pr-stchip[data-s="bloqueado"] { color: #b91c1c; border-color: #fca5a5; background: #fef2f2; }
-  .print-only .pr-stchip[data-s="concluido"] { color: #6b7280; }
-  .print-only .pr-late { color: #b91c1c; font-weight: 600; }
-  .print-only .pr-warn { color: #b45309; font-weight: 600; }
-  .print-only .pr-up   { color: #047857; font-weight: 600; }
-  .print-only .pr-down { color: #b91c1c; font-weight: 600; }
-  .print-only .pr-num  { text-align: right; font-family: 'JetBrains Mono', monospace; }
-  .print-only .pr-tbl thead th.pr-num { text-align: right; }
+  .print-only table.memo-tbl tbody tr:nth-child(even) td { background: #fafafa; }
+  .print-only .memo-num { text-align: right; font-family: 'JetBrains Mono', monospace; }
+  .print-only .memo-signal { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+  .print-only .memo-signal-verde     { background: #16a34a; }
+  .print-only .memo-signal-amarelo   { background: #f59e0b; }
+  .print-only .memo-signal-vermelho  { background: #dc2626; }
+  .print-only .memo-good  { color: #166534; font-weight: 600; }
+  .print-only .memo-bad   { color: #b91c1c; font-weight: 600; }
+  .print-only .memo-amber { color: #b45309; font-weight: 600; }
+  .print-only .memo-muted { color: #888; }
 
-  .print-only .pr-signal { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; }
-  .print-only .pr-signal-verde    { background: #16a34a; }
-  .print-only .pr-signal-amarelo  { background: #f59e0b; }
-  .print-only .pr-signal-vermelho { background: #dc2626; }
-
-  .print-only .pr-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 8.5px; color: #666; margin-top: 6px; align-items: center; }
-  .print-only .pr-legend .pr-signal { width: 8px; height: 8px; margin-right: 3px; }
-
-  .print-only .pr-bar { position: relative; width: 100%; height: 8px; background: #f3f4f6; border-radius: 2px; overflow: hidden; display: flex; }
-  .print-only .pr-bar-fill { height: 100%; background: #009900; }
-  .print-only .pr-bar-fill.late { background: #dc2626; }
-  .print-only .pr-bar-swatch { display: inline-block; width: 12px; height: 6px; background: #009900; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
-  .print-only .pr-bar-swatch.late { background: #dc2626; }
-  .print-only .pr-bar-sample { display: inline-block; width: 14px; height: 8px; background: #009900; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
-  .print-only .pr-bar-sample.late { background: #dc2626; }
-
-  .print-only .pr-amber { color: #b45309; font-weight: 600; }
-  .print-only .pr-ok    { color: #166534; font-weight: 600; }
-  .print-only .pr-muted { color: #888; }
-  .print-only .pr-tag {
-    display: inline-block; font-size: 8px; font-weight: 700;
-    padding: 1px 5px; border-radius: 3px; margin-left: 6px;
-    text-transform: uppercase; letter-spacing: 0.05em;
-    font-family: 'JetBrains Mono', monospace; vertical-align: middle;
+  .print-only .memo-foot {
+    margin-top: 18px; padding-top: 8px; border-top: 1px solid #e5e5e5;
+    font-size: 8.5px; color: #999; font-family: 'JetBrains Mono', monospace;
+    text-align: center;
   }
-  .print-only .pr-tag-danger { background: #dc2626; color: #fff; }
-  .print-only .pr-tag-warn   { background: #f59e0b; color: #fff; }
-  .print-only .pr-tag-ok     { background: #bbf7d0; color: #166534; }
-  .print-only tr.pr-row-sobrecarga td { background: #fef2f2 !important; }
-  .print-only tr.pr-row-pressao    td { background: #fff7ed !important; }
-  .print-only tr.pr-row-folga      td { background: #f0fdf4 !important; }
-  .print-only table.pr-tbl-team tbody td { padding: 5px 6px; vertical-align: middle; }
-
-  .print-only .pr-foot { display: flex; justify-content: space-between; font-size: 8px; color: #999; font-family: 'JetBrains Mono', monospace; margin-top: 12px; padding-top: 8px; border-top: 1px solid #e5e5e5; }
 
   @media print {
-    @page { size: A4 portrait; margin: 8mm 8mm; }
+    @page { size: A4 portrait; margin: 10mm 12mm; }
     html, body { background: #fff !important; height: auto !important; }
     body > *:not(.print-only) { display: none !important; }
     .print-only { position: static !important; visibility: visible !important; width: auto !important; z-index: auto !important; pointer-events: auto !important; }
-    .print-only .pr-page { padding: 0 !important; page-break-after: auto !important; }
-    .print-only .pr-page-exec {
-      height: 281mm !important; max-height: 281mm !important;
-      page-break-after: avoid !important; page-break-inside: avoid !important;
-      break-after: avoid-page !important; break-inside: avoid-page !important;
-    }
-    .print-only table.pr-tbl thead { display: table-header-group; }
-    .print-only table.pr-tbl tr { page-break-inside: avoid; break-inside: avoid; }
+    .print-only .memo { padding: 0 !important; }
+    .print-only table.memo-tbl thead { display: table-header-group; }
+    .print-only table.memo-tbl tr { page-break-inside: avoid; break-inside: avoid; }
   }
 </style>
 </head>
@@ -1015,6 +935,121 @@
 
     <div class="text-[10px] text-muted font-mono mt-2">
       tarefas concluídas e não atribuídas a você não aparecem. itens podem aparecer em mais de um grupo.
+    </div>
+  </div>
+</section>
+
+<!-- ============ BRIEFING EXECUTIVO ============ -->
+<section x-show="tab==='brief'" class="fade-up">
+  <div class="max-w-[1100px] mx-auto space-y-5 md:space-y-6">
+    <!-- Header narrativa -->
+    <div class="flex items-baseline justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="font-brand text-2xl md:text-3xl font-bold leading-tight">Briefing executivo</h1>
+        <p class="text-muted text-sm mt-1" x-text="briefingHeadline"></p>
+      </div>
+      <div class="text-xs text-muted font-mono" x-text="briefingDate"></div>
+    </div>
+
+    <!-- Card 1 · Clientes pra conversar hoje -->
+    <div class="card">
+      <div class="flex items-baseline justify-between mb-3">
+        <h2 class="font-brand text-lg font-semibold">Clientes pra conversar hoje</h2>
+        <span class="text-xs text-muted font-mono" x-text="briefingClientesRisco.length + ' em risco'"></span>
+      </div>
+      <div x-show="briefingClientesRisco.length === 0" class="text-sm text-muted py-4">
+        Nenhum cliente em sinal de risco. Operação fluindo.
+      </div>
+      <ul class="space-y-2.5">
+        <template x-for="c in briefingClientesRisco" :key="c.id">
+          <li class="flex items-start gap-3 py-2 border-b border-line last:border-0">
+            <span class="brief-signal mt-1.5" :class="'brief-signal-' + c.sinal"></span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-baseline gap-2 flex-wrap">
+                <button class="font-medium text-ink hover:text-brand-dark text-left" @click="abrirFiltroCliente(c.id)" x-text="c.nome"></button>
+                <span class="text-xs text-muted" x-text="c.tier"></span>
+              </div>
+              <div class="text-sm text-ink-soft mt-0.5" x-text="c.motivo"></div>
+              <div class="text-xs font-mono mt-1" :class="c.sinal === 'vermelho' ? 'text-[color:var(--p0)]' : 'text-amber-700'" x-text="'→ ' + c.acao"></div>
+            </div>
+            <div class="text-right shrink-0 text-xs text-muted font-mono">
+              <div x-text="c.ativas + ' tasks'"></div>
+              <div x-text="c.horas + 'h'"></div>
+            </div>
+          </li>
+        </template>
+      </ul>
+    </div>
+
+    <!-- Card 2 · Pessoas pra conversar -->
+    <div class="card">
+      <div class="flex items-baseline justify-between mb-3">
+        <h2 class="font-brand text-lg font-semibold">Pessoas pra conversar hoje</h2>
+        <span class="text-xs text-muted font-mono" x-text="briefingTimeRisco.length + ' em risco'"></span>
+      </div>
+      <div x-show="briefingTimeRisco.length === 0" class="text-sm text-muted py-4">
+        Time em equilíbrio. Nenhuma sobrecarga ou pressão crítica.
+      </div>
+      <ul class="space-y-2.5">
+        <template x-for="p in briefingTimeRisco" :key="p.id">
+          <li class="flex items-start gap-3 py-2 border-b border-line last:border-0">
+            <span class="brief-tag" :class="'brief-tag-' + p.cargaNivel" x-text="p.cargaNivel === 'sobrecarga' ? 'sobrec' : (p.cargaNivel === 'pressao' ? 'pressão' : 'folga')"></span>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-ink" x-text="p.nome + (p.senioridade ? ' · ' + p.senioridade : '')"></div>
+              <div class="text-sm text-ink-soft mt-0.5">
+                <span x-show="p.pctCap != null"><strong x-text="p.pctCap + '%'"></strong> de capacidade · </span>
+                <span x-text="p.tasks + ' tasks (' + p.horas + 'h)'"></span>
+                <span x-show="p.atrasadas > 0" class="text-[color:var(--p0)]"> · <span x-text="p.atrasadas + ' atrasadas'"></span></span>
+              </div>
+              <div class="text-xs font-mono mt-1 text-amber-700" x-text="'→ ' + p.acao"></div>
+            </div>
+          </li>
+        </template>
+      </ul>
+    </div>
+
+    <!-- Card 3 · Tendência -->
+    <div class="card">
+      <div class="flex items-baseline justify-between mb-3">
+        <h2 class="font-brand text-lg font-semibold">Tendência da operação</h2>
+        <span class="text-xs text-muted font-mono">vs período anterior</span>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-3">
+        <template x-for="t in briefingTendencia" :key="t.label">
+          <div class="brief-kpi" :class="t.danger && 'brief-kpi-danger'">
+            <div class="brief-kpi-label" x-text="t.label"></div>
+            <div class="brief-kpi-value" x-text="t.value"></div>
+            <div class="brief-kpi-delta" :class="t.deltaGood === true ? 'text-emerald-700' : (t.deltaGood === false ? 'text-[color:var(--p0)]' : 'text-muted')" x-text="t.deltaText"></div>
+          </div>
+        </template>
+      </div>
+      <p class="text-sm text-ink-soft leading-relaxed" x-text="briefingNarrativa"></p>
+    </div>
+
+    <!-- Card 4 · Capacidade vs demanda -->
+    <div class="card">
+      <div class="flex items-baseline justify-between mb-3">
+        <h2 class="font-brand text-lg font-semibold">Capacidade vs demanda</h2>
+        <span class="text-xs text-muted font-mono">decisão de contratar/cortar</span>
+      </div>
+      <div class="grid grid-cols-3 gap-3 mb-3">
+        <div class="brief-kpi">
+          <div class="brief-kpi-label">Horas alocadas</div>
+          <div class="brief-kpi-value" x-text="briefingCapacidade.alocado + 'h'"></div>
+          <div class="brief-kpi-delta text-muted">em tasks ativas</div>
+        </div>
+        <div class="brief-kpi">
+          <div class="brief-kpi-label">Capacidade do time</div>
+          <div class="brief-kpi-value" x-text="briefingCapacidade.capacidade + 'h/sem'"></div>
+          <div class="brief-kpi-delta text-muted" x-text="briefingCapacidade.pessoasComCap + ' pessoas com capacidade declarada'"></div>
+        </div>
+        <div class="brief-kpi" :class="briefingCapacidade.utilizacaoNivel === 'alta' ? 'brief-kpi-danger' : (briefingCapacidade.utilizacaoNivel === 'baixa' ? 'brief-kpi-warn' : '')">
+          <div class="brief-kpi-label">Utilização</div>
+          <div class="brief-kpi-value" x-text="briefingCapacidade.utilizacao + '%'"></div>
+          <div class="brief-kpi-delta" :class="briefingCapacidade.utilizacaoNivel === 'alta' ? 'text-[color:var(--p0)]' : (briefingCapacidade.utilizacaoNivel === 'baixa' ? 'text-amber-700' : 'text-emerald-700')" x-text="briefingCapacidade.utilizacaoLabel"></div>
+        </div>
+      </div>
+      <p class="text-sm text-ink-soft leading-relaxed" x-text="briefingCapacidade.recomendacao"></p>
     </div>
   </div>
 </section>
@@ -2521,140 +2556,135 @@
 
 <!-- ============ RELATÓRIO EXECUTIVO (print-only, 1 página) ============ -->
 <section class="print-only" aria-hidden="true">
-  <div class="pr-page pr-page-exec">
-    <!-- Header compacto -->
-    <div class="pr-head pr-head-compact">
-      <div>
-        <div class="pr-title">tasks 360 · executivo</div>
-        <div class="pr-sub">snapshot operacional · só sócios</div>
+  <article class="memo">
+    <header class="memo-head">
+      <div class="memo-title">tasks 360 · briefing executivo</div>
+      <div class="memo-meta">
+        <span>kliente 360 · só sócios</span>
+        <span>snapshot <strong x-text="reportStampDate"></strong> · <span x-text="reportStampTime"></span></span>
       </div>
-      <div class="pr-stamp">
-        <div>snapshot · <strong x-text="reportStampDate"></strong></div>
-        <div x-text="reportStampTime"></div>
-      </div>
-    </div>
+    </header>
 
-    <!-- KPI strip (6 indicadores) -->
-    <div class="pr-kpi-grid pr-kpi-strip">
-      <template x-for="k in reportKPIs" :key="k.label">
-        <div class="pr-kpi pr-kpi-compact" :class="k.danger && 'danger'">
-          <div class="pr-kpi-label" x-text="k.label"></div>
-          <div class="pr-kpi-value" x-text="k.value"></div>
-          <div class="pr-kpi-foot">
-            <span x-text="k.foot"></span>
-            <template x-if="k.delta !== undefined && k.delta !== null">
-              <span class="pr-delta" :class="k.deltaGood ? 'pr-delta-good' : 'pr-delta-bad'"
-                    x-text="(k.delta > 0 ? '↑ +' : (k.delta < 0 ? '↓ ' : '→ ')) + Math.abs(k.delta) + (k.deltaUnit||'')"></span>
-            </template>
-          </div>
-        </div>
-      </template>
-    </div>
+    <section class="memo-block">
+      <h2>Esta semana</h2>
+      <p class="memo-lead" x-text="briefingNarrativa"></p>
+    </section>
 
-    <!-- Eficiência + Ação requerida (lado a lado) -->
-    <div class="pr-split">
-      <div class="pr-split-col" style="flex: 0 0 38%">
-        <div class="pr-section-title">Eficiência da operação</div>
-        <table class="pr-tbl pr-tbl-eff">
-          <tbody>
-            <template x-for="r in reportEfficiency" :key="r.label">
-              <tr>
-                <td class="pr-eff-label" x-text="r.label"></td>
-                <td class="pr-num pr-eff-value" :class="r.danger ? 'pr-warn' : (r.good ? 'pr-ok' : '')" x-text="r.value"></td>
-                <td class="pr-num pr-eff-delta" :class="r.deltaGood===true ? 'pr-ok' : (r.deltaGood===false ? 'pr-warn' : 'pr-muted')" x-text="r.delta || ''"></td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
+    <section class="memo-block memo-actions">
+      <h2>Pontos de atenção <span class="memo-count" x-text="'(' + (briefingClientesRisco.length + briefingTimeRisco.length) + ')'"></span></h2>
+      <div x-show="briefingClientesRisco.length === 0 && briefingTimeRisco.length === 0" class="memo-empty">
+        Nada crítico. Nenhum cliente em risco, time em equilíbrio.
       </div>
-      <div class="pr-split-col" style="flex: 1 1 auto">
-        <div class="pr-section-title">Ação requerida · pontos de atenção</div>
-        <div class="pr-actions" x-show="reportActions.length > 0">
-          <ul>
-            <template x-for="(a, i) in reportActions" :key="i">
-              <li>
-                <span class="pr-action-tag" :class="'pr-action-' + a.severity" x-text="a.tag"></span>
-                <span x-text="a.titulo"></span>
-              </li>
-            </template>
-          </ul>
-        </div>
-        <div class="pr-actions empty" x-show="reportActions.length === 0">
-          Nenhum ponto crítico no momento. Operação fluindo.
-        </div>
-      </div>
-    </div>
+      <ul x-show="briefingClientesRisco.length > 0 || briefingTimeRisco.length > 0">
+        <template x-for="c in briefingClientesRisco" :key="'c:'+c.id">
+          <li>
+            <span class="memo-tag" :class="'memo-tag-' + c.sinal">cliente</span>
+            <strong x-text="c.nome"></strong> · <span x-text="c.motivo"></span>
+            <em x-text="' → ' + c.acao"></em>
+          </li>
+        </template>
+        <template x-for="p in briefingTimeRisco" :key="'p:'+p.id">
+          <li>
+            <span class="memo-tag" :class="'memo-tag-' + (p.cargaNivel === 'sobrecarga' ? 'vermelho' : 'amarelo')">time</span>
+            <strong x-text="p.nome"></strong> ·
+            <span x-text="(p.pctCap != null ? p.pctCap + '% capacidade · ' : '') + p.tasks + ' tasks' + (p.atrasadas > 0 ? ', ' + p.atrasadas + ' atrasadas' : '')"></span>
+            <em x-text="' → ' + p.acao"></em>
+          </li>
+        </template>
+      </ul>
+    </section>
 
-    <!-- Clientes + Time lado a lado -->
-    <div class="pr-split">
-      <div class="pr-split-col" style="flex: 1 1 50%">
-        <div class="pr-section-title">Clientes</div>
-        <table class="pr-tbl pr-tbl-cli">
-          <thead>
+    <section class="memo-block">
+      <h2>Tendência da operação</h2>
+      <ul class="memo-trend">
+        <template x-for="t in briefingTendencia" :key="t.label">
+          <li>
+            <span class="memo-trend-label" x-text="t.label + ':'"></span>
+            <strong x-text="t.value"></strong>
+            <span class="memo-trend-delta" :class="t.deltaGood === true ? 'memo-good' : (t.deltaGood === false ? 'memo-bad' : 'memo-muted')" x-text="t.deltaText"></span>
+          </li>
+        </template>
+      </ul>
+    </section>
+
+    <section class="memo-block">
+      <h2>Capacidade do time vs demanda</h2>
+      <p>
+        <strong x-text="briefingCapacidade.alocado + 'h'"></strong> alocadas em tasks ativas contra
+        <strong x-text="briefingCapacidade.capacidade + 'h/semana'"></strong> de capacidade declarada
+        (<span x-text="briefingCapacidade.pessoasComCap"></span> pessoas) · utilização
+        <strong x-text="briefingCapacidade.utilizacao + '%'"></strong>.
+      </p>
+      <p class="memo-rec" x-text="briefingCapacidade.recomendacao"></p>
+    </section>
+
+    <section class="memo-block memo-block-table">
+      <h2>Clientes ativos · saúde</h2>
+      <table class="memo-tbl">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th class="memo-num">Tasks</th>
+            <th class="memo-num">Horas</th>
+            <th>Saúde</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="c in reportClientesExec" :key="c.id">
             <tr>
-              <th>Cliente</th>
-              <th style="width:14%" class="pr-num">Tasks</th>
-              <th style="width:18%" class="pr-num">Horas</th>
-              <th style="width:32%">Saúde</th>
+              <td><strong x-text="c.nome"></strong> <span class="memo-muted" x-text="c.tier ? '· ' + c.tier : ''"></span></td>
+              <td class="memo-num" x-text="c.ativas"></td>
+              <td class="memo-num" x-text="c.horas + 'h'"></td>
+              <td>
+                <span class="memo-signal" :class="'memo-signal-' + c.sinal"></span>
+                <span x-text="c.sinalReason"></span>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            <template x-for="c in reportClientesExec" :key="c.id">
-              <tr>
-                <td><strong x-text="c.nome"></strong></td>
-                <td class="pr-num" x-text="c.ativas"></td>
-                <td class="pr-num" x-text="c.horas + 'h'"></td>
-                <td>
-                  <span class="pr-signal" :class="'pr-signal-' + c.sinal"></span>
-                  <span class="pr-signal-text" x-text="c.sinalReason"></span>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
-      <div class="pr-split-col" style="flex: 1 1 50%">
-        <div class="pr-section-title">Time interno</div>
-        <table class="pr-tbl pr-tbl-team">
-          <thead>
-            <tr>
-              <th>Pessoa</th>
-              <th style="width:18%" class="pr-num">Tasks / Atr.</th>
-              <th style="width:16%" class="pr-num">Horas</th>
-              <th style="width:18%" class="pr-num">% Cap.</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template x-for="p in reportTeamCompact" :key="p.id">
-              <tr :class="'pr-row-' + p.cargaNivel">
-                <td>
-                  <strong x-text="p.nome"></strong>
-                  <template x-if="p.cargaNivel==='sobrecarga'"><span class="pr-tag pr-tag-danger">sobrecarga</span></template>
-                  <template x-if="p.cargaNivel==='pressao'"><span class="pr-tag pr-tag-warn">pressão</span></template>
-                  <template x-if="p.cargaNivel==='folga'"><span class="pr-tag pr-tag-ok">folga</span></template>
-                </td>
-                <td class="pr-num">
-                  <span x-text="p.tasks"></span><span class="pr-muted"> / </span><span :class="p.atrasadas > 0 && 'pr-late'" x-text="p.atrasadas"></span>
-                </td>
-                <td class="pr-num" x-text="p.horas + 'h'"></td>
-                <td class="pr-num">
-                  <template x-if="p.pctCap != null">
-                    <span x-text="p.pctCap + '%'" :class="p.cargaNivel==='sobrecarga' ? 'pr-warn' : (p.cargaNivel==='pressao' ? 'pr-amber' : (p.cargaNivel==='folga' ? 'pr-ok' : ''))"></span>
-                  </template>
-                  <template x-if="p.pctCap == null"><span class="pr-muted">—</span></template>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </template>
+        </tbody>
+      </table>
+    </section>
 
-    <div class="pr-foot">
-      <span>tasks 360 · executivo · kliente 360 · só sócios</span>
-      <span x-text="'snapshot ' + reportStampDate"></span>
-    </div>
-  </div>
+    <section class="memo-block memo-block-table">
+      <h2>Time interno · capacidade</h2>
+      <table class="memo-tbl">
+        <thead>
+          <tr>
+            <th>Pessoa</th>
+            <th class="memo-num">Tasks / Atr.</th>
+            <th class="memo-num">Horas</th>
+            <th class="memo-num">% Cap.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="p in reportTeamLoad" :key="p.id">
+            <tr>
+              <td>
+                <strong x-text="p.nome"></strong>
+                <span class="memo-muted" x-text="p.senioridade ? '· ' + p.senioridade : ''"></span>
+                <template x-if="p.cargaNivel==='sobrecarga'"><span class="memo-tag memo-tag-vermelho">sobrec</span></template>
+                <template x-if="p.cargaNivel==='pressao'"><span class="memo-tag memo-tag-amarelo">pressão</span></template>
+              </td>
+              <td class="memo-num">
+                <span x-text="p.tasks"></span><span class="memo-muted"> / </span><span :class="p.atrasadas > 0 && 'memo-bad'" x-text="p.atrasadas"></span>
+              </td>
+              <td class="memo-num" x-text="p.horas + 'h'"></td>
+              <td class="memo-num">
+                <template x-if="p.pctCap != null">
+                  <span x-text="p.pctCap + '%'" :class="p.cargaNivel==='sobrecarga' ? 'memo-bad' : (p.cargaNivel==='pressao' ? 'memo-amber' : (p.cargaNivel==='folga' ? 'memo-good' : ''))"></span>
+                </template>
+                <template x-if="p.pctCap == null"><span class="memo-muted">—</span></template>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="memo-foot">
+      tasks 360 · briefing executivo · kliente 360 · documento interno (sócios)
+    </footer>
+  </article>
 </section>
 
 <!-- ============ FOOTER ============ -->
@@ -3372,6 +3402,7 @@ function app() {
     _helpLoaded: false,
     tabsList: [
       { key: 'foco',    label: 'Meu foco', roles: ['admin','interno'] },
+      { key: 'brief',   label: 'Briefing', roles: ['admin'] },
       { key: 'backlog', label: 'Backlog',  roles: ['admin','interno'] },
       { key: 'kanban',  label: 'Kanban',   roles: ['admin','interno'], hideMobile: true },
       { key: 'cal',     label: 'Calendário', roles: ['admin','interno'] },
@@ -4313,6 +4344,160 @@ function app() {
     // Top do time pra cabe na página (8 pessoas)
     get reportTeamCompact() {
       return this.reportTeamLoad.slice(0, 8);
+    },
+
+    // ===================== BRIEFING EXECUTIVO =====================
+    get briefingDate() {
+      const d = new Date();
+      const dias = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+      return dias[d.getDay()] + ', ' + String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+    },
+    get briefingHeadline() {
+      const cRisco = this.briefingClientesRisco.length;
+      const tRisco = this.briefingTimeRisco.length;
+      if (cRisco === 0 && tRisco === 0) return 'Nada crítico. Operação fluindo.';
+      const parts = [];
+      if (cRisco) parts.push(cRisco + ' cliente' + (cRisco === 1 ? '' : 's') + ' em risco');
+      if (tRisco) parts.push(tRisco + ' pessoa' + (tRisco === 1 ? '' : 's') + ' precisando de conversa');
+      return parts.join(' · ');
+    },
+    get briefingClientesRisco() {
+      // Reutiliza reportClientesExec mas amplifica motivo + ação sugerida
+      return this.reportClientesExec.filter(c => c.sinal !== 'verde').map(c => {
+        let motivo = c.sinalReason;
+        let acao = '';
+        if (c.sinal === 'vermelho' && c.atrasadas > 0) {
+          motivo = c.atrasadas + ' task' + (c.atrasadas === 1 ? '' : 's') + ' atrasada' + (c.atrasadas === 1 ? '' : 's');
+          acao = 'Conversar hoje sobre prazo';
+        } else if (c.sinal === 'vermelho' && c.bloqAguard > 0) {
+          motivo = c.bloqAguard + ' task aguardando cliente há +5 dias';
+          acao = 'Cobrar resposta hoje';
+        } else if (c.sinal === 'amarelo' && c.bloqAguard > 0) {
+          motivo = c.bloqAguard + ' task aguardando cliente';
+          acao = 'Cobrar resposta esta semana';
+        } else if (c.sinal === 'amarelo' && c.atrasadas > 0) {
+          motivo = c.atrasadas + ' task atrasada';
+          acao = 'Alinhar prazo';
+        }
+        // Sobreescreve com aviso de orçamento se for grave
+        if (c.pctOrc != null && c.pctOrc > 100) {
+          motivo = motivo + ' · orçamento de horas estourado (' + c.pctOrc + '%)';
+          acao = 'Renegociar escopo ou cobrar adicional';
+        }
+        return { ...c, motivo, acao };
+      });
+    },
+    get briefingTimeRisco() {
+      return this.reportTeamLoad.filter(p => p.cargaNivel === 'sobrecarga' || p.cargaNivel === 'pressao').map(p => {
+        let acao = '';
+        if (p.cargaNivel === 'sobrecarga' && p.atrasadas > 0) {
+          acao = 'Redistribuir tasks hoje; risco de burnout';
+        } else if (p.cargaNivel === 'sobrecarga') {
+          acao = 'Redistribuir antes que comece a atrasar';
+        } else if (p.cargaNivel === 'pressao' && p.atrasadas > 0) {
+          acao = 'Aliviar carga; já está atrasando';
+        } else {
+          acao = 'Monitorar; não dar mais task nova';
+        }
+        return { ...p, acao };
+      });
+    },
+    get briefingTendencia() {
+      // 4 indicadores chave com delta vs período anterior
+      const t = this.tasks;
+      const now = Date.now();
+      // Throughput 7d
+      const c7 = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) <= 7*86400000).length;
+      const c7p = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) > 7*86400000 && (now - x.statusEm) <= 14*86400000).length;
+      // Lead time 14d
+      const lead = (from, to) => {
+        const arr = t.filter(x => x.status === 'concluido' && x.statusEm && x.criadoEm && (now - x.statusEm) > from && (now - x.statusEm) <= to)
+          .map(x => (x.statusEm - x.criadoEm) / 86400000).filter(d => d > 0);
+        return arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : null;
+      };
+      const lt = lead(0, 14*86400000);
+      const ltP = lead(14*86400000, 28*86400000);
+      // % atrasadas das ativas
+      const ativas = t.filter(x => x.status !== 'concluido');
+      const pctAtr = ativas.length ? Math.round(ativas.filter(x => this.atrasada(x)).length / ativas.length * 100) : 0;
+      // Capacidade média
+      const team = this.reportTeamLoad.filter(p => p.pctCap != null);
+      const capMed = team.length ? Math.round(team.reduce((s,p) => s + p.pctCap, 0) / team.length) : null;
+
+      const dThr = c7 - c7p;
+      const dLt = (lt != null && ltP != null) ? +(lt - ltP).toFixed(1) : null;
+
+      return [
+        {
+          label: 'Throughput · 7d', value: c7,
+          deltaText: dThr === 0 ? '= estável' : (dThr > 0 ? '↑ +' + dThr + ' vs sem ant' : '↓ ' + dThr + ' vs sem ant'),
+          deltaGood: dThr === 0 ? null : dThr > 0,
+        },
+        {
+          label: 'Lead time · 14d', value: lt != null ? lt.toFixed(1) + 'd' : '—',
+          deltaText: dLt == null ? '—' : (dLt === 0 ? '= estável' : (dLt < 0 ? '↓ ' + Math.abs(dLt) + 'd (melhor)' : '↑ +' + dLt + 'd (pior)')),
+          deltaGood: dLt == null ? null : (dLt === 0 ? null : dLt < 0),
+        },
+        {
+          label: '% atrasadas', value: pctAtr + '%',
+          danger: pctAtr > 20,
+          deltaText: pctAtr > 20 ? 'crítico' : (pctAtr > 10 ? 'atenção' : 'saudável'),
+          deltaGood: pctAtr <= 10,
+        },
+        {
+          label: 'Capac. média', value: capMed != null ? capMed + '%' : '—',
+          danger: capMed != null && capMed > 100,
+          deltaText: capMed == null ? '—' : (capMed > 100 ? 'time sobrecarregado' : (capMed < 60 ? 'time com folga' : 'saudável')),
+          deltaGood: capMed == null ? null : (capMed >= 60 && capMed <= 100),
+        },
+      ];
+    },
+    get briefingNarrativa() {
+      const t = this.briefingTendencia;
+      const [thr, lt, atr, cap] = t;
+      const bons = t.filter(x => x.deltaGood === true).length;
+      const ruins = t.filter(x => x.deltaGood === false).length;
+      let tom = 'estável';
+      if (bons >= 3) tom = 'melhorando';
+      else if (ruins >= 3) tom = 'piorando';
+      else if (ruins > bons) tom = 'preocupante';
+      else if (bons > ruins) tom = 'levemente melhor';
+      return 'Operação ' + tom + '. Throughput de ' + thr.value + ' tarefa(s) na última semana, lead time médio de ' + lt.value + ', ' + atr.value + ' das ativas atrasadas, time em ' + cap.value + ' de capacidade média.';
+    },
+    get briefingCapacidade() {
+      const team = this.reportTeamLoad;
+      const teamCap = team.filter(p => p.capacidade > 0);
+      const alocado = team.reduce((s, p) => s + p.horas, 0);
+      const capacidade = teamCap.reduce((s, p) => s + p.capacidade, 0);
+      const utilizacao = capacidade > 0 ? Math.round(alocado / capacidade * 100) : 0;
+      let nivel = 'ok', label = 'saudável', rec = '';
+      const sobrecarga = team.filter(p => p.cargaNivel === 'sobrecarga').length;
+      const folga = team.filter(p => p.cargaNivel === 'folga').length;
+      if (utilizacao > 100 || sobrecarga >= 2) {
+        nivel = 'alta'; label = 'time pressionado';
+        rec = 'Time está sistemicamente sobrecarregado. ' +
+              (sobrecarga >= 2 ? sobrecarga + ' pessoa(s) em sobrecarga crítica. ' : '') +
+              'Decisão: contratar mais 1 pessoa, despriorizar projeto não-estratégico, ou cobrar prazo mais largo dos clientes.';
+      } else if (utilizacao < 60 && folga >= Math.ceil(team.length * 0.4)) {
+        nivel = 'baixa'; label = 'time com folga';
+        rec = 'Time tem capacidade ociosa. ' + folga + ' pessoa(s) abaixo de 60% de uso. ' +
+              'Decisão: puxar mais venda, antecipar entregas, ou (se persistente por 3+ semanas) avaliar headcount.';
+      } else {
+        nivel = 'ok'; label = 'capacidade equilibrada';
+        rec = 'Capacidade do time bem dimensionada pra demanda atual. Manter rota; reavaliar se entrar projeto novo.';
+      }
+      return {
+        alocado, capacidade, utilizacao,
+        pessoasComCap: teamCap.length,
+        utilizacaoNivel: nivel,
+        utilizacaoLabel: label,
+        recomendacao: rec,
+      };
+    },
+    abrirFiltroCliente(cid) {
+      this.tab = 'backlog';
+      if (this.f) this.f.cliente = cid;
+      this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
     },
 
 
