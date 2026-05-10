@@ -2592,18 +2592,6 @@
             <option value="alta">Alta</option>
           </select>
         </div>
-        <div>
-          <label class="lbl">Tamanho</label>
-          <select class="inp" x-model="editing.tamanho">
-            <option value="">— a classificar</option>
-            <option value="mini">Mini · &lt;2h</option>
-            <option value="small">Small · 2-8h</option>
-            <option value="medio">Médio · 8-24h</option>
-            <option value="grande">Grande · 24-80h</option>
-            <option value="mini_projeto">Mini-projeto · 80h+</option>
-          </select>
-          <div class="text-[10px] text-muted mt-1">"Grande" e "Mini-projeto" sem início viram alerta antes do prazo vencer.</div>
-        </div>
         <div class="sm:col-span-2">
           <label class="lbl">Prazo</label>
           <input type="date" class="inp" x-model="editing.prazo">
@@ -2861,7 +2849,6 @@ function taskFromDb(r) {
     prioridade: r.prioridade,
     esforco: Number(r.esforco) || 0,
     complexidade: r.complexidade || 'media',
-    tamanho: r.tamanho || '',
     prazo: r.prazo || '',
     status: r.status,
     subetapa: r.subetapa || 'backlog',
@@ -2884,7 +2871,6 @@ function taskToDb(t) {
     prioridade: t.prioridade,
     esforco: Number(t.esforco) || 0,
     complexidade: t.complexidade || 'media',
-    tamanho: t.tamanho || null,
     prazo: t.prazo || null,
     status: t.status,
     subetapa: t.subetapa || 'backlog',
@@ -2953,7 +2939,7 @@ function app() {
     authBlock: '', // mensagem persistente quando o callback nega acesso (volta pra login)
     draggingId: '',
     dragOverCol: '',
-    editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', tamanho: '', bloqueadoPor: '', visivelCliente: true },
+    editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true },
     editingPessoa: null,
     modalPessoa: false,
     kanbanView: 'op', // 'op' (operacional, nível 2) | 'exec' (executiva, nível 1)
@@ -4164,7 +4150,7 @@ function app() {
 
     // ===================== HELPERS =====================
     blankTask() {
-      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', tamanho: '', bloqueadoPor: '', visivelCliente: true, tags: [] };
+      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true, tags: [] };
     },
     normalizeTag(s) {
       return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24);
@@ -4193,6 +4179,16 @@ function app() {
     effEsforco(t) {
       const v = +(t && t.esforco);
       return v > 0 ? v : 4;
+    },
+    // Tamanho derivado automaticamente do esforço efetivo. Usado só
+    // em analytics/heurísticas — não vai pro card nem pro form.
+    effTamanho(t) {
+      const h = this.effEsforco(t);
+      if (h < 2)  return 'mini';
+      if (h < 8)  return 'small';
+      if (h < 24) return 'medio';
+      if (h < 80) return 'grande';
+      return 'mini_projeto';
     },
     lblComplex(c) {
       return ({ alta: 'Alta', media: 'Média', baixa: 'Baixa' })[c] || 'Média';
@@ -5342,11 +5338,12 @@ function app() {
       const ativas = this.tasks.filter(t => t.status !== 'concluido');
 
       // 1. Tarefa grande/mini-projeto sem início, prazo em até 10d
-      const grandes = ativas.filter(t =>
-        (t.tamanho === 'grande' || t.tamanho === 'mini_projeto') &&
-        t.subetapa === 'backlog' &&
-        t.prazo && t.prazo >= todayIso && t.prazo <= in10Iso
-      );
+      const grandes = ativas.filter(t => {
+        const sz = this.effTamanho(t);
+        return (sz === 'grande' || sz === 'mini_projeto') &&
+          t.subetapa === 'backlog' &&
+          t.prazo && t.prazo >= todayIso && t.prazo <= in10Iso;
+      });
       if (grandes.length) {
         out.push({
           severity: 'alta',
@@ -5777,7 +5774,6 @@ function app() {
             prioridade: e.prioridade, esforco: +e.esforco || 0,
             prazo: e.prazo || '', status: e.status, subetapa: e.subetapa,
             complexidade: e.complexidade || 'media',
-            tamanho: e.tamanho || '',
             bloqueadoPor: e.subetapa === 'bloqueado' ? (e.bloqueadoPor || '') : '',
             visivelCliente: e.visivelCliente !== false,
             tags: Array.isArray(e.tags) ? [...e.tags] : [],
