@@ -600,12 +600,12 @@
 <header class="bg-elev border-b border-line sticky top-0 z-40">
   <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-3">
     <button class="flex items-center gap-3 min-w-0 bg-transparent border-0 cursor-pointer hover:opacity-80 transition-opacity rounded-md -mx-1 px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-            @click="load(); $event.currentTarget.blur()" :disabled="loading"
+            @click="refreshFromLogo(); $event.currentTarget.blur()" :disabled="loading || refreshing"
             aria-label="Atualizar dados">
-      <div class="k360-mark" :class="loading && 'loading-pulse'"><span></span><span></span><span></span><span></span></div>
+      <div class="k360-mark" :class="(loading || refreshing) && 'loading-pulse'"><span></span><span></span><span></span><span></span></div>
       <div class="leading-none min-w-0 text-left">
         <div class="font-brand text-[18px] md:text-[22px] font-semibold text-brand">tasks 360</div>
-        <div class="text-[10px] uppercase tracking-[0.18em] text-muted mt-1 truncate" x-text="loading ? 'atualizando…' : 'gestão executiva · kliente 360'"></div>
+        <div class="text-[10px] uppercase tracking-[0.18em] text-muted mt-1 truncate" x-text="(loading || refreshing) ? 'atualizando…' : 'gestão executiva · kliente 360'"></div>
       </div>
     </button>
     <div class="flex items-center gap-1 shrink-0">
@@ -2468,6 +2468,7 @@ function app() {
     backlogDragId: '',
     modal: false,
     loading: true,
+    refreshing: false,
     theme: (() => { try { return localStorage.getItem('kliente360-theme') || 'light'; } catch(_) { return 'light'; } })(),
     filtersOpen: false,
     toasts: [],
@@ -2883,6 +2884,17 @@ function app() {
         .replace(/<\/(div|h[1-6]|tr)\s*>/gi, '\n');
       // textContent strips remaining tags + decodifica entidades (&amp; etc.)
       return (tmp.textContent || '').replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim();
+    },
+    async refreshFromLogo() {
+      if (this.refreshing) return;
+      this.refreshing = true;
+      // Garante que o pulse seja visível mesmo se a rede vier rápido (UX).
+      const minDelay = new Promise(r => setTimeout(r, 700));
+      try {
+        await Promise.all([this.load(), minDelay]);
+      } finally {
+        this.refreshing = false;
+      }
     },
     async load() {
       try {
@@ -3628,7 +3640,7 @@ function app() {
         { id: 'act-csv',    kind: 'export', label: 'Exportar CSV (visão atual)',         hint: 'pra Excel',         action: () => this.exportCSV() },
         { id: 'act-clear',  kind: 'ação', label: 'Limpar filtros',        hint: 'reseta busca, cliente, etc.',    action: () => this.clearFilters() },
         { id: 'act-theme',  kind: 'ação', label: 'Alternar tema',         hint: 'claro / escuro',                 action: () => this.toggleTheme() },
-        { id: 'act-reload', kind: 'ação', label: 'Recarregar dados',      hint: 'busca tudo do Supabase',         action: () => this.load() },
+        { id: 'act-reload', kind: 'ação', label: 'Recarregar dados',      hint: 'busca tudo do Supabase',         action: () => this.refreshFromLogo() },
         { id: 'act-manual', kind: 'ação', label: 'Manual da ferramenta',  hint: 'como usar · HOWTO completo',     action: () => this.openHelp() },
         { id: 'act-help',   kind: 'ação', label: 'Atalhos de teclado',    hint: 'ver lista completa',             action: () => this.shortcutsHelpOpen = true },
       ];
