@@ -295,16 +295,20 @@ Usa o diálogo nativo de impressão do navegador → **Salvar como PDF**.
 
 ---
 
-## Login (quando ativado)
+## Login
 
-> **Estado atual**: login está desativado (`AUTH_ENABLED = false`) por dois bugs de magic link em investigação. Quando voltar, o fluxo será o abaixo.
+Tela de login oferece **dois caminhos**:
 
-- Magic link sem senha
-- Lista fechada de pessoas: precisa ter cadastro ativo (`pessoa.email` preenchido + convite enviado)
-- Primeiro login vincula automaticamente a pessoa cadastrada à conta auth
-- Logout pelo menu de avatar no topo direito
+- **Entrar com Google** (recomendado pro time interno) — botão branco no topo. Redireciona pro Google, volta logado. Sem rate limit de email.
+- **Entrar com email** (cliente externo) — input + botão "Enviar código por email". Recebe um código de 6 dígitos no email; cola e entra.
 
-Quem não estiver na lista de convidados não consegue entrar.
+Em ambos os casos:
+- Lista fechada de pessoas — só entra quem está cadastrado em **Pessoas** com convite ativo.
+- O primeiro login vincula a pessoa cadastrada à conta auth (por email match).
+- Sessão fica salva no navegador; refresh não derruba.
+- Logout pelo menu de avatar no topo direito.
+
+Se o login validar mas a pessoa não estiver cadastrada/convidada, banner vermelho explica exatamente o que fazer.
 
 ---
 
