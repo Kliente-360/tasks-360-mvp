@@ -473,15 +473,55 @@
   .print-only .pr-kpi-grid {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px;
   }
+  .print-only .pr-kpi-strip { grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 10px; }
   .print-only .pr-kpi {
     border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px 14px;
     background: #fafafa;
   }
+  .print-only .pr-kpi-compact { padding: 8px 10px; }
   .print-only .pr-kpi.danger { border-color: #dc2626; background: #fef2f2; }
-  .print-only .pr-kpi-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #666; font-weight: 600; }
+  .print-only .pr-kpi-label { font-size: 8.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #666; font-weight: 600; }
   .print-only .pr-kpi-value { font-family: 'Manrope', sans-serif; font-size: 30px; font-weight: 700; line-height: 1.05; margin-top: 4px; color: #111; }
+  .print-only .pr-kpi-compact .pr-kpi-value { font-size: 22px; margin-top: 2px; }
   .print-only .pr-kpi.danger .pr-kpi-value { color: #b91c1c; }
-  .print-only .pr-kpi-foot { font-size: 9px; color: #888; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .print-only .pr-kpi-foot { font-size: 9px; color: #888; margin-top: 2px; font-family: 'JetBrains Mono', monospace; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+  .print-only .pr-delta { font-size: 9px; font-weight: 700; }
+  .print-only .pr-delta-good { color: #166534; }
+  .print-only .pr-delta-bad  { color: #b91c1c; }
+
+  /* Header e página executiva */
+  .print-only .pr-page-exec { padding: 16mm 12mm 10mm; }
+  .print-only .pr-head-compact { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e5e5e5; }
+
+  /* Split (eficiência + ações) */
+  .print-only .pr-split { display: flex; gap: 14px; margin-bottom: 4px; }
+  .print-only .pr-split-col { min-width: 0; }
+
+  /* Tabela de eficiência */
+  .print-only table.pr-tbl-eff { font-size: 9.5px; }
+  .print-only table.pr-tbl-eff td { padding: 3px 6px; border: 0; border-bottom: 1px solid #f0f0f0; }
+  .print-only table.pr-tbl-eff tr:last-child td { border-bottom: 0; }
+  .print-only .pr-eff-label { color: #444; }
+  .print-only .pr-eff-value { font-weight: 600; font-family: 'JetBrains Mono', monospace; width: 32%; }
+  .print-only .pr-eff-delta { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; width: 18%; }
+
+  /* Lista de ações */
+  .print-only .pr-actions { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; padding: 8px 12px; }
+  .print-only .pr-actions ul { margin: 0; padding-left: 0; list-style: none; }
+  .print-only .pr-actions li { font-size: 10px; color: #1f2937; line-height: 1.45; padding: 2px 0; display: flex; gap: 6px; align-items: baseline; }
+  .print-only .pr-actions li + li { border-top: 1px dotted #fed7aa; padding-top: 4px; margin-top: 2px; }
+  .print-only .pr-actions.empty { background: #f0fdf4; border-color: #bbf7d0; color: #166534; font-size: 10px; padding: 10px 14px; }
+  .print-only .pr-action-tag { display: inline-block; font-size: 7.5px; font-weight: 700; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+  .print-only .pr-action-danger { background: #dc2626; color: #fff; }
+  .print-only .pr-action-warn   { background: #f59e0b; color: #fff; }
+  .print-only .pr-action-info   { background: #e5e7eb; color: #374151; }
+
+  /* Sinal semafórico inline */
+  .print-only .pr-signal { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; margin-right: 5px; }
+  .print-only .pr-signal-verde     { background: #16a34a; }
+  .print-only .pr-signal-amarelo   { background: #f59e0b; }
+  .print-only .pr-signal-vermelho  { background: #dc2626; }
+  .print-only .pr-signal-text { font-size: 9px; color: #555; }
 
   .print-only .pr-section-title { font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #111; margin: 18px 0 8px; border-left: 3px solid #009900; padding-left: 8px; }
 
@@ -2427,13 +2467,14 @@
   </div>
 </div>
 
-<!-- ============ RELATÓRIO EXECUTIVO (print-only) ============ -->
+<!-- ============ RELATÓRIO EXECUTIVO (print-only, 1 página) ============ -->
 <section class="print-only" aria-hidden="true">
-  <div class="pr-page">
-    <div class="pr-head">
+  <div class="pr-page pr-page-exec">
+    <!-- Header compacto -->
+    <div class="pr-head pr-head-compact">
       <div>
-        <div class="pr-title">tasks 360 — relatório executivo</div>
-        <div class="pr-sub">gestão executiva · kliente 360</div>
+        <div class="pr-title">tasks 360 · executivo</div>
+        <div class="pr-sub">snapshot operacional · só sócios</div>
       </div>
       <div class="pr-stamp">
         <div>snapshot · <strong x-text="reportStampDate"></strong></div>
@@ -2441,76 +2482,112 @@
       </div>
     </div>
 
-    <div class="pr-kpi-grid">
+    <!-- KPI strip (6 indicadores) -->
+    <div class="pr-kpi-grid pr-kpi-strip">
       <template x-for="k in reportKPIs" :key="k.label">
-        <div class="pr-kpi" :class="k.danger && 'danger'">
+        <div class="pr-kpi pr-kpi-compact" :class="k.danger && 'danger'">
           <div class="pr-kpi-label" x-text="k.label"></div>
           <div class="pr-kpi-value" x-text="k.value"></div>
-          <div class="pr-kpi-foot" x-text="k.foot"></div>
+          <div class="pr-kpi-foot">
+            <span x-text="k.foot"></span>
+            <template x-if="k.delta !== undefined && k.delta !== null">
+              <span class="pr-delta" :class="k.deltaGood ? 'pr-delta-good' : 'pr-delta-bad'"
+                    x-text="(k.delta > 0 ? '↑ +' : (k.delta < 0 ? '↓ ' : '→ ')) + Math.abs(k.delta) + (k.deltaUnit||'')"></span>
+            </template>
+          </div>
         </div>
       </template>
     </div>
 
-    <div class="pr-section-title">Sinais de risco</div>
-    <div class="pr-risks" x-show="reportRisks.length > 0">
-      <ul>
-        <template x-for="r in reportRisks" :key="r"><li x-text="r"></li></template>
-      </ul>
-    </div>
-    <div class="pr-risks empty" x-show="reportRisks.length === 0">
-      Nenhum sinal de risco crítico no momento.
-    </div>
-
-    <div class="pr-section-title">Distribuição e tendência</div>
-    <div class="pr-charts">
-      <div class="pr-chart">
-        <h4>Por status</h4>
-        <div class="pr-chart-wrap"><canvas id="printChartStatus"></canvas></div>
+    <!-- Eficiência + Ação requerida (lado a lado) -->
+    <div class="pr-split">
+      <div class="pr-split-col" style="flex: 0 0 38%">
+        <div class="pr-section-title">Eficiência da operação</div>
+        <table class="pr-tbl pr-tbl-eff">
+          <tbody>
+            <template x-for="r in reportEfficiency" :key="r.label">
+              <tr>
+                <td class="pr-eff-label" x-text="r.label"></td>
+                <td class="pr-num pr-eff-value" :class="r.danger ? 'pr-warn' : (r.good ? 'pr-ok' : '')" x-text="r.value"></td>
+                <td class="pr-num pr-eff-delta" :class="r.deltaGood===true ? 'pr-ok' : (r.deltaGood===false ? 'pr-warn' : 'pr-muted')" x-text="r.delta || ''"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
       </div>
-      <div class="pr-chart">
-        <h4>Horas por cliente (ativas)</h4>
-        <div class="pr-chart-wrap"><canvas id="printChartClientes"></canvas></div>
-      </div>
-    </div>
-    <div class="pr-chart">
-      <h4>Throughput · 8 semanas (tarefas concluídas)</h4>
-      <div class="pr-chart-wrap tall"><canvas id="printChartThroughput"></canvas></div>
-    </div>
-
-    <div class="pr-foot">
-      <span>tasks 360 · gestão executiva · kliente 360</span>
-      <span>página 1</span>
-    </div>
-  </div>
-
-  <!-- ============ PÁGINA 2 — Gestão do time ============ -->
-  <div class="pr-page">
-    <div class="pr-head">
-      <div>
-        <div class="pr-title">Gestão do time</div>
-        <div class="pr-sub">carga · sobrecarga · sugestões de redistribuição</div>
-      </div>
-      <div class="pr-stamp">
-        <div>snapshot · <strong x-text="reportStampDate"></strong></div>
-        <div x-text="reportTeamLoad.length + ' pessoas com carga'"></div>
+      <div class="pr-split-col" style="flex: 1 1 auto">
+        <div class="pr-section-title">Ação requerida · pontos de atenção</div>
+        <div class="pr-actions" x-show="reportActions.length > 0">
+          <ul>
+            <template x-for="(a, i) in reportActions" :key="i">
+              <li>
+                <span class="pr-action-tag" :class="'pr-action-' + a.severity" x-text="a.tag"></span>
+                <span x-text="a.titulo"></span>
+              </li>
+            </template>
+          </ul>
+        </div>
+        <div class="pr-actions empty" x-show="reportActions.length === 0">
+          Nenhum ponto crítico no momento. Operação fluindo.
+        </div>
       </div>
     </div>
 
-    <div class="pr-section-title">Carga atual · horas alocadas em tarefas ativas</div>
+    <!-- Clientes -->
+    <div class="pr-section-title">Clientes · saúde, atrasos e consumo de horas orçadas</div>
+    <table class="pr-tbl pr-tbl-cli">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th style="width:11%">Tier</th>
+          <th style="width:7%" class="pr-num">Tasks</th>
+          <th style="width:8%" class="pr-num">Horas</th>
+          <th style="width:11%" class="pr-num">% Orç. (h)</th>
+          <th style="width:9%" class="pr-num">Atrasadas</th>
+          <th style="width:11%" class="pr-num">Aguard. cli.</th>
+          <th style="width:18%">Saúde</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="c in reportClientesExec" :key="c.id">
+          <tr>
+            <td><strong x-text="c.nome"></strong></td>
+            <td x-text="c.tier || '—'" :class="!c.tier && 'pr-muted'"></td>
+            <td class="pr-num" x-text="c.ativas"></td>
+            <td class="pr-num" x-text="c.horas + 'h'"></td>
+            <td class="pr-num">
+              <template x-if="c.pctOrc != null">
+                <span x-text="c.pctOrc + '%'" :class="c.pctOrc > 100 ? 'pr-warn' : (c.pctOrc > 80 ? 'pr-amber' : '')"></span>
+              </template>
+              <template x-if="c.pctOrc == null"><span class="pr-muted">—</span></template>
+            </td>
+            <td class="pr-num" :class="c.atrasadas > 0 && 'pr-late'" x-text="c.atrasadas"></td>
+            <td class="pr-num" :class="c.bloqAguard > 0 && 'pr-amber'" x-text="c.bloqAguard"></td>
+            <td>
+              <span class="pr-signal" :class="'pr-signal-' + c.sinal"></span>
+              <span class="pr-signal-text" x-text="c.sinalReason"></span>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+
+    <!-- Time -->
+    <div class="pr-section-title">Time interno · capacidade e sobrecarga</div>
     <table class="pr-tbl pr-tbl-team">
       <thead>
         <tr>
           <th>Pessoa</th>
-          <th style="width:9%">Nível</th>
+          <th style="width:10%">Nível</th>
           <th style="width:7%" class="pr-num">Tasks</th>
-          <th style="width:9%" class="pr-num">Horas</th>
-          <th style="width:11%" class="pr-num">% Cap.</th>
-          <th style="width:10%" class="pr-num">Atrasadas</th>
+          <th style="width:8%" class="pr-num">Horas</th>
+          <th style="width:10%" class="pr-num">% Cap.</th>
+          <th style="width:9%" class="pr-num">Atrasadas</th>
           <th style="width:30%">Distribuição</th>
         </tr>
       </thead>
       <tbody>
-        <template x-for="p in reportTeamLoad" :key="p.id">
+        <template x-for="p in reportTeamCompact" :key="p.id">
           <tr :class="'pr-row-' + p.cargaNivel">
             <td>
               <strong x-text="p.nome"></strong>
@@ -2538,129 +2615,10 @@
         </template>
       </tbody>
     </table>
-    <div class="pr-legend">
-      <span><span class="pr-bar-sample ok"></span> horas no prazo</span>
-      <span><span class="pr-bar-sample late"></span> horas em tasks atrasadas</span>
-      <span class="pr-muted">% Cap = horas alocadas / capacidade semanal declarada</span>
-    </div>
-
-    <div class="pr-section-title">Pessoa × Status · horas alocadas</div>
-    <div class="pr-chart">
-      <div class="pr-chart-wrap" style="height: 180px"><canvas id="printChartPesStatH"></canvas></div>
-    </div>
-
-    <div class="pr-section-title">Sugestões de redistribuição</div>
-    <div x-show="reportRedistSuggestions.length > 0" class="pr-risks">
-      <ul>
-        <template x-for="(s, i) in reportRedistSuggestions" :key="i"><li x-text="s"></li></template>
-      </ul>
-    </div>
-    <div x-show="reportRedistSuggestions.length === 0" class="pr-risks empty">
-      Carga equilibrada — nenhum gargalo crítico que justifique redistribuição agora.
-    </div>
 
     <div class="pr-foot">
-      <span>tasks 360 · gestão executiva · kliente 360</span>
-      <span>página 2</span>
-    </div>
-  </div>
-
-  <!-- ============ PÁGINA 3 — Gestão dos clientes ============ -->
-  <div class="pr-page">
-    <div class="pr-head">
-      <div>
-        <div class="pr-title">Gestão dos clientes</div>
-        <div class="pr-sub">saúde · atenção máxima · histórico recente</div>
-      </div>
-      <div class="pr-stamp">
-        <div>snapshot · <strong x-text="reportStampDate"></strong></div>
-        <div x-text="reportClientHealth.length + ' clientes ativos'"></div>
-      </div>
-    </div>
-
-    <div class="pr-section-title">Distribuição por cliente</div>
-    <div class="pr-charts-row">
-      <div class="pr-chart">
-        <h4>Tarefas concluídas · últimos 14 dias</h4>
-        <div class="pr-chart-wrap"><canvas id="printChartCliEntregues"></canvas></div>
-      </div>
-      <div class="pr-chart">
-        <h4>SLA médio · dias entre criação e conclusão (14d)</h4>
-        <div class="pr-chart-wrap"><canvas id="printChartCliSla"></canvas></div>
-      </div>
-    </div>
-
-    <div class="pr-section-title">Saúde por cliente · sinal semafórico</div>
-    <table class="pr-tbl">
-      <thead>
-        <tr>
-          <th style="width:6%"></th>
-          <th>Cliente</th>
-          <th style="width:8%" class="pr-num">Ativas</th>
-          <th style="width:10%" class="pr-num">Atrasadas</th>
-          <th style="width:14%" class="pr-num">Aguardando<br>cliente</th>
-          <th style="width:11%" class="pr-num">Entregues 14d</th>
-          <th style="width:11%" class="pr-num">vs 14d ant.</th>
-          <th style="width:11%">SLA médio</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template x-for="c in reportClientHealth" :key="c.id">
-          <tr>
-            <td><span class="pr-signal" :class="'pr-signal-' + c.sinal" :title="c.sinalReason"></span></td>
-            <td><strong x-text="c.nome"></strong></td>
-            <td class="pr-num" x-text="c.ativas"></td>
-            <td class="pr-num" :class="c.atrasadas > 0 && 'pr-late'" x-text="c.atrasadas"></td>
-            <td class="pr-num" :class="c.bloqAguard > 0 && 'pr-warn'" x-text="c.bloqAguard"></td>
-            <td class="pr-num" x-text="c.entregues14d"></td>
-            <td class="pr-num" :class="c.delta > 0 ? 'pr-up' : (c.delta < 0 ? 'pr-down' : '')"
-                x-text="(c.delta > 0 ? '+' : '') + c.delta"></td>
-            <td class="pr-num" x-text="c.slaMedio != null ? c.slaMedio.toFixed(1) + 'd' : '—'"></td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
-    <div class="pr-legend">
-      <span><span class="pr-signal pr-signal-verde"></span> saudável</span>
-      <span><span class="pr-signal pr-signal-amarelo"></span> atenção (até 30% atrasadas ou bloqueio &lt;5d)</span>
-      <span><span class="pr-signal pr-signal-vermelho"></span> crítico (&gt;30% atrasadas ou bloqueio &gt;5d)</span>
-    </div>
-
-    <div class="pr-section-title">Atenção máxima · top 10 pendentes críticos</div>
-    <table class="pr-tbl">
-      <thead>
-        <tr>
-          <th style="width:13%">Cliente</th>
-          <th>Tarefa</th>
-          <th style="width:13%">Resp.</th>
-          <th style="width:6%">P</th>
-          <th style="width:11%">Sinal</th>
-          <th style="width:9%" class="pr-num">Parada</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template x-for="t in reportTopPendentes" :key="t.id">
-          <tr>
-            <td x-text="nomeCliente(t.clienteId)"></td>
-            <td x-text="t.titulo"></td>
-            <td x-text="nomePessoa(t.pessoaId) || '—'"></td>
-            <td><span class="pr-pchip" :class="'pr-p-' + t.prioridade" x-text="t.prioridade"></span></td>
-            <td>
-              <template x-if="atrasada(t)"><span class="pr-late" x-text="'Atrasada · ' + diasAtraso(t) + 'd'"></span></template>
-              <template x-if="!atrasada(t) && t.subetapa === 'bloqueado' && t.bloqueadoPor === 'cliente'"><span class="pr-warn">Aguardando cliente</span></template>
-              <template x-if="!atrasada(t) && t.subetapa === 'bloqueado' && t.bloqueadoPor !== 'cliente'"><span>Bloqueada</span></template>
-              <template x-if="!atrasada(t) && t.subetapa !== 'bloqueado' && agingLevel(t) === 'stale'"><span>Aging crítico</span></template>
-            </td>
-            <td class="pr-num" x-text="agingDays(t) + 'd'"></td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
-    <div x-show="reportTopPendentes.length === 0" class="pr-risks empty">Sem pendentes críticos. Operação saudável.</div>
-
-    <div class="pr-foot">
-      <span>tasks 360 · gestão executiva · kliente 360</span>
-      <span>página 3</span>
+      <span>tasks 360 · executivo · kliente 360 · só sócios</span>
+      <span x-text="'snapshot ' + reportStampDate"></span>
     </div>
   </div>
 </section>
@@ -4168,22 +4126,162 @@ function app() {
     get reportKPIs() {
       const t = this.tasks;
       const ativas = t.filter(x => x.status !== 'concluido');
-      const emAndamento = t.filter(x => x.status === 'andamento').length;
-      const bloqueadas  = t.filter(x => x.status === 'bloqueado').length;
-      const atrasadas   = ativas.filter(x => this.atrasada(x)).length;
+      const atrasadas = ativas.filter(x => this.atrasada(x)).length;
       const now = Date.now();
-      const concluidas7d = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) <= 7*86400000).length;
-      const concluidas30d = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) <= 30*86400000).length;
+      const concl7d  = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) <= 7*86400000).length;
+      const concl7dPrev = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) > 7*86400000 && (now - x.statusEm) <= 14*86400000).length;
       const horasAtivas = ativas.reduce((s, x) => s + this.effEsforco(x), 0);
+      // Lead time médio (14d, criação→conclusão)
+      const leads = t.filter(x => x.status === 'concluido' && x.statusEm && x.criadoEm && (now - x.statusEm) <= 14*86400000)
+        .map(x => (x.statusEm - x.criadoEm) / 86400000)
+        .filter(d => d > 0);
+      const leadsPrev = t.filter(x => x.status === 'concluido' && x.statusEm && x.criadoEm && (now - x.statusEm) > 14*86400000 && (now - x.statusEm) <= 28*86400000)
+        .map(x => (x.statusEm - x.criadoEm) / 86400000)
+        .filter(d => d > 0);
+      const lt = leads.length ? (leads.reduce((a,b) => a+b, 0) / leads.length) : null;
+      const ltPrev = leadsPrev.length ? (leadsPrev.reduce((a,b) => a+b, 0) / leadsPrev.length) : null;
+      // % capacidade média do time (apenas pessoas com cap declarada e tasks ativas)
+      const team = this.reportTeamLoad.filter(p => p.pctCap != null);
+      const capMed = team.length ? Math.round(team.reduce((s,p) => s + p.pctCap, 0) / team.length) : null;
+      // Clientes em risco (vermelho + amarelo)
+      const cliRisco = this.reportClientHealth.filter(c => c.sinal !== 'verde').length;
+      const cliVermelho = this.reportClientHealth.filter(c => c.sinal === 'vermelho').length;
+
+      const pctAtr = ativas.length ? Math.round(atrasadas / ativas.length * 100) : 0;
+      const dThr = concl7d - concl7dPrev;
+      const dLt = (lt != null && ltPrev != null) ? +(lt - ltPrev).toFixed(1) : null;
+
       return [
         { label: 'Ativas', value: ativas.length, foot: horasAtivas + 'h previstas' },
-        { label: 'Em andamento', value: emAndamento, foot: ativas.length ? Math.round(emAndamento/ativas.length*100)+'% das ativas' : '—' },
-        { label: 'Bloqueadas', value: bloqueadas, danger: bloqueadas > 0, foot: bloqueadas ? 'requer desbloqueio' : 'sem represas' },
-        { label: 'Atrasadas', value: atrasadas, danger: atrasadas > 0, foot: atrasadas ? 'prazo vencido' : 'todas no prazo' },
-        { label: 'Concluídas · 7d', value: concluidas7d, foot: 'throughput semanal' },
-        { label: 'Concluídas · 30d', value: concluidas30d, foot: 'volume mensal' },
+        { label: 'Atrasadas', value: atrasadas, danger: atrasadas > 0, foot: pctAtr + '% das ativas' },
+        { label: 'Throughput · 7d', value: concl7d, foot: 'concluídas',
+          delta: dThr, deltaUnit: '', deltaGood: dThr >= 0 },
+        { label: 'Lead time · 14d', value: lt != null ? lt.toFixed(1) + 'd' : '—', foot: 'média criação→conclusão',
+          delta: dLt, deltaUnit: 'd', deltaGood: dLt != null ? dLt <= 0 : null },
+        { label: 'Capac. média', value: capMed != null ? capMed + '%' : '—', danger: capMed != null && capMed > 100, foot: capMed != null ? team.length + ' pessoas com cap.' : 'sem cap. declarada' },
+        { label: 'Clientes em risco', value: cliRisco, danger: cliVermelho > 0, foot: cliVermelho + ' crítico' + (cliVermelho === 1 ? '' : 's') },
       ];
     },
+
+    // Eficiência da operação (bloco esquerdo da página executiva)
+    get reportEfficiency() {
+      const t = this.tasks;
+      const ativas = t.filter(x => x.status !== 'concluido');
+      const now = Date.now();
+      const fmt = (v) => (v > 0 ? '+' : '') + v;
+      // 1. % entrega no prazo (concluídas últimos 30d)
+      const concl30d = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) <= 30*86400000);
+      const noPrazo = concl30d.filter(x => x.prazo && x.statusEm && new Date(x.prazo + 'T23:59:59').getTime() >= x.statusEm).length;
+      const pctNoPrazo = concl30d.length ? Math.round(noPrazo / concl30d.length * 100) : null;
+      // 2. Taxa de reabertura (% de tasks ativas com reopen_count >= 1)
+      const reabertas = ativas.filter(x => (x.reopenCount || 0) >= 1).length;
+      const pctReab = ativas.length ? Math.round(reabertas / ativas.length * 100) : 0;
+      // 3. % aguardando cliente (de ativas)
+      const aguardCli = ativas.filter(x => x.subetapa === 'bloqueado' && x.bloqueadoPor === 'cliente').length;
+      const pctAguard = ativas.length ? Math.round(aguardCli / ativas.length * 100) : 0;
+      // 4. % bloqueadas internamente
+      const bloqInt = ativas.filter(x => x.subetapa === 'bloqueado' && x.bloqueadoPor !== 'cliente').length;
+      const pctBloq = ativas.length ? Math.round(bloqInt / ativas.length * 100) : 0;
+      // 5. % sem prazo (qualidade do backlog)
+      const semPrazo = ativas.filter(x => !x.prazo).length;
+      const pctSemPrazo = ativas.length ? Math.round(semPrazo / ativas.length * 100) : 0;
+      // 6. Aging médio das ativas (dias)
+      const agings = ativas.map(x => this.agingDays(x)).filter(d => d > 0);
+      const agingMed = agings.length ? Math.round(agings.reduce((a,b) => a+b, 0) / agings.length) : 0;
+
+      return [
+        { label: 'Entrega no prazo (30d)', value: pctNoPrazo != null ? pctNoPrazo + '%' : '—',
+          good: pctNoPrazo != null && pctNoPrazo >= 80, danger: pctNoPrazo != null && pctNoPrazo < 60 },
+        { label: 'Taxa de reabertura', value: pctReab + '% (' + reabertas + ')',
+          danger: pctReab > 15, good: pctReab === 0 },
+        { label: 'Aguardando cliente', value: pctAguard + '% (' + aguardCli + ')',
+          danger: pctAguard > 30 },
+        { label: 'Bloqueadas internas', value: pctBloq + '% (' + bloqInt + ')',
+          danger: pctBloq > 15 },
+        { label: 'Sem prazo definido', value: pctSemPrazo + '% (' + semPrazo + ')',
+          danger: pctSemPrazo > 30 },
+        { label: 'Aging médio (ativas)', value: agingMed + 'd',
+          danger: agingMed > 14 },
+      ];
+    },
+
+    // Pontos de atenção condensados (heurísticas + clientes críticos + sobrecarga)
+    get reportActions() {
+      const out = [];
+      const seen = new Set();
+      // 1. Heurísticas (top severidade alta primeiro)
+      const sevRank = { alta: 0, media: 1, baixa: 2 };
+      const heur = (this.heuristicAlerts || []).slice().sort((a,b) =>
+        (sevRank[a.severity] ?? 9) - (sevRank[b.severity] ?? 9)
+      );
+      for (const h of heur) {
+        const key = 'h:' + h.kind;
+        if (seen.has(key)) continue; seen.add(key);
+        const tag = h.severity === 'alta' ? 'crítico' : (h.severity === 'media' ? 'atenção' : 'aviso');
+        const sev = h.severity === 'alta' ? 'danger' : (h.severity === 'media' ? 'warn' : 'info');
+        out.push({ severity: sev, tag, titulo: h.titulo });
+      }
+      // 2. Clientes críticos
+      for (const c of this.reportClientHealth) {
+        if (c.sinal !== 'vermelho') continue;
+        const key = 'cv:' + c.id;
+        if (seen.has(key)) continue; seen.add(key);
+        out.push({ severity: 'danger', tag: 'cliente', titulo: c.nome + ' · ' + c.sinalReason });
+      }
+      // 3. Sobrecarga (>130% capacidade ou >50h sem cap declarada)
+      for (const p of this.reportTeamLoad) {
+        if (p.cargaNivel !== 'sobrecarga') continue;
+        const key = 'sob:' + p.id;
+        if (seen.has(key)) continue; seen.add(key);
+        const detalhe = p.pctCap != null ? (p.pctCap + '% capacidade') : (p.horas + 'h alocadas');
+        out.push({ severity: 'danger', tag: 'time', titulo: p.nome + ' · ' + detalhe });
+      }
+      // Limita a 8 pra caber na página
+      return out.slice(0, 8);
+    },
+
+    // Clientes (versão executiva): adiciona tier + % orçamento de horas
+    get reportClientesExec() {
+      const baseHealth = this.reportClientHealth;
+      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+      const out = [];
+      for (const h of baseHealth) {
+        const cli = this.clientes.find(c => c.id === h.id) || {};
+        // Horas alocadas em ativas (estimativa)
+        const horas = ativas.filter(t => t.clienteId === h.id).reduce((s, t) => s + this.effEsforco(t), 0);
+        // Orçamento total = soma orcamento_horas dos projetos do cliente
+        const projsCli = this.projetos.filter(p => p.cliente_id === h.id || p.clienteId === h.id);
+        const orcTotal = projsCli.reduce((s, p) => s + (Number(p.orcamento_horas || p.orcamentoHoras) || 0), 0);
+        // Horas consumidas = ativas (estimadas) + concluídas (real ou estimado)
+        const concluidas = this.tasks.filter(t => t.clienteId === h.id && t.status === 'concluido');
+        const horasConc = concluidas.reduce((s, t) => s + (Number(t.tempoRealHoras) || this.effEsforco(t) || 0), 0);
+        const horasConsumidas = horas + horasConc;
+        const pctOrc = orcTotal > 0 ? Math.round(horasConsumidas / orcTotal * 100) : null;
+        out.push({
+          ...h,
+          tier: cli.tier || '',
+          horas,
+          orcTotal,
+          pctOrc,
+        });
+      }
+      // Ordena por: sinal pior primeiro, depois tier (estratégico > recorrente > transacional > vazio), depois mais horas
+      const sinalRank = { vermelho: 0, amarelo: 1, verde: 2 };
+      const tierRank = { estrategico: 0, 'estratégico': 0, recorrente: 1, transacional: 2 };
+      out.sort((a,b) => {
+        const ds = (sinalRank[a.sinal] ?? 9) - (sinalRank[b.sinal] ?? 9); if (ds) return ds;
+        const dt = (tierRank[(a.tier || '').toLowerCase()] ?? 9) - (tierRank[(b.tier || '').toLowerCase()] ?? 9); if (dt) return dt;
+        return b.horas - a.horas;
+      });
+      return out.slice(0, 12);
+    },
+
+    // Top do time pra cabe na página (8 pessoas)
+    get reportTeamCompact() {
+      return this.reportTeamLoad.slice(0, 8);
+    },
+
+
     get reportRisks() {
       const out = [];
       const ativas = this.tasks.filter(t => t.status !== 'concluido');
@@ -4380,160 +4478,13 @@ function app() {
       setTimeout(() => { this.destroyPrintCharts(); }, 4000);
     },
     buildPrintCharts() {
+      // PDF executivo é só tabelas/KPIs/ações — não há charts a construir.
       this.destroyPrintCharts();
-      const ativas = this.tasks.filter(t => t.status !== 'concluido');
-      const baseFont = { family: 'Inter, sans-serif', size: 10 };
-
-      // 1) Donut por status
-      const statusKeys = ['backlog','andamento','bloqueado','concluido'];
-      const statusCounts = statusKeys.map(k => this.tasks.filter(t => t.status === k).length);
-      const statusColors = ['#9ca3af','#009900','#dc2626','#6b7280'];
-      const ctxS = document.getElementById('printChartStatus');
-      if (ctxS) {
-        this.printCharts.status = new Chart(ctxS, {
-          type: 'doughnut',
-          data: { labels: statusKeys.map(k => this.lblStatus(k)), datasets: [{ data: statusCounts, backgroundColor: statusColors, borderWidth: 1, borderColor: '#fff' }] },
-          options: {
-            responsive: true, maintainAspectRatio: false, animation: false,
-            cutout: '60%',
-            plugins: {
-              legend: { position: 'right', labels: { font: baseFont, boxWidth: 10, padding: 6, color: '#111' } },
-              tooltip: { enabled: false }
-            }
-          }
-        });
-      }
-
-      // 2) Horas por cliente (ativas)
-      const porCliente = {};
-      ativas.forEach(t => { const n = this.nomeCliente(t.clienteId); porCliente[n] = (porCliente[n]||0) + this.effEsforco(t); });
-      const cliEntries = Object.entries(porCliente).filter(([_,v]) => v > 0).sort((a,b) => b[1]-a[1]).slice(0, 8);
-      const ctxC = document.getElementById('printChartClientes');
-      if (ctxC) {
-        this.printCharts.clientes = new Chart(ctxC, {
-          type: 'bar',
-          data: { labels: cliEntries.map(e => e[0]), datasets: [{ data: cliEntries.map(e => e[1]), backgroundColor: '#009900', borderRadius: 3, barThickness: 12 }] },
-          options: {
-            responsive: true, maintainAspectRatio: false, animation: false, indexAxis: 'y',
-            plugins: { legend: { display: false }, tooltip: { enabled: false } },
-            scales: {
-              x: { grid: { color: '#eee' }, ticks: { font: baseFont, color: '#666' }, border: { display: false } },
-              y: { grid: { display: false }, ticks: { font: baseFont, color: '#111' }, border: { display: false } }
-            }
-          }
-        });
-      }
-
-      // === Charts pessoa × dimensão (página 2 do PDF) ===
-      this.buildPersonBreakdownCharts(ativas, baseFont);
-
-      // === Charts por cliente (página 3 do PDF) ===
-      this.buildClientCharts(baseFont);
-
-      // 3) Throughput 8 semanas (sparkline)
-      const ts = this.throughputSemanas;
-      const ctxT = document.getElementById('printChartThroughput');
-      if (ctxT) {
-        this.printCharts.throughput = new Chart(ctxT, {
-          type: 'bar',
-          data: { labels: ts.map(s => s.label), datasets: [{ data: ts.map(s => s.count), backgroundColor: ts.map((_,i) => i === ts.length - 1 ? '#006600' : '#009900'), borderRadius: 2, maxBarThickness: 22 }] },
-          options: {
-            responsive: true, maintainAspectRatio: false, animation: false,
-            plugins: { legend: { display: false }, tooltip: { enabled: false } },
-            scales: {
-              x: { grid: { display: false }, ticks: { font: baseFont, color: '#666' }, border: { display: false } },
-              y: { grid: { color: '#eee' }, ticks: { font: baseFont, color: '#666', stepSize: 1, precision: 0 }, border: { display: false } }
-            }
-          }
-        });
-      }
     },
     destroyPrintCharts() {
-      ['status','clientes','throughput','pesStatH','cliEntregues','cliSla'].forEach(k => {
+      Object.keys(this.printCharts).forEach(k => {
         if (this.printCharts[k]) { try { this.printCharts[k].destroy(); } catch(_) {} this.printCharts[k] = null; }
       });
-    },
-    buildPersonBreakdownCharts(ativas, baseFont) {
-      // Pega top pessoas com carga, com mesmo critério da tabela.
-      const pessoasMap = new Map();
-      for (const p of this.pessoas) {
-        if (p.role === 'cliente') continue;
-        pessoasMap.set(p.id, { id: p.id, nome: p.nome, total: 0 });
-      }
-      for (const t of ativas) {
-        if (!t.pessoaId) continue;
-        const p = pessoasMap.get(t.pessoaId);
-        if (p) p.total += this.effEsforco(t);
-      }
-      const topPessoas = Array.from(pessoasMap.values()).filter(p => p.total > 0).sort((a,b) => b.total - a.total).slice(0, 10);
-      const pessoaIds = topPessoas.map(p => p.id);
-      const pessoaLabels = topPessoas.map(p => (p.nome || '—').split(' ').slice(0,2).join(' '));
-
-      // Pessoa × Status (horas) — barras horizontais empilhadas
-      const statusKeys = ['backlog','andamento','bloqueado'];
-      const statusColors = { backlog: '#9ca3af', andamento: '#009900', bloqueado: '#dc2626' };
-      const hPorStatusPes = {};
-      for (const k of statusKeys) hPorStatusPes[k] = {};
-      for (const t of ativas) {
-        if (!t.pessoaId || !pessoaIds.includes(t.pessoaId)) continue;
-        const k = t.status;
-        if (!hPorStatusPes[k]) continue;
-        hPorStatusPes[k][t.pessoaId] = (hPorStatusPes[k][t.pessoaId] || 0) + this.effEsforco(t);
-      }
-      const datasets = statusKeys.map(k => ({
-        label: this.lblStatus(k),
-        data: pessoaIds.map(pid => hPorStatusPes[k][pid] || 0),
-        backgroundColor: statusColors[k],
-        borderWidth: 0,
-      }));
-
-      const ctx = document.getElementById('printChartPesStatH');
-      if (ctx) {
-        this.printCharts.pesStatH = new Chart(ctx, {
-          type: 'bar',
-          data: { labels: pessoaLabels, datasets },
-          options: {
-            responsive: true, maintainAspectRatio: false, animation: false, indexAxis: 'y',
-            plugins: {
-              legend: { position: 'bottom', labels: { font: baseFont, boxWidth: 10, padding: 8, color: '#333' } },
-              tooltip: { enabled: false },
-            },
-            scales: {
-              x: { stacked: true, grid: { color: '#eee' }, ticks: { font: baseFont, color: '#666', callback: v => v + 'h' }, border: { display: false } },
-              y: { stacked: true, grid: { display: false }, ticks: { font: baseFont, color: '#111' }, border: { display: false } },
-            },
-          }
-        });
-      }
-    },
-    buildClientCharts(baseFont) {
-      const data = this.reportClientHealth;
-      if (!data.length) return;
-      const labels = data.map(c => c.nome);
-      const baseOpts = (axisLabel) => ({
-        responsive: true, maintainAspectRatio: false, animation: false, indexAxis: 'y',
-        plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        scales: {
-          x: { grid: { color: '#eee' }, ticks: { font: baseFont, color: '#666' }, border: { display: false }, title: { display: !!axisLabel, text: axisLabel, font: { ...baseFont, size: 9 }, color: '#666' } },
-          y: { grid: { display: false }, ticks: { font: baseFont, color: '#111' }, border: { display: false } },
-        },
-      });
-      const ctxE = document.getElementById('printChartCliEntregues');
-      if (ctxE) {
-        this.printCharts.cliEntregues = new Chart(ctxE, {
-          type: 'bar',
-          data: { labels, datasets: [{ data: data.map(c => c.entregues14d), backgroundColor: '#009900', borderRadius: 3, barThickness: 12 }] },
-          options: baseOpts('tarefas concluídas'),
-        });
-      }
-      const ctxS = document.getElementById('printChartCliSla');
-      if (ctxS) {
-        this.printCharts.cliSla = new Chart(ctxS, {
-          type: 'bar',
-          data: { labels, datasets: [{ data: data.map(c => c.slaMedio == null ? 0 : Math.round(c.slaMedio * 10) / 10), backgroundColor: '#2D7AA8', borderRadius: 3, barThickness: 12 }] },
-          options: baseOpts('dias'),
-        });
-      }
     },
 
     // ===================== HELPERS =====================
