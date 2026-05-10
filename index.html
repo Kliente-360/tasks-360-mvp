@@ -455,24 +455,24 @@
   .brief-signal-amarelo   { background: #f59e0b; }
   .brief-signal-vermelho  { background: #dc2626; }
   .brief-tag {
-    display: inline-block; font-size: 9px; font-weight: 700;
-    padding: 2px 7px; border-radius: 4px; text-transform: uppercase;
+    display: inline-block; font-size: 9.5px; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px; text-transform: uppercase;
     letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace;
-    flex-shrink: 0; min-width: 60px; text-align: center;
+    flex-shrink: 0; min-width: 64px; text-align: center;
   }
   .brief-tag-sobrecarga { background: #dc2626; color: #fff; }
   .brief-tag-pressao    { background: #f59e0b; color: #fff; }
   .brief-tag-folga      { background: #bbf7d0; color: #166534; }
 
   .brief-kpi {
-    border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
     background: var(--bg);
   }
   .brief-kpi-danger { border-color: var(--p0); background: color-mix(in srgb, var(--p0) 8%, var(--bg)); }
   .brief-kpi-warn   { border-color: #f59e0b; background: #fff7ed; }
-  .brief-kpi-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-  .brief-kpi-value { font-family: 'Manrope', sans-serif; font-size: 26px; font-weight: 700; line-height: 1.1; margin-top: 2px; color: var(--ink); }
-  .brief-kpi-delta { font-size: 10px; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+  .brief-kpi-label { font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .brief-kpi-value { font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 700; line-height: 1.1; margin-top: 4px; color: var(--ink); }
+  .brief-kpi-delta { font-size: 10.5px; margin-top: 5px; font-family: 'JetBrains Mono', monospace; line-height: 1.4; }
 
   /* ============ MEMO EXECUTIVO (PDF via print) ============
      Layout linear, narrativo. Flui em 1-2 páginas naturalmente.
@@ -952,7 +952,7 @@
     </div>
 
     <!-- Card 1 · Clientes pra conversar hoje -->
-    <div class="card">
+    <div class="card p-5 md:p-7">
       <div class="flex items-baseline justify-between mb-3">
         <h2 class="font-brand text-lg font-semibold">Clientes pra conversar hoje</h2>
         <span class="text-xs text-muted font-mono" x-text="briefingClientesRisco.length + ' em risco'"></span>
@@ -982,7 +982,7 @@
     </div>
 
     <!-- Card 2 · Pessoas pra conversar -->
-    <div class="card">
+    <div class="card p-5 md:p-7">
       <div class="flex items-baseline justify-between mb-3">
         <h2 class="font-brand text-lg font-semibold">Pessoas pra conversar hoje</h2>
         <span class="text-xs text-muted font-mono" x-text="briefingTimeRisco.length + ' em risco'"></span>
@@ -1009,7 +1009,7 @@
     </div>
 
     <!-- Card 3 · Tendência -->
-    <div class="card">
+    <div class="card p-5 md:p-7">
       <div class="flex items-baseline justify-between mb-3">
         <h2 class="font-brand text-lg font-semibold">Tendência da operação</h2>
         <span class="text-xs text-muted font-mono">vs período anterior</span>
@@ -1027,7 +1027,7 @@
     </div>
 
     <!-- Card 4 · Capacidade vs demanda -->
-    <div class="card">
+    <div class="card p-5 md:p-7">
       <div class="flex items-baseline justify-between mb-3">
         <h2 class="font-brand text-lg font-semibold">Capacidade vs demanda</h2>
         <span class="text-xs text-muted font-mono">decisão de contratar/cortar</span>
@@ -2619,33 +2619,6 @@
     </section>
 
     <section class="memo-block memo-block-table">
-      <h2>Clientes ativos · saúde</h2>
-      <table class="memo-tbl">
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th class="memo-num">Tasks</th>
-            <th class="memo-num">Horas</th>
-            <th>Saúde</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template x-for="c in reportClientesExec" :key="c.id">
-            <tr>
-              <td><strong x-text="c.nome"></strong> <span class="memo-muted" x-text="c.tier ? '· ' + c.tier : ''"></span></td>
-              <td class="memo-num" x-text="c.ativas"></td>
-              <td class="memo-num" x-text="c.horas + 'h'"></td>
-              <td>
-                <span class="memo-signal" :class="'memo-signal-' + c.sinal"></span>
-                <span x-text="c.sinalReason"></span>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="memo-block memo-block-table">
       <h2>Time interno · capacidade</h2>
       <table class="memo-tbl">
         <thead>
@@ -2674,6 +2647,33 @@
                   <span x-text="p.pctCap + '%'" :class="p.cargaNivel==='sobrecarga' ? 'memo-bad' : (p.cargaNivel==='pressao' ? 'memo-amber' : (p.cargaNivel==='folga' ? 'memo-good' : ''))"></span>
                 </template>
                 <template x-if="p.pctCap == null"><span class="memo-muted">—</span></template>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="memo-block memo-block-table">
+      <h2>Clientes ativos · saúde</h2>
+      <table class="memo-tbl">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th class="memo-num">Tasks</th>
+            <th class="memo-num">Horas</th>
+            <th>Saúde</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="c in reportClientesExec" :key="c.id">
+            <tr>
+              <td><strong x-text="c.nome"></strong> <span class="memo-muted" x-text="c.tier ? '· ' + c.tier : ''"></span></td>
+              <td class="memo-num" x-text="c.ativas"></td>
+              <td class="memo-num" x-text="c.horas + 'h'"></td>
+              <td>
+                <span class="memo-signal" :class="'memo-signal-' + c.sinal"></span>
+                <span x-text="c.sinalReason"></span>
               </td>
             </tr>
           </template>
