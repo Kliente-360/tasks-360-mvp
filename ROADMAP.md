@@ -346,21 +346,20 @@ Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
 
 #### 🟡 Anotado, não implementado (em ordem de execução sugerida)
 
-2. **Arquivamento** de clientes/projetos/tasks — coluna `arquivado_em`, manual pra cliente/projeto, automático pra tasks `concluido` há +14d. UI: tela dedicada "Arquivo" (leaning).
-3. **Heurísticas pré-IA · Onda B** — relacionamento e qualidade: senioridade da pessoa, `tipo_projeto`, `reopen_count` em tasks.
-4. **Heurísticas pré-IA · Onda C** — dependências e progresso: `depende_de`, `tipo_trabalho`, `tempo_real_gasto`.
+2. **Heurísticas pré-IA · Onda B** — relacionamento e qualidade: senioridade da pessoa, `tipo_projeto`, `reopen_count` em tasks.
+3. **Heurísticas pré-IA · Onda C** — dependências e progresso: `depende_de`, `tipo_trabalho`, `tempo_real_gasto`.
 
 #### 🟢 IA — depende de chave Anthropic + orçamento
 
-5. **Sugestão complexidade + esforço** (`ai-suggest`) — começar aqui (custo ~R$ 0,015/exec).
-6. **Resumo executivo semanal por projeto** — cron + LLM (~R$ 0,05/exec com cache).
-7. **Detector de risco antecipado** — cron diário (~R$ 0,07/exec com cache).
-8. **Auto-categorização de tags**.
-9. **Chat com seu backlog** (tool use).
+4. **Sugestão complexidade + esforço** (`ai-suggest`) — começar aqui (custo ~R$ 0,015/exec).
+5. **Resumo executivo semanal por projeto** — cron + LLM (~R$ 0,05/exec com cache).
+6. **Detector de risco antecipado** — cron diário (~R$ 0,07/exec com cache).
+7. **Auto-categorização de tags**.
+8. **Chat com seu backlog** (tool use).
 
 #### 🔵 Design
 
-10. **DESIGN_HANDOFF.md** está pronto pra entregar pra um agente de design (claude-design ou outro). Foco: tipografia + spacing + hierarquia. Tom: executivo + consultivo-produtivo. Notion como referência inicial.
+9. **DESIGN_HANDOFF.md** está pronto pra entregar pra um agente de design (claude-design ou outro). Foco: tipografia + spacing + hierarquia. Tom: executivo + consultivo-produtivo. Notion como referência inicial.
 
 #### ✅ Recém-fechados (maio/2026)
 
@@ -373,15 +372,15 @@ Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
 - Tamanho automático via `effEsforco` (default 4h se vazio); fora do form, só analytics.
 - Dashboard padronizado: `chartTheme()` central + **8/8 visões do §10** implementadas (capacidade por pessoa, saúde por projeto, aging do backlog, aguardando cliente, tendência de lead time por cliente).
 - UI de `cliente.tier` e `projeto.sla_*`/`orcamento_horas` em Cadastros (modais de editar com badges discretas na listagem).
+- Arquivamento de clientes/projetos (`arquivado_em`): some dos selects/dashboards mas fica acessível via toggle "incluir arquivados" em Cadastros.
 
 #### Ordem sugerida agora
 
 1. Pão e Talho real (item 1).
-2. Arquivamento (item 2).
-3. Onda B das heurísticas (item 3).
-4. Onda C das heurísticas (item 4).
-5. IA `ai-suggest` (item 5) — primeiro feature de IA que paga em adoção.
-6. Design overhaul com claude-design (item 10).
+2. Onda B das heurísticas (item 2).
+3. Onda C das heurísticas (item 3).
+4. IA `ai-suggest` (item 4) — primeiro feature de IA que paga em adoção.
+5. Design overhaul com claude-design (item 9).
 
 ---
 
