@@ -594,15 +594,15 @@
       <div class="border-t border-line my-3"></div>
       <div class="text-xs text-muted mb-2"><strong class="text-ink">Opção 2 — código de 6 dígitos</strong> (use no PWA / outro browser)</div>
 
-      <input type="text" inputmode="numeric" pattern="\d*" maxlength="6"
+      <input type="text" inputmode="numeric" pattern="\d*" maxlength="8"
              class="inp mb-2 font-mono text-center text-xl tracking-[0.4em]"
              x-model="loginCode"
-             placeholder="000000"
+             placeholder="00000000"
              @keyup.enter="verifyLoginCode()">
       <div x-show="loginError" class="text-xs text-danger mb-2" x-text="loginError"></div>
       <button class="btn btn-primary w-full justify-center"
               @click="verifyLoginCode()"
-              :disabled="loginVerifying || !/^\d{6}$/.test(loginCode)">
+              :disabled="loginVerifying || !/^\d{6,8}$/.test(loginCode)">
         <span x-show="!loginVerifying">Entrar com código</span>
         <span x-show="loginVerifying">Verificando…</span>
       </button>
@@ -3007,7 +3007,7 @@ function app() {
       const token = (this.loginCode || '').trim();
       this.loginError = '';
       if (!email) { this.loginError = 'Email perdido — recomeça.'; return; }
-      if (!/^\d{6}$/.test(token)) { this.loginError = 'Código de 6 dígitos.'; return; }
+      if (!/^\d{6,8}$/.test(token)) { this.loginError = 'Código deve ter 6 a 8 dígitos.'; return; }
       this.loginVerifying = true;
       const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
       this.loginVerifying = false;
