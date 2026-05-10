@@ -1961,12 +1961,17 @@
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-md bg-brand-soft flex items-center justify-center text-sm font-brand font-semibold text-brand" x-text="c.nome.charAt(0).toUpperCase()"></div>
             <div>
-              <div class="text-sm font-medium" x-text="c.nome"></div>
+              <div class="text-sm font-medium flex items-center gap-2 flex-wrap">
+                <span x-text="c.nome"></span>
+                <span x-show="c.tier === 'estrategico'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)" title="Cliente estratégico">estratégico</span>
+                <span x-show="c.tier === 'recorrente'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--p2-soft);color:var(--p2)" title="Cliente recorrente">recorrente</span>
+                <span x-show="c.tier === 'spot'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Cliente pontual">spot</span>
+              </div>
               <div class="text-xs text-muted" x-text="contarTarefasCliente(c.id) + ' tarefas · ' + contarProjetosCliente(c.id) + ' projetos'"></div>
             </div>
           </div>
           <div class="flex gap-1">
-            <button class="btn btn-ghost text-xs" @click="renomeiaCliente(c)">renomear</button>
+            <button class="btn btn-ghost text-xs" @click="openEditCliente(c)">editar</button>
             <button class="btn btn-danger text-xs" @click="deleteCliente(c)">excluir</button>
           </div>
         </div>
@@ -2001,12 +2006,16 @@
     <div class="card">
       <template x-for="p in projetos" :key="p.id">
         <div class="flex items-center justify-between gap-3 flex-wrap px-4 md:px-5 py-3 border-b border-line last:border-0">
-          <div>
-            <div class="text-sm font-medium" x-text="p.nome"></div>
+          <div class="min-w-0">
+            <div class="text-sm font-medium flex items-center gap-2 flex-wrap">
+              <span x-text="p.nome"></span>
+              <span x-show="p.slaEntregaDias" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" :title="'SLA de entrega: ' + p.slaEntregaDias + ' dias'" x-text="'SLA ' + p.slaEntregaDias + 'd'"></span>
+              <span x-show="p.orcamentoHoras" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" :title="'Orçamento: ' + p.orcamentoHoras + ' horas'" x-text="p.orcamentoHoras + 'h'"></span>
+            </div>
             <div class="text-xs text-muted" x-text="nomeCliente(p.clienteId) + ' · ' + contarTarefasProjeto(p.id) + ' tarefas'"></div>
           </div>
           <div class="flex gap-1">
-            <button class="btn btn-ghost text-xs" @click="renomeiaProjeto(p)">renomear</button>
+            <button class="btn btn-ghost text-xs" @click="openEditProjeto(p)">editar</button>
             <button class="btn btn-danger text-xs" @click="deleteProjeto(p)">excluir</button>
           </div>
         </div>
@@ -2875,6 +2884,87 @@
   </div>
 </div>
 
+<!-- ============ MODAL EDITAR CLIENTE ============ -->
+<div x-show="modalCliente" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modalCliente=false" @keydown.escape.window="modalCliente=false" x-transition.opacity>
+  <div class="modal-card bg-elev border border-line rounded-xl shadow-xl w-full max-w-[420px] overflow-hidden flex flex-col">
+    <div class="px-5 md:px-6 py-3 border-b border-line flex items-center justify-between">
+      <div>
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">cliente</div>
+        <div class="font-brand font-semibold text-base mt-0.5" x-text="editingCliente && editingCliente.nome"></div>
+      </div>
+      <button class="text-muted hover:text-ink text-2xl px-2" @click="modalCliente=false" aria-label="Fechar">×</button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-5 md:px-6 py-4 space-y-3" x-show="editingCliente">
+      <div>
+        <label class="lbl">Nome</label>
+        <input type="text" class="inp" x-model="editingCliente.nome">
+      </div>
+      <div>
+        <label class="lbl">Tier</label>
+        <select class="inp" x-model="editingCliente.tier">
+          <option value="">— sem classificação —</option>
+          <option value="estrategico">Estratégico · prioridade alta + SLA crítico</option>
+          <option value="recorrente">Recorrente · contrato contínuo</option>
+          <option value="spot">Spot · pontual ou descoberta</option>
+        </select>
+        <div class="text-[10px] text-muted mt-1">"Estratégico" alimenta a heurística de atrasadas em cliente crítico.</div>
+      </div>
+    </div>
+    <div class="px-5 md:px-6 py-3 border-t border-line flex items-center justify-end gap-2">
+      <button class="btn btn-ghost text-sm" @click="modalCliente=false">cancelar</button>
+      <button class="btn btn-primary text-sm" @click="saveCliente()">salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL EDITAR PROJETO ============ -->
+<div x-show="modalProjeto" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modalProjeto=false" @keydown.escape.window="modalProjeto=false" x-transition.opacity>
+  <div class="modal-card bg-elev border border-line rounded-xl shadow-xl w-full max-w-[480px] overflow-hidden flex flex-col">
+    <div class="px-5 md:px-6 py-3 border-b border-line flex items-center justify-between">
+      <div>
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">projeto</div>
+        <div class="font-brand font-semibold text-base mt-0.5" x-text="editingProjeto && editingProjeto.nome"></div>
+      </div>
+      <button class="text-muted hover:text-ink text-2xl px-2" @click="modalProjeto=false" aria-label="Fechar">×</button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-5 md:px-6 py-4 space-y-3" x-show="editingProjeto">
+      <div>
+        <label class="lbl">Nome</label>
+        <input type="text" class="inp" x-model="editingProjeto.nome">
+      </div>
+      <div>
+        <label class="lbl">Cliente</label>
+        <select class="inp" x-model="editingProjeto.clienteId">
+          <option value="">— selecionar cliente —</option>
+          <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+        </select>
+      </div>
+      <div class="space-y-3 pt-3 border-t border-line">
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono font-semibold">SLA &amp; orçamento</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="lbl">Resposta · horas</label>
+            <input type="number" min="0" step="1" class="inp" x-model.number="editingProjeto.slaRespostaHoras" placeholder="—">
+          </div>
+          <div>
+            <label class="lbl">Entrega · dias</label>
+            <input type="number" min="0" step="1" class="inp" x-model.number="editingProjeto.slaEntregaDias" placeholder="—">
+            <div class="text-[10px] text-muted mt-1">aciona heurística "SLA iminente" entre 80% e 120%.</div>
+          </div>
+        </div>
+        <div>
+          <label class="lbl">Orçamento total · horas</label>
+          <input type="number" min="0" step="1" class="inp" x-model.number="editingProjeto.orcamentoHoras" placeholder="—">
+        </div>
+      </div>
+    </div>
+    <div class="px-5 md:px-6 py-3 border-t border-line flex items-center justify-end gap-2">
+      <button class="btn btn-ghost text-sm" @click="modalProjeto=false">cancelar</button>
+      <button class="btn btn-primary text-sm" @click="saveProjeto()">salvar alterações</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ MODAL CONFIRMAÇÃO ============ -->
 <div x-show="confirmTarget" class="fixed inset-0 z-[58] flex items-center justify-center modal-bg p-4" @click.self="confirmTarget=null" @keyup.escape.window="confirmTarget=null" x-transition.opacity>
   <div class="bg-elev rounded-lg w-full max-w-sm modal-card" x-transition>
@@ -3022,6 +3112,10 @@ function app() {
     editing: { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true },
     editingPessoa: null,
     modalPessoa: false,
+    editingCliente: null,
+    modalCliente: false,
+    editingProjeto: null,
+    modalProjeto: false,
     kanbanView: 'op', // 'op' (operacional, nível 2) | 'exec' (executiva, nível 1)
     isMobileViewport: typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
     quickAddSub: '',
@@ -6187,6 +6281,33 @@ function app() {
       this.clientes = this.clientes.map(c => c.id === tempId ? data : c).sort((a,b) => a.nome.localeCompare(b.nome));
     },
     renomeiaCliente(c) { this.openRename('cliente', c); },
+    openEditCliente(c) {
+      this.editingCliente = {
+        id: c.id,
+        nome: c.nome || '',
+        tier: c.tier || '',
+      };
+      this.modalCliente = true;
+    },
+    async saveCliente() {
+      const e = this.editingCliente;
+      if (!e || !e.id) return;
+      const nome = (e.nome || '').trim();
+      if (!nome) { this.toast('error', 'Nome obrigatório.'); return; }
+      const payload = { nome, tier: e.tier || null };
+      const i = this.clientes.findIndex(x => x.id === e.id);
+      const prev = i >= 0 ? this.clientes[i] : null;
+      if (i >= 0) this.clientes[i] = { ...prev, ...payload };
+      this.modalCliente = false;
+      const { error } = await sb.from('clientes').update(payload).eq('id', e.id);
+      if (error) {
+        if (prev) this.clientes[i] = prev;
+        this.toast('error', 'Erro ao salvar: ' + error.message);
+        return;
+      }
+      this.clientes.sort((a,b) => a.nome.localeCompare(b.nome));
+      this.toast('success', 'Cliente atualizado.');
+    },
     async deleteCliente(c) {
       const tasks = this.tasks.filter(t => t.clienteId === c.id).length;
       const projs = this.projetos.filter(p => p.clienteId === c.id).length;
@@ -6223,6 +6344,52 @@ function app() {
       this.projetos = this.projetos.map(p => p.id === tempId ? projetoFromDb(data) : p).sort((a,b) => a.nome.localeCompare(b.nome));
     },
     renomeiaProjeto(p) { this.openRename('projeto', p); },
+    openEditProjeto(p) {
+      this.editingProjeto = {
+        id: p.id,
+        nome: p.nome || '',
+        clienteId: p.clienteId || '',
+        slaRespostaHoras: p.slaRespostaHoras == null ? '' : p.slaRespostaHoras,
+        slaEntregaDias:   p.slaEntregaDias   == null ? '' : p.slaEntregaDias,
+        orcamentoHoras:   p.orcamentoHoras   == null ? '' : p.orcamentoHoras,
+      };
+      this.modalProjeto = true;
+    },
+    async saveProjeto() {
+      const e = this.editingProjeto;
+      if (!e || !e.id) return;
+      const nome = (e.nome || '').trim();
+      if (!nome) { this.toast('error', 'Nome obrigatório.'); return; }
+      if (!e.clienteId) { this.toast('error', 'Cliente obrigatório.'); return; }
+      const numOrNull = (v) => v === '' || v == null ? null : +v;
+      const payload = {
+        nome,
+        cliente_id: e.clienteId,
+        sla_resposta_horas: numOrNull(e.slaRespostaHoras),
+        sla_entrega_dias:   numOrNull(e.slaEntregaDias),
+        orcamento_horas:    numOrNull(e.orcamentoHoras),
+      };
+      const i = this.projetos.findIndex(x => x.id === e.id);
+      const prev = i >= 0 ? this.projetos[i] : null;
+      if (i >= 0) {
+        this.projetos[i] = { ...prev,
+          nome,
+          clienteId: e.clienteId,
+          slaRespostaHoras: payload.sla_resposta_horas,
+          slaEntregaDias:   payload.sla_entrega_dias,
+          orcamentoHoras:   payload.orcamento_horas,
+        };
+      }
+      this.modalProjeto = false;
+      const { error } = await sb.from('projetos').update(payload).eq('id', e.id);
+      if (error) {
+        if (prev) this.projetos[i] = prev;
+        this.toast('error', 'Erro ao salvar: ' + error.message);
+        return;
+      }
+      this.projetos.sort((a,b) => a.nome.localeCompare(b.nome));
+      this.toast('success', 'Projeto atualizado.');
+    },
     async deleteProjeto(p) {
       const tasks = this.tasks.filter(t => t.projetoId === p.id).length;
       if (tasks) { this.toast('error', `Não é possível excluir: existem ${tasks} tarefa(s) vinculadas.`); return; }
