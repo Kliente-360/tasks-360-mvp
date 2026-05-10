@@ -571,27 +571,54 @@
     </div>
     <div x-show="!loginSent">
       <div class="font-brand text-lg font-semibold mb-1">Entrar</div>
-      <div class="text-xs text-muted mb-4">Você recebe um link no email pra entrar sem senha.</div>
+      <div class="text-xs text-muted mb-4">Time Kliente 360 entra com Google. Cliente externo entra por email.</div>
       <div x-show="authBlock" class="mb-3 p-3 rounded-md text-xs leading-snug"
            style="background:#fef2f2;color:#991b1b;border:1px solid #fca5a5">
         <div class="font-semibold mb-1">⚠ Login validou mas acesso bloqueado</div>
         <span x-text="authBlock"></span>
         <button class="ml-2 underline text-[10px]" @click="authBlock=''">descartar</button>
       </div>
-      <label class="lbl">Email</label>
+
+      <!-- Google (time interno) -->
+      <button class="btn w-full justify-center mb-3"
+              style="border:1px solid var(--line-strong);background:var(--bg-elev);color:var(--ink)"
+              @click="signInWithGoogle()" :disabled="loginGoogle || loginSending">
+        <span x-show="!loginGoogle" class="flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Entrar com Google
+        </span>
+        <span x-show="loginGoogle" class="flex items-center gap-2">
+          <span class="k360-mark loading-pulse" style="width:14px;height:14px"><span style="width:4px;height:4px;background:currentColor"></span><span style="width:4px;height:4px;background:currentColor"></span><span style="width:4px;height:4px;background:currentColor"></span><span style="width:4px;height:4px;background:currentColor"></span></span>
+          redirecionando…
+        </span>
+      </button>
+
+      <div class="flex items-center gap-2 my-3 text-[11px] text-muted uppercase tracking-wider">
+        <div class="flex-1 h-px bg-line"></div>
+        <span>ou</span>
+        <div class="flex-1 h-px bg-line"></div>
+      </div>
+
+      <!-- Email / magic link (cliente externo) -->
+      <label class="lbl">Email do cliente externo</label>
       <input type="email" inputmode="email" autocomplete="email" class="inp mb-3" x-model="loginEmail" @keyup.enter="sendMagicLink()" :disabled="loginSending" placeholder="voce@empresa.com">
       <div x-show="loginError" class="text-xs text-danger mb-3" x-text="loginError"></div>
       <button class="btn btn-primary w-full justify-center"
               @click="sendMagicLink()"
-              :disabled="loginSending || !loginEmail.trim()">
-        <span x-show="!loginSending">Enviar link</span>
+              :disabled="loginSending || !loginEmail.trim() || loginGoogle">
+        <span x-show="!loginSending">Enviar código por email</span>
         <span x-show="loginSending" class="flex items-center gap-2">
           <span class="k360-mark loading-pulse" style="width:14px;height:14px"><span style="width:4px;height:4px;background:currentColor"></span><span style="width:4px;height:4px;background:currentColor"></span><span style="width:4px;height:4px;background:currentColor"></span><span style="width:4px;height:4px;background:currentColor"></span></span>
           enviando…
         </span>
       </button>
       <div class="text-[11px] text-muted mt-4 leading-relaxed">
-        Acesso restrito à equipe Kliente 360. Se seu email não estiver cadastrado em <span class="font-mono">pessoas</span>, peça pro admin cadastrar antes.
+        Acesso restrito a quem está cadastrado em <span class="font-mono">pessoas</span>. Se for time interno e ainda não foi cadastrado, peça pro admin antes.
       </div>
     </div>
     <div x-show="loginSent">
@@ -2760,6 +2787,7 @@ function app() {
     loginCode: '',
     loginVerifying: false,
     loginSending: false,
+    loginGoogle: false,
     authBlock: '', // mensagem persistente quando o callback nega acesso (volta pra login)
     draggingId: '',
     dragOverCol: '',
@@ -3000,6 +3028,25 @@ function app() {
       await sb.auth.signOut();
       this.currentPessoa = null;
       this.session = null;
+    },
+    async signInWithGoogle() {
+      if (this.loginGoogle) return;
+      this.loginError = '';
+      this.loginGoogle = true;
+      try {
+        const { error } = await sb.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.origin + window.location.pathname },
+        });
+        if (error) {
+          this.loginError = 'Erro ao iniciar Google: ' + error.message;
+          this.loginGoogle = false;
+        }
+        // Sucesso: o browser redireciona pro Google e volta. Não precisa resetar loginGoogle.
+      } catch (e) {
+        this.loginError = 'Erro: ' + (e.message || e);
+        this.loginGoogle = false;
+      }
     },
     async sendMagicLink() {
       if (this.loginSending) return; // evita duplo clique
