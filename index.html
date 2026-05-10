@@ -540,6 +540,25 @@
   .print-only .pr-bar-fill.late { background: #dc2626; }
   .print-only .pr-bar-swatch { display: inline-block; width: 12px; height: 6px; background: #009900; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
   .print-only .pr-bar-swatch.late { background: #dc2626; }
+  .print-only .pr-bar-sample { display: inline-block; width: 14px; height: 8px; background: #009900; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .print-only .pr-bar-sample.late { background: #dc2626; }
+
+  .print-only .pr-amber { color: #b45309; font-weight: 600; }
+  .print-only .pr-ok    { color: #166534; font-weight: 600; }
+  .print-only .pr-muted { color: #888; }
+  .print-only .pr-tag {
+    display: inline-block; font-size: 8px; font-weight: 700;
+    padding: 1px 5px; border-radius: 3px; margin-left: 6px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    font-family: 'JetBrains Mono', monospace; vertical-align: middle;
+  }
+  .print-only .pr-tag-danger { background: #dc2626; color: #fff; }
+  .print-only .pr-tag-warn   { background: #f59e0b; color: #fff; }
+  .print-only .pr-tag-ok     { background: #bbf7d0; color: #166534; }
+  .print-only tr.pr-row-sobrecarga td { background: #fef2f2 !important; }
+  .print-only tr.pr-row-pressao    td { background: #fff7ed !important; }
+  .print-only tr.pr-row-folga      td { background: #f0fdf4 !important; }
+  .print-only table.pr-tbl-team tbody td { padding: 5px 6px; vertical-align: middle; }
 
   .print-only .pr-foot { display: flex; justify-content: space-between; font-size: 8px; color: #999; font-family: 'JetBrains Mono', monospace; margin-top: 12px; padding-top: 8px; border-top: 1px solid #e5e5e5; }
 
@@ -2477,29 +2496,57 @@
       </div>
     </div>
 
-    <div class="pr-section-title">Distribuição por pessoa · top 8 com carga</div>
-    <div class="pr-charts-grid">
-      <div class="pr-chart">
-        <h4>Pessoa × Cliente · horas</h4>
-        <div class="pr-chart-wrap"><canvas id="printChartPesCliH"></canvas></div>
-      </div>
-      <div class="pr-chart">
-        <h4>Pessoa × Status · horas</h4>
-        <div class="pr-chart-wrap"><canvas id="printChartPesStatH"></canvas></div>
-      </div>
-      <div class="pr-chart">
-        <h4>Pessoa × Cliente · tarefas</h4>
-        <div class="pr-chart-wrap"><canvas id="printChartPesCliQ"></canvas></div>
-      </div>
-      <div class="pr-chart">
-        <h4>Pessoa × Status · tarefas</h4>
-        <div class="pr-chart-wrap"><canvas id="printChartPesStatQ"></canvas></div>
-      </div>
-    </div>
+    <div class="pr-section-title">Carga atual · horas alocadas em tarefas ativas</div>
+    <table class="pr-tbl pr-tbl-team">
+      <thead>
+        <tr>
+          <th>Pessoa</th>
+          <th style="width:9%">Nível</th>
+          <th style="width:7%" class="pr-num">Tasks</th>
+          <th style="width:9%" class="pr-num">Horas</th>
+          <th style="width:11%" class="pr-num">% Cap.</th>
+          <th style="width:10%" class="pr-num">Atrasadas</th>
+          <th style="width:30%">Distribuição</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="p in reportTeamLoad" :key="p.id">
+          <tr :class="'pr-row-' + p.cargaNivel">
+            <td>
+              <strong x-text="p.nome"></strong>
+              <template x-if="p.cargaNivel==='sobrecarga'"><span class="pr-tag pr-tag-danger">sobrecarga</span></template>
+              <template x-if="p.cargaNivel==='pressao'"><span class="pr-tag pr-tag-warn">pressão</span></template>
+              <template x-if="p.cargaNivel==='folga'"><span class="pr-tag pr-tag-ok">folga</span></template>
+            </td>
+            <td class="pr-muted" x-text="p.senioridade || '—'"></td>
+            <td class="pr-num" x-text="p.tasks"></td>
+            <td class="pr-num" x-text="p.horas + 'h'"></td>
+            <td class="pr-num">
+              <template x-if="p.pctCap != null">
+                <span x-text="p.pctCap + '%'" :class="p.cargaNivel==='sobrecarga' ? 'pr-warn' : (p.cargaNivel==='pressao' ? 'pr-amber' : (p.cargaNivel==='folga' ? 'pr-ok' : ''))"></span>
+              </template>
+              <template x-if="p.pctCap == null"><span class="pr-muted">—</span></template>
+            </td>
+            <td class="pr-num" :class="p.atrasadas > 0 && 'pr-late'" x-text="p.atrasadas"></td>
+            <td>
+              <div class="pr-bar">
+                <div class="pr-bar-fill" :style="'width:' + p.barOk + '%'"></div>
+                <div class="pr-bar-fill late" :style="'width:' + p.barLate + '%'"></div>
+              </div>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
     <div class="pr-legend">
-      <span class="pr-warn">⚠ &gt;50h alocadas indica sobrecarga</span>
-      <span style="color:#16a34a">● &lt;20h indica disponibilidade</span>
-      <span class="text-muted">tarefas com 0h consideradas como 4h padrão</span>
+      <span><span class="pr-bar-sample ok"></span> horas no prazo</span>
+      <span><span class="pr-bar-sample late"></span> horas em tasks atrasadas</span>
+      <span class="pr-muted">% Cap = horas alocadas / capacidade semanal declarada</span>
+    </div>
+
+    <div class="pr-section-title">Pessoa × Status · horas alocadas</div>
+    <div class="pr-chart">
+      <div class="pr-chart-wrap" style="height: 180px"><canvas id="printChartPesStatH"></canvas></div>
     </div>
 
     <div class="pr-section-title">Sugestões de redistribuição</div>
@@ -4235,7 +4282,12 @@ function app() {
       const map = new Map();
       for (const p of this.pessoas) {
         if (p.role === 'cliente') continue; // não inclui clientes externos
-        map.set(p.id, { id: p.id, nome: p.nome, tasks: 0, horas: 0, atrasadas: 0, horasAtrasadas: 0 });
+        map.set(p.id, {
+          id: p.id, nome: p.nome,
+          senioridade: p.senioridade || '',
+          capacidade: Number(p.capacidade_horas_semana) || 0,
+          tasks: 0, horas: 0, atrasadas: 0, horasAtrasadas: 0
+        });
       }
       const ativas = this.tasks.filter(t => t.status !== 'concluido');
       for (const t of ativas) {
@@ -4255,8 +4307,16 @@ function app() {
       arr.forEach(x => {
         x.barLate = Math.round((x.horasAtrasadas / maxHoras) * 100);
         x.barOk   = Math.round(((x.horas - x.horasAtrasadas) / maxHoras) * 100);
-        x.sobrecarga = x.horas > 50;
-        x.subutilizada = x.horas < 20;
+        x.pctCap  = x.capacidade > 0 ? Math.round((x.horas / x.capacidade) * 100) : null;
+        // Faixas: <60% folga, 60-100% saudável, 100-130% pressão, >130% sobrecarga
+        x.cargaNivel = x.pctCap == null ? 'sem-cap'
+                     : x.pctCap > 130 ? 'sobrecarga'
+                     : x.pctCap > 100 ? 'pressao'
+                     : x.pctCap < 60  ? 'folga'
+                     : 'ok';
+        // Fallback antigo (sem capacidade declarada)
+        x.sobrecarga = x.pctCap != null ? x.pctCap > 130 : x.horas > 50;
+        x.subutilizada = x.pctCap != null ? x.pctCap < 60 : x.horas < 20;
       });
       arr.sort((a,b) => b.horas - a.horas);
       return arr;
@@ -4389,12 +4449,12 @@ function app() {
       }
     },
     destroyPrintCharts() {
-      ['status','clientes','throughput','pesCliH','pesCliQ','pesStatH','pesStatQ','cliEntregues','cliSla'].forEach(k => {
+      ['status','clientes','throughput','pesStatH','cliEntregues','cliSla'].forEach(k => {
         if (this.printCharts[k]) { try { this.printCharts[k].destroy(); } catch(_) {} this.printCharts[k] = null; }
       });
     },
     buildPersonBreakdownCharts(ativas, baseFont) {
-      // Limita às pessoas que aparecem nas tasks ativas
+      // Pega top pessoas com carga, com mesmo critério da tabela.
       const pessoasMap = new Map();
       for (const p of this.pessoas) {
         if (p.role === 'cliente') continue;
@@ -4405,89 +4465,46 @@ function app() {
         const p = pessoasMap.get(t.pessoaId);
         if (p) p.total += this.effEsforco(t);
       }
-      const topPessoas = Array.from(pessoasMap.values()).filter(p => p.total > 0).sort((a,b) => b.total - a.total).slice(0, 8);
+      const topPessoas = Array.from(pessoasMap.values()).filter(p => p.total > 0).sort((a,b) => b.total - a.total).slice(0, 10);
       const pessoaIds = topPessoas.map(p => p.id);
-      const pessoaLabels = topPessoas.map(p => (p.nome || '—').split(' ')[0]);
+      const pessoaLabels = topPessoas.map(p => (p.nome || '—').split(' ').slice(0,2).join(' '));
 
-      // Paleta determinística (verde brand + neutros + status semânticos)
-      const palette = ['#009900','#2D7AA8','#C77A1A','#6E7A72','#7C3AED','#0891B2','#BE185D','#65A30D','#0D9488','#9333EA'];
-
-      // ---- Por cliente ----
-      const clientesUsed = new Map();
-      for (const t of ativas) {
-        if (!t.pessoaId || !t.clienteId) continue;
-        if (!pessoaIds.includes(t.pessoaId)) continue;
-        const cn = this.nomeCliente(t.clienteId);
-        if (!clientesUsed.has(cn)) clientesUsed.set(cn, { hPorPes: {}, qPorPes: {} });
-        const e = clientesUsed.get(cn);
-        e.hPorPes[t.pessoaId] = (e.hPorPes[t.pessoaId] || 0) + this.effEsforco(t);
-        e.qPorPes[t.pessoaId] = (e.qPorPes[t.pessoaId] || 0) + 1;
-      }
-      const cliEntries = Array.from(clientesUsed.entries()); // [[nome, {hPorPes, qPorPes}], ...]
-      const datasetsCliH = cliEntries.map(([nome, info], i) => ({
-        label: nome,
-        data: pessoaIds.map(pid => info.hPorPes[pid] || 0),
-        backgroundColor: palette[i % palette.length],
-        borderWidth: 0,
-      }));
-      const datasetsCliQ = cliEntries.map(([nome, info], i) => ({
-        label: nome,
-        data: pessoaIds.map(pid => info.qPorPes[pid] || 0),
-        backgroundColor: palette[i % palette.length],
-        borderWidth: 0,
-      }));
-
-      // ---- Por status macro ----
+      // Pessoa × Status (horas) — barras horizontais empilhadas
       const statusKeys = ['backlog','andamento','bloqueado'];
       const statusColors = { backlog: '#9ca3af', andamento: '#009900', bloqueado: '#dc2626' };
-      const hPorStatusPes = {}, qPorStatusPes = {};
-      for (const k of statusKeys) { hPorStatusPes[k] = {}; qPorStatusPes[k] = {}; }
+      const hPorStatusPes = {};
+      for (const k of statusKeys) hPorStatusPes[k] = {};
       for (const t of ativas) {
         if (!t.pessoaId || !pessoaIds.includes(t.pessoaId)) continue;
         const k = t.status;
         if (!hPorStatusPes[k]) continue;
         hPorStatusPes[k][t.pessoaId] = (hPorStatusPes[k][t.pessoaId] || 0) + this.effEsforco(t);
-        qPorStatusPes[k][t.pessoaId] = (qPorStatusPes[k][t.pessoaId] || 0) + 1;
       }
-      const datasetsStatH = statusKeys.map(k => ({
+      const datasets = statusKeys.map(k => ({
         label: this.lblStatus(k),
         data: pessoaIds.map(pid => hPorStatusPes[k][pid] || 0),
         backgroundColor: statusColors[k],
         borderWidth: 0,
       }));
-      const datasetsStatQ = statusKeys.map(k => ({
-        label: this.lblStatus(k),
-        data: pessoaIds.map(pid => qPorStatusPes[k][pid] || 0),
-        backgroundColor: statusColors[k],
-        borderWidth: 0,
-      }));
 
-      const baseOptions = (axisLabel) => ({
-        responsive: true, maintainAspectRatio: false, animation: false, indexAxis: 'y',
-        plugins: {
-          legend: { position: 'bottom', labels: { font: baseFont, boxWidth: 8, padding: 4, color: '#333' } },
-          tooltip: { enabled: false },
-        },
-        scales: {
-          x: { stacked: true, grid: { color: '#eee' }, ticks: { font: { ...baseFont, size: 9 }, color: '#666', callback: v => v }, border: { display: false }, title: { display: !!axisLabel, text: axisLabel, font: { ...baseFont, size: 9 }, color: '#666' } },
-          y: { stacked: true, grid: { display: false }, ticks: { font: { ...baseFont, size: 10 }, color: '#111' }, border: { display: false } },
-        },
-      });
-
-      const mk = (id, datasets, axisLabel) => {
-        const ctx = document.getElementById(id);
-        if (!ctx) return null;
-        return new Chart(ctx, {
+      const ctx = document.getElementById('printChartPesStatH');
+      if (ctx) {
+        this.printCharts.pesStatH = new Chart(ctx, {
           type: 'bar',
           data: { labels: pessoaLabels, datasets },
-          options: baseOptions(axisLabel),
+          options: {
+            responsive: true, maintainAspectRatio: false, animation: false, indexAxis: 'y',
+            plugins: {
+              legend: { position: 'bottom', labels: { font: baseFont, boxWidth: 10, padding: 8, color: '#333' } },
+              tooltip: { enabled: false },
+            },
+            scales: {
+              x: { stacked: true, grid: { color: '#eee' }, ticks: { font: baseFont, color: '#666', callback: v => v + 'h' }, border: { display: false } },
+              y: { stacked: true, grid: { display: false }, ticks: { font: baseFont, color: '#111' }, border: { display: false } },
+            },
+          }
         });
-      };
-
-      this.printCharts.pesCliH  = mk('printChartPesCliH',  datasetsCliH,  'horas');
-      this.printCharts.pesStatH = mk('printChartPesStatH', datasetsStatH, 'horas');
-      this.printCharts.pesCliQ  = mk('printChartPesCliQ',  datasetsCliQ,  'tarefas');
-      this.printCharts.pesStatQ = mk('printChartPesStatQ', datasetsStatQ, 'tarefas');
+      }
     },
     buildClientCharts(baseFont) {
       const data = this.reportClientHealth;
