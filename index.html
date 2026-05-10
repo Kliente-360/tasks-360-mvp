@@ -714,28 +714,40 @@
       { key: 'bloqueadas', title: 'Bloqueadas',                 empty: 'Sem represas.' },
       { key: 'urgentes',   title: 'P0/P1 ativas (sem repetir)', empty: 'Sem urgentes pendentes.' },
     ]" :key="group.key">
-      <div class="card overflow-hidden">
-        <div class="px-4 md:px-5 py-3 border-b border-line flex items-center justify-between">
+      <!-- Card .kcard ESPELHADO no Backlog mobile, Kanban operacional, Calendário.
+           Manter sincronizado quando evoluir o card. -->
+      <div>
+        <div class="flex items-center justify-between mb-2 px-1">
           <div class="font-brand font-semibold text-sm" x-text="group.title"></div>
           <span class="font-mono text-xs text-muted" x-text="focusGroups[group.key].length + ' item(s)'"></span>
         </div>
-        <template x-for="t in focusGroups[group.key]" :key="t.id">
-          <div class="px-4 md:px-5 py-3 border-b border-line last:border-0 flex items-center justify-between gap-3 hover:bg-brand-tint cursor-pointer transition-colors" @click="openEdit(t)">
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="pri" :class="'pri-'+t.prioridade"><span class="pri-dot"></span><span x-text="t.prioridade"></span></span>
-                <span class="font-medium text-ink truncate" x-text="t.titulo"></span>
+        <div x-show="focusGroups[group.key].length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          <template x-for="t in focusGroups[group.key]" :key="t.id">
+            <div class="kcard" @click="openEdit(t)">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="font-medium text-sm leading-snug min-w-0" x-text="t.titulo"></div>
+                <span class="pri shrink-0" :class="'pri-'+t.prioridade">
+                  <span class="pri-dot"></span>
+                  <span x-text="t.prioridade"></span>
+                </span>
               </div>
-              <div class="text-xs text-muted mt-1" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId) + ' · ' + lblSub(t.subetapa)"></div>
+              <div class="text-xs text-muted mb-2" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></div>
+              <div class="flex items-center justify-between text-xs gap-2">
+                <span class="text-ink-soft truncate" x-text="nomePessoa(t.pessoaId) || '—'"></span>
+                <span :class="atrasada(t) ? 'text-[color:var(--p0)] font-medium' : 'text-ink-soft'" class="font-mono shrink-0"
+                      x-text="t.prazo ? fmtDateShort(t.prazo) + (atrasada(t) ? ' · +' + diasAtraso(t) + 'd' : '') : 'sem prazo'"></span>
+              </div>
+              <div class="flex items-center gap-1.5 mt-2">
+                <span class="status text-[10px]" :data-s="t.status">
+                  <span class="status-dot"></span>
+                  <span x-text="lblSub(t.subetapa)"></span>
+                </span>
+                <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" x-text="agingDays(t)+'d'"></span>
+              </div>
             </div>
-            <div class="text-right shrink-0">
-              <div class="text-xs font-mono" :class="atrasada(t) ? 'text-[color:var(--p0)]' : 'text-ink-soft'"
-                   x-text="t.prazo ? fmtDate(t.prazo) + (atrasada(t) ? ' · +' + diasAtraso(t) + 'd' : '') : 'sem prazo'"></div>
-              <div class="text-[10px] text-muted mt-0.5" x-text="t.esforco + 'h'"></div>
-            </div>
-          </div>
-        </template>
-        <div x-show="focusGroups[group.key].length === 0" class="px-4 md:px-5 py-6 text-center text-muted text-xs italic" x-text="group.empty"></div>
+          </template>
+        </div>
+        <div x-show="focusGroups[group.key].length === 0" class="card text-center py-4 px-3 text-muted text-xs italic" x-text="group.empty"></div>
       </div>
     </template>
 
@@ -840,7 +852,7 @@
     </div>
   </div>
 
-  <div class="card tbl-wrap">
+  <div class="card tbl-wrap hidden md:block">
     <table class="tbl">
       <thead>
         <tr>
@@ -954,6 +966,67 @@
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- ============ BACKLOG MOBILE (cards) ============
+       Card .kcard ESPELHADO no Kanban operacional, Calendário e Meu foco.
+       Manter sincronizado quando evoluir o card (reuso visual).
+  -->
+  <div class="md:hidden space-y-3">
+    <template x-for="g in groupedFiltered" :key="g.key">
+      <div>
+        <div x-show="!g.isAll" class="flex items-center justify-between gap-2 px-1 py-2 mb-1 cursor-pointer" @click="toggleGroup(g.key)">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-muted font-mono text-xs w-3 inline-block" x-text="collapsedGroups.includes(g.key) ? '▸' : '▾'"></span>
+            <span class="font-semibold text-sm text-ink truncate" x-text="g.label"></span>
+          </div>
+          <span class="text-xs font-mono text-muted shrink-0" x-text="g.tasks.length + ' · ' + g.tasks.reduce((a,b)=>a+(+b.esforco||0),0) + 'h'"></span>
+        </div>
+        <div x-show="g.isAll || !collapsedGroups.includes(g.key)" class="space-y-2">
+          <template x-for="t in g.tasks" :key="t.id">
+            <div class="kcard" @click="openEdit(t)">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="font-medium text-sm leading-snug min-w-0" x-text="t.titulo"></div>
+                <span class="pri shrink-0" :class="'pri-'+t.prioridade">
+                  <span class="pri-dot"></span>
+                  <span x-text="t.prioridade"></span>
+                </span>
+              </div>
+              <div class="text-xs text-muted mb-2" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></div>
+              <div x-show="(t.tags || []).length>0" class="flex flex-wrap gap-1 mb-2">
+                <template x-for="tag in (t.tags || [])" :key="tag">
+                  <span class="tag-chip" x-text="'#' + tag"></span>
+                </template>
+              </div>
+              <div class="flex items-center justify-between text-xs gap-2">
+                <span class="text-ink-soft truncate" x-text="nomePessoa(t.pessoaId) || '—'"></span>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span class="cx" :class="'cx-'+(t.complexidade||'media')">
+                    <span x-text="lblComplex(t.complexidade)"></span>
+                  </span>
+                  <span :class="atrasada(t) && 'late'" class="font-mono" x-text="t.prazo ? fmtDateShort(t.prazo) : '—'"></span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 mt-2">
+                <span class="status text-[10px]" :data-s="t.status">
+                  <span class="status-dot"></span>
+                  <span x-text="lblStatus(t.status)"></span>
+                </span>
+                <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" x-text="agingDays(t)+'d'"></span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+    <div x-show="filtered.length===0" class="card text-center py-10 px-4">
+      <div class="font-brand text-base mb-2 text-ink">Nada por aqui.</div>
+      <div class="text-xs text-muted mb-3">
+        <span x-show="tasks.length>0">Tente ajustar os filtros…</span>
+        <span x-show="tasks.length===0">Comece criando a primeira tarefa.</span>
+      </div>
+      <button class="btn btn-primary" @click="openNew()">+ Nova tarefa</button>
+    </div>
   </div>
 </section>
 
@@ -2519,7 +2592,7 @@ function app() {
     tabsList: [
       { key: 'foco',    label: 'Meu foco', roles: ['admin','interno'] },
       { key: 'backlog', label: 'Backlog',  roles: ['admin','interno'] },
-      { key: 'kanban',  label: 'Kanban',   roles: ['admin','interno'] },
+      { key: 'kanban',  label: 'Kanban',   roles: ['admin','interno'], hideMobile: true },
       { key: 'cal',     label: 'Calendário', roles: ['admin','interno'] },
       { key: 'dash',    label: 'Dashboard', roles: ['admin','interno'] },
       { key: 'portal',  label: 'Portal cliente', roles: ['admin','interno','cliente'] },
@@ -2579,7 +2652,13 @@ function app() {
       try { this.portalClienteId = localStorage.getItem('kliente360-portal-cliente') || ''; } catch(_) {}
       // Tracking de viewport pra forçar kanban executivo no mobile
       const mq = window.matchMedia('(max-width: 767px)');
-      const updateMq = () => { this.isMobileViewport = mq.matches; };
+      const updateMq = () => {
+        this.isMobileViewport = mq.matches;
+        // Redireciona se a aba ativa não está mais visível (ex.: Kanban no mobile).
+        if (this.tab && !this.visibleTabs.some(t => t.key === this.tab)) {
+          this.tab = (this.visibleTabs[0] && this.visibleTabs[0].key) || 'backlog';
+        }
+      };
       if (mq.addEventListener) mq.addEventListener('change', updateMq);
       else if (mq.addListener) mq.addListener(updateMq);
       if (SUPABASE_URL.includes('YOUR-PROJECT')) {
@@ -3703,7 +3782,10 @@ function app() {
       return t ? t.label : key;
     },
     get visibleTabs() {
-      return this.tabsList.filter(t => !t.roles || t.roles.includes(this.viewerRole));
+      return this.tabsList.filter(t =>
+        (!t.roles || t.roles.includes(this.viewerRole))
+        && !(t.hideMobile && this.isMobileViewport)
+      );
     },
     goToTab(key) {
       this.tab = key;

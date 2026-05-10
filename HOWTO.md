@@ -41,6 +41,10 @@ Quem você é determina como usa:
 
 Da esquerda pra direita no topo:
 
+### Card de tarefa (componente único)
+
+O mesmo card visual aparece no **Backlog mobile**, **Meu foco**, **Calendário (dia selecionado)** e **Kanban operacional**. Mudanças nele afetam todos os 4 lugares — comentários cruzados nos templates marcam isso. Estrutura: título + prioridade (topo), cliente · projeto, responsável + complexidade + prazo, status + aging badge.
+
 ### Meu foco
 
 Painel curado pra começar o dia. No topo, escolha a pessoa em **"atuando como"** (seleção fica salva por navegador). Aparecem 4 KPIs e 4 listas, em ordem de urgência:
@@ -300,7 +304,7 @@ Quem não estiver na lista de convidados não consegue entrar.
 ## Tema, mobile, PWA
 
 - **Tema**: ☾/☀ no topo. Respeita preferência do sistema na primeira visita.
-- **Mobile**: layout adapta — barra de abas vira **dropdown** (botão com aba atual + ▾ abre lista completa), kanban vira carrossel horizontal, filtros viram drawer, descrição some da tabela do Backlog pra altura uniforme, dropdown de exportar fica colado à borda direita.
+- **Mobile**: layout adapta — barra de abas vira **dropdown** (botão com aba atual + ▾ abre lista completa), **Kanban some** (executiva pouco prática em tela pequena; usa Backlog), **Backlog vira lista de cards** (mesmo card do Kanban e Calendário pra consistência), filtros viram drawer, dropdown de exportar fica colado à borda direita.
 - **PWA**: no iPhone, "Adicionar à tela de início" instala como app com ícone próprio.
 - **Realtime**: qualquer mudança feita por outra pessoa aparece pra você em segundos sem refresh.
 - **Recarregar dados**: toca na **logo "tasks 360"** no canto superior esquerdo (a marca de 4 quadradinhos vai pulsar enquanto carrega). Útil no PWA onde refresh do navegador é difícil. Alternativas: F5 no navegador ou ⌘K → "Recarregar dados".
