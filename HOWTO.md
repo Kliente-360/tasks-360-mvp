@@ -280,8 +280,10 @@ Botão **↓ exportar** no canto superior direito.
 Snapshot **completo** (ignora filtros). 3 páginas A4 desenhadas pra leitura executiva (CEO-first):
 
 1. **Resumo executivo** — 6 KPIs hero + sinais de risco + 3 charts (status, horas por cliente, throughput 8 sem.)
-2. **Gestão do time** — tabela de carga atual por pessoa com tasks/horas/atrasadas/distribuição visual. Marca pessoas com >50h como **sobrecarga** e <20h como **disponível**. Bloco final com **sugestões de redistribuição** geradas automaticamente: "Passar X (atrasada, 8h) de Karen (60h) pra Drieli (15h)", até 5 sugestões.
-3. **Gestão dos clientes** — tabela com sinal semafórico por cliente (ativas, atrasadas, aguardando cliente, entregues 30d, tendência vs período anterior, lead time médio) + top 10 pendentes críticos (score ponderado: atrasadas por dias e prioridade, bloqueadas pelo cliente, aging stale).
+2. **Gestão do time** — 4 charts em grid 2×2 mostrando distribuição por pessoa (×Cliente em horas, ×Status em horas, ×Cliente em tarefas, ×Status em tarefas). Bloco final com **sugestões de redistribuição** geradas automaticamente: "Passar X (atrasada, 8h) de Karen (60h) pra Drieli (15h)", até 5 sugestões.
+3. **Gestão dos clientes** — 2 charts no topo (tarefas concluídas em 14d por cliente · SLA médio em 14d por cliente) + tabela com sinal semafórico (ativas, atrasadas, aguardando cliente, entregues 14d, tendência vs 14d ant., SLA médio) + top 10 pendentes críticos (score ponderado).
+
+> **Convenção de horas em charts e PDF**: tarefas com esforço 0 contam como 4h padrão. Em listas e tabelas operacionais (Backlog/Kanban) mostra-se o valor real informado.
 
 Usa o diálogo nativo de impressão do navegador → **Salvar como PDF**.
 
