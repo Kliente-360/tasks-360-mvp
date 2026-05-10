@@ -409,6 +409,9 @@
     }
   }
 
+  /* ============ Mentions em comments ============ */
+  .mention { display: inline-block; padding: 0 4px; border-radius: 3px; background: var(--brand-tint); color: var(--brand-dark); font-weight: 500; }
+
   /* ============ MANUAL (markdown rendered) ============ */
   .help-md { color: var(--ink); font-family: 'Inter', sans-serif; line-height: 1.65; font-size: 14.5px; }
   .help-md > *:first-child { margin-top: 0 !important; }
@@ -1586,7 +1589,7 @@
                     <span class="font-medium text-ink" x-text="c.author || '—'"></span>
                     <span class="text-muted font-mono" x-text="fmtPostedEm(c.posted_em || c.criado_em)"></span>
                   </div>
-                  <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-text="stripHtml(c.body)"></div>
+                  <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-html="renderCommentBody(c.body)"></div>
                 </div>
               </template>
               <div x-show="portalTaskComments.length === 0" class="text-xs text-muted italic">Nenhum comentário ainda.</div>
@@ -2532,7 +2535,7 @@
                   </span>
                   <span class="text-muted font-mono" x-text="fmtPostedEm(c.posted_em || c.criado_em)"></span>
                 </div>
-                <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-text="stripHtml(c.body)"></div>
+                <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-html="renderCommentBody(c.body)"></div>
                 <div class="mt-1">
                   <button x-show="replyingToId !== c.id" class="text-[11px] text-muted hover:text-brand-dark" @click="startReply(c.id)">↳ responder</button>
                 </div>
@@ -2547,7 +2550,7 @@
                     </span>
                     <span class="text-muted font-mono" x-text="fmtPostedEm(r.posted_em || r.criado_em)"></span>
                   </div>
-                  <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-text="stripHtml(r.body)"></div>
+                  <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-html="renderCommentBody(r.body)"></div>
                 </div>
               </template>
               <!-- input de reply, inline abaixo das replies existentes -->
@@ -2573,11 +2576,22 @@
           <textarea class="inp resize-y min-h-[60px] text-sm flex-1" x-model="newComment" placeholder="comentar nesta tarefa…" @keydown.meta.enter.prevent="postComment()" @keydown.ctrl.enter.prevent="postComment()"></textarea>
           <button class="btn btn-primary text-sm self-stretch" @click="postComment()" :disabled="!newComment.trim()">comentar</button>
         </div>
-        <div class="flex items-center gap-2 mt-1.5">
+        <div class="flex items-center gap-2 mt-1.5 flex-wrap">
           <input type="checkbox" id="newCommentPublicoCk" class="cursor-pointer" x-model="newCommentPublico">
           <label for="newCommentPublicoCk" class="text-[11px] text-ink-soft cursor-pointer select-none">
             Visível ao cliente no Portal
           </label>
+          <div class="relative" @click.outside="mentionPickerFor==='newComment' && (mentionPickerFor='')">
+            <button type="button" class="btn btn-ghost text-[11px] py-0.5 px-2"
+                    @click="mentionPickerFor = mentionPickerFor === 'newComment' ? '' : 'newComment'; mentionPickerQuery=''">@ mencionar</button>
+            <div x-show="mentionPickerFor === 'newComment'" x-transition.opacity
+                 class="absolute left-0 bottom-full mb-1 bg-elev border border-line rounded-md shadow-xl z-50 w-[200px] py-1 max-h-[200px] overflow-y-auto">
+              <input type="text" class="inp text-xs py-1 mx-2 mb-1" x-model="mentionPickerQuery" placeholder="filtrar pessoa…" @click.stop>
+              <template x-for="p in mentionablePessoas(mentionPickerQuery)" :key="p.id">
+                <button type="button" class="w-full text-left px-3 py-1.5 text-xs hover:bg-brand-tint" @click="appendMention('newComment', (p.nome||'').split(' ')[0])" x-text="p.nome"></button>
+              </template>
+            </div>
+          </div>
           <span class="text-[10px] text-muted ml-auto">⌘ + enter envia</span>
         </div>
       </div>
@@ -2868,6 +2882,8 @@ function app() {
     editingHistory: [],
     newComment: '',
     newCommentPublico: false,
+    mentionPickerFor: '',  // '' | 'newComment' | 'newReply' | 'portalNewComment' | 'portalReplyText'
+    mentionPickerQuery: '',
     replyingToId: '',
     newReply: '',
     newCli: '',
@@ -3264,6 +3280,38 @@ function app() {
         .replace(/<\/(div|h[1-6]|tr)\s*>/gi, '\n');
       // textContent strips remaining tags + decodifica entidades (&amp; etc.)
       return (tmp.textContent || '').replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim();
+    },
+    // Renderiza body de comment como HTML seguro: strip de tags, escape, e
+    // realça @firstname que bate com pessoa cadastrada (interno/admin).
+    renderCommentBody(body) {
+      const plain = this.stripHtml(body);
+      const escaped = plain
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      const firstNames = new Set(
+        this.pessoas
+          .filter(p => p.role !== 'cliente')
+          .map(p => (p.nome || '').split(/\s+/)[0])
+          .filter(Boolean)
+      );
+      // @palavra (com acentos): se bate first name, vira span destacado.
+      return escaped.replace(/@([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9]*)/g, (m, name) => {
+        return firstNames.has(name) ? `<span class="mention">@${name}</span>` : m;
+      });
+    },
+    appendMention(field, firstName) {
+      const current = this[field] || '';
+      const sep = current && !current.endsWith(' ') && !current.endsWith('\n') ? ' ' : '';
+      this[field] = current + sep + '@' + firstName + ' ';
+      this.mentionPickerFor = '';
+    },
+    mentionablePessoas(query) {
+      const q = (query || '').toLowerCase();
+      return this.pessoas
+        .filter(p => p.role !== 'cliente')
+        .filter(p => !q || (p.nome || '').toLowerCase().includes(q))
+        .slice(0, 8);
     },
     async refreshFromLogo() {
       if (this.refreshing) return;
