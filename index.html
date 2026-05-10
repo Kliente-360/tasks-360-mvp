@@ -771,6 +771,21 @@
       <option value="prioridade">Prioridade</option>
       <option value="complexidade">Complexidade</option>
     </select>
+    <!-- Ordenar (somente mobile — desktop usa click no cabeçalho da coluna) -->
+    <select class="inp text-xs py-1 w-auto md:hidden" x-model="sortKey" title="Ordenar por…">
+      <option value="prazo">Ordenar: Prazo</option>
+      <option value="prioridade">Ordenar: Prioridade</option>
+      <option value="titulo">Ordenar: Título</option>
+      <option value="clienteId">Ordenar: Cliente</option>
+      <option value="projetoId">Ordenar: Projeto</option>
+      <option value="pessoaId">Ordenar: Responsável</option>
+      <option value="esforco">Ordenar: Esforço</option>
+      <option value="complexidade">Ordenar: Complexidade</option>
+      <option value="status">Ordenar: Status</option>
+    </select>
+    <button class="btn btn-ghost text-xs md:hidden" @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'" :title="sortDir === 'asc' ? 'crescente' : 'decrescente'">
+      <span x-text="sortDir === 'asc' ? '↑' : '↓'"></span>
+    </button>
     <button class="btn btn-ghost text-xs" x-show="activeFiltersCount > 0 || f.q || f.tag"
             @click="clearFilters()"
             title="Limpar todos os filtros aplicados">
