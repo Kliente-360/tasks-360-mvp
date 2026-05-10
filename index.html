@@ -2953,7 +2953,8 @@ function app() {
       }
       const userId = session.user.id;
       const email = (session.user.email || '').trim().toLowerCase();
-      console.log('[auth] resolving pessoa for', { userId, email });
+      const provider = (session.user.app_metadata && session.user.app_metadata.provider) || 'email';
+      console.log('[auth] resolving pessoa for', { userId, email, provider });
 
       // Hidrata do cache primeiro pra evitar piscar tela de login em refresh
       try {
