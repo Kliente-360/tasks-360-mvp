@@ -346,7 +346,7 @@ Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
 
 #### 🟡 Anotado, não implementado (em ordem de execução sugerida)
 
-2. **Heurísticas pré-IA · Onda B** — relacionamento e qualidade: senioridade da pessoa, `tipo_projeto`, `reopen_count` em tasks.
+~~2. Heurísticas pré-IA · Onda B~~ ✅ — senioridade da pessoa, `tipo` em projetos, `reopen_count` em tasks (trigger). 2 heurísticas novas: júnior+complexidade alta, reaberturas crônicas.
 3. **Heurísticas pré-IA · Onda C** — dependências e progresso: `depende_de`, `tipo_trabalho`, `tempo_real_gasto`.
 
 #### 🟢 IA — depende de chave Anthropic + orçamento

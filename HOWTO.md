@@ -126,7 +126,11 @@ Em **Clientes**, o botão "editar" abre modal com nome e **tier** (estratégico 
 
 Em **Projetos**, o botão "editar" abre modal com nome, cliente e atributos de **SLA + orçamento** (resposta em horas, entrega em dias, orçamento total em horas). SLA de entrega aciona a heurística "SLA iminente" entre 80% e 120% do prazo. Os atributos aparecem como badges discretas na listagem. **Arquivar** funciona igual ao de cliente — esconde do radar, sem deletar.
 
-Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (Admin / Time Kliente 360 / Cliente externo) e — quando perfil for "Cliente externo" — o cliente vinculado.
+Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (Admin / Time Kliente 360 / Cliente externo) e — quando perfil for "Cliente externo" — o cliente vinculado. Pra time interno: capacidade semanal, skills e **senioridade** (júnior/pleno/sênior/lead). Júnior + complexidade alta vira alerta na heurística.
+
+Em **Projetos**, agora também tem **tipo** (implantação/sustentação/discovery/projeto), badge na lista.
+
+Tasks têm contador `reopenCount` automático (incrementado por trigger SQL quando voltam de "concluído" pra qualquer outro status). Aparece como badge "reaberta Nx" no header do modal. Tarefas reabertas 2+ vezes viram alerta na heurística.
 
 Botões de acesso variam por perfil:
 - **Cliente externo** (login via magic link): "convidar" / "reenviar link" / "inativar"
