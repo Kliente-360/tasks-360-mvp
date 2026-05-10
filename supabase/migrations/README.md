@@ -22,6 +22,8 @@ Se for criar projeto Supabase do zero, rodar todos em ordem (próximo da ordem a
 | `2026-05-10_notifications.sql` | tabela `notifications` + RLS + realtime publication |
 | `2026-05-10_heuristicas_onda_a.sql` | atributos Onda A: `tasks.tamanho` (deprecated, agora computado), `pessoas.cliente_principal/secundario/capacidade_horas_semana/skills`, `clientes.tier`, `projetos.sla_*`/`orcamento_horas` |
 | `2026-05-10_arquivamento.sql` | `arquivado_em timestamptz` em `clientes` e `projetos` |
+| `2026-05-10_heuristicas_onda_b.sql` | Onda B: `pessoas.senioridade`, `projetos.tipo`, `tasks.reopen_count` + trigger |
+| `2026-05-10_heuristicas_onda_c.sql` | Onda C: `tasks.tipo_trabalho`, `tasks.tempo_real_horas`, tabela `task_dependencies` |
 
 ## `pending/` — aguardando execução
 
