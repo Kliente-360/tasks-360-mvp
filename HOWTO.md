@@ -132,6 +132,11 @@ Em **Projetos**, agora também tem **tipo** (implantação/sustentação/discove
 
 Tasks têm contador `reopenCount` automático (incrementado por trigger SQL quando voltam de "concluído" pra qualquer outro status). Aparece como badge "reaberta Nx" no header do modal. Tarefas reabertas 2+ vezes viram alerta na heurística.
 
+Tasks também ganham 3 atributos extras (Onda C):
+- **Tipo de trabalho** (bug/feature/discovery/manutenção/admin) — analytics + futura IA.
+- **Tempo real (horas)** — opcional, manual. Se >1.5x do esforço estimado, vira alerta.
+- **Dependências** — chips com tasks que precisam ser concluídas antes. Candidatas filtram por mesmo cliente, exceto a própria e as já concluídas. Se uma task em backlog tem dependência aberta e prazo ≤14d, vira alerta de severidade alta.
+
 Botões de acesso variam por perfil:
 - **Cliente externo** (login via magic link): "convidar" / "reenviar link" / "inativar"
 - **Time interno / Admin** (login via Google): "ativar" / "inativar" — sem reenviar link, porque o login não depende de email; basta a pessoa estar `ativa` (`invited_at` preenchido) pra entrar com Google.

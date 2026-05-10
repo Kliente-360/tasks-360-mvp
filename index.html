@@ -2714,6 +2714,48 @@
         </div>
       </div>
 
+      <!-- Onda C: tipo de trabalho, tempo real, dependências -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 pt-3 mt-2 border-t border-line">
+        <div>
+          <label class="lbl">Tipo de trabalho</label>
+          <select class="inp" x-model="editing.tipoTrabalho">
+            <option value="">—</option>
+            <option value="bug">Bug</option>
+            <option value="feature">Feature</option>
+            <option value="discovery">Discovery</option>
+            <option value="manutencao">Manutenção</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Tempo real · horas</label>
+          <input type="number" min="0" step="0.5" class="inp" x-model="editing.tempoRealHoras" placeholder="—">
+          <div class="text-[10px] text-muted mt-1">se &gt;1.5x do esforço estimado, vira alerta.</div>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="lbl">Dependências</label>
+          <div class="flex flex-wrap gap-1.5 mb-2" x-show="editing.dependencias && editing.dependencias.length > 0">
+            <template x-for="depId in (editing.dependencias || [])" :key="depId">
+              <span class="text-xs px-2 py-1 rounded font-mono inline-flex items-center gap-1.5"
+                    :style="statusTask(depId) === 'concluido' ? 'background:var(--brand-soft);color:var(--brand-dark)' : 'background:var(--p1-soft);color:var(--p1)'">
+                <span x-text="(statusTask(depId) === 'concluido' ? '✓ ' : '○ ') + nomeTask(depId)"></span>
+                <button type="button" class="text-base leading-none opacity-60 hover:opacity-100" @click="removeDependencia(depId)" title="remover">×</button>
+              </span>
+            </template>
+          </div>
+          <div class="flex gap-2">
+            <select class="inp flex-1" x-model="newDepId">
+              <option value="">— adicionar dependência —</option>
+              <template x-for="t in _candidatesDependencia" :key="t.id">
+                <option :value="t.id" x-text="t.titulo + ' · ' + (nomeProjeto(t.projetoId) || nomeCliente(t.clienteId) || 'sem projeto')"></option>
+              </template>
+            </select>
+            <button type="button" class="btn btn-ghost text-sm" @click="addDependencia()" :disabled="!newDepId">+ adicionar</button>
+          </div>
+          <div class="text-[10px] text-muted mt-1">tarefas em backlog cuja dependência ainda não foi concluída e tem prazo em ≤14d viram alerta.</div>
+        </div>
+      </div>
+
       <div x-show="editing.id" class="pt-4 mt-2 border-t border-line">
         <div class="flex items-center justify-between mb-2">
           <label class="lbl !mb-0">Comentários</label>
@@ -3076,6 +3118,8 @@ function taskFromDb(r) {
     ordem: r.ordem == null ? null : Number(r.ordem),
     tags: Array.isArray(r.tags) ? r.tags : [],
     reopenCount: Number(r.reopen_count) || 0,
+    tipoTrabalho: r.tipo_trabalho || '',
+    tempoRealHoras: r.tempo_real_horas == null ? null : +r.tempo_real_horas,
   };
 }
 function taskToDb(t) {
@@ -3094,6 +3138,8 @@ function taskToDb(t) {
     bloqueado_por: t.bloqueadoPor || null,
     visivel_cliente: t.visivelCliente !== false,
     tags: Array.isArray(t.tags) ? t.tags : [],
+    tipo_trabalho: t.tipoTrabalho || null,
+    tempo_real_horas: t.tempoRealHoras == null || t.tempoRealHoras === '' ? null : +t.tempoRealHoras,
   };
 }
 function projetoFromDb(r) {
@@ -3248,6 +3294,8 @@ function app() {
     newCli: '',
     newProj: { nome: '', clienteId: '' },
     historyAll: [],
+    taskDeps: [], // [{task_id, depende_de_id}, ...] do banco, fonte da verdade
+    newDepId: '', // select de adicionar dependência no modal
     mvpComments: [],
     mvpLoadedAt: 0,
     charts: { clientes: null, capacidade: null, aging: null, timeline: null, throughput: null, leadtime: null, mvpVolume: null, mvpDau: null },
@@ -3813,7 +3861,7 @@ function app() {
     },
     async load() {
       try {
-        const [c, p, ps, t, h] = await Promise.all([
+        const [c, p, ps, t, h, td] = await Promise.all([
           sb.from('clientes').select('id,nome,tier,arquivado_em').order('nome'),
           sb.from('projetos').select('id,nome,cliente_id,sla_resposta_horas,sla_entrega_dias,orcamento_horas,tipo,arquivado_em').order('nome'),
           sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id,cliente_principal_id,cliente_secundario_id,capacidade_horas_semana,skills,senioridade').order('nome'),
@@ -3822,14 +3870,16 @@ function app() {
             .select('task_id, from_status, to_status, actor_pessoa_id, actor_source, occurred_at')
             .order('occurred_at', { ascending: false })
             .limit(5000),
+          sb.from('task_dependencies').select('task_id, depende_de_id'),
         ]);
-        const err = c.error || p.error || ps.error || t.error || h.error;
+        const err = c.error || p.error || ps.error || t.error || h.error || td.error;
         if (err) throw err;
         this.clientes = c.data.map(clienteFromDb);
         this.projetos = p.data.map(projetoFromDb);
         this.pessoas  = ps.data;
         this.tasks    = t.data.map(taskFromDb);
         this.historyAll = h.data || [];
+        this.taskDeps = td.data || [];
       } catch (e) {
         console.error('Falha ao carregar do Supabase', e);
         this.toast('error', 'Falha ao carregar: ' + (e.message || e));
@@ -4382,7 +4432,7 @@ function app() {
 
     // ===================== HELPERS =====================
     blankTask() {
-      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true, tags: [], reopenCount: 0 };
+      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true, tags: [], reopenCount: 0, tipoTrabalho: '', tempoRealHoras: '', dependencias: [] };
     },
     normalizeTag(s) {
       return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24);
@@ -4480,6 +4530,25 @@ function app() {
       const ativos = this.projetosAtivos;
       if (!cid) return ativos;
       return ativos.filter(p => p.clienteId === cid);
+    },
+    get _depsByTask() {
+      const m = new Map();
+      for (const d of this.taskDeps) {
+        if (!m.has(d.task_id)) m.set(d.task_id, []);
+        m.get(d.task_id).push(d.depende_de_id);
+      }
+      return m;
+    },
+    getDependencias(taskId) {
+      return this._depsByTask.get(taskId) || [];
+    },
+    nomeTask(id) {
+      const t = this.tasks.find(x => x.id === id);
+      return t ? t.titulo : '(removida)';
+    },
+    statusTask(id) {
+      const t = this.tasks.find(x => x.id === id);
+      return t ? t.status : '';
     },
     get clientesAtivos() {
       return this.clientes.filter(c => !c.arquivadoEm);
@@ -5733,6 +5802,44 @@ function app() {
         });
       }
 
+      // 8. Onda C — bloqueio por dependência: task em backlog com prazo
+      // ≤14d cujas dependências ainda NÃO foram concluídas.
+      const taskById = new Map(this.tasks.map(t => [t.id, t]));
+      const in14 = new Date(today); in14.setDate(today.getDate() + 14);
+      const in14Iso = in14.toISOString().slice(0,10);
+      const bloqDep = ativas.filter(t => {
+        if (t.subetapa !== 'backlog') return false;
+        if (!t.prazo || t.prazo > in14Iso) return false;
+        const deps = this._depsByTask.get(t.id) || [];
+        return deps.some(depId => {
+          const dep = taskById.get(depId);
+          return dep && dep.status !== 'concluido';
+        });
+      });
+      if (bloqDep.length) {
+        out.push({
+          severity: 'alta',
+          kind: 'bloqueio-dependencia',
+          titulo: `${bloqDep.length} tarefa(s) com dependência aberta e prazo ≤14d`,
+          detalhe: 'Iniciar a dependente ou renegociar prazo da posterior.',
+          taskIds: bloqDep.map(t => t.id),
+        });
+      }
+
+      // 9. Onda C — estimativa furada: tempo real > 1.5x do esforço.
+      const estimativaFurada = ativas.filter(t =>
+        t.tempoRealHoras != null && t.esforco > 0 && t.tempoRealHoras > t.esforco * 1.5
+      );
+      if (estimativaFurada.length) {
+        out.push({
+          severity: 'media',
+          kind: 'estimativa-furada',
+          titulo: `${estimativaFurada.length} tarefa(s) com tempo real >1.5x do estimado`,
+          detalhe: 'Calibrar estimativa pra próxima similar; entender o gap.',
+          taskIds: estimativaFurada.map(t => t.id),
+        });
+      }
+
       // Ordena por severity (alta antes)
       const sevRank = { alta: 0, media: 1, baixa: 2 };
       out.sort((a,b) => (sevRank[a.severity] ?? 9) - (sevRank[b.severity] ?? 9));
@@ -6200,11 +6307,15 @@ function app() {
       this.newComment = '';
       this.replyingToId = '';
       this.newReply = '';
+      this.newDepId = '';
       this.modal = true;
       this.$nextTick(() => this.$refs.tituloInput && this.$refs.tituloInput.focus());
     },
     openEdit(t) {
       this.editing = JSON.parse(JSON.stringify(t));
+      this.editing.tempoRealHoras = this.editing.tempoRealHoras == null ? '' : this.editing.tempoRealHoras;
+      this.editing.dependencias = [...this.getDependencias(t.id)];
+      this.newDepId = '';
       this.editingComments = [];
       this.editingHistory = [];
       this.newComment = '';
@@ -6291,6 +6402,8 @@ function app() {
             bloqueadoPor: e.subetapa === 'bloqueado' ? (e.bloqueadoPor || '') : '',
             visivelCliente: e.visivelCliente !== false,
             tags: Array.isArray(e.tags) ? [...e.tags] : [],
+            tipoTrabalho: e.tipoTrabalho || '',
+            tempoRealHoras: e.tempoRealHoras === '' || e.tempoRealHoras == null ? null : +e.tempoRealHoras,
             statusEm:   statusChanged ? nowMs : prev.statusEm,
             subetapaEm: subChanged    ? nowMs : prev.subetapaEm,
           };
@@ -6315,6 +6428,8 @@ function app() {
             await this._notifyAssignment(e.id, e.pessoaId, prev.pessoaId);
           }
         } catch (err) { console.warn('[notif] assignment notify failed:', err); }
+        // Sincroniza dependências (diff vs prev)
+        await this._syncDependencias(e.id, e.dependencias || []);
       } else {
         // Insert
         payload.status_em = nowIso;
@@ -6332,8 +6447,59 @@ function app() {
             actor_pessoa_id: this.currentPessoa ? this.currentPessoa.id : null,
             actor_source: 'app', occurred_at: nowIso,
           });
+          await this._syncDependencias(data.id, e.dependencias || []);
         }
       }
+    },
+    async _syncDependencias(taskId, dependeDeIds) {
+      const wanted = new Set(dependeDeIds.filter(Boolean));
+      const current = new Set(this.getDependencias(taskId));
+      const toAdd = [...wanted].filter(id => !current.has(id));
+      const toDel = [...current].filter(id => !wanted.has(id));
+      if (toAdd.length) {
+        const rows = toAdd.map(depende_de_id => ({ task_id: taskId, depende_de_id }));
+        const { error } = await sb.from('task_dependencies').insert(rows);
+        if (error) { this.toast('error', 'Erro ao salvar dependências: ' + error.message); return; }
+      }
+      for (const depId of toDel) {
+        const { error } = await sb.from('task_dependencies').delete()
+          .eq('task_id', taskId).eq('depende_de_id', depId);
+        if (error) { this.toast('error', 'Erro ao remover dependência: ' + error.message); return; }
+      }
+      if (toAdd.length || toDel.length) {
+        // Recarrega taskDeps pra refletir o estado novo
+        const { data, error } = await sb.from('task_dependencies').select('task_id, depende_de_id');
+        if (!error) this.taskDeps = data || [];
+      }
+    },
+    addDependencia() {
+      const id = this.newDepId;
+      if (!id) return;
+      if (this.editing.id && id === this.editing.id) {
+        this.toast('error', 'Tarefa não pode depender de si mesma.');
+        this.newDepId = '';
+        return;
+      }
+      this.editing.dependencias = this.editing.dependencias || [];
+      if (!this.editing.dependencias.includes(id)) {
+        this.editing.dependencias.push(id);
+      }
+      this.newDepId = '';
+    },
+    removeDependencia(id) {
+      this.editing.dependencias = (this.editing.dependencias || []).filter(d => d !== id);
+    },
+    get _candidatesDependencia() {
+      // Candidatos: tasks do mesmo cliente, exceto a própria e as já dependentes.
+      const e = this.editing;
+      if (!e) return [];
+      const already = new Set(e.dependencias || []);
+      return this.tasks.filter(t =>
+        t.id !== e.id &&
+        !already.has(t.id) &&
+        t.status !== 'concluido' &&
+        (!e.clienteId || t.clienteId === e.clienteId)
+      );
     },
     deleteTask() {
       this.askConfirm('Excluir esta tarefa? Esta ação não pode ser desfeita.', async () => {
