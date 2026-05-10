@@ -740,8 +740,11 @@
               <div class="flex items-center gap-1.5 mt-2">
                 <span class="status text-[10px]" :data-s="t.status">
                   <span class="status-dot"></span>
-                  <span x-text="lblSub(t.subetapa)"></span>
+                  <span x-text="lblStatus(t.status)"></span>
                 </span>
+                <template x-if="lblStatus(t.status) !== lblSub(t.subetapa)">
+                  <span class="text-[10px] font-mono text-muted">› <span class="text-ink-soft" x-text="lblSub(t.subetapa)"></span></span>
+                </template>
                 <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" x-text="agingDays(t)+'d'"></span>
               </div>
             </div>
@@ -1053,8 +1056,11 @@
               <div class="flex items-center gap-1.5 mt-2">
                 <span class="status text-[10px]" :data-s="t.status">
                   <span class="status-dot"></span>
-                  <span x-text="lblSub(t.subetapa)"></span>
+                  <span x-text="lblStatus(t.status)"></span>
                 </span>
+                <template x-if="lblStatus(t.status) !== lblSub(t.subetapa)">
+                  <span class="text-[10px] font-mono text-muted">› <span class="text-ink-soft" x-text="lblSub(t.subetapa)"></span></span>
+                </template>
                 <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" x-text="agingDays(t)+'d'"></span>
               </div>
             </div>
