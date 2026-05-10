@@ -19,6 +19,9 @@ Se for criar projeto Supabase do zero, rodar todos em ordem (próximo da ordem a
 | `complexidade_patch.sql` | `complexidade` em tasks |
 | `subetapa_patch.sql` | `subetapa` em tasks + trigger sync com `status` macro |
 | `roles_portal_patch.sql` | `role` + `cliente_id` em pessoas; `visivel_cliente` + `from_cliente` em comments; `bloqueado_por` + `visivel_cliente` em tasks; RLS pra cliente externo |
+| `2026-05-10_notifications.sql` | tabela `notifications` + RLS + realtime publication |
+| `2026-05-10_heuristicas_onda_a.sql` | atributos Onda A: `tasks.tamanho` (deprecated, agora computado), `pessoas.cliente_principal/secundario/capacidade_horas_semana/skills`, `clientes.tier`, `projetos.sla_*`/`orcamento_horas` |
+| `2026-05-10_arquivamento.sql` | `arquivado_em timestamptz` em `clientes` e `projetos` |
 
 ## `pending/` — aguardando execução
 
