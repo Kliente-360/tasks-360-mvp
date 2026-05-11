@@ -739,89 +739,95 @@ Decisão tomada em maio/2026, piloto Pão e Talho.
 
 ### Heurísticas avançadas (pré-IA)
 
-Camada de atributos novos + regras determinísticas que aumentam a capacidade de análise antes de entrar com IA. Custo de implementação baixo a médio, valor analítico alto.
+Camada de atributos + regras determinísticas que aumentam capacidade de análise antes de entrar com IA. **Estado atual: 10 heurísticas ativas no banner do Dashboard.** Esta seção rastreia o que foi entregue, o que está pendente e o que foi descartado.
 
-#### Atributos a adicionar
+#### Heurísticas ativas hoje · 10
 
-##### Em `tasks`
-
-| Campo | Tipo | Descrição | ROI |
+| # | Heurística | Severidade | Onda |
 |---|---|---|---|
-| `tamanho` | enum (`mini`/`small`/`medio`/`grande`/`mini_projeto`) | Ortogonal a esforço; muda regra de "está em risco?" — grande sem início é vermelho mesmo com prazo distante. | ⭐⭐⭐ |
-| `tipo_trabalho` | enum (`config`/`dev`/`analise`/`teste`/`treinamento`/`escrita`/`comunicacao`) | Match com skill da pessoa; balanceia carga por especialidade. | ⭐⭐ |
-| `depende_de` | uuid → tasks(id), nullable | Detecta cadeias travadas; mostra "X tasks esperando essa". | ⭐⭐ |
-| `reopen_count` | int default 0 (incrementa via trigger ao sair de `concluido`) | Sinal de qualidade frágil; alerta se ≥2 no mês. | ⭐⭐ |
-| `tempo_real_gasto` | numeric, opcional | Calibra esforço, alimenta sugestão futura de estimativa. | ⭐ |
-| `entregavel_cliente` | bool | Separa milestone de tarefa interna; só os `true` viram destaque no Portal. | ⭐ |
-| `tag_risco` | text array | jurídico / compliance / dependência externa / técnico. | ⭐ |
+| 1 | Tarefa grande/mini-projeto sem início, prazo a ≤10d | alta | A |
+| 2 | Sobrecarga real (horas alocadas > capacidade semanal) | alta | A |
+| 3 | Cliente estratégico com atrasadas | alta | A |
+| 4 | Bloqueio aguardando cliente há +5 dias | média | A |
+| 5 | SLA contratado quase vencido (80-120% do prazo) | média | A |
+| 6 | Júnior + complexidade alta (substituiu "jr sem revisor") | média | B |
+| 7 | Reaberturas crônicas (`reopen_count ≥ 2`) | média | B |
+| 8 | Bloqueio por dependência aberta, prazo ≤14d | alta | C |
+| 9 | Estimativa furada (`tempo_real > 1.5x esforco`) | média | C |
+| 10 | Triagem represada (sem responsável/cliente/prazo/esforço conforme etapa) | alta se ≥10, média | Operacional |
 
-##### Em `pessoas` (apenas `interno`/`admin`)
+#### Pendente · vale perseguir
 
-| Campo | Tipo | Descrição | ROI |
-|---|---|---|---|
-| `cliente_principal_id` | uuid → clientes | Quem é dono primário desse cliente. | ⭐⭐⭐ |
-| `cliente_secundario_id` | uuid → clientes | Backup / dono secundário. | ⭐⭐⭐ |
-| `capacidade_horas_semana` | int default 40 | Base do "% alocado"; alimenta sobrecarga real. | ⭐⭐⭐ |
-| `skills` | text array | sales-cloud, service-cloud, apex, lwc, integração, marketing-cloud, dataloader, etc. | ⭐⭐⭐ |
-| `senioridade` | enum (`jr`/`pl`/`sr`/`lider`) | Heurísticas de "sr ocupado com mini" e "jr sem revisor". | ⭐⭐ |
-| `disponibilidade` | jsonb (`{ tipo: 'full'/'part'/'ferias', inicio?, fim? }`) | Silencia alertas durante ausência. | ⭐⭐ |
+| Heurística | Atributos extras necessários | Por quê adia |
+|---|---|---|
+| **Skill mismatch** | nenhum (já temos `tasks.tipo_trabalho` + `pessoas.skills`) | Modelagem do match (heurística vs lookup) ainda em aberto |
+| **Senioridade malalocada** (sr com mini, jr com grande) | nenhum | Útil mas eficiência de alocação não virou dor explícita |
+| **Margem em risco** (>80% orçamento + escopo restante) | nenhum (já temos `projetos.orcamento_horas`) | Já aparece no PDF executivo como `% Orç.`; falta promover a alerta |
 
-##### Em `projetos`
+#### Descartado / parked
 
-| Campo | Tipo | Descrição | ROI |
-|---|---|---|---|
-| `tipo` | enum (`sustentacao`/`projeto`/`evolucao`) | Diferencia regime contratual e expectativa. | ⭐⭐ |
-| `sla_resposta_horas` / `sla_entrega_dias` | int, nullable | Alimenta breach automático. | ⭐⭐⭐ |
-| `inicio_previsto` / `fim_previsto` | date | Burndown e % executado. | ⭐⭐ |
-| `orcamento_horas` | int, nullable | Acompanhamento contratual; margem em risco. | ⭐⭐⭐ |
-| `status_comercial` | enum (`ativo`/`em_renovacao`/`em_cobranca`/`encerrando`) | Sinal soft para CEO. | ⭐ |
-| `decisor_nome` / `decisor_email` | text | Quem aprovar / fuso horário. | ⭐ |
+| Heurística | Por quê descartado |
+|---|---|
+| **Relacionamento frio** | Requer `clientes.cadencia_reuniao` + `ultima_reuniao_em` + processo de registrar reuniões. Custo alto, valor marginal vs já termos heurística "atraso em estratégico". |
+| **Cliente em fricção** (5+ bloq cliente +7d) | Já capturada implicitamente por "bloqueio aguardando cliente +5d". Redundância. |
+| **Jr sem revisor** | Substituída por "júnior + complexidade alta" (#6) — mesmo sinal, sem precisar de campo `mentor`. |
 
-##### Em `clientes`
+#### Atributos · status
 
-| Campo | Tipo | Descrição | ROI |
-|---|---|---|---|
-| `tier` | enum (`estrategico`/`regular`/`oportunidade`) | Pondera atenção e severidade de alertas. | ⭐⭐⭐ |
-| `cadencia_reuniao` | enum (`semanal`/`quinzenal`/`mensal`/`adhoc`) + `ultima_reuniao_em` | Alerta de relacionamento frio. | ⭐⭐⭐ |
-| `mrr` ou `ticket_medio` | numeric | Pondera cliente em alertas (vermelho num estratégico vale mais). | ⭐ |
-| `risco_churn` | int 1-5 (manual) | Input executivo; vira filtro/realce. | ⭐ |
+##### `tasks`
 
-#### Heurísticas habilitadas
+| Campo | Status |
+|---|---|
+| `tamanho` | ✅ derivado de `esforco` via `effTamanho()` (sem coluna física) |
+| `tipo_trabalho` | ✅ Onda C (`bug`/`feature`/`discovery`/`manutencao`/`admin`) |
+| `dependencias` | ✅ Onda C — tabela separada `task_dependencies` |
+| `reopen_count` | ✅ Onda B (trigger SQL) |
+| `tempo_real_horas` | ✅ Onda C (input manual) |
+| `arquivado_em` | ✅ (extra, mai/2026) — esconde de listas/dashboards sem deletar |
+| `entregavel_cliente` | 🕒 pendente — útil pra filtrar o que cliente vê no Portal |
+| `tag_risco` | 🚫 parked — pode emergir como tag normal (`#juridico`, `#compliance`) sem schema novo |
 
-Com os atributos acima, podemos gerar alertas determinísticos (sem IA):
+##### `pessoas`
 
-- **Risco mesmo com prazo futuro**: "Task `grande` ou `mini_projeto` sem `data_inicio_real`, prazo a ≤10d → vermelho"
-- **SLA breach**: "Cliente Beta tem `sla_resposta_horas=24`, ticket há 36h → breach"
-- **Cadeia travada**: "3 tasks com `depende_de` na #Y, parada há 8d → escalar #Y"
-- **Sobrecarga real**: "Karen 60h alocadas vs `capacidade=40h` → 150% (vermelho); ignorar quando `disponibilidade.tipo='ferias'`"
-- **Skill mismatch**: "Task `tipo_trabalho='dev'` + tag `lwc` atribuída a alguém sem `lwc` no `skills` → sugerir realocar"
-- **Senioridade malalocada**: "`sr/lider` com >2 tasks `mini` no mês → desperdício"
-- **Jr sem revisor**: "`jr` com task `grande` → exigir mentor (campo a definir) ou alertar"
-- **Relacionamento frio**: "Cliente com `cadencia_reuniao='semanal'` e `ultima_reuniao_em` há +14d → amarelo; `tier=estrategico` → vermelho"
-- **Margem em risco**: "Projeto consumiu ≥80% de `orcamento_horas` com escopo restante >20% → alerta"
-- **Qualidade frágil**: "`reopen_count` ≥2 no mês ou ≥1 em task `tipo_trabalho='dev'` → revisar QA"
-- **Cliente em fricção**: "Cliente com ≥5 tasks `bloqueado_por='cliente'` há +7d → CEO ouvir o sponsor"
+| Campo | Status |
+|---|---|
+| `cliente_principal_id` / `cliente_secundario_id` | ✅ Onda A |
+| `capacidade_horas_semana` | ✅ Onda A |
+| `skills` | ✅ Onda A (text[] com autocomplete de chips compartilhado com tags) |
+| `senioridade` | ✅ Onda B (`junior`/`pleno`/`senior`/`lead`) |
+| `disponibilidade` | 🚫 parked — silenciar alerta em férias é útil mas requer fluxo de cadastrar férias |
 
-#### Roteiro sugerido (3 ondas curtas)
+##### `projetos`
 
-1. **Onda A — atributos baratos com alto ROI** (~1 semana de patch + UI):
-   - tasks.tamanho, pessoas.cliente_principal/secundario, pessoas.capacidade_horas_semana, pessoas.skills, clientes.tier, projetos.sla_*, projetos.orcamento_horas
-   - Filtros e visualizações novas no Backlog/Foco
-   - 4-5 heurísticas no detector (banner Dashboard) — sobrecarga real, skill mismatch básico, SLA breach, tier × atraso
+| Campo | Status |
+|---|---|
+| `tipo` | ✅ Onda B (`sustentacao`/`projeto`/`discovery`) — `implantacao` removido |
+| `sla_resposta_horas` / `sla_entrega_dias` | ✅ Onda A |
+| `orcamento_horas` | ✅ Onda A |
+| `arquivado_em` | ✅ (extra) |
+| `inicio_previsto` / `fim_previsto` | 🕒 pendente — habilita burndown e % executado |
+| `status_comercial` | 🚫 parked — soft, baixo ROI sem fluxo formal |
+| `decisor_nome` / `decisor_email` | 🚫 parked |
 
-2. **Onda B — relacionamento e qualidade** (~1 semana):
-   - clientes.cadencia_reuniao + ultima_reuniao_em + alertas
-   - tasks.reopen_count via trigger
-   - pessoas.senioridade + heurísticas de alocação
-   - projetos.tipo + status_comercial
+##### `clientes`
 
-3. **Onda C — dependências e progresso** (~2 semanas):
-   - tasks.depende_de (UI da relação é o esforço)
-   - tasks.tipo_trabalho
-   - tasks.tempo_real_gasto (input mínimo)
-   - Burndown e % executado por projeto
+| Campo | Status |
+|---|---|
+| `tier` | ✅ Onda A — `estrategico`/`potencial`/`descoberta` (vocabulário v2) |
+| `arquivado_em` | ✅ (extra) |
+| `cadencia_reuniao` / `ultima_reuniao_em` | 🚫 parked — sem processo de registrar reunião, virariam dado bolorento |
+| `mrr` / `ticket_medio` | 🚫 parked — produto evita expor receita |
+| `risco_churn` | 🚫 parked — input manual de baixo valor; tier já endereça |
 
-Onda A já entrega valor mensurável; B e C escalonam.
+#### Próximas heurísticas (se aparecer dor)
+
+Em ordem de retorno provável:
+
+1. **Margem em risco** (`% Orç. ≥ 80% AND ativas > 0`) — 30min, dado já existe
+2. **Skill mismatch** (task com tag `X` em pessoa sem skill `X`) — 1h, requer definir matching exato
+3. **Senioridade malalocada** (sr com >3 tasks `mini`) — 30min
+
+Outras heurísticas aguardam aparecer dor explícita antes de promover.
 
 ### Onda 5+ — Diferenciação com IA
 
@@ -952,42 +958,44 @@ Sem cache (worst case absoluto): R$ 35–50/mês. Preços de modelo podem mudar;
 
 ---
 
-## 10. Analytics — as 8 visões
+## 10. Analytics — visões do app
 
-Decisão: 8 visões fixas, dentro do app, sem ferramenta externa de BI.
+Decisão: visões fixas no app, sem ferramenta externa de BI. A lista cresce **organicamente** quando uma pergunta nova vira recorrente — não é cap de 8 nem contrato fechado.
 
 ### Para liderança e sócios
 
 1. **Throughput semanal** ✅ — 8 semanas, bar chart com semana atual destacada (`brandDark`).
-
-2. **Lead time médio por cliente** ✅ — bar horizontal com média (dias) por cliente nos últimos 90 dias, dentro do card "Velocidade da operação".
-
-3. **Capacidade por pessoa** ✅ — % de capacidade semanal alocada, stacked horizontal com overflow em vermelho. Substituiu "Carga por pessoa" cega à capacidade.
-
+2. **Lead time médio por cliente** ✅ — bar horizontal com média (dias) por cliente nos últimos 90 dias.
+3. **Carga por pessoa** ✅ — bar horizontal: horas em ativas + horas em atrasadas (vermelho). _Antes era "Capacidade por pessoa" com `%`; após decisão de não expor cadastral, virou versão operacional pura._
 4. **Itens atrasados** ✅ — lista priorizada por dias de atraso + prioridade.
 
 ### Para gestão operacional
 
-5. **Saúde por projeto** ✅ — semáforo (verde/âmbar/vermelho). Critérios determinísticos: vermelho se atrasadas/SLA quase vencido/bloqueio +5d; âmbar se aguardando cliente ou aging warn; verde caso contrário.
+5. **Saúde por projeto** ✅ — semáforo determinístico. Vermelho: atrasadas / SLA quase vencido / bloqueio +5d. Âmbar: aguardando cliente / aging warn. Verde: saudável.
+6. **Saúde por pessoa** ✅ — semáforo análogo, baseado em atrasadas/stale (vermelho), aguardando cliente / bloqueio interno / warn (âmbar), saudável (verde). Sem cadastral.
+7. **Distribuição de esforço por cliente** ✅ — "Volume por cliente" (horas em tarefas abertas).
+8. **Aging do backlog** ✅ — stacked horizontal por status × faixa (0-7 / 8-30 / 30-60 / 60+).
+9. **Itens aguardando cliente** ✅ — lista de `subetapa=bloqueado AND bloqueado_por=cliente` ordenada por aging desc.
 
-6. **Distribuição de esforço por cliente** ✅ — bar horizontal "Volume por cliente" (horas por cliente em tarefas abertas).
+### Briefing executivo (admin) · derivado
 
-7. **Aging do backlog** ✅ — stacked horizontal por status (backlog/andamento/bloqueado) × faixa (0-7 / 8-30 / 30-60 / 60+).
-
-8. **Itens aguardando cliente** ✅ — lista de tarefas `subetapa=bloqueado AND bloqueado_por=cliente` ordenada por aging desc.
+Não conta como "visão" porque agrega as anteriores em narrativa decisional (4 cards: clientes pra conversar, pessoas pra conversar, tendência, capacidade vs demanda). Detalhe na §9.1.
 
 ### Implementação técnica
 
 - Tudo via getters Alpine + Chart.js, `chartTheme()` central com paleta semântica (brand/danger/warn/info/neutral) e `baseOpts` padronizadas.
-- Sem cache: getters reagem direto a `dashTasks` (filtro cliente/pessoa).
-- 8/8 visões implementadas.
+- Getters caros (`reportClientHealth`, `reportTeamLoad`, `heuristicAlerts`) memoizados com LRU; sig baseado em `_tasksSig` + `_dataRev`.
+- Filtros de cliente e responsável afetam todos via `dashTasks` (computado uma vez por render).
+- Sem dependência de BI externo, sem cache server-side.
 
-### Implementação técnica
+### Quando adicionar nova visão
 
-- Queries em `/lib/analytics/*`, uma por visão.
-- Postgres dá conta de tudo com window functions e CTEs. Sem necessidade de OLAP.
-- Recharts para todos os gráficos.
-- Cache leve (React Server Component + revalidate por minuto) para evitar recomputar em cada página view.
+Critérios pra promover uma pergunta a "visão fixa":
+1. Aparece em conversa de operação 2+ semanas seguidas
+2. Resposta exige <30s de leitura, com sinal claro de ação
+3. Cabe em <100 linhas de código (compute + UI)
+
+Caso contrário: mantém como filtro do Backlog ou export CSV.
 
 ---
 
