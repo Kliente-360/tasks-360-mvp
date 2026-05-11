@@ -25,6 +25,7 @@ Se for criar projeto Supabase do zero, rodar todos em ordem (próximo da ordem a
 | `2026-05-10_heuristicas_onda_b.sql` | Onda B: `pessoas.senioridade`, `projetos.tipo`, `tasks.reopen_count` + trigger |
 | `2026-05-10_heuristicas_onda_c.sql` | Onda C: `tasks.tipo_trabalho`, `tasks.tempo_real_horas`, tabela `task_dependencies` |
 | `2026-05-10_task_field_history.sql` | Tabela `task_field_history` pra rastrear mudanças de campos não-status (prazo, esforço, responsável, etc) |
+| `2026-05-11_usage_events.sql` | Tabela `usage_events` (telemetria de uso, retenção 90d via `fn_usage_events_cleanup`) + RLS (insert open authenticated, select admin) |
 
 ## `pending/` — aguardando execução
 
