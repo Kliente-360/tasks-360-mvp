@@ -1320,6 +1320,13 @@
               </td>
             </tr>
           </template>
+          <tr x-show="g.hasMore && (g.isAll || !collapsedGroups.includes(g.key))">
+            <td colspan="11" class="py-3 px-4 bg-bg">
+              <button class="btn btn-ghost text-xs w-full justify-center" @click="loadMoreBacklog()">
+                mostrando <span x-text="g.tasks.length"></span> de <span x-text="g.tasksTotal"></span> · carregar mais <span x-text="Math.min(_LIST_LIMIT_STEP, g.tasksTotal - g.tasks.length)"></span>
+              </button>
+            </td>
+          </tr>
         </tbody>
       </template>
       <tbody x-show="filtered.length===0">
@@ -1389,6 +1396,9 @@
               </div>
             </div>
           </template>
+          <button x-show="g.hasMore" class="btn btn-ghost text-xs w-full justify-center py-2" @click="loadMoreBacklog()">
+            mostrando <span x-text="g.tasks.length"></span> de <span x-text="g.tasksTotal"></span> · carregar mais <span x-text="Math.min(_LIST_LIMIT_STEP, g.tasksTotal - g.tasks.length)"></span>
+          </button>
         </div>
       </div>
     </template>
@@ -5205,11 +5215,25 @@ function app() {
       });
       return arr;
     },
+    // Limite de linhas renderizadas por grupo (pagination simples no
+    // backlog). Bumpa em _LIST_LIMIT_STEP via loadMoreBacklog().
+    _listLimit: 100,
+    _LIST_LIMIT_STEP: 100,
+    loadMoreBacklog() { this._listLimit += this._LIST_LIMIT_STEP; },
+
     // Agrupamento de 1 nível. Retorna sempre array de grupos; se groupBy
     // estiver vazio, devolve um único grupo "todas" sem header.
+    // Cada grupo é truncado em this._listLimit (mostra "carregar mais"
+    // quando excede). Evita renderizar 500+ rows de uma vez.
     get groupedFiltered() {
+      const lim = this._listLimit;
+      const trim = (tasks) => {
+        const total = tasks.length;
+        if (total <= lim) return { tasks, tasksTotal: total, hasMore: false };
+        return { tasks: tasks.slice(0, lim), tasksTotal: total, hasMore: true };
+      };
       const arr = this.filtered;
-      if (!this.groupBy) return [{ key: '__all__', label: '', tasks: arr, isAll: true }];
+      if (!this.groupBy) return [{ key: '__all__', label: '', isAll: true, ...trim(arr) }];
       const map = new Map();
       for (const t of arr) {
         let key, label;
@@ -5226,7 +5250,8 @@ function app() {
         if (!map.has(key)) map.set(key, { key, label, tasks: [] });
         map.get(key).tasks.push(t);
       }
-      const groups = Array.from(map.values());
+      // Aplica trim por grupo
+      const groups = Array.from(map.values()).map(g => ({ ...g, ...trim(g.tasks) }));
       // Ordenação dos grupos por tipo
       if (this.groupBy === 'prioridade') {
         const order = { P0: 0, P1: 1, P2: 2, P3: 3 };
