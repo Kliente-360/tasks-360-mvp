@@ -1052,7 +1052,7 @@
             <div class="flex-1 min-w-0">
               <div class="font-medium text-ink" x-text="p.nome"></div>
               <div class="text-sm text-ink-soft mt-0.5">
-                <span x-text="p.tasks + ' tasks'"></span>
+                <span x-text="p.tasks + ' tasks · ' + p.horas + 'h alocadas'"></span>
                 <span x-show="p.atrasadas > 0" class="text-[color:var(--p0)]"> · <span x-text="p.atrasadas + ' atrasadas'"></span></span>
               </div>
               <div class="text-xs font-mono mt-1 text-amber-700" x-text="'→ ' + p.acao"></div>
@@ -2088,13 +2088,22 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-1 gap-3 md:gap-4 mb-5 md:mb-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-5 md:mb-6">
     <div class="card p-4 md:p-6">
       <div class="mb-4">
         <div class="font-brand text-xl font-semibold">Volume por cliente</div>
         <div class="text-xs text-muted mt-0.5">horas em tarefas abertas</div>
       </div>
       <div style="height:260px"><canvas id="chartClientes"></canvas></div>
+    </div>
+    <div class="card p-4 md:p-6">
+      <div class="mb-4 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <div class="font-brand text-xl font-semibold">Carga por pessoa</div>
+          <div class="text-xs text-muted mt-0.5">horas em ativas · vermelho = horas em tasks atrasadas</div>
+        </div>
+      </div>
+      <div style="height:260px"><canvas id="chartCargaPessoa"></canvas></div>
     </div>
   </div>
 
@@ -7239,9 +7248,74 @@ function app() {
         });
       }
 
-      // (Chart 'Capacidade por pessoa' removido — dados sensíveis ficam só
-      // em Cadastros + heurísticas internas. Use a heurística 'sobrecarga'
-      // no banner pra agir sem expor números.)
+      // Carga por pessoa — operacional, sem expor cadastral.
+      // Soma horas em ativas, destacando horas em tasks atrasadas.
+      const cargaRows = [];
+      const cargaMap = new Map();   // pessoaId → { horas, horasAtrasadas }
+      for (const t of ativas) {
+        if (!t.pessoaId) continue;
+        let r = cargaMap.get(t.pessoaId);
+        if (!r) { r = { horas: 0, horasAtrasadas: 0 }; cargaMap.set(t.pessoaId, r); }
+        const h = this.effEsforco(t);
+        r.horas += h;
+        if (this.atrasada(t)) r.horasAtrasadas += h;
+      }
+      for (const p of this.pessoas) {
+        if (p.role === ROLE.CLIENTE) continue;
+        const r = cargaMap.get(p.id);
+        if (!r || r.horas === 0) continue;
+        cargaRows.push({ nome: p.nome, horas: r.horas, horasAtrasadas: r.horasAtrasadas });
+      }
+      cargaRows.sort((a, b) => b.horas - a.horas);
+      const ctxCarga = document.getElementById('chartCargaPessoa');
+      if (ctxCarga && cargaRows.length) {
+        this._upsertChart('cargaPessoa', ctxCarga, {
+          type: 'bar',
+          data: {
+            labels: cargaRows.map(r => r.nome),
+            datasets: [
+              {
+                label: 'Horas no prazo',
+                data: cargaRows.map(r => Math.max(0, r.horas - r.horasAtrasadas)),
+                backgroundColor: palette.brand,
+                borderRadius: { topLeft: 4, bottomLeft: 4 },
+                barThickness: 22,
+                stack: 's',
+              },
+              {
+                label: 'Horas em atrasadas',
+                data: cargaRows.map(r => r.horasAtrasadas),
+                backgroundColor: palette.danger,
+                borderRadius: { topRight: 4, bottomRight: 4 },
+                barThickness: 22,
+                stack: 's',
+              },
+            ],
+          },
+          options: {
+            ...baseOpts, indexAxis: 'y',
+            scales: {
+              x: { ...baseOpts.scales.x, beginAtZero: true, ticks: { ...baseOpts.scales.x.ticks, callback: (v) => v + 'h' } },
+              y: { ...baseOpts.scales.y, grid: { display: false }, stacked: true },
+            },
+            plugins: {
+              ...baseOpts.plugins,
+              tooltip: {
+                ...baseOpts.plugins.tooltip,
+                callbacks: {
+                  title: (items) => cargaRows[items[0].dataIndex].nome,
+                  label: (c) => {
+                    const r = cargaRows[c.dataIndex];
+                    if (c.datasetIndex === 1 && r.horasAtrasadas > 0) return `Atrasadas: ${r.horasAtrasadas}h`;
+                    if (c.datasetIndex === 0) return `Total: ${r.horas}h`;
+                    return '';
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
 
       const ts = this.throughputSemanas;
       const ctxTh = document.getElementById('chartThroughput');
