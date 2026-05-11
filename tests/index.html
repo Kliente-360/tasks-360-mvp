@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>tests · tasks 360</title>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; background: #fafaf8; color: #111; padding: 24px; max-width: 900px; margin: 0 auto; }
+  h1 { font-family: 'Manrope', sans-serif; font-size: 24px; margin: 0 0 4px; color: #009900; }
+  .sub { color: #666; font-size: 13px; margin-bottom: 20px; font-family: 'JetBrains Mono', monospace; }
+  .summary { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-weight: 600; }
+  .summary.pass { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .summary.fail { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+  .suite { margin-bottom: 18px; }
+  .suite-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #111; margin: 0 0 6px; padding-left: 8px; border-left: 3px solid #009900; }
+  .case { font-size: 12px; padding: 4px 0 4px 11px; border-bottom: 1px dotted #eee; display: flex; gap: 8px; align-items: baseline; }
+  .case.pass::before { content: '✓'; color: #16a34a; font-weight: 700; }
+  .case.fail::before { content: '✗'; color: #dc2626; font-weight: 700; }
+  .case .name { font-family: 'JetBrains Mono', monospace; }
+  .case .err { color: #b91c1c; font-family: 'JetBrains Mono', monospace; font-size: 11px; flex: 1; }
+  .footer { margin-top: 24px; font-size: 11px; color: #888; font-family: 'JetBrains Mono', monospace; }
+  a { color: #009900; }
+</style>
+</head>
+<body>
+  <h1>tests · helpers puros</h1>
+  <div class="sub">sem framework · sem build · carrega <code>../lib/helpers.js</code></div>
+  <div id="summary"></div>
+  <div id="results"></div>
+  <div class="footer">
+    abrir direto no browser (file:// ou servido). Modificar <code>../lib/helpers.js</code> e dar refresh.<br>
+    voltar pro app: <a href="../index.html">index.html</a>
+  </div>
+
+<script src="../lib/helpers.js"></script>
+<script>
+  // Mini test runner. Sem framework — só funções e contagem.
+  const _suites = [];
+  let _suite = null;
+  function describe(name, fn) {
+    _suite = { name, cases: [] };
+    _suites.push(_suite);
+    fn();
+    _suite = null;
+  }
+  function it(name, fn) {
+    try { fn(); _suite.cases.push({ name, ok: true }); }
+    catch (e) { _suite.cases.push({ name, ok: false, err: e.message || String(e) }); }
+  }
+  function eq(actual, expected, msg) {
+    const a = JSON.stringify(actual), e = JSON.stringify(expected);
+    if (a !== e) throw new Error((msg ? msg + ' · ' : '') + `esperado ${e}, recebido ${a}`);
+  }
+  function truthy(v, msg) { if (!v) throw new Error(msg || `valor falsy: ${v}`); }
+
+  // =================== SUITES ===================
+
+  describe('constants', () => {
+    it('STATUS valores corretos', () => {
+      eq(STATUS.BACKLOG,    'backlog');
+      eq(STATUS.CONCLUIDO,  'concluido');
+      eq(STATUS.ANDAMENTO,  'andamento');
+      eq(STATUS.BLOQUEADO,  'bloqueado');
+    });
+    it('ROLE valores corretos', () => {
+      eq(ROLE.ADMIN, 'admin');
+      eq(ROLE.INTERNO, 'interno');
+      eq(ROLE.CLIENTE, 'cliente');
+    });
+    it('SIGNAL valores corretos', () => {
+      eq(SIGNAL.VERDE, 'verde');
+      eq(SIGNAL.AMARELO, 'amarelo');
+      eq(SIGNAL.VERMELHO, 'vermelho');
+    });
+    it('constants são imutáveis (frozen)', () => {
+      let threw = false;
+      try { STATUS.BACKLOG = 'x'; } catch (_) { threw = true; }
+      // Em strict mode lança; em loose silently ignora. Verificar valor.
+      eq(STATUS.BACKLOG, 'backlog', 'STATUS.BACKLOG não pode ser alterado');
+    });
+  });
+
+  describe('normalizeTag', () => {
+    it('lowercase e trim', () => eq(normalizeTag('  Hello  '), 'hello'));
+    it('espaços viram hífen', () => eq(normalizeTag('foo bar baz'), 'foo-bar-baz'));
+    it('espaços múltiplos colapsam', () => eq(normalizeTag('a   b'), 'a-b'));
+    it('limita a 24 chars', () => eq(normalizeTag('a'.repeat(50)).length, 24));
+    it('null/undefined → string vazia', () => {
+      eq(normalizeTag(null), '');
+      eq(normalizeTag(undefined), '');
+      eq(normalizeTag(''), '');
+    });
+  });
+
+  describe('suggest', () => {
+    const all = ['frontend', 'backend', 'design', 'auth', 'database'];
+    it('vazio retorna tudo (até 12)', () => {
+      eq(suggest('', all, []).length, 5);
+    });
+    it('filtra por startsWith primeiro', () => {
+      const r = suggest('a', all, []);
+      eq(r[0], 'auth');
+    });
+    it('exclui já selecionados', () => {
+      const r = suggest('', all, ['frontend']);
+      truthy(!r.includes('frontend'));
+    });
+    it('startsWith antes de includes', () => {
+      const r = suggest('end', ['frontend', 'endpoint', 'backend'], []);
+      eq(r[0], 'endpoint', 'endpoint começa com "end"');
+    });
+    it('limita a 12', () => {
+      const long = Array.from({length: 20}, (_, i) => 'tag' + i);
+      eq(suggest('', long, []).length, 12);
+    });
+  });
+
+  describe('fmtDate', () => {
+    it('formata ISO pra DD/MM/YYYY', () => eq(fmtDate('2026-05-10'), '10/05/2026'));
+    it('vazio retorna —', () => eq(fmtDate(''), '—'));
+    it('null retorna —', () => eq(fmtDate(null), '—'));
+  });
+  describe('fmtDateShort', () => {
+    it('formata DD/MM', () => eq(fmtDateShort('2026-05-10'), '10/05'));
+    it('vazio retorna —', () => eq(fmtDateShort(''), '—'));
+  });
+
+  describe('atrasada', () => {
+    const today = '2026-05-15';
+    it('sem prazo → não atrasada', () => eq(atrasada({}, today), false));
+    it('concluída → nunca atrasada', () => {
+      eq(atrasada({ prazo: '2026-01-01', status: STATUS.CONCLUIDO }, today), false);
+    });
+    it('prazo passado e não concluída → atrasada', () => {
+      eq(atrasada({ prazo: '2026-05-10', status: STATUS.ANDAMENTO }, today), true);
+    });
+    it('prazo hoje → não atrasada', () => {
+      eq(atrasada({ prazo: today, status: STATUS.ANDAMENTO }, today), false);
+    });
+    it('prazo futuro → não atrasada', () => {
+      eq(atrasada({ prazo: '2026-12-31', status: STATUS.ANDAMENTO }, today), false);
+    });
+  });
+
+  describe('cargaNivelFromPctCap', () => {
+    it('null → sem-cap', () => eq(cargaNivelFromPctCap(null), 'sem-cap'));
+    it('150 → sobrecarga (>130)', () => eq(cargaNivelFromPctCap(150), 'sobrecarga'));
+    it('120 → pressão (>100, ≤130)', () => eq(cargaNivelFromPctCap(120), 'pressao'));
+    it('80 → ok (60-100)', () => eq(cargaNivelFromPctCap(80), 'ok'));
+    it('40 → folga (<60)', () => eq(cargaNivelFromPctCap(40), 'folga'));
+    it('exatamente 100 → ok (não pressão)', () => eq(cargaNivelFromPctCap(100), 'ok'));
+    it('exatamente 60 → ok (não folga)', () => eq(cargaNivelFromPctCap(60), 'ok'));
+    it('exatamente 130 → pressão (não sobrecarga)', () => eq(cargaNivelFromPctCap(130), 'pressao'));
+  });
+
+  describe('effEsforco', () => {
+    it('esforço declarado → retorna ele', () => eq(effEsforco({ esforco: 8 }), 8));
+    it('esforço 0 → 4 (default convencional)', () => eq(effEsforco({ esforco: 0 }), 4));
+    it('esforço null/undefined → 4', () => {
+      eq(effEsforco({}), 4);
+      eq(effEsforco({ esforco: null }), 4);
+    });
+    it('esforço fracionário', () => eq(effEsforco({ esforco: 2.5 }), 2.5));
+  });
+
+  describe('effTamanho', () => {
+    it('1h → mini', () => eq(effTamanho({ esforco: 1 }), 'mini'));
+    it('4h (default) → small', () => eq(effTamanho({}), 'small'));
+    it('20h → medio', () => eq(effTamanho({ esforco: 20 }), 'medio'));
+    it('40h → grande', () => eq(effTamanho({ esforco: 40 }), 'grande'));
+    it('100h → mini_projeto', () => eq(effTamanho({ esforco: 100 }), 'mini_projeto'));
+  });
+
+  // =================== RENDER ===================
+  const results = document.getElementById('results');
+  let pass = 0, fail = 0;
+  for (const s of _suites) {
+    const d = document.createElement('div'); d.className = 'suite';
+    const h = document.createElement('div'); h.className = 'suite-title'; h.textContent = s.name; d.appendChild(h);
+    for (const c of s.cases) {
+      const r = document.createElement('div'); r.className = 'case ' + (c.ok ? 'pass' : 'fail');
+      const n = document.createElement('span'); n.className = 'name'; n.textContent = c.name; r.appendChild(n);
+      if (!c.ok) {
+        const e = document.createElement('span'); e.className = 'err'; e.textContent = c.err; r.appendChild(e);
+      }
+      d.appendChild(r);
+      c.ok ? pass++ : fail++;
+    }
+    results.appendChild(d);
+  }
+  const sum = document.getElementById('summary');
+  sum.className = 'summary ' + (fail === 0 ? 'pass' : 'fail');
+  sum.textContent = fail === 0
+    ? `✓ ${pass} testes passando`
+    : `✗ ${fail} falhando · ${pass} passando`;
+</script>
+</body>
+</html>
