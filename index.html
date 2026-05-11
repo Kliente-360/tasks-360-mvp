@@ -1023,6 +1023,229 @@
     .print-only table.memo-tbl thead { display: table-header-group; }
     .print-only table.memo-tbl tr { page-break-inside: avoid; break-inside: avoid; }
   }
+    /* ============ MODAL TASK · two-pane (vencedor B) ============
+     Layout: header navy compacto · esq dados (60%) · dir conversa/histórico (40%) · footer ações.
+     Autosave roda em paralelo ao botão Salvar; indicador mostra estado (saving/saved/dirty/idle).
+     Botão Salvar continua como fallback explícito — ver comentário inline na seção do footer.        */
+  .tmodal {
+    width: 100%; max-width: 1080px; background: var(--surface-1);
+    border: 1px solid var(--line); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-modal); overflow: hidden;
+    display: flex; flex-direction: column;
+    max-height: 90vh;
+  }
+  .tmodal-head {
+    background: var(--navy); color: #fff;
+    padding: var(--sp-3) var(--sp-5);
+    display: flex; align-items: center; gap: var(--sp-3);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .tmodal-head .crumb {
+    font-family: var(--font-mono); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.55);
+  }
+  .tmodal-head .crumb .sep { opacity: 0.4; margin: 0 6px; }
+  .tmodal-head .tmodal-title {
+    font-weight: 600; font-size: var(--fs-md); color: #fff;
+    background: transparent; border: 1px solid transparent;
+    padding: 2px 6px; margin-left: -6px; border-radius: var(--r-sm);
+    outline: none; min-width: 280px; max-width: 560px; flex: 1 1 auto;
+    font-feature-settings: normal;
+  }
+  .tmodal-head .tmodal-title:hover { background: rgba(255,255,255,0.04); }
+  .tmodal-head .tmodal-title:focus { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.18); }
+  .tmodal-head .icon-btn {
+    width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.7); border-radius: var(--r-sm);
+    background: transparent; border: 0; cursor: pointer;
+  }
+  .tmodal-head .icon-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+  /* === Autosave indicator ===
+     4 estados: idle (sem visual) · dirty (cyan, "editando…") · saving (cyan pulse) · saved (muted check).
+     Vive no header pra ficar discreto; o botão Salvar do footer espelha o mesmo estado. */
+  .autosave {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 11px;
+    color: rgba(255,255,255,0.55);
+    padding: 4px 8px; border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    transition: color 150ms ease-out, background 150ms ease-out;
+    user-select: none; white-space: nowrap;
+  }
+  .autosave .as-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted); transition: background 150ms ease-out;
+  }
+  .autosave[data-state="dirty"]   { color: #BFE3FA; background: rgba(0,132,225,0.10); }
+  .autosave[data-state="dirty"]   .as-dot { background: var(--cyan); }
+  .autosave[data-state="saving"]  { color: #BFE3FA; background: rgba(0,132,225,0.14); }
+  .autosave[data-state="saving"]  .as-dot { background: var(--cyan); animation: as-pulse 1s ease-in-out infinite; }
+  .autosave[data-state="saved"]   { color: rgba(255,255,255,0.65); }
+  .autosave[data-state="saved"]   .as-dot { background: var(--brand-light); animation: none; }
+  .autosave[data-state="error"]   { color: #F4C8C3; background: rgba(200,57,43,0.18); }
+  .autosave[data-state="error"]   .as-dot { background: var(--p0); }
+  @keyframes as-pulse {
+    0%, 100% { opacity: 1;  transform: scale(1); }
+    50%      { opacity: 0.35; transform: scale(1.4); }
+  }
+
+  /* corpo two-pane */
+  .tmodal-body {
+    display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    flex: 1 1 auto; min-height: 0;
+  }
+  .tmodal-left  { padding: var(--sp-5) var(--sp-6); overflow-y: auto; min-height: 0; }
+  .tmodal-right {
+    background: var(--surface-3);
+    border-left: 1px solid var(--line);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+
+  /* esquerda: seções de campos */
+  .tmodal-section { padding: var(--sp-4) 0; border-bottom: 1px solid var(--line); }
+  .tmodal-section:first-child { padding-top: 0; }
+  .tmodal-section:last-child  { border-bottom: 0; padding-bottom: 0; }
+  .tmodal-section-title {
+    font-family: var(--font-sans); font-size: var(--fs-xs); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+    margin-bottom: var(--sp-3);
+  }
+  .tmodal-fields {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3) var(--sp-4);
+  }
+  .tmodal-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .tmodal-field .lbl { margin: 0; }
+  .tmodal-field .val {
+    font-size: var(--fs-sm); color: var(--ink); font-weight: 500;
+    padding: 6px 0; border-bottom: 1px dashed transparent;
+  }
+  .tmodal-field.editable .val:hover { border-bottom-color: var(--line-strong); cursor: text; }
+  .tmodal-field .val.mono { font-family: var(--font-mono); font-feature-settings: "tnum"; }
+  .tmodal-field .val.muted { color: var(--muted); }
+  .tmodal-field .val.danger { color: var(--p0); }
+  .tmodal-desc {
+    font-size: var(--fs-sm); color: var(--ink-soft); line-height: 1.55;
+    background: var(--surface-3); border: 1px solid var(--line);
+    border-radius: var(--r-sm); padding: var(--sp-3); margin-top: var(--sp-2);
+  }
+
+  /* timeline histórico (colapsável, fundo da esquerda) */
+  .tmodal-history { font-size: var(--fs-xs); color: var(--muted); }
+  .tmodal-history-item {
+    display: flex; gap: var(--sp-3); padding: 6px 0;
+    border-left: 2px solid var(--line); padding-left: var(--sp-3);
+    margin-left: 4px;
+  }
+  .tmodal-history-item .when {
+    font-family: var(--font-mono); font-feature-settings: "tnum";
+    width: 64px; flex: 0 0 64px; color: var(--muted);
+  }
+  .tmodal-history-item .what { color: var(--ink-soft); }
+  .tmodal-history-item .what b { color: var(--ink); font-weight: 600; }
+
+  /* direita: conversa */
+  .tmodal-tabs {
+    display: flex; gap: var(--sp-4);
+    padding: var(--sp-3) var(--sp-5) 0;
+    border-bottom: 1px solid var(--line); background: var(--surface-1);
+  }
+  .tmodal-tab {
+    font-size: var(--fs-sm); font-weight: 500; color: var(--muted);
+    padding: var(--sp-2) 0 10px; border-bottom: 2px solid transparent;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .tmodal-tab .count {
+    font-family: var(--font-mono); font-feature-settings: "tnum";
+    font-size: 11px; color: var(--muted);
+    background: var(--surface-2); padding: 1px 6px; border-radius: 999px;
+  }
+  .tmodal-tab.active { color: var(--ink); border-bottom-color: var(--brand); }
+  .tmodal-tab.active .count { background: var(--brand-soft); color: var(--brand-dark); }
+
+  .tmodal-thread { flex: 1 1 auto; overflow-y: auto; padding: var(--sp-4) var(--sp-5); }
+  .cmsg {
+    background: var(--surface-1); border: 1px solid var(--line);
+    border-radius: var(--r-sm); padding: var(--sp-3);
+    margin-bottom: var(--sp-3);
+  }
+  .cmsg.from-cliente {
+    border-left: 2px solid var(--cyan);
+    background: #fff;
+  }
+  .cmsg-head {
+    display: flex; align-items: center; gap: var(--sp-2);
+    margin-bottom: 6px;
+  }
+  .cmsg-avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--brand-soft); color: var(--brand-dark);
+    font-size: 11px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .cmsg-avatar.cliente { background: var(--cyan-soft); color: #0066AD; }
+  .cmsg-who { font-size: var(--fs-sm); font-weight: 600; color: var(--ink); }
+  .cmsg-badge {
+    font-family: var(--font-mono); font-size: 9px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    background: var(--cyan-soft); color: #0066AD;
+    padding: 1px 5px; border-radius: 3px;
+  }
+  .cmsg-when {
+    font-family: var(--font-mono); font-feature-settings: "tnum";
+    font-size: 10px; color: var(--muted); margin-left: auto;
+  }
+  .cmsg-body { font-size: var(--fs-sm); color: var(--ink-soft); line-height: 1.5; }
+
+  .tmodal-composer {
+    border-top: 1px solid var(--line); background: var(--surface-1);
+    padding: var(--sp-3) var(--sp-5);
+  }
+  .tmodal-composer textarea {
+    width: 100%; min-height: 56px; resize: vertical;
+    border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+    padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); font-family: inherit;
+    color: var(--ink); background: var(--surface-1);
+  }
+  .tmodal-composer textarea:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
+  .tmodal-composer-row {
+    display: flex; align-items: center; gap: var(--sp-3);
+    margin-top: var(--sp-2);
+    font-size: var(--fs-xs); color: var(--muted);
+  }
+  .tmodal-composer-row .toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    cursor: pointer; user-select: none;
+  }
+  .tmodal-composer-row .toggle input { accent-color: var(--cyan); }
+  .tmodal-composer-row .kbd {
+    font-family: var(--font-mono); font-size: 10px;
+    background: var(--surface-2); border: 1px solid var(--line);
+    padding: 1px 6px; border-radius: 3px; color: var(--ink-soft);
+  }
+
+  /* footer ações — botão Salvar continua presente como fallback explícito ao autosave */
+  .tmodal-foot {
+    display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-5);
+    border-top: 1px solid var(--line);
+    background: var(--surface-1);
+  }
+  .tmodal-foot .hint {
+    font-size: var(--fs-xs); color: var(--muted);
+    font-family: var(--font-mono);
+  }
+  .tmodal-foot .spacer { flex: 1; }
+
+  /* responsivo: stack em mobile, conversa vira aba colapsável */
+  @media (max-width: 860px) {
+    .tmodal-body { grid-template-columns: 1fr; }
+    .tmodal-right { border-left: 0; border-top: 1px solid var(--line); }
+    .tmodal-left  { padding: var(--sp-4); }
+  }
+
 </style>
 </head>
 <script>
@@ -2184,11 +2407,24 @@
 
   <!-- Conteúdo do portal -->
   <div x-show="effectivePortalClienteId" class="space-y-5">
-    <!-- Header do cliente -->
-    <div class="card p-4 md:p-5">
-      <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Cliente</div>
-      <div class="font-brand text-2xl md:text-3xl font-semibold text-brand mt-1" x-text="portalCliente && portalCliente.nome"></div>
-      <div class="text-sm text-ink-soft mt-2">acompanhamento das suas demandas com a Kliente 360</div>
+    <!-- Header do cliente · skin navy institucional -->
+    <div class="portal-header">
+      <div class="portal-header-eyebrow">Portal · Kliente 360</div>
+      <div class="portal-header-name" x-text="portalCliente && portalCliente.nome"></div>
+      <div class="portal-header-sub">acompanhamento das suas demandas com a Kliente 360</div>
+    </div>
+
+    <!-- Hero "Aguardando você" · só aparece quando há pendência do cliente -->
+    <div x-show="portalCards.aguardando.length > 0" class="portal-hero-aguardando">
+      <div class="portal-hero-icon">⚠</div>
+      <div class="min-w-0 flex-1">
+        <div class="portal-hero-title">
+          <span x-text="portalCards.aguardando.length"></span>
+          <span x-show="portalCards.aguardando.length === 1">item aguardando sua resposta</span>
+          <span x-show="portalCards.aguardando.length !== 1">itens aguardando sua resposta</span>
+        </div>
+        <div class="portal-hero-sub">o time tá pausado nessas tarefas até você responder · clique abaixo pra ver</div>
+      </div>
     </div>
 
     <!-- KPIs -->
@@ -3384,318 +3620,286 @@
   </div>
 </footer>
 
-<!-- ============ MODAL TAREFA ============ -->
+<!-- ============ MODAL TAREFA · two-pane ============ -->
 <div x-show="modal" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modal=false" x-transition.opacity>
-  <div class="bg-elev rounded-lg w-full max-w-2xl modal-card" x-transition>
-    <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-line">
-      <div class="flex items-center gap-2 flex-wrap">
-        <span class="font-brand text-lg md:text-xl font-semibold" x-text="editing.id ? 'Editar tarefa' : 'Nova tarefa'"></span>
-        <span x-show="editing.id && (editing.reopenCount || 0) > 0" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--p1-soft);color:var(--p1)" :title="'Reaberta ' + editing.reopenCount + ' vez(es)'" x-text="'reaberta ' + editing.reopenCount + 'x'"></span>
-        <span x-show="editing.id && editing.arquivadoEm" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Tarefa arquivada (oculta de listas/dashboards)">arquivada</span>
-        <!-- Autosave indicator — só pra tasks existentes (id presente). Roda em paralelo ao botão Salvar do footer. -->
-        <span x-show="editing.id" class="autosave" :data-state="saveState"
-              :title="saveState === 'error' ? 'Autosave falhou — clique em Salvar' : 'Autosave ativo · ⌘S força salvar'">
-          <span class="as-dot"></span>
-          <span x-text="autosaveLabel()"></span>
-        </span>
-      </div>
-      <button class="btn btn-ghost btn-icon" @click="modal=false">✕</button>
+  <div class="tmodal" role="dialog" aria-label="Editar tarefa" x-transition>
+
+    <!-- ============ HEADER navy ============ -->
+    <div class="tmodal-head">
+      <span x-show="editing.prioridade" class="pri" :class="'pri-' + editing.prioridade">
+        <span class="pri-dot"></span>
+        <span x-text="editing.prioridade"></span>
+      </span>
+      <span class="crumb">
+        <span x-show="editing.clienteId" x-text="(nomeCliente(editing.clienteId) || '').toUpperCase()"></span>
+        <span x-show="editing.clienteId && editing.projetoId" class="sep">/</span>
+        <span x-show="editing.projetoId" x-text="(nomeProjeto(editing.projetoId) || '').toUpperCase()"></span>
+        <span x-show="!editing.clienteId && !editing.projetoId" class="text-muted" x-text="editing.id ? 'Sem cliente · sem projeto' : 'Nova tarefa'"></span>
+      </span>
+      <input class="tmodal-title" x-model="editing.titulo" placeholder="O que precisa ser feito?" x-ref="tituloInput" aria-label="Título da tarefa">
+      <span x-show="editing.id && (editing.reopenCount || 0) > 0" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:var(--p1-soft);color:var(--p1)" :title="'Reaberta ' + editing.reopenCount + ' vez(es)'" x-text="'reaberta ' + editing.reopenCount + 'x'"></span>
+      <span x-show="editing.id && editing.arquivadoEm" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7)" title="Tarefa arquivada">arquivada</span>
+      <span x-show="editing.id" class="autosave shrink-0" :data-state="saveState"
+            :title="saveState === 'error' ? 'Autosave falhou — clique em Salvar' : 'Autosave ativo · ⌘S força salvar'">
+        <span class="as-dot"></span>
+        <span x-text="autosaveLabel()"></span>
+      </span>
+      <button class="icon-btn" aria-label="Fechar" @click="modal=false">×</button>
     </div>
-    <div class="px-4 md:px-6 py-4 md:py-5 space-y-4 overflow-y-auto" style="max-height:70vh">
-      <div>
-        <label class="lbl">Título</label>
-        <input class="inp" x-model="editing.titulo" placeholder="O que precisa ser feito?" x-ref="tituloInput">
-      </div>
-      <div>
-        <label class="lbl">Descrição (opcional)</label>
-        <textarea class="inp" rows="3" x-model="editing.descricao" placeholder="Contexto, links, critérios de aceite…"></textarea>
-      </div>
-      <div>
-        <label class="lbl">Tags</label>
-        <div class="flex flex-wrap items-center gap-1.5 p-2 inp" style="min-height: 38px; cursor: text;" @click="$refs.tagInput.focus()">
-          <template x-for="tag in (editing.tags || [])" :key="tag">
-            <span class="tag-chip">
-              <span x-text="'#' + tag"></span>
-              <button type="button" @click.stop="removeTag(tag)" aria-label="remover">✕</button>
-            </span>
-          </template>
-          <input x-ref="tagInput" type="text" x-model="newTag"
-                 class="bg-transparent border-0 outline-none text-sm flex-1 min-w-[100px] p-0"
-                 placeholder="adicionar tag (enter ou vírgula)…"
-                 @keydown.enter.prevent="addTag()"
-                 @keydown.,.prevent="addTag()"
-                 @keydown.tab.prevent="addTag()"
-                 @blur="setTimeout(() => addTag(), 120)">
-        </div>
-        <div x-show="suggest(newTag, allTags, editing.tags).length > 0" class="flex flex-wrap gap-1 mt-1.5">
-          <template x-for="t in suggest(newTag, allTags, editing.tags)" :key="t">
-            <button type="button" class="tag-chip-suggest" @mousedown.prevent="addExistingTag(t)" x-text="'+ #' + t"></button>
-          </template>
-        </div>
-        <div class="text-[10px] text-muted mt-1">letras, números e hífen. lowercase automático. máx 24 chars.</div>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label class="lbl">Cliente</label>
-          <select class="inp" x-model="editing.clienteId">
-            <option value="">—</option>
-            <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
-          </select>
-        </div>
-        <div>
-          <label class="lbl">Projeto</label>
-          <select class="inp" x-model="editing.projetoId">
-            <option value="">—</option>
-            <template x-for="p in projetosDoCliente(editing.clienteId)" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
-          </select>
-        </div>
-        <div>
-          <label class="lbl">Responsável</label>
-          <select class="inp" x-model="editing.pessoaId">
-            <option value="">—</option>
-            <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
-          </select>
-        </div>
-        <div>
-          <label class="lbl">Etapa</label>
-          <select class="inp" x-model="editing.subetapa">
-            <optgroup label="Backlog">
-              <option value="backlog">Backlog</option>
-              <option value="priorizado">Priorizado</option>
-              <option value="em_definicao">Em definição</option>
-              <option value="escopo_definido">Escopo definido</option>
-            </optgroup>
-            <optgroup label="Em andamento">
-              <option value="em_desenvolvimento">Em desenvolvimento</option>
-              <option value="em_homologacao">Em homologação</option>
-              <option value="em_revisao">Em revisão</option>
-              <option value="pronto_producao">Pronto p/ produção</option>
-              <option value="em_implantacao">Em implantação</option>
-            </optgroup>
-            <optgroup label="Bloqueado">
-              <option value="bloqueado">Bloqueado</option>
-            </optgroup>
-            <optgroup label="Concluído">
-              <option value="concluido">Concluído</option>
-            </optgroup>
-          </select>
-          <div class="text-[10px] text-muted mt-1">macro: <span class="font-mono" x-text="lblStatus(SUB_TO_MACRO[editing.subetapa] || 'backlog')"></span></div>
-        </div>
-        <div x-show="editing.subetapa === 'bloqueado'">
-          <label class="lbl">Bloqueado por</label>
-          <select class="inp" x-model="editing.bloqueadoPor">
-            <option value="">— a classificar</option>
-            <option value="cliente">Cliente (aguardando resposta dele)</option>
-            <option value="nos">Nós (interno)</option>
-            <option value="terceiro">Terceiro</option>
-          </select>
-          <div class="text-[10px] text-muted mt-1">"Cliente" faz a tarefa aparecer em "Aguardando você" no Portal.</div>
-        </div>
-        <div>
-          <label class="lbl">Prioridade</label>
-          <select class="inp" x-model="editing.prioridade">
-            <option value="P0">P0 · Urgente</option>
-            <option value="P1">P1 · Alta</option>
-            <option value="P2">P2 · Normal</option>
-            <option value="P3">P3 · Baixa</option>
-          </select>
-        </div>
-        <div>
-          <label class="lbl">Esforço (horas)</label>
-          <input type="number" min="0" step="0.5" class="inp" x-model.number="editing.esforco">
-        </div>
-        <div>
-          <label class="lbl">Complexidade</label>
-          <select class="inp" x-model="editing.complexidade">
-            <option value="baixa">Baixa</option>
-            <option value="media">Média</option>
-            <option value="alta">Alta</option>
-          </select>
-        </div>
-        <div class="sm:col-span-2">
-          <label class="lbl">Prazo</label>
-          <input type="date" class="inp" x-model="editing.prazo">
-        </div>
-        <div class="sm:col-span-2 flex items-center gap-2 pt-1">
-          <input type="checkbox" id="visivelClienteCk" class="cursor-pointer" x-model="editing.visivelCliente">
-          <label for="visivelClienteCk" class="text-sm text-ink-soft cursor-pointer select-none">Tarefa visível ao cliente no Portal</label>
-        </div>
-      </div>
 
-      <!-- Onda C: tipo de trabalho, tempo real, dependências -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 pt-3 mt-2 border-t border-line">
-        <div>
-          <label class="lbl">Tipo de trabalho</label>
-          <select class="inp" x-model="editing.tipoTrabalho">
-            <option value="">—</option>
-            <option value="bug">Bug</option>
-            <option value="feature">Feature</option>
-            <option value="discovery">Discovery</option>
-            <option value="manutencao">Manutenção</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <div>
-          <label class="lbl">Tempo real · horas</label>
-          <input type="number" min="0" step="0.5" class="inp" x-model="editing.tempoRealHoras" placeholder="—">
-          <div class="text-[10px] text-muted mt-1">se &gt;1.5x do esforço estimado, vira alerta.</div>
-        </div>
-        <div class="sm:col-span-2">
-          <label class="lbl">ID externo · Salesforce <span class="text-muted text-[10px] normal-case tracking-normal">(temporário)</span></label>
-          <input type="text" class="inp font-mono text-sm" x-model="editing.externalId" placeholder="ex: a0X1A000001abcdEAA" autocomplete="off">
-          <div class="text-[10px] text-muted mt-1">deixa vazio se não tiver. preenchendo, ativa dedupe pela chave (salesforce, external_id).</div>
-        </div>
-        <div class="sm:col-span-2">
-          <label class="lbl">Dependências</label>
-          <div class="flex flex-wrap gap-1.5 mb-2" x-show="editing.dependencias && editing.dependencias.length > 0">
-            <template x-for="depId in (editing.dependencias || [])" :key="depId">
-              <span class="text-xs px-2 py-1 rounded font-mono inline-flex items-center gap-1.5"
-                    :style="statusTask(depId) === 'concluido' ? 'background:var(--brand-soft);color:var(--brand-dark)' : 'background:var(--p1-soft);color:var(--p1)'">
-                <span x-text="(statusTask(depId) === 'concluido' ? '✓ ' : '○ ') + nomeTask(depId)"></span>
-                <button type="button" class="text-base leading-none opacity-60 hover:opacity-100" @click="removeDependencia(depId)" title="remover">×</button>
-              </span>
-            </template>
-          </div>
-          <div class="flex gap-2">
-            <select class="inp flex-1" x-model="newDepId">
-              <option value="">— adicionar dependência —</option>
-              <template x-for="t in _candidatesDependencia" :key="t.id">
-                <option :value="t.id" x-text="t.titulo + ' · ' + (nomeProjeto(t.projetoId) || nomeCliente(t.clienteId) || 'sem projeto')"></option>
-              </template>
-            </select>
-            <button type="button" class="btn btn-ghost text-sm" @click="addDependencia()" :disabled="!newDepId">+ adicionar</button>
-          </div>
-          <div class="text-[10px] text-muted mt-1">tarefas em backlog cuja dependência ainda não foi concluída e tem prazo em ≤14d viram alerta.</div>
-        </div>
-      </div>
+    <!-- ============ CORPO two-pane ============ -->
+    <div class="tmodal-body">
 
-      <div x-show="editing.id" class="pt-4 mt-2 border-t border-line">
-        <div class="flex items-center justify-between mb-2">
-          <label class="lbl !mb-0">Comentários</label>
-          <span class="text-[11px] font-mono text-muted" x-text="editingComments.length"></span>
+      <!-- ESQUERDA · dados -->
+      <div class="tmodal-left">
+
+        <!-- Descrição -->
+        <div class="tmodal-section">
+          <div class="tmodal-section-title">Descrição</div>
+          <textarea class="inp" rows="3" x-model="editing.descricao" placeholder="Contexto, links, critérios de aceite…"></textarea>
         </div>
-        <div class="space-y-3 max-h-[50vh] overflow-y-auto pr-1 mb-3">
-          <template x-for="c in topLevelComments" :key="c.id">
+
+        <!-- HIDDEN_DESDE_v1.01.147 · Tags
+             Mantido no schema/lógica; campo escondido até definirmos vocabulário
+             padronizado de tags na operação.
+        <div class="tmodal-section">
+          <div class="tmodal-section-title">Tags</div>
+          ... (form de tags com autocomplete)
+        </div>
+        -->
+
+        <!-- Atribuição -->
+        <div class="tmodal-section">
+          <div class="tmodal-section-title">Atribuição</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <div class="pl-3 py-1" :class="c.external_source ? 'border-l-2 border-brand' : 'border-l-2'" :style="!c.external_source && 'border-color: var(--p2)'">
-                <div class="flex items-center justify-between gap-2 text-xs">
-                  <span class="font-medium text-ink flex items-center gap-1.5">
-                    <span x-text="c.author || '—'"></span>
-                    <span x-show="c.external_source==='salesforce'" class="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
-                    <span x-show="c.from_cliente" class="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">cliente</span>
-                    <span x-show="c.visivel_cliente && !c.from_cliente" class="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)" title="Visível ao cliente no Portal">público</span>
-                  </span>
-                  <span class="text-muted font-mono" x-text="fmtPostedEm(c.posted_em || c.criado_em)"></span>
-                </div>
-                <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-html="renderCommentBody(c.body)"></div>
-                <div class="mt-1">
-                  <button x-show="replyingToId !== c.id" class="text-[11px] text-muted hover:text-brand-dark" @click="startReply(c.id)">↳ responder</button>
+              <label class="lbl">Cliente</label>
+              <select class="inp" x-model="editing.clienteId">
+                <option value="">—</option>
+                <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Projeto</label>
+              <select class="inp" x-model="editing.projetoId">
+                <option value="">—</option>
+                <template x-for="p in projetosDoCliente(editing.clienteId)" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Responsável</label>
+              <select class="inp" x-model="editing.pessoaId">
+                <option value="">—</option>
+                <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Prioridade</label>
+              <select class="inp" x-model="editing.prioridade">
+                <option value="P0">P0 · Urgente</option>
+                <option value="P1">P1 · Alta</option>
+                <option value="P2">P2 · Normal</option>
+                <option value="P3">P3 · Baixa</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Esforço · prazo -->
+        <div class="tmodal-section">
+          <div class="tmodal-section-title">Esforço · prazo</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="lbl">Estimado (h)</label>
+              <input type="number" min="0" step="0.5" class="inp" x-model.number="editing.esforco">
+            </div>
+            <div>
+              <label class="lbl">Realizado (h)</label>
+              <input type="number" min="0" step="0.5" class="inp" x-model="editing.tempoRealHoras" placeholder="—">
+            </div>
+            <div>
+              <label class="lbl">Complexidade</label>
+              <select class="inp" x-model="editing.complexidade">
+                <option value="baixa">Baixa</option>
+                <option value="media">Média</option>
+                <option value="alta">Alta</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Prazo</label>
+              <input type="date" class="inp" x-model="editing.prazo">
+            </div>
+          </div>
+        </div>
+
+        <!-- HIDDEN_DESDE_v1.01.147 · Tipo de trabalho
+             Schema mantido (tasks.tipo_trabalho); selector escondido até
+             aparecer demanda real de classificação.
+        -->
+
+        <!-- HIDDEN_DESDE_v1.01.147 · Dependências
+             Schema mantido (task_dependencies + getter _candidatesDependencia +
+             addDependencia/removeDependencia); UI escondida até a equipe pedir.
+        -->
+
+        <!-- HIDDEN_DESDE_v1.01.147 · ID externo (Salesforce)
+             Schema mantido (tasks.external_id + ingest-task lê/escreve);
+             campo manual escondido — ingest cria/atualiza automaticamente.
+        -->
+
+        <!-- Metadata -->
+        <div class="tmodal-section">
+          <div class="tmodal-section-title">Metadata</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="lbl">Etapa</label>
+              <select class="inp" x-model="editing.subetapa">
+                <optgroup label="Backlog">
+                  <option value="backlog">Backlog</option>
+                  <option value="priorizado">Priorizado</option>
+                  <option value="em_definicao">Em definição</option>
+                  <option value="escopo_definido">Escopo definido</option>
+                </optgroup>
+                <optgroup label="Em andamento">
+                  <option value="em_desenvolvimento">Em desenvolvimento</option>
+                  <option value="em_homologacao">Em homologação</option>
+                  <option value="em_revisao">Em revisão</option>
+                  <option value="pronto_producao">Pronto p/ produção</option>
+                  <option value="em_implantacao">Em implantação</option>
+                </optgroup>
+                <optgroup label="Bloqueado"><option value="bloqueado">Bloqueado</option></optgroup>
+                <optgroup label="Concluído"><option value="concluido">Concluído</option></optgroup>
+              </select>
+              <div class="text-[10px] text-muted mt-1">macro: <span class="font-mono" x-text="lblStatus(SUB_TO_MACRO[editing.subetapa] || 'backlog')"></span></div>
+            </div>
+            <div x-show="editing.subetapa === 'bloqueado'">
+              <label class="lbl">Bloqueado por</label>
+              <select class="inp" x-model="editing.bloqueadoPor">
+                <option value="">— a classificar</option>
+                <option value="cliente">Cliente</option>
+                <option value="nos">Nós (interno)</option>
+                <option value="terceiro">Terceiro</option>
+              </select>
+            </div>
+            <!-- HIDDEN_DESDE_v1.01.147 · "Visível ao cliente" checkbox (task)
+                 Schema mantido (tasks.visivel_cliente, default true); fica
+                 sempre true até abrirmos Portal real e definirmos curadoria.
+            -->
+          </div>
+        </div>
+
+        <!-- Histórico (campos + status mesclados) -->
+        <div x-show="editing.id" class="tmodal-section">
+          <div class="tmodal-section-title flex items-center gap-2">
+            Histórico
+            <span class="text-[10px] font-mono text-muted normal-case tracking-normal" x-text="editingHistory.length + ' eventos'" style="font-weight:400"></span>
+          </div>
+          <div class="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
+            <template x-for="h in editingHistory" :key="(h.kind || 'status') + ':' + h.id">
+              <div class="flex items-start gap-2 text-xs py-1">
+                <span class="font-mono text-muted shrink-0" x-text="fmtPostedEm(h.occurred_at)"></span>
+                <div class="flex-1 min-w-0">
+                  <span class="font-medium text-ink" x-text="h.actor_pessoa_id ? (nomePessoa(h.actor_pessoa_id)) : (h.actor_source === 'salesforce' ? 'Salesforce' : '—')"></span>
+                  <template x-if="h.kind !== 'field'">
+                    <span><span class="text-muted"> moveu </span><span class="font-medium" x-text="h.from_status ? lblStatus(h.from_status) : '∅'"></span><span class="text-muted"> → </span><span class="font-medium" x-text="lblStatus(h.to_status)"></span></span>
+                  </template>
+                  <template x-if="h.kind === 'field'">
+                    <span><span class="text-muted"> mudou </span><span class="font-medium" x-text="lblField(h.field)"></span><span class="text-muted"> de </span><span class="font-medium" x-text="fmtFieldValue(h.field, h.from_value)"></span><span class="text-muted"> → </span><span class="font-medium" x-text="fmtFieldValue(h.field, h.to_value)"></span></span>
+                  </template>
                 </div>
               </div>
-              <!-- replies (1 nível) -->
+            </template>
+            <div x-show="editingHistory.length === 0" class="text-xs text-muted italic py-2">Sem histórico.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIREITA · conversa + atividade -->
+      <div class="tmodal-right">
+        <div class="tmodal-tabs">
+          <div class="tmodal-tab active">
+            Conversa <span class="count" x-text="editingComments.length"></span>
+          </div>
+          <!-- aba Atividade · placeholder pra próxima iteração (mostrar o histórico aqui em vez de na esquerda)
+          <div class="tmodal-tab">Atividade <span class="count" x-text="editingHistory.length"></span></div>
+          -->
+        </div>
+
+        <div class="tmodal-thread">
+          <template x-for="c in topLevelComments" :key="c.id">
+            <div>
+              <div class="cmsg" :class="c.from_cliente && 'from-cliente'">
+                <div class="cmsg-head">
+                  <span class="cmsg-avatar" :class="c.from_cliente && 'cliente'" x-text="(c.author || '—').charAt(0).toUpperCase()"></span>
+                  <span class="cmsg-who" x-text="c.author || '—'"></span>
+                  <span x-show="c.external_source==='salesforce'" class="cmsg-badge" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
+                  <span x-show="c.from_cliente" class="cmsg-badge">cliente</span>
+                  <span class="cmsg-when" x-text="fmtPostedEm(c.posted_em || c.criado_em) + (c.from_cliente ? '' : ' · interno')"></span>
+                  <button x-show="replyingToId !== c.id" class="text-[11px] text-muted hover:text-ink ml-auto" @click="startReply(c.id)">↳ responder</button>
+                </div>
+                <div class="cmsg-body" x-html="renderCommentBody(c.body)"></div>
+              </div>
               <template x-for="r in repliesOf(c.id)" :key="r.id">
-                <div class="ml-6 mt-1.5 pl-3 py-1 border-l-2" style="border-color: var(--line-strong)">
-                  <div class="flex items-center justify-between gap-2 text-xs">
-                    <span class="font-medium text-ink flex items-center gap-1.5">
-                      <span x-text="r.author || '—'"></span>
-                      <span x-show="r.external_source==='salesforce'" class="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
-                    </span>
-                    <span class="text-muted font-mono" x-text="fmtPostedEm(r.posted_em || r.criado_em)"></span>
+                <div class="cmsg" style="margin-left:24px;border-left:2px solid var(--line-strong)">
+                  <div class="cmsg-head">
+                    <span class="cmsg-avatar" x-text="(r.author || '—').charAt(0).toUpperCase()"></span>
+                    <span class="cmsg-who" x-text="r.author || '—'"></span>
+                    <span x-show="r.external_source==='salesforce'" class="cmsg-badge" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
+                    <span class="cmsg-when" x-text="fmtPostedEm(r.posted_em || r.criado_em)"></span>
                   </div>
-                  <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-html="renderCommentBody(r.body)"></div>
+                  <div class="cmsg-body" x-html="renderCommentBody(r.body)"></div>
                 </div>
               </template>
-              <!-- input de reply, inline abaixo das replies existentes -->
-              <div x-show="replyingToId === c.id" class="ml-6 mt-2 flex items-end gap-2">
-                <textarea class="inp resize-y min-h-[50px] text-sm flex-1" x-model="newReply"
-                          :data-reply-input="c.id"
-                          placeholder="responder…"
-                          @keydown.meta.enter.prevent="postReply(c.id)"
-                          @keydown.ctrl.enter.prevent="postReply(c.id)"
-                          @keydown.escape="cancelReply()"></textarea>
-                <div class="flex flex-col gap-1 self-stretch">
-                  <button class="btn btn-primary text-xs flex-1" @click="postReply(c.id)" :disabled="!newReply.trim()">responder</button>
+              <div x-show="replyingToId === c.id" class="flex flex-col gap-1.5" style="margin-left:24px;margin-top:8px">
+                <textarea class="inp resize-y min-h-[50px] text-sm" x-model="newReply" :data-reply-input="c.id" placeholder="responder…"
+                          @keydown.meta.enter.prevent="postReply(c.id)" @keydown.ctrl.enter.prevent="postReply(c.id)" @keydown.escape="cancelReply()"></textarea>
+                <div class="flex gap-2">
+                  <button class="btn btn-primary text-xs" @click="postReply(c.id)" :disabled="!newReply.trim()">responder</button>
                   <button class="btn btn-ghost text-xs" @click="cancelReply()">cancelar</button>
                 </div>
               </div>
             </div>
           </template>
-          <div x-show="editingComments.length === 0" class="text-xs text-muted italic py-2">
-            Sem comentários ainda.
-          </div>
+          <div x-show="!editing.id" class="text-xs text-muted italic py-3">Comentários aparecem após salvar a tarefa.</div>
+          <div x-show="editing.id && editingComments.length === 0" class="text-xs text-muted italic py-3">Sem comentários ainda.</div>
         </div>
-        <div class="flex items-end gap-2">
-          <textarea class="inp resize-y min-h-[60px] text-sm flex-1" x-model="newComment" placeholder="comentar nesta tarefa…" @keydown.meta.enter.prevent="postComment()" @keydown.ctrl.enter.prevent="postComment()"></textarea>
-          <button class="btn btn-primary text-sm self-stretch" @click="postComment()" :disabled="!newComment.trim()">comentar</button>
-        </div>
-        <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-          <input type="checkbox" id="newCommentPublicoCk" class="cursor-pointer" x-model="newCommentPublico">
-          <label for="newCommentPublicoCk" class="text-[11px] text-ink-soft cursor-pointer select-none">
-            Visível ao cliente no Portal
-          </label>
-          <div class="relative" @click.outside="mentionPickerFor==='newComment' && (mentionPickerFor='')">
-            <button type="button" class="btn btn-ghost text-[11px] py-0.5 px-2"
-                    @click="mentionPickerFor = mentionPickerFor === 'newComment' ? '' : 'newComment'; mentionPickerQuery=''">@ mencionar</button>
-            <div x-show="mentionPickerFor === 'newComment'" x-transition.opacity
-                 class="absolute left-0 bottom-full mb-1 bg-elev border border-line rounded-md shadow-xl z-50 w-[200px] py-1 max-h-[200px] overflow-y-auto">
-              <input type="text" class="inp text-xs py-1 mx-2 mb-1" x-model="mentionPickerQuery" placeholder="filtrar pessoa…" @click.stop>
-              <template x-for="p in mentionablePessoas(mentionPickerQuery)" :key="p.id">
-                <button type="button" class="w-full text-left px-3 py-1.5 text-xs hover:bg-brand-tint" @click="appendMention('newComment', (p.nome||'').split(' ')[0])" x-text="p.nome"></button>
-              </template>
-            </div>
-          </div>
-          <span class="text-[10px] text-muted ml-auto">⌘ + enter envia</span>
-        </div>
-      </div>
 
-      <div x-show="editing.id" class="pt-4 mt-2 border-t border-line">
-        <div class="flex items-center justify-between mb-2">
-          <label class="lbl !mb-0">Histórico</label>
-          <span class="text-[11px] font-mono text-muted" x-text="editingHistory.length"></span>
-        </div>
-        <div class="space-y-2 max-h-[30vh] overflow-y-auto pr-1">
-          <template x-for="h in editingHistory" :key="(h.kind || 'status') + ':' + h.id">
-            <div class="flex items-start gap-2 text-xs py-1">
-              <span class="font-mono text-muted shrink-0" x-text="fmtPostedEm(h.occurred_at)"></span>
-              <div class="flex-1 min-w-0">
-                <span class="font-medium text-ink" x-text="h.actor_pessoa_id ? (nomePessoa(h.actor_pessoa_id)) : (h.actor_source === 'salesforce' ? 'Salesforce' : '—')"></span>
-                <template x-if="h.kind !== 'field'">
-                  <span>
-                    <span class="text-muted"> moveu de </span>
-                    <span class="font-medium" x-text="h.from_status ? lblStatus(h.from_status) : '∅'"></span>
-                    <span class="text-muted"> → </span>
-                    <span class="font-medium" x-text="lblStatus(h.to_status)"></span>
-                  </span>
-                </template>
-                <template x-if="h.kind === 'field'">
-                  <span>
-                    <span class="text-muted"> mudou </span>
-                    <span class="font-medium" x-text="lblField(h.field)"></span>
-                    <span class="text-muted"> de </span>
-                    <span class="font-medium" x-text="fmtFieldValue(h.field, h.from_value)"></span>
-                    <span class="text-muted"> → </span>
-                    <span class="font-medium" x-text="fmtFieldValue(h.field, h.to_value)"></span>
-                  </span>
+        <div x-show="editing.id" class="tmodal-composer">
+          <textarea x-model="newComment" placeholder="Escrever comentário… (⌘↵ envia)"
+                    @keydown.meta.enter.prevent="postComment()" @keydown.ctrl.enter.prevent="postComment()"></textarea>
+          <div class="tmodal-composer-row">
+            <!-- HIDDEN_DESDE_v1.01.147 · "visível ao cliente" no comentário
+                 Schema mantido (task_comments.visivel_cliente). Habilitar quando
+                 abrir Portal real + treinar curadoria de comentários.
+            -->
+            <div class="relative" @click.outside="mentionPickerFor==='newComment' && (mentionPickerFor='')">
+              <button type="button" class="btn btn-ghost text-[11px] py-0.5 px-2"
+                      @click="mentionPickerFor = mentionPickerFor === 'newComment' ? '' : 'newComment'; mentionPickerQuery=''">@ mencionar</button>
+              <div x-show="mentionPickerFor === 'newComment'" x-transition.opacity
+                   class="absolute left-0 bottom-full mb-1 bg-elev border border-line rounded-md shadow-xl z-50 w-[200px] py-1 max-h-[200px] overflow-y-auto">
+                <input type="text" class="inp text-xs py-1 mx-2 mb-1" x-model="mentionPickerQuery" placeholder="filtrar pessoa…" @click.stop>
+                <template x-for="p in mentionablePessoas(mentionPickerQuery)" :key="p.id">
+                  <button type="button" class="w-full text-left px-3 py-1.5 text-xs hover:bg-brand-tint" @click="appendMention('newComment', (p.nome||'').split(' ')[0])" x-text="p.nome"></button>
                 </template>
               </div>
             </div>
-          </template>
-          <div x-show="editingHistory.length === 0" class="text-xs text-muted italic py-2">
-            Sem histórico (mudanças desde o login serão registradas aqui).
+            <div class="spacer" style="flex:1"></div>
+            <button class="btn btn-primary text-xs" @click="postComment()" :disabled="!newComment.trim()">comentar</button>
           </div>
         </div>
       </div>
     </div>
-    <div class="flex items-center justify-between gap-2 px-4 md:px-6 py-3 md:py-4 border-t border-line bg-brand-tint/30">
-      <div class="flex gap-2">
-        <button x-show="editing.id && !editing.arquivadoEm" class="btn btn-ghost text-xs" @click="arquivarTask()" title="Esconder de listas/dashboards/heurísticas sem deletar">arquivar</button>
-        <button x-show="editing.id && editing.arquivadoEm" class="btn btn-ghost text-xs" @click="desarquivarTask()">desarquivar</button>
-        <button x-show="editing.id && viewerRole === ROLE.ADMIN" class="btn btn-danger text-xs" @click="deleteTask()">excluir</button>
-      </div>
-      <div class="flex gap-2">
-        <button class="btn" @click="modal=false">cancelar</button>
-        <button class="btn btn-primary" @click="saveTask()" x-text="editing.id ? 'salvar alterações' : 'criar tarefa'"></button>
-      </div>
+
+    <!-- ============ FOOTER ============ -->
+    <div class="tmodal-foot">
+      <span class="hint" x-show="editing.id">autosave · debounce 800ms · ⌘S força salvar</span>
+      <span class="hint" x-show="!editing.id">tarefa nova · clique em Salvar pra criar</span>
+      <div class="spacer"></div>
+      <button x-show="editing.id && !editing.arquivadoEm" class="btn btn-ghost text-xs" @click="arquivarTask()" title="Esconder de listas/dashboards/heurísticas">arquivar</button>
+      <button x-show="editing.id && editing.arquivadoEm" class="btn btn-ghost text-xs" @click="desarquivarTask()">desarquivar</button>
+      <button x-show="editing.id && viewerRole === ROLE.ADMIN" class="btn btn-danger text-xs" @click="deleteTask()">excluir</button>
+      <button class="btn" @click="modal=false">fechar</button>
+      <button class="btn btn-primary" @click="saveTask()" x-text="editing.id ? 'salvar' : 'criar'"></button>
     </div>
   </div>
 </div>
