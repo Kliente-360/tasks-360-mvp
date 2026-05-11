@@ -852,7 +852,7 @@
 <!-- ============ MEU FOCO ============ -->
 <section x-show="tab==='foco'" class="fade-up">
   <!-- Selector "atuando como" só pra admin (interno usa próprio currentPessoa) -->
-  <div x-show="viewerRole === 'admin'" class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 mb-5 md:mb-6">
+  <div x-show="viewerRole === ROLE.ADMIN" class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 mb-5 md:mb-6">
     <select class="inp w-full md:w-[240px]" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
       <option value="">— atuando como (admin pode simular) —</option>
       <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
@@ -862,11 +862,11 @@
   <!-- Setup banner: aparece quando não há pessoa selecionada (admin) ou pessoa não logada -->
   <div x-show="!effectiveFocusPessoaId" class="card p-6 md:p-10 text-center">
     <div class="font-brand text-lg md:text-xl font-semibold mb-2">
-      <span x-show="viewerRole === 'admin'">Quem você quer ver?</span>
+      <span x-show="viewerRole === ROLE.ADMIN">Quem você quer ver?</span>
       <span x-show="viewerRole !== 'admin'">Foco indisponível</span>
     </div>
     <div class="text-ink-soft text-sm mb-4">
-      <span x-show="viewerRole === 'admin'">Selecione a pessoa acima pra ver as tarefas que pedem atenção.</span>
+      <span x-show="viewerRole === ROLE.ADMIN">Selecione a pessoa acima pra ver as tarefas que pedem atenção.</span>
       <span x-show="viewerRole !== 'admin'">Sua sessão não está ligada a uma pessoa cadastrada. Peça pro admin verificar.</span>
     </div>
   </div>
@@ -1288,7 +1288,7 @@
                 <div class="text-[10px] text-muted font-mono mt-1" x-text="tempoNaEtapa(t)"></div>
               </td>
               <td class="text-right">
-                <button x-show="viewerRole === 'admin'" class="btn btn-ghost btn-icon text-muted hover:text-danger" title="Excluir tarefa" @click.stop="deleteTaskById(t.id)">✕</button>
+                <button x-show="viewerRole === ROLE.ADMIN" class="btn btn-ghost btn-icon text-muted hover:text-danger" title="Excluir tarefa" @click.stop="deleteTaskById(t.id)">✕</button>
               </td>
             </tr>
           </template>
@@ -1671,7 +1671,7 @@
     <div class="font-brand text-lg md:text-xl font-semibold mb-2">Portal do cliente</div>
     <div class="text-ink-soft text-sm">
       <span x-show="viewerRole !== 'cliente'">Selecione um cliente acima pra visualizar o portal como ele veria.</span>
-      <span x-show="viewerRole === 'cliente'">Sua sessão não está vinculada a um cliente. Peça pro admin verificar o cadastro.</span>
+      <span x-show="viewerRole === ROLE.CLIENTE">Sua sessão não está vinculada a um cliente. Peça pro admin verificar o cadastro.</span>
     </div>
   </div>
 
@@ -1724,7 +1724,7 @@
             </div>
             <div class="text-right shrink-0">
               <div x-show="t.prazo" class="text-xs font-mono text-ink-soft" x-text="t.prazo ? fmtDate(t.prazo) : ''"></div>
-              <div x-show="t.status === 'concluido'" class="text-[10px] font-mono mt-0.5" style="color:var(--brand-dark)">✓ entregue</div>
+              <div x-show="t.status === STATUS.CONCLUIDO" class="text-[10px] font-mono mt-0.5" style="color:var(--brand-dark)">✓ entregue</div>
               <div x-show="t.subetapa === 'bloqueado' && t.bloqueadoPor === 'cliente'" class="text-[10px] font-mono mt-0.5" style="color:var(--p0)">⚠ aguardando você</div>
             </div>
           </div>
@@ -1755,7 +1755,7 @@
           <!-- Status humanizado -->
           <div class="flex items-center gap-2 flex-wrap mb-3">
             <span x-show="portalTask.status === 'andamento'" class="px-2 py-1 rounded text-xs font-mono" style="background:var(--brand-tint);color:var(--brand-dark);border:1px solid var(--brand)">em andamento</span>
-            <span x-show="portalTask.status === 'concluido'" class="px-2 py-1 rounded text-xs font-mono" style="background:var(--bg-elev);color:var(--p3);border:1px solid var(--line)">✓ concluída</span>
+            <span x-show="portalTask.status === STATUS.CONCLUIDO" class="px-2 py-1 rounded text-xs font-mono" style="background:var(--bg-elev);color:var(--p3);border:1px solid var(--line)">✓ concluída</span>
             <span x-show="portalTask.status === 'bloqueado' && portalTask.bloqueadoPor === 'cliente'" class="px-2 py-1 rounded text-xs font-mono" style="background:#fef3c7;color:#b45309;border:1px solid #fde68a">⚠ aguardando você</span>
             <span x-show="portalTask.status === 'bloqueado' && portalTask.bloqueadoPor !== 'cliente'" class="px-2 py-1 rounded text-xs font-mono" style="background:var(--bg-elev);color:var(--muted);border:1px solid var(--line)">em pausa</span>
             <span x-show="portalTask.status === 'backlog'" class="px-2 py-1 rounded text-xs font-mono" style="background:var(--bg-elev);color:var(--muted);border:1px solid var(--line)">a iniciar</span>
@@ -2222,30 +2222,30 @@
             <div class="min-w-0">
               <div class="text-sm font-medium flex items-center gap-2 flex-wrap">
                 <span x-text="p.nome"></span>
-                <span x-show="p.role === 'admin'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)" title="Acesso total">admin</span>
-                <span x-show="p.role === 'cliente'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309" title="Cliente externo — só vê o Portal">cliente externo</span>
-                <span x-show="p.senioridade && p.role !== 'cliente'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" x-text="p.senioridade"></span>
+                <span x-show="p.role === ROLE.ADMIN" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)" title="Acesso total">admin</span>
+                <span x-show="p.role === ROLE.CLIENTE" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309" title="Cliente externo — só vê o Portal">cliente externo</span>
+                <span x-show="p.senioridade && p.role !== ROLE.CLIENTE" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" x-text="p.senioridade"></span>
                 <!-- Estado de acesso, semantizado por role -->
                 <span x-show="p.invited_at && p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)">acesso ativo</span>
-                <span x-show="p.role === 'cliente' && p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">convidada · aguardando 1º login</span>
-                <span x-show="p.role !== 'cliente' && p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">ativa · ainda não logou</span>
-                <span x-show="!p.invited_at && p.role === 'cliente' && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">sem convite</span>
-                <span x-show="!p.invited_at && p.role !== 'cliente' && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">inativa</span>
+                <span x-show="p.role === ROLE.CLIENTE && p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">convidada · aguardando 1º login</span>
+                <span x-show="p.role !== ROLE.CLIENTE && p.invited_at && !p.user_id" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">ativa · ainda não logou</span>
+                <span x-show="!p.invited_at && p.role === ROLE.CLIENTE && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">sem convite</span>
+                <span x-show="!p.invited_at && p.role !== ROLE.CLIENTE && p.email" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)">inativa</span>
               </div>
               <div class="text-xs text-muted truncate">
                 <span x-show="p.email" class="font-mono" x-text="p.email"></span>
                 <span x-show="p.email"> · </span>
-                <span x-show="p.role === 'cliente' && p.cliente_id" x-text="nomeCliente(p.cliente_id) + ' · '"></span>
+                <span x-show="p.role === ROLE.CLIENTE && p.cliente_id" x-text="nomeCliente(p.cliente_id) + ' · '"></span>
                 <span x-text="contarTarefasPessoa(p.id) + ' tarefas ativas'"></span>
               </div>
             </div>
           </div>
           <div class="flex gap-1 flex-wrap">
             <!-- Cliente externo: precisa convite/reenviar link (magic link) -->
-            <button class="btn btn-ghost text-xs" x-show="p.role === 'cliente' && p.email && !p.invited_at" @click="convidarPessoa(p)" title="Marcar como convidada e enviar magic link">convidar</button>
-            <button class="btn btn-ghost text-xs" x-show="p.role === 'cliente' && p.email && p.invited_at" @click="convidarPessoa(p)" title="Reenviar magic link">reenviar link</button>
+            <button class="btn btn-ghost text-xs" x-show="p.role === ROLE.CLIENTE && p.email && !p.invited_at" @click="convidarPessoa(p)" title="Marcar como convidada e enviar magic link">convidar</button>
+            <button class="btn btn-ghost text-xs" x-show="p.role === ROLE.CLIENTE && p.email && p.invited_at" @click="convidarPessoa(p)" title="Reenviar magic link">reenviar link</button>
             <!-- Interno/admin: ativar/inativar (sem menção a convite — login é via Google) -->
-            <button class="btn btn-ghost text-xs" x-show="p.role !== 'cliente' && !p.invited_at" @click="ativarPessoa(p)" title="Habilitar acesso">ativar</button>
+            <button class="btn btn-ghost text-xs" x-show="p.role !== ROLE.CLIENTE && !p.invited_at" @click="ativarPessoa(p)" title="Habilitar acesso">ativar</button>
             <!-- Inativar serve pros dois cenários -->
             <button class="btn btn-ghost text-xs" x-show="p.invited_at" @click="desconvidarPessoa(p)" title="Revogar acesso">inativar</button>
             <button class="btn btn-ghost text-xs" @click="openEditPessoa(p)">editar</button>
@@ -2549,7 +2549,7 @@
       <option value="P3">P3 · Baixa</option>
     </select>
     <div class="flex gap-2 md:contents">
-      <button x-show="viewerRole === 'admin'" class="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkDelete()">excluir</button>
+      <button x-show="viewerRole === ROLE.ADMIN" class="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkDelete()">excluir</button>
       <div class="hidden md:block w-px h-5 bg-line mx-1"></div>
       <button class="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 hidden md:inline-flex" @click="clearSelection()">limpar</button>
     </div>
@@ -3019,7 +3019,7 @@
     </div>
     <div class="flex items-center justify-between gap-2 px-4 md:px-6 py-3 md:py-4 border-t border-line bg-brand-tint/30">
       <div>
-        <button x-show="editing.id && viewerRole === 'admin'" class="btn btn-danger text-xs" @click="deleteTask()">excluir</button>
+        <button x-show="editing.id && viewerRole === ROLE.ADMIN" class="btn btn-danger text-xs" @click="deleteTask()">excluir</button>
       </div>
       <div class="flex gap-2">
         <button class="btn" @click="modal=false">cancelar</button>
@@ -3051,13 +3051,13 @@
       </div>
       <div>
         <label class="lbl">Perfil</label>
-        <select class="inp" x-model="editingPessoa.role" @change="editingPessoa.role !== 'cliente' && (editingPessoa.cliente_id = null)">
+        <select class="inp" x-model="editingPessoa.role" @change="editingPessoa.role !== ROLE.CLIENTE && (editingPessoa.cliente_id = null)">
           <option value="admin">Admin · acesso total</option>
           <option value="interno">Time Kliente 360 · interno</option>
           <option value="cliente">Cliente externo · só Portal</option>
         </select>
       </div>
-      <div x-show="editingPessoa.role === 'cliente'">
+      <div x-show="editingPessoa.role === ROLE.CLIENTE">
         <label class="lbl">Cliente vinculado</label>
         <select class="inp" x-model="editingPessoa.cliente_id">
           <option :value="null">— selecionar cliente —</option>
@@ -3066,7 +3066,7 @@
         <div class="text-[10px] text-muted mt-1">o Portal mostra apenas tarefas deste cliente.</div>
       </div>
       <!-- Atributos de heurística (apenas pra time interno/admin) -->
-      <div x-show="editingPessoa.role !== 'cliente'" class="space-y-3 pt-3 border-t border-line">
+      <div x-show="editingPessoa.role !== ROLE.CLIENTE" class="space-y-3 pt-3 border-t border-line">
         <div class="text-[10px] uppercase tracking-wider text-muted font-mono font-semibold">heurísticas</div>
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -3272,6 +3272,60 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Histórico de status continua sendo registrado (sem autor) qdo desligado.
 const AUTH_ENABLED = true;
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============ CONSTANTS · vocabulário do domínio ============
+// Centraliza magic strings pra evitar typo silencioso. Use:
+//   if (t.status === STATUS.CONCLUIDO) ...   em vez de  'concluido'
+//   if (p.role === ROLE.ADMIN)         ...   em vez de  'admin'
+// Adoção incremental — strings legadas continuam funcionando.
+
+const STATUS = Object.freeze({
+  BACKLOG:    'backlog',
+  ANDAMENTO:  'andamento',
+  BLOQUEADO:  'bloqueado',
+  CONCLUIDO:  'concluido',
+});
+
+const ROLE = Object.freeze({
+  ADMIN:   'admin',
+  INTERNO: 'interno',
+  CLIENTE: 'cliente',
+});
+
+const TIER = Object.freeze({
+  ESTRATEGICO: 'estrategico',
+  RECORRENTE:  'recorrente',
+  SPOT:        'spot',
+});
+
+const PRIORIDADE = Object.freeze({
+  P0: 'P0', P1: 'P1', P2: 'P2', P3: 'P3',
+});
+
+const SEVERIDADE = Object.freeze({
+  ALTA:  'alta',
+  MEDIA: 'media',
+  BAIXA: 'baixa',
+});
+
+const SIGNAL = Object.freeze({
+  VERDE:     'verde',
+  AMARELO:   'amarelo',
+  VERMELHO:  'vermelho',
+});
+
+const CARGA_NIVEL = Object.freeze({
+  SOBRECARGA: 'sobrecarga',
+  PRESSAO:    'pressao',
+  OK:         'ok',
+  FOLGA:      'folga',
+  SEM_CAP:    'sem-cap',
+});
+
+// Expõe em window pra Alpine x-show/x-text/x-bind acessar os mesmos
+// símbolos. Constantes `const` no escopo de módulo não vão pra window
+// automaticamente. Object.freeze já garante imutabilidade.
+Object.assign(window, { STATUS, ROLE, TIER, PRIORIDADE, SEVERIDADE, SIGNAL, CARGA_NIVEL });
 
 // ============ Field map declarativo: fonte única de verdade pra
 // mapeamento JS <-> DB. Cada entrada: [jsName, dbName, type, opts?].
@@ -3883,7 +3937,7 @@ function app() {
       while ((m = re.exec(body)) !== null) found.add(m[1]);
       if (!found.size) return;
       const recipients = this.pessoas
-        .filter(p => p.role !== 'cliente')
+        .filter(p => p.role !== ROLE.CLIENTE)
         .filter(p => found.has((p.nome || '').split(/\s+/)[0]))
         .filter(p => p.id !== this.currentPessoa.id) // não notifica a si mesmo
         .map(p => p.id);
@@ -4063,7 +4117,7 @@ function app() {
         .replace(/>/g, '&gt;');
       const firstNames = new Set(
         this.pessoas
-          .filter(p => p.role !== 'cliente')
+          .filter(p => p.role !== ROLE.CLIENTE)
           .map(p => (p.nome || '').split(/\s+/)[0])
           .filter(Boolean)
       );
@@ -4081,7 +4135,7 @@ function app() {
     mentionablePessoas(query) {
       const q = (query || '').toLowerCase();
       return this.pessoas
-        .filter(p => p.role !== 'cliente')
+        .filter(p => p.role !== ROLE.CLIENTE)
         .filter(p => !q || (p.nome || '').toLowerCase().includes(q))
         .slice(0, 8);
     },
@@ -4297,7 +4351,7 @@ function app() {
     // ===================== EXPORT PDF (relatório executivo) =====================
     // Sempre snapshot completo — ignora filtros do app.
     get reportBacklog() {
-      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+      const ativas = this.tasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const prioRank = { P0: 0, P1: 1, P2: 2, P3: 3 };
       return ativas.slice().sort((a, b) => {
         // sem prazo no topo
@@ -4312,17 +4366,17 @@ function app() {
     },
     get reportKPIs() {
       const t = this.tasks;
-      const ativas = t.filter(x => x.status !== 'concluido');
+      const ativas = t.filter(x => x.status !== STATUS.CONCLUIDO);
       const atrasadas = ativas.filter(x => this.atrasada(x)).length;
       const now = Date.now();
-      const concl7d  = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) <= 7*86400000).length;
-      const concl7dPrev = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) > 7*86400000 && (now - x.statusEm) <= 14*86400000).length;
+      const concl7d  = t.filter(x => x.status === STATUS.CONCLUIDO && x.statusEm && (now - x.statusEm) <= 7*86400000).length;
+      const concl7dPrev = t.filter(x => x.status === STATUS.CONCLUIDO && x.statusEm && (now - x.statusEm) > 7*86400000 && (now - x.statusEm) <= 14*86400000).length;
       const horasAtivas = ativas.reduce((s, x) => s + this.effEsforco(x), 0);
       // Lead time médio (14d, criação→conclusão)
-      const leads = t.filter(x => x.status === 'concluido' && x.statusEm && x.criadoEm && (now - x.statusEm) <= 14*86400000)
+      const leads = t.filter(x => x.status === STATUS.CONCLUIDO && x.statusEm && x.criadoEm && (now - x.statusEm) <= 14*86400000)
         .map(x => (x.statusEm - x.criadoEm) / 86400000)
         .filter(d => d > 0);
-      const leadsPrev = t.filter(x => x.status === 'concluido' && x.statusEm && x.criadoEm && (now - x.statusEm) > 14*86400000 && (now - x.statusEm) <= 28*86400000)
+      const leadsPrev = t.filter(x => x.status === STATUS.CONCLUIDO && x.statusEm && x.criadoEm && (now - x.statusEm) > 14*86400000 && (now - x.statusEm) <= 28*86400000)
         .map(x => (x.statusEm - x.criadoEm) / 86400000)
         .filter(d => d > 0);
       const lt = leads.length ? (leads.reduce((a,b) => a+b, 0) / leads.length) : null;
@@ -4372,11 +4426,11 @@ function app() {
     // Eficiência da operação (bloco esquerdo da página executiva)
     get reportEfficiency() {
       const t = this.tasks;
-      const ativas = t.filter(x => x.status !== 'concluido');
+      const ativas = t.filter(x => x.status !== STATUS.CONCLUIDO);
       const now = Date.now();
       const fmt = (v) => (v > 0 ? '+' : '') + v;
       // 1. % entrega no prazo (concluídas últimos 30d)
-      const concl30d = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) <= 30*86400000);
+      const concl30d = t.filter(x => x.status === STATUS.CONCLUIDO && x.statusEm && (now - x.statusEm) <= 30*86400000);
       const noPrazo = concl30d.filter(x => x.prazo && x.statusEm && new Date(x.prazo + 'T23:59:59').getTime() >= x.statusEm).length;
       const pctNoPrazo = concl30d.length ? Math.round(noPrazo / concl30d.length * 100) : null;
       // 2. Taxa de reabertura (% de tasks ativas com reopen_count >= 1)
@@ -4449,7 +4503,7 @@ function app() {
     // Clientes (versão executiva): adiciona tier + % orçamento de horas
     get reportClientesExec() {
       const baseHealth = this.reportClientHealth;
-      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+      const ativas = this.tasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const out = [];
       for (const h of baseHealth) {
         const cli = this.clientesById.get(h.id) || {};
@@ -4459,7 +4513,7 @@ function app() {
         const projsCli = this.projetos.filter(p => p.cliente_id === h.id || p.clienteId === h.id);
         const orcTotal = projsCli.reduce((s, p) => s + (Number(p.orcamento_horas || p.orcamentoHoras) || 0), 0);
         // Horas consumidas = ativas (estimadas) + concluídas (real ou estimado)
-        const concluidas = this.tasks.filter(t => t.clienteId === h.id && t.status === 'concluido');
+        const concluidas = this.tasks.filter(t => t.clienteId === h.id && t.status === STATUS.CONCLUIDO);
         const horasConc = concluidas.reduce((s, t) => s + (Number(t.tempoRealHoras) || this.effEsforco(t) || 0), 0);
         const horasConsumidas = horas + horasConc;
         const pctOrc = orcTotal > 0 ? Math.round(horasConsumidas / orcTotal * 100) : null;
@@ -4548,18 +4602,18 @@ function app() {
       const t = this.tasks;
       const now = Date.now();
       // Throughput 7d
-      const c7 = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) <= 7*86400000).length;
-      const c7p = t.filter(x => x.status === 'concluido' && x.statusEm && (now - x.statusEm) > 7*86400000 && (now - x.statusEm) <= 14*86400000).length;
+      const c7 = t.filter(x => x.status === STATUS.CONCLUIDO && x.statusEm && (now - x.statusEm) <= 7*86400000).length;
+      const c7p = t.filter(x => x.status === STATUS.CONCLUIDO && x.statusEm && (now - x.statusEm) > 7*86400000 && (now - x.statusEm) <= 14*86400000).length;
       // Lead time 14d
       const lead = (from, to) => {
-        const arr = t.filter(x => x.status === 'concluido' && x.statusEm && x.criadoEm && (now - x.statusEm) > from && (now - x.statusEm) <= to)
+        const arr = t.filter(x => x.status === STATUS.CONCLUIDO && x.statusEm && x.criadoEm && (now - x.statusEm) > from && (now - x.statusEm) <= to)
           .map(x => (x.statusEm - x.criadoEm) / 86400000).filter(d => d > 0);
         return arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : null;
       };
       const lt = lead(0, 14*86400000);
       const ltP = lead(14*86400000, 28*86400000);
       // % atrasadas das ativas
-      const ativas = t.filter(x => x.status !== 'concluido');
+      const ativas = t.filter(x => x.status !== STATUS.CONCLUIDO);
       const pctAtr = ativas.length ? Math.round(ativas.filter(x => this.atrasada(x)).length / ativas.length * 100) : 0;
       // Capacidade média
       const team = this.reportTeamLoad.filter(p => p.pctCap != null);
@@ -4644,7 +4698,7 @@ function app() {
 
     get reportRisks() {
       const out = [];
-      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+      const ativas = this.tasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const atrasadas = ativas.filter(t => this.atrasada(t));
       if (atrasadas.length) {
         const porCli = {};
@@ -4678,16 +4732,16 @@ function app() {
       for (const c of this.clientes) {
         const allTasks = this.tasks.filter(t => t.clienteId === c.id);
         if (allTasks.length === 0) continue;
-        const ativas = allTasks.filter(t => t.status !== 'concluido');
+        const ativas = allTasks.filter(t => t.status !== STATUS.CONCLUIDO);
         const atrasadas = ativas.filter(t => this.atrasada(t));
         const bloqAguard = ativas.filter(t => t.subetapa === 'bloqueado' && t.bloqueadoPor === 'cliente');
         const bloqAguardStale = bloqAguard.filter(t => this.agingDays(t) >= 5).length;
-        const entregues14d     = allTasks.filter(t => t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff14).length;
-        const entregues14dPrev = allTasks.filter(t => t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff28 && t.statusEm < cutoff14).length;
+        const entregues14d     = allTasks.filter(t => t.status === STATUS.CONCLUIDO && t.statusEm && t.statusEm >= cutoff14).length;
+        const entregues14dPrev = allTasks.filter(t => t.status === STATUS.CONCLUIDO && t.statusEm && t.statusEm >= cutoff28 && t.statusEm < cutoff14).length;
         const delta = entregues14d - entregues14dPrev;
         // SLA médio: criação → conclusão das entregues nos últimos 14d
         const leads = allTasks
-          .filter(t => t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff14 && t.criadoEm)
+          .filter(t => t.status === STATUS.CONCLUIDO && t.statusEm && t.statusEm >= cutoff14 && t.criadoEm)
           .map(t => (t.statusEm - t.criadoEm) / 86400000)
           .filter(d => d > 0);
         const slaMedio = leads.length ? leads.reduce((a,b) => a+b, 0) / leads.length : null;
@@ -4717,7 +4771,7 @@ function app() {
     },
     // Top pendentes críticos (página 3).
     get reportTopPendentes() {
-      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+      const ativas = this.tasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const score = (t) => {
         // Score maior = mais crítico
         let s = 0;
@@ -4745,7 +4799,7 @@ function app() {
     _computeReportTeamLoad() {
       const map = new Map();
       for (const p of this.pessoas) {
-        if (p.role === 'cliente') continue; // não inclui clientes externos
+        if (p.role === ROLE.CLIENTE) continue; // não inclui clientes externos
         map.set(p.id, {
           id: p.id, nome: p.nome,
           senioridade: p.senioridade || '',
@@ -4753,7 +4807,7 @@ function app() {
           tasks: 0, horas: 0, atrasadas: 0, horasAtrasadas: 0
         });
       }
-      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+      const ativas = this.tasks.filter(t => t.status !== STATUS.CONCLUIDO);
       for (const t of ativas) {
         if (!t.pessoaId) continue;
         const e = map.get(t.pessoaId);
@@ -4800,7 +4854,7 @@ function app() {
       for (const sobre of sobrecarregados) {
         // Top 3 tasks transferíveis dessa pessoa
         const candidatos = this.tasks
-          .filter(t => t.pessoaId === sobre.id && t.status !== 'concluido')
+          .filter(t => t.pessoaId === sobre.id && t.status !== STATUS.CONCLUIDO)
           .sort((a,b) => {
             const sa = (this.atrasada(a) ? 0 : 1) + (prioRank[a.prioridade] ?? 9) * 0.1;
             const sb = (this.atrasada(b) ? 0 : 1) + (prioRank[b.prioridade] ?? 9) * 0.1;
@@ -4998,7 +5052,7 @@ function app() {
     },
     atrasada(t) {
       if (!t.prazo) return false;
-      if (t.status === 'concluido') return false;
+      if (t.status === STATUS.CONCLUIDO) return false;
       return t.prazo < new Date().toISOString().slice(0,10);
     },
     diasAtraso(t) {
@@ -5022,7 +5076,7 @@ function app() {
     // Limites por status pra sinalizar represa.
     // [warn, stale]: a partir de warn fica laranja; stale, vermelho.
     agingLevel(t) {
-      if (!t || t.status === 'concluido') return 'fresh';
+      if (!t || t.status === STATUS.CONCLUIDO) return 'fresh';
       const thr = {
         andamento: [7, 14],
         bloqueado: [3, 7],
@@ -5070,10 +5124,10 @@ function app() {
     get projetosVisiveis() {
       return this.showArchivedCadastros ? this.projetos : this.projetosAtivos;
     },
-    contarTarefasCliente(id)  { return this.tasks.filter(t => t.clienteId === id && t.status !== 'concluido').length; },
+    contarTarefasCliente(id)  { return this.tasks.filter(t => t.clienteId === id && t.status !== STATUS.CONCLUIDO).length; },
     contarProjetosCliente(id) { return this.projetos.filter(p => p.clienteId === id).length; },
-    contarTarefasProjeto(id)  { return this.tasks.filter(t => t.projetoId === id && t.status !== 'concluido').length; },
-    contarTarefasPessoa(id)   { return this.tasks.filter(t => t.pessoaId  === id && t.status !== 'concluido').length; },
+    contarTarefasProjeto(id)  { return this.tasks.filter(t => t.projetoId === id && t.status !== STATUS.CONCLUIDO).length; },
+    contarTarefasPessoa(id)   { return this.tasks.filter(t => t.pessoaId  === id && t.status !== STATUS.CONCLUIDO).length; },
 
     // ===================== BACKLOG (filtros + sort) =====================
     get projetosFiltrados() {
@@ -5088,7 +5142,7 @@ function app() {
         if (f.cliente && t.clienteId !== f.cliente) return false;
         if (f.projeto && t.projetoId !== f.projeto) return false;
         if (f.pessoa  && t.pessoaId  !== f.pessoa)  return false;
-        if (f.status === 'abertas') { if (t.status === 'concluido') return false; }
+        if (f.status === 'abertas') { if (t.status === STATUS.CONCLUIDO) return false; }
         else if (f.status && t.status !== f.status) return false;
         if (f.pri          && t.prioridade !== f.pri)            return false;
         if (f.complexidade && (t.complexidade||'media') !== f.complexidade) return false;
@@ -5525,7 +5579,7 @@ function app() {
     async openOnboarding() {
       // default por role: admin → CEO, interno → analista, cliente → analista
       const role = this.viewerRole;
-      this.onboardingPersona = role === 'admin' ? 'ceo' : 'analista';
+      this.onboardingPersona = role === ROLE.ADMIN ? 'ceo' : 'analista';
       this.onboardingOpen = true;
       if (this._onboardingLoaded) return;
       this.onboardingLoading = true; this.onboardingError = '';
@@ -5583,13 +5637,13 @@ function app() {
     // Pessoa que o "Meu foco" mostra. Admin pode simular via selector;
     // interno usa o próprio currentPessoa automaticamente.
     get effectiveFocusPessoaId() {
-      if (this.viewerRole === 'admin' || !this.authEnabled) return this.focusPessoaId;
+      if (this.viewerRole === ROLE.ADMIN || !this.authEnabled) return this.focusPessoaId;
       return (this.currentPessoa && this.currentPessoa.id) || '';
     },
     // Cliente visualizado no Portal. Cliente real usa o cliente_id da própria pessoa
     // (sem opção de simular). Admin/interno simulam via selector.
     get effectivePortalClienteId() {
-      if (this.viewerRole === 'cliente') return (this.currentPessoa && this.currentPessoa.cliente_id) || '';
+      if (this.viewerRole === ROLE.CLIENTE) return (this.currentPessoa && this.currentPessoa.cliente_id) || '';
       return this.portalClienteId;
     },
     get visibleTabs() {
@@ -5632,7 +5686,7 @@ function app() {
       const emAndamento = arr.filter(t => t.status === 'andamento').sort(sortPri);
       // 2. Próximas entregas — não concluídas, com prazo em até 14d (incluindo hoje), exclui já atrasadas
       const proximas = arr.filter(t =>
-        t.status !== 'concluido'
+        t.status !== STATUS.CONCLUIDO
         && t.prazo
         && t.prazo >= todayIso
         && t.prazo <= in14Iso
@@ -5643,7 +5697,7 @@ function app() {
       ).sort(sortPri);
       // 4. Entregues recentemente — concluído, statusEm <= 30d
       const recentes = arr.filter(t =>
-        t.status === 'concluido' && t.statusEm && t.statusEm >= cutoff30
+        t.status === STATUS.CONCLUIDO && t.statusEm && t.statusEm >= cutoff30
       ).sort((a,b) => (b.statusEm||0) - (a.statusEm||0));
       return { emAndamento, proximas, aguardando, recentes };
     },
@@ -5725,7 +5779,7 @@ function app() {
       if (t.statusEm && t.statusEm !== t.criadoEm) {
         const macro = t.status === 'andamento' ? 'Em andamento'
                     : t.status === 'bloqueado' ? 'Em pausa'
-                    : t.status === 'concluido' ? 'Concluída'
+                    : t.status === STATUS.CONCLUIDO ? 'Concluída'
                     : 'No backlog';
         items.push({ ts: t.statusEm, label: macro });
       }
@@ -5741,7 +5795,7 @@ function app() {
       const empty = { atrasadas: [], hoje: [], bloqueadas: [], urgentes: [] };
       const focusId = this.effectiveFocusPessoaId;
       if (!focusId) return empty;
-      const mine = this.tasks.filter(t => t.pessoaId === focusId && t.status !== 'concluido');
+      const mine = this.tasks.filter(t => t.pessoaId === focusId && t.status !== STATUS.CONCLUIDO);
       const todayIso = new Date().toISOString().slice(0,10);
       const prioRank = { P0: 0, P1: 1, P2: 2, P3: 3 };
       const sortPri = (a,b) => (prioRank[a.prioridade]??9) - (prioRank[b.prioridade]??9);
@@ -6005,7 +6059,7 @@ function app() {
       if (this.tab === 'dash') this.$nextTick(() => this.renderCharts());
     },
     get stats() {
-      const ativas = this.dashTasks.filter(t => t.status !== 'concluido');
+      const ativas = this.dashTasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const andamento = ativas.filter(t => t.status === 'andamento');
       const backlog   = ativas.filter(t => t.status === 'backlog');
       const bloqueado = ativas.filter(t => t.status === 'bloqueado');
@@ -6037,7 +6091,7 @@ function app() {
       for (const [taskId, entries] of byTask.entries()) {
         entries.sort((a, b) => new Date(a.occurred_at) - new Date(b.occurred_at));
         const created    = entries[0];
-        const concluido  = entries.find(e => e.to_status === 'concluido');
+        const concluido  = entries.find(e => e.to_status === STATUS.CONCLUIDO);
         const andamento  = entries.find(e => e.to_status === 'andamento');
         if (!concluido) continue;
         const leadDays  = (new Date(concluido.occurred_at) - new Date(created.occurred_at)) / 86400000;
@@ -6229,7 +6283,7 @@ function app() {
       const todayIso = today.toISOString().slice(0,10);
       const in10 = new Date(today); in10.setDate(today.getDate() + 10);
       const in10Iso = in10.toISOString().slice(0,10);
-      const ativas = this.tasks.filter(t => t.status !== 'concluido');
+      const ativas = this.tasks.filter(t => t.status !== STATUS.CONCLUIDO);
 
       // 1. Tarefa grande/mini-projeto sem início, prazo em até 10d
       const grandes = ativas.filter(t => {
@@ -6257,7 +6311,7 @@ function app() {
       }
       const sobrecarregados = [];
       for (const p of this.pessoas) {
-        if (p.role === 'cliente') continue;
+        if (p.role === ROLE.CLIENTE) continue;
         const cap = +p.capacidade_horas_semana || 40;
         const horas = cargaPorPessoa.get(p.id) || 0;
         if (horas > cap) {
@@ -6371,7 +6425,7 @@ function app() {
         const deps = this._depsByTask.get(t.id) || [];
         return deps.some(depId => {
           const dep = taskById.get(depId);
-          return dep && dep.status !== 'concluido';
+          return dep && dep.status !== STATUS.CONCLUIDO;
         });
       });
       if (bloqDep.length) {
@@ -6431,7 +6485,7 @@ function app() {
       const gridStart = new Date(today);
       gridStart.setDate(today.getDate() - todayWd - 7); // segunda da semana passada
       const counts = new Map();
-      this.dashTasks.filter(t => t.status !== 'concluido').forEach(t => {
+      this.dashTasks.filter(t => t.status !== STATUS.CONCLUIDO).forEach(t => {
         if (!t.prazo) return;
         counts.set(t.prazo, (counts.get(t.prazo) || 0) + 1);
       });
@@ -6472,7 +6526,7 @@ function app() {
     // verde: nada urgente · âmbar: atenção · vermelho: ação imediata.
     get saudeProjetos() {
       const now = Date.now();
-      const ativas = this.dashTasks.filter(t => t.status !== 'concluido');
+      const ativas = this.dashTasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const porProj = new Map();
       for (const t of ativas) {
         if (!t.projetoId) continue;
@@ -6510,7 +6564,7 @@ function app() {
     // Tarefas bloqueadas aguardando cliente — ordenadas por aging desc.
     get aguardandoClienteList() {
       return this.dashTasks
-        .filter(t => t.status !== 'concluido' && t.subetapa === 'bloqueado' && t.bloqueadoPor === 'cliente')
+        .filter(t => t.status !== STATUS.CONCLUIDO && t.subetapa === 'bloqueado' && t.bloqueadoPor === 'cliente')
         .sort((a,b) => this.agingDays(b) - this.agingDays(a))
         .slice(0, 8);
     },
@@ -6551,7 +6605,7 @@ function app() {
     },
 
     renderCharts() {
-      const ativas = this.dashTasks.filter(t => t.status !== 'concluido');
+      const ativas = this.dashTasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const theme = this.chartTheme();
       const { palette, baseOpts } = theme;
 
@@ -6571,7 +6625,7 @@ function app() {
         cargaPorPes.set(t.pessoaId, (cargaPorPes.get(t.pessoaId) || 0) + this.effEsforco(t));
       });
       const capRows = this.pessoas
-        .filter(p => p.role !== 'cliente')
+        .filter(p => p.role !== ROLE.CLIENTE)
         .map(p => {
           const horas = cargaPorPes.get(p.id) || 0;
           const cap   = +p.capacidade_horas_semana || 40;
@@ -7098,7 +7152,7 @@ function app() {
       return this.tasks.filter(t =>
         t.id !== e.id &&
         !already.has(t.id) &&
-        t.status !== 'concluido' &&
+        t.status !== STATUS.CONCLUIDO &&
         (!e.clienteId || t.clienteId === e.clienteId)
       );
     },
@@ -7362,7 +7416,7 @@ function app() {
       const nome = (e.nome || '').trim();
       const email = (e.email || '').trim().toLowerCase();
       if (!nome) { this.toast('error', 'Dê um nome à pessoa.'); return; }
-      if (e.role === 'cliente' && !e.cliente_id) {
+      if (e.role === ROLE.CLIENTE && !e.cliente_id) {
         this.toast('error', 'Cliente externo precisa de um cliente vinculado.');
         return;
       }
@@ -7375,12 +7429,12 @@ function app() {
         nome,
         email: email || null,
         role: e.role || 'interno',
-        cliente_id: e.role === 'cliente' ? e.cliente_id : null,
-        cliente_principal_id: e.role !== 'cliente' ? (e.cliente_principal_id || null) : null,
-        cliente_secundario_id: e.role !== 'cliente' ? (e.cliente_secundario_id || null) : null,
-        capacidade_horas_semana: e.role !== 'cliente' ? (+e.capacidade_horas_semana || 40) : 40,
-        skills: e.role !== 'cliente' ? skills : [],
-        senioridade: e.role !== 'cliente' ? (e.senioridade || null) : null,
+        cliente_id: e.role === ROLE.CLIENTE ? e.cliente_id : null,
+        cliente_principal_id: e.role !== ROLE.CLIENTE ? (e.cliente_principal_id || null) : null,
+        cliente_secundario_id: e.role !== ROLE.CLIENTE ? (e.cliente_secundario_id || null) : null,
+        capacidade_horas_semana: e.role !== ROLE.CLIENTE ? (+e.capacidade_horas_semana || 40) : 40,
+        skills: e.role !== ROLE.CLIENTE ? skills : [],
+        senioridade: e.role !== ROLE.CLIENTE ? (e.senioridade || null) : null,
       };
       if (e.id) {
         // Update
