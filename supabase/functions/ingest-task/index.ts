@@ -8,17 +8,33 @@
 // case-insensitive). Único campo obrigatório: external_id e titulo.
 //
 //   {
-//     "external_id":  "a0X5g000000XYZ",     // id do registro no SF
+//     "external_id":  "a0X5g000000XYZ",            // id do registro no SF
 //     "titulo":       "Customizar layout",
-//     "descricao":    "...",                // opcional
-//     "cliente":      "Bodytech",           // opcional, by name
-//     "projeto":      "Sustentação BT",     // opcional, by name
-//     "responsavel":  "Jéssica",            // opcional, by name
-//     "prioridade":   "P1",                 // opcional: P0|P1|P2|P3
-//     "esforco":      4,                    // opcional, horas
-//     "prazo":        "2026-06-15",         // opcional, YYYY-MM-DD
-//     "status":       "andamento"           // opcional: backlog|andamento|bloqueado|concluido
+//     "descricao":    "...",                        // opcional
+//     "cliente":      "Bodytech",                   // opcional, by name
+//     "projeto":      "Sustentação BT",             // opcional, by name
+//     "responsavel":  "Jéssica",                    // opcional, by name
+//     "prioridade":   "P1",                         // opcional: P0|P1|P2|P3
+//     "esforco":      4,                            // opcional, horas
+//     "prazo":        "2026-06-15",                 // opcional, YYYY-MM-DD
+//     "subetapa":     "em_desenvolvimento",         // opcional (preferencial)
+//     "status":       "andamento",                  // opcional (legacy: backlog|andamento|bloqueado|concluido)
+//     "complexidade": "media",                      // opcional: alta|media|baixa
+//     "tipo_trabalho":"feature",                    // opcional: bug|feature|discovery|manutencao|admin
+//     "tags":         ["frontend","auth"]           // opcional, array de strings
 //   }
+//
+// Subetapa vs status (importante):
+//   - Schema atual usa `subetapa` como verdade (11 valores) e `status`
+//     (macro, 4 valores) é derivado por trigger.
+//   - Se body trouxer `subetapa`, ela é usada direto.
+//   - Se body trouxer só `status` (legacy), mapeamos pra subetapa
+//     default daquele macro pra evitar inconsistência:
+//       backlog    → 'backlog'
+//       andamento  → 'em_desenvolvimento'
+//       bloqueado  → 'bloqueado'
+//       concluido  → 'concluido'
+//   - Sem nenhum dos dois, novo task começa em 'backlog'.
 //
 // Retorna 201 { id, action: "created" } ou 200 { id, action: "updated" }.
 // Erros 4xx retornam { error: { code, message } }.
@@ -31,8 +47,24 @@ const API_KEYS      = (Deno.env.get('INGEST_API_KEYS') || '')
   .split(',').map(s => s.trim()).filter(Boolean);
 const SOURCE        = 'salesforce';
 
-const STATUS_VALID = ['backlog', 'andamento', 'bloqueado', 'concluido'];
-const PRI_VALID    = ['P0', 'P1', 'P2', 'P3'];
+const STATUS_VALID  = ['backlog', 'andamento', 'bloqueado', 'concluido'];
+const PRI_VALID     = ['P0', 'P1', 'P2', 'P3'];
+const SUBS_VALID    = [
+  'backlog', 'priorizado', 'em_definicao', 'escopo_definido',
+  'em_desenvolvimento', 'em_homologacao', 'em_revisao', 'pronto_producao', 'em_implantacao',
+  'bloqueado', 'concluido',
+];
+const COMPLEX_VALID = ['alta', 'media', 'baixa'];
+const TIPO_VALID    = ['bug', 'feature', 'discovery', 'manutencao', 'admin'];
+
+// Mapeamento legacy: status (macro) → subetapa default daquele macro.
+// Usado só quando body manda 'status' sem 'subetapa' (compat SF antigo).
+const STATUS_TO_SUBETAPA_DEFAULT: Record<string, string> = {
+  backlog:   'backlog',
+  andamento: 'em_desenvolvimento',
+  bloqueado: 'bloqueado',
+  concluido: 'concluido',
+};
 
 const sb = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -113,11 +145,23 @@ Deno.serve(async (req) => {
     prioridade = String(body.prioridade).toUpperCase();
     if (!PRI_VALID.includes(prioridade)) return err(422, 'invalid_prioridade', 'prioridade deve ser P0|P1|P2|P3');
   }
-  let status: string | null = null;
-  if (body.status != null) {
-    status = String(body.status).toLowerCase();
-    if (!STATUS_VALID.includes(status)) return err(422, 'invalid_status', 'status deve ser backlog|andamento|bloqueado|concluido');
+
+  // Subetapa (preferencial) vs status (legacy)
+  let subetapa: string | null = null;
+  if (body.subetapa != null) {
+    subetapa = String(body.subetapa).toLowerCase();
+    if (!SUBS_VALID.includes(subetapa)) {
+      return err(422, 'invalid_subetapa', `subetapa deve ser uma de: ${SUBS_VALID.join('|')}`);
+    }
+  } else if (body.status != null) {
+    const s = String(body.status).toLowerCase();
+    if (!STATUS_VALID.includes(s)) {
+      return err(422, 'invalid_status', 'status deve ser backlog|andamento|bloqueado|concluido');
+    }
+    // Mapeia status macro → subetapa default (compat retroativa).
+    subetapa = STATUS_TO_SUBETAPA_DEFAULT[s];
   }
+
   let prazo: string | null = null;
   if (body.prazo) {
     const p = String(body.prazo).slice(0, 10);
@@ -130,6 +174,20 @@ Deno.serve(async (req) => {
     if (Number.isNaN(e) || e < 0) return err(422, 'invalid_esforco', 'esforco deve ser número não-negativo');
     esforco = e;
   }
+  let complexidade: string | null = null;
+  if (body.complexidade != null) {
+    complexidade = String(body.complexidade).toLowerCase();
+    if (!COMPLEX_VALID.includes(complexidade)) {
+      return err(422, 'invalid_complexidade', 'complexidade deve ser alta|media|baixa');
+    }
+  }
+  let tipoTrabalho: string | null = null;
+  if (body.tipo_trabalho != null) {
+    tipoTrabalho = String(body.tipo_trabalho).toLowerCase();
+    if (!TIPO_VALID.includes(tipoTrabalho)) {
+      return err(422, 'invalid_tipo_trabalho', `tipo_trabalho deve ser: ${TIPO_VALID.join('|')}`);
+    }
+  }
   let tags: string[] | null = null;
   if (body.tags != null) {
     if (!Array.isArray(body.tags)) return err(422, 'invalid_tags', 'tags deve ser array de strings');
@@ -138,46 +196,61 @@ Deno.serve(async (req) => {
       .filter((x: string) => x.length > 0);
   }
 
-  // Existe? Procura por (source, external_id)
+  // Existe? Procura por (source, external_id).
+  // Carrega status atual pra detectar mudança e gravar histórico.
   const { data: existing, error: lookupErr } = await sb
     .from('tasks')
-    .select('id, status')
+    .select('id, status, subetapa')
     .eq('external_source', SOURCE)
     .eq('external_id', externalId)
     .maybeSingle();
   if (lookupErr) return err(500, 'db_error', lookupErr.message);
 
-  // Monta payload — só inclui campos enviados (update não-destrutivo)
+  // Monta payload — só inclui campos enviados (update não-destrutivo).
+  // Importante: NÃO mandar `status` no payload; trigger derive de subetapa.
   const payload: Record<string, unknown> = { titulo };
-  if (body.descricao !== undefined) payload.descricao = String(body.descricao ?? '');
-  if (clienteId)       payload.cliente_id = clienteId;
-  if (projetoId)       payload.projeto_id = projetoId;
-  if (pessoaId)        payload.pessoa_id  = pessoaId;
-  if (prioridade)      payload.prioridade = prioridade;
-  if (esforco != null) payload.esforco    = esforco;
-  if (prazo)           payload.prazo      = prazo;
-  if (tags)            payload.tags       = tags;
-  if (status) {
-    payload.status = status;
-    if (!existing || existing.status !== status) payload.status_em = new Date().toISOString();
+  if (body.descricao !== undefined) payload.descricao    = String(body.descricao ?? '');
+  if (clienteId)                    payload.cliente_id   = clienteId;
+  if (projetoId)                    payload.projeto_id   = projetoId;
+  if (pessoaId)                     payload.pessoa_id    = pessoaId;
+  if (prioridade)                   payload.prioridade   = prioridade;
+  if (esforco != null)              payload.esforco      = esforco;
+  if (prazo)                        payload.prazo        = prazo;
+  if (complexidade)                 payload.complexidade = complexidade;
+  if (tipoTrabalho)                 payload.tipo_trabalho = tipoTrabalho;
+  if (tags)                         payload.tags         = tags;
+  if (subetapa) {
+    payload.subetapa = subetapa;
+    // subetapa_em / status_em só viram update quando subetapa muda
+    // (ou na criação). Trigger sync atualiza `status` automaticamente.
+    if (!existing || existing.subetapa !== subetapa) {
+      payload.subetapa_em = new Date().toISOString();
+      payload.status_em   = new Date().toISOString();
+    }
   }
 
   if (existing) {
     const { error } = await sb.from('tasks').update(payload).eq('id', existing.id);
     if (error) return err(500, 'db_error', error.message);
-    if (status && existing.status !== status) {
-      await sb.from('task_status_history').insert({
-        task_id: existing.id,
-        from_status: existing.status,
-        to_status: status,
-        actor_source: SOURCE,
-      });
+    // Histórico de status macro (só quando muda — trigger ainda não derivou,
+    // então comparamos contra o status existente vs status derivado da nova subetapa).
+    if (subetapa) {
+      const newMacro = macroFromSub(subetapa);
+      if (existing.status !== newMacro) {
+        await sb.from('task_status_history').insert({
+          task_id: existing.id,
+          from_status: existing.status,
+          to_status: newMacro,
+          actor_source: SOURCE,
+        });
+      }
     }
     return json(200, { id: existing.id, action: 'updated' });
   } else {
     payload.external_source = SOURCE;
     payload.external_id     = externalId;
-    payload.status          = (payload.status as string) || 'backlog';
+    payload.subetapa        = (payload.subetapa as string) || 'backlog';
+    payload.subetapa_em     = new Date().toISOString();
     payload.status_em       = new Date().toISOString();
     const { data, error } = await sb.from('tasks').insert(payload).select('id, status').single();
     if (error) return err(500, 'db_error', error.message);
@@ -190,3 +263,27 @@ Deno.serve(async (req) => {
     return json(201, { id: data.id, action: 'created' });
   }
 });
+
+// Mapeia subetapa → status macro. Espelha o trigger SQL
+// `sync_task_status_from_subetapa`. Mantém em sincronia.
+function macroFromSub(sub: string): string {
+  switch (sub) {
+    case 'backlog':
+    case 'priorizado':
+    case 'em_definicao':
+    case 'escopo_definido':
+      return 'backlog';
+    case 'em_desenvolvimento':
+    case 'em_homologacao':
+    case 'em_revisao':
+    case 'pronto_producao':
+    case 'em_implantacao':
+      return 'andamento';
+    case 'bloqueado':
+      return 'bloqueado';
+    case 'concluido':
+      return 'concluido';
+    default:
+      return 'backlog';
+  }
+}
