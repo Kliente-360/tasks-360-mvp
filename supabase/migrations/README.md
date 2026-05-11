@@ -27,6 +27,7 @@ Se for criar projeto Supabase do zero, rodar todos em ordem (próximo da ordem a
 | `2026-05-10_task_field_history.sql` | Tabela `task_field_history` pra rastrear mudanças de campos não-status (prazo, esforço, responsável, etc) |
 | `2026-05-11_usage_events.sql` | Tabela `usage_events` (telemetria de uso, retenção 90d via `fn_usage_events_cleanup`) + RLS (insert open authenticated, select admin) |
 | `2026-05-11_cliente_tier_realign.sql` | Alinha `cliente.tier` ao vocabulário do app: `estrategico/recorrente/spot` (era `estrategico/regular/oportunidade`). Remap automático dos valores legados. |
+| `2026-05-11_tier_v2_e_tipo_projeto.sql` | Vocabulário v2: `cliente.tier = estrategico/potencial/descoberta`; `projeto.tipo = sustentacao/projeto/discovery` (removeu `implantacao`). Remap automático. |
 
 ## `pending/` — aguardando execução
 
