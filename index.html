@@ -1293,6 +1293,13 @@
     </button>
   </div>
 
+  <div class="flex items-center justify-end mb-2">
+    <label class="flex items-center gap-2 text-xs text-muted cursor-pointer">
+      <input type="checkbox" x-model="showArchivedTasks">
+      <span>incluir arquivadas</span>
+    </label>
+  </div>
+
   <div class="card tbl-wrap hidden md:block">
     <table class="tbl">
       <thead>
@@ -1335,7 +1342,7 @@
             <tr x-show="g.isAll || !collapsedGroups.includes(g.key)"
                 @click="openEdit(t)"
                 :draggable="sortKey==='manual' && !groupBy"
-                :class="[sortKey==='manual' && !groupBy && 'manual-row', selectedIds.includes(t.id) && 'bg-brand-tint']"
+                :class="[sortKey==='manual' && !groupBy && 'manual-row', selectedIds.includes(t.id) && 'bg-brand-tint', t.arquivadoEm && 'opacity-50']"
                 @dragstart.stop="onBacklogDragStart($event, t)"
                 @dragover.prevent="onBacklogDragOver($event, t)"
                 @drop.stop.prevent="onBacklogDrop($event, t)"
@@ -2813,6 +2820,7 @@
       <option value="P3">P3 · Baixa</option>
     </select>
     <div class="flex gap-2 md:contents">
+      <button class="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkArquivar()">arquivar</button>
       <button x-show="viewerRole === ROLE.ADMIN" class="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkDelete()">excluir</button>
       <div class="hidden md:block w-px h-5 bg-line mx-1"></div>
       <button class="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 hidden md:inline-flex" @click="clearSelection()">limpar</button>
@@ -2993,6 +3001,7 @@
       <div class="flex items-center gap-2 flex-wrap">
         <span class="font-brand text-lg md:text-xl font-semibold" x-text="editing.id ? 'Editar tarefa' : 'Nova tarefa'"></span>
         <span x-show="editing.id && (editing.reopenCount || 0) > 0" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--p1-soft);color:var(--p1)" :title="'Reaberta ' + editing.reopenCount + ' vez(es)'" x-text="'reaberta ' + editing.reopenCount + 'x'"></span>
+        <span x-show="editing.id && editing.arquivadoEm" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Tarefa arquivada (oculta de listas/dashboards)">arquivada</span>
       </div>
       <button class="btn btn-ghost btn-icon" @click="modal=false">✕</button>
     </div>
@@ -3282,7 +3291,9 @@
       </div>
     </div>
     <div class="flex items-center justify-between gap-2 px-4 md:px-6 py-3 md:py-4 border-t border-line bg-brand-tint/30">
-      <div>
+      <div class="flex gap-2">
+        <button x-show="editing.id && !editing.arquivadoEm" class="btn btn-ghost text-xs" @click="arquivarTask()" title="Esconder de listas/dashboards/heurísticas sem deletar">arquivar</button>
+        <button x-show="editing.id && editing.arquivadoEm" class="btn btn-ghost text-xs" @click="desarquivarTask()">desarquivar</button>
         <button x-show="editing.id && viewerRole === ROLE.ADMIN" class="btn btn-danger text-xs" @click="deleteTask()">excluir</button>
       </div>
       <div class="flex gap-2">
@@ -3629,6 +3640,7 @@ const TASK_FIELDS = [
   ['tempoRealHoras',  'tempo_real_horas',  F.numNull, { blank: '' }],
   ['externalSource',  'external_source',   F.fkNull],
   ['externalId',      'external_id',       F.fkNull],
+  ['arquivadoEm',     'arquivado_em',      { from: r => r || null, to: t => t || null, default: null }],
 ];
 
 const taskFromDb = makeFromDb(TASK_FIELDS);
@@ -3723,6 +3735,7 @@ function app() {
     editingProjeto: null,
     modalProjeto: false,
     showArchivedCadastros: false,
+    showArchivedTasks: false,
     kanbanView: 'op', // 'op' (operacional, nível 2) | 'exec' (executiva, nível 1)
     isMobileViewport: typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
     quickAddSub: '',
@@ -4392,7 +4405,7 @@ function app() {
     },
     // Colunas leves carregadas no boot. `descricao` (pode ser markdown
     // longo) fica off-list e é puxada lazy quando o modal abre.
-    _TASK_LIGHT_COLS: 'id,titulo,cliente_id,projeto_id,pessoa_id,prioridade,esforco,complexidade,prazo,status,subetapa,bloqueado_por,visivel_cliente,criado_em,status_em,subetapa_em,ordem,tags,reopen_count,tipo_trabalho,tempo_real_horas,external_source,external_id',
+    _TASK_LIGHT_COLS: 'id,titulo,cliente_id,projeto_id,pessoa_id,prioridade,esforco,complexidade,prazo,status,subetapa,bloqueado_por,visivel_cliente,criado_em,status_em,subetapa_em,ordem,tags,reopen_count,tipo_trabalho,tempo_real_horas,external_source,external_id,arquivado_em',
     _buildTasksQuery(extra) {
       // Default: todas não-concluídas + concluídas dos últimos N dias.
       // status_em é setado pelo banco quando muda status; concluídas sem
@@ -4632,7 +4645,7 @@ function app() {
     // ===================== EXPORT PDF (relatório executivo) =====================
     // Sempre snapshot completo — ignora filtros do app.
     get reportBacklog() {
-      const ativas = this.tasks.filter(t => t.status !== STATUS.CONCLUIDO);
+      const ativas = this._visibleTasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const prioRank = { P0: 0, P1: 1, P2: 2, P3: 3 };
       return ativas.slice().sort((a, b) => {
         // sem prazo no topo
@@ -4796,7 +4809,7 @@ function app() {
     // Clientes (versão executiva): adiciona tier + % orçamento de horas
     get reportClientesExec() {
       const baseHealth = this.reportClientHealth;
-      const ativas = this.tasks.filter(t => t.status !== STATUS.CONCLUIDO);
+      const ativas = this._visibleTasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const out = [];
       for (const h of baseHealth) {
         const cli = this.clientesById.get(h.id) || {};
@@ -4842,6 +4855,7 @@ function app() {
       return this._memo('triagemTasks', this._tasksSig, () => {
         const out = [];
         for (const t of this.tasks) {
+          if (t.arquivadoEm) continue;
           const failures = triageFailures(t);
           if (failures.length === 0) continue;
           out.push({ ...t, _failures: failures, _failCount: failures.length });
@@ -5009,7 +5023,7 @@ function app() {
 
     get reportRisks() {
       const out = [];
-      const ativas = this.tasks.filter(t => t.status !== STATUS.CONCLUIDO);
+      const ativas = this._visibleTasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const atrasadas = ativas.filter(t => this.atrasada(t));
       if (atrasadas.length) {
         const porCli = {};
@@ -5083,7 +5097,7 @@ function app() {
     },
     // Top pendentes críticos (página 3).
     get reportTopPendentes() {
-      const ativas = this.tasks.filter(t => t.status !== STATUS.CONCLUIDO);
+      const ativas = this._visibleTasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const score = (t) => {
         // Score maior = mais crítico
         let s = 0;
@@ -5119,7 +5133,7 @@ function app() {
           tasks: 0, horas: 0, atrasadas: 0, horasAtrasadas: 0
         });
       }
-      const ativas = this.tasks.filter(t => t.status !== STATUS.CONCLUIDO);
+      const ativas = this._visibleTasks.filter(t => t.status !== STATUS.CONCLUIDO);
       for (const t of ativas) {
         if (!t.pessoaId) continue;
         const e = map.get(t.pessoaId);
@@ -5300,9 +5314,12 @@ function app() {
     // Buckets cross-entity. Reconstroem quando tasks muda (length+sig); memoizados
     // pra evitar O(n) por getter caro que itera "tasks de um cliente/pessoa".
     get tasksByCliente() {
+      // Buckets excluem arquivadas — usados por dashboards/heurísticas/briefing.
+      // Quem precisa de arquivadas (e.g., backlog com toggle) usa this.tasks direto.
       return this._memo('tasksByCliente', this._tasksSig, () => {
         const m = new Map();
         for (const t of this.tasks) {
+          if (t.arquivadoEm) continue;
           if (!t.clienteId) continue;
           let arr = m.get(t.clienteId);
           if (!arr) { arr = []; m.set(t.clienteId, arr); }
@@ -5315,6 +5332,7 @@ function app() {
       return this._memo('tasksByPessoa', this._tasksSig, () => {
         const m = new Map();
         for (const t of this.tasks) {
+          if (t.arquivadoEm) continue;
           if (!t.pessoaId) continue;
           let arr = m.get(t.pessoaId);
           if (!arr) { arr = []; m.set(t.pessoaId, arr); }
@@ -5446,7 +5464,7 @@ function app() {
       return n;
     },
     contarProjetosCliente(id) { return (this.projetosByCliente.get(id) || []).length; },
-    contarTarefasProjeto(id)  { return this.tasks.filter(t => t.projetoId === id && t.status !== STATUS.CONCLUIDO).length; },
+    contarTarefasProjeto(id)  { return this._visibleTasks.filter(t => t.projetoId === id && t.status !== STATUS.CONCLUIDO).length; },
     contarTarefasPessoa(id)   {
       const arr = this.tasksByPessoa.get(id) || [];
       let n = 0;
@@ -5459,10 +5477,17 @@ function app() {
       if (!this.f.cliente) return this.projetos;
       return this.projetosByCliente.get(this.f.cliente) || [];
     },
+    // Base pra qualquer view que NUNCA deve mostrar arquivadas
+    // (Kanban, Foco, Triagem, Calendário, Dashboard, Heurísticas, Briefing, Portal).
+    // Backlog respeita o toggle showArchivedTasks separadamente em `filtered`.
+    get _visibleTasks() {
+      return this.tasks.filter(t => !t.arquivadoEm);
+    },
     get filtered() {
       const f = this.f;
       const q = (f.q || '').toLowerCase().trim();
-      let arr = this.tasks.filter(t => {
+      const base = this.showArchivedTasks ? this.tasks : this._visibleTasks;
+      let arr = base.filter(t => {
         if (q && !(t.titulo + ' ' + (t.descricao||'')).toLowerCase().includes(q)) return false;
         if (f.cliente && t.clienteId !== f.cliente) return false;
         if (f.projeto && t.projetoId !== f.projeto) return false;
@@ -5678,7 +5703,7 @@ function app() {
     // ruim em telas estreitas).
     get effectiveKanbanView() { return this.isMobileViewport ? 'exec' : this.kanbanView; },
     kanbanCol(status) {
-      const arr = this.tasks.filter(t =>
+      const arr = this._visibleTasks.filter(t =>
         t.status === status
         && (!this.f.cliente || t.clienteId === this.f.cliente)
         && (!this.f.pessoa  || t.pessoaId  === this.f.pessoa)
@@ -5688,7 +5713,7 @@ function app() {
       return arr;
     },
     kanbanColSub(sub) {
-      const arr = this.tasks.filter(t =>
+      const arr = this._visibleTasks.filter(t =>
         t.subetapa === sub
         && (!this.f.cliente || t.clienteId === this.f.cliente)
         && (!this.f.pessoa  || t.pessoaId  === this.f.pessoa)
@@ -6018,6 +6043,7 @@ function app() {
       return this.tasks.filter(t =>
         t.clienteId === cid
         && t.visivelCliente !== false
+        && !t.arquivadoEm
       );
     },
     get portalCards() {
@@ -6186,6 +6212,7 @@ function app() {
       const filterTask = (t) => (!this.f.cliente || t.clienteId === this.f.cliente) && (!this.f.pessoa || t.pessoaId === this.f.pessoa);
       for (const t of this.tasks) {
         if (!t.prazo) continue;
+        if (t.arquivadoEm) continue;
         if (ativeFilter && !filterTask(t)) continue;
         (byPrazo[t.prazo] = byPrazo[t.prazo] || []).push(t);
       }
@@ -6382,7 +6409,7 @@ function app() {
 
     // ===================== STATS =====================
     get dashTasks() {
-      return this.tasks.filter(t =>
+      return this._visibleTasks.filter(t =>
         (!this.f.cliente || t.clienteId === this.f.cliente)
         && (!this.f.pessoa || t.pessoaId === this.f.pessoa)
       );
@@ -6819,6 +6846,7 @@ function app() {
 
       for (const t of this.tasks) {
         if (t.status === STATUS.CONCLUIDO) continue;
+        if (t.arquivadoEm) continue;
 
         const sz = this.effTamanho(t);
         const isGrande = (sz === 'grande' || sz === 'mini_projeto');
@@ -7704,7 +7732,7 @@ function app() {
       const e = this.editing;
       if (!e) return [];
       const already = new Set(e.dependencias || []);
-      return this.tasks.filter(t =>
+      return this._visibleTasks.filter(t =>
         t.id !== e.id &&
         !already.has(t.id) &&
         t.status !== STATUS.CONCLUIDO &&
@@ -7786,6 +7814,48 @@ function app() {
       this.clientes.sort((a,b) => a.nome.localeCompare(b.nome));
       this.toast('success', 'Cliente atualizado.');
     },
+    async arquivarTask(t) {
+      const id = (t && t.id) || (this.editing && this.editing.id);
+      if (!id) return;
+      const i = this.tasks.findIndex(x => x.id === id);
+      if (i < 0) return;
+      const prev = this.tasks[i];
+      const nowIso = new Date().toISOString();
+      this.tasks[i] = { ...prev, arquivadoEm: nowIso };
+      this.track('task_arquivar', { id });
+      if (this.editing && this.editing.id === id) {
+        this.editing.arquivadoEm = nowIso;
+        this.modal = false;
+      }
+      const { error } = await sb.from('tasks').update({ arquivado_em: nowIso }).eq('id', id);
+      if (error) { this.tasks[i] = prev; this.toast('error', 'Erro: ' + error.message); return; }
+      this.toast('success', `"${prev.titulo}" arquivada.`);
+    },
+    async desarquivarTask(t) {
+      const id = (t && t.id) || (this.editing && this.editing.id);
+      if (!id) return;
+      const i = this.tasks.findIndex(x => x.id === id);
+      if (i < 0) return;
+      const prev = this.tasks[i];
+      this.tasks[i] = { ...prev, arquivadoEm: null };
+      this.track('task_desarquivar', { id });
+      if (this.editing && this.editing.id === id) this.editing.arquivadoEm = null;
+      const { error } = await sb.from('tasks').update({ arquivado_em: null }).eq('id', id);
+      if (error) { this.tasks[i] = prev; this.toast('error', 'Erro: ' + error.message); return; }
+      this.toast('success', `"${prev.titulo}" desarquivada.`);
+    },
+    async bulkArquivar() {
+      const ids = [...this.selectedIds];
+      if (!ids.length) return;
+      this.track('bulk_action', { kind: 'arquivar', count: ids.length });
+      const nowIso = new Date().toISOString();
+      const { error } = await sb.from('tasks').update({ arquivado_em: nowIso }).in('id', ids);
+      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
+      this.tasks = this.tasks.map(t => ids.includes(t.id) ? { ...t, arquivadoEm: nowIso } : t);
+      this.selectedIds = [];
+      this.toast('success', ids.length + ' tarefa(s) arquivada(s).');
+    },
+
     async arquivarCliente(c) {
       const i = this.clientes.findIndex(x => x.id === c.id);
       if (i < 0) return;
