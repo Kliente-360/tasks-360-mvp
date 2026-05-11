@@ -750,7 +750,7 @@
       <div class="k360-mark" :class="(loading || refreshing) && 'loading-pulse'"><span></span><span></span><span></span><span></span></div>
       <div class="leading-none min-w-0 text-left">
         <div class="font-brand text-[18px] md:text-[22px] font-semibold text-brand">tasks 360</div>
-        <div class="text-[10px] uppercase tracking-[0.18em] text-muted mt-1 truncate" x-text="(loading || refreshing) ? 'atualizando…' : 'gestão executiva · kliente 360'"></div>
+        <div class="text-[10px] uppercase tracking-[0.18em] text-muted mt-1 truncate font-mono" x-text="(loading || refreshing) ? 'atualizando…' : (APP_VERSION + ' · kliente 360')" :title="'versão visível pra todos sabidamente usarem a mesma. Refresh (Ctrl+R) se diferente da referência.'"></div>
       </div>
     </button>
     <div class="flex items-center gap-1 shrink-0">
