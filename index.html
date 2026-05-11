@@ -3808,7 +3808,7 @@ function app() {
       await this.markNotificationRead(n.id);
       this.notifPanelOpen = false;
       if (n.source_task_id) {
-        const t = this.tasks.find(x => x.id === n.source_task_id);
+        const t = this.tasksById.get(n.source_task_id);
         if (t) this.openEdit(t);
       }
     },
@@ -4344,7 +4344,7 @@ function app() {
       const ativas = this.tasks.filter(t => t.status !== 'concluido');
       const out = [];
       for (const h of baseHealth) {
-        const cli = this.clientes.find(c => c.id === h.id) || {};
+        const cli = this.clientesById.get(h.id) || {};
         // Horas alocadas em ativas (estimativa)
         const horas = ativas.filter(t => t.clienteId === h.id).reduce((s, t) => s + this.effEsforco(t), 0);
         // Orçamento total = soma orcamento_horas dos projetos do cliente
@@ -4802,9 +4802,31 @@ function app() {
       if (!this.editingPessoa) return;
       this.editingPessoa.skills = (this.editingPessoa.skills || []).filter(x => x !== s);
     },
-    nomeCliente(id) { return (this.clientes.find(c => c.id === id) || {}).nome || '—'; },
-    nomeProjeto(id) { return (this.projetos.find(p => p.id === id) || {}).nome || '—'; },
-    nomePessoa(id)  { return (this.pessoas.find(p => p.id === id) || {}).nome || '—'; },
+    // ============ Índices O(1) pra lookups (evita .find linear) ============
+    // Reconstroem só quando a coleção referenciada muda.
+    get pessoasById() {
+      const m = new Map();
+      for (const p of this.pessoas) m.set(p.id, p);
+      return m;
+    },
+    get clientesById() {
+      const m = new Map();
+      for (const c of this.clientes) m.set(c.id, c);
+      return m;
+    },
+    get projetosById() {
+      const m = new Map();
+      for (const p of this.projetos) m.set(p.id, p);
+      return m;
+    },
+    get tasksById() {
+      const m = new Map();
+      for (const t of this.tasks) m.set(t.id, t);
+      return m;
+    },
+    nomeCliente(id) { const c = this.clientesById.get(id); return (c && c.nome) || '—'; },
+    nomeProjeto(id) { const p = this.projetosById.get(id); return (p && p.nome) || '—'; },
+    nomePessoa(id)  { const p = this.pessoasById.get(id);  return (p && p.nome) || '—'; },
     // Esforço efetivo pra charts/PDF/Dashboard: assume 4h quando esforço
     // está em 0 (default convencional). Não afeta tabelas de detalhe
     // (Backlog/Kanban) onde mostramos o valor real informado.
@@ -4913,11 +4935,11 @@ function app() {
       return this._depsByTask.get(taskId) || [];
     },
     nomeTask(id) {
-      const t = this.tasks.find(x => x.id === id);
+      const t = this.tasksById.get(id);
       return t ? t.titulo : '(removida)';
     },
     statusTask(id) {
-      const t = this.tasks.find(x => x.id === id);
+      const t = this.tasksById.get(id);
       return t ? t.status : '';
     },
     get clientesAtivos() {
@@ -5090,7 +5112,7 @@ function app() {
       const draggedId = this.backlogDragId;
       this.backlogDragId = '';
       if (!draggedId || draggedId === target.id) return;
-      const dragged = this.tasks.find(t => t.id === draggedId);
+      const dragged = this.tasksById.get(draggedId);
       if (!dragged) return;
       const visible = this.filtered;
       const targetIdx  = visible.findIndex(t => t.id === target.id);
@@ -5471,7 +5493,7 @@ function app() {
       try { localStorage.setItem('kliente360-portal-cliente', this.portalClienteId); } catch(_) {}
     },
     get portalCliente() {
-      return this.clientes.find(c => c.id === this.effectivePortalClienteId) || null;
+      return this.clientesById.get(this.effectivePortalClienteId) || null;
     },
     get portalTasks() {
       const cid = this.effectivePortalClienteId;
@@ -5698,7 +5720,7 @@ function app() {
       if (!sub) return;
       const ids = [...this.selectedIds];
       for (const id of ids) {
-        const t = this.tasks.find(x => x.id === id);
+        const t = this.tasksById.get(id);
         if (t && t.subetapa !== sub) await this.setTaskSubetapa(t, sub);
       }
       this.toast('success', ids.length + ' tarefa(s) movida(s).');
@@ -5783,7 +5805,7 @@ function app() {
       this.dragOverCol = '';
       this.draggingId = '';
       if (!id) return;
-      const t = this.tasks.find(x => x.id === id);
+      const t = this.tasksById.get(id);
       if (t) await this.setTaskSubetapa(t, sub);
     },
     async setTaskStatus(t, newStatus) {
@@ -5832,7 +5854,7 @@ function app() {
       this.dragOverCol = '';
       this.draggingId = '';
       if (!id) return;
-      const t = this.tasks.find(x => x.id === id);
+      const t = this.tasksById.get(id);
       if (t) await this.setTaskStatus(t, col);
     },
 
@@ -6009,7 +6031,7 @@ function app() {
       }
       const out = [];
       for (const [pid, dias] of byPid) {
-        const p = this.pessoas.find(x => x.id === pid);
+        const p = this.pessoasById.get(pid);
         out.push({ pid, nome: (p && p.nome) || '—', email: (p && p.email) || '', dias_ativos: dias.size });
       }
       return out.sort((a, b) => b.dias_ativos - a.dias_ativos);
@@ -6973,7 +6995,7 @@ function app() {
       });
     },
     deleteTaskById(id) {
-      const t = this.tasks.find(x => x.id === id);
+      const t = this.tasksById.get(id);
       if (!t) return;
       this.askConfirm(`Excluir "${t.titulo}"?`, async () => {
         const i = this.tasks.findIndex(x => x.id === id);
