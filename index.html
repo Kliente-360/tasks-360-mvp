@@ -22,6 +22,8 @@
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js"></script>
+<!-- Helpers puros (testáveis em tests/index.html). Carregar ANTES do script inline. -->
+<script src="lib/helpers.js"></script>
 <style>
   :root {
     /* identidade Kliente 360 */
@@ -3299,59 +3301,9 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const AUTH_ENABLED = true;
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ============ CONSTANTS · vocabulário do domínio ============
-// Centraliza magic strings pra evitar typo silencioso. Use:
-//   if (t.status === STATUS.CONCLUIDO) ...   em vez de  'concluido'
-//   if (p.role === ROLE.ADMIN)         ...   em vez de  'admin'
-// Adoção incremental — strings legadas continuam funcionando.
-
-const STATUS = Object.freeze({
-  BACKLOG:    'backlog',
-  ANDAMENTO:  'andamento',
-  BLOQUEADO:  'bloqueado',
-  CONCLUIDO:  'concluido',
-});
-
-const ROLE = Object.freeze({
-  ADMIN:   'admin',
-  INTERNO: 'interno',
-  CLIENTE: 'cliente',
-});
-
-const TIER = Object.freeze({
-  ESTRATEGICO: 'estrategico',
-  RECORRENTE:  'recorrente',
-  SPOT:        'spot',
-});
-
-const PRIORIDADE = Object.freeze({
-  P0: 'P0', P1: 'P1', P2: 'P2', P3: 'P3',
-});
-
-const SEVERIDADE = Object.freeze({
-  ALTA:  'alta',
-  MEDIA: 'media',
-  BAIXA: 'baixa',
-});
-
-const SIGNAL = Object.freeze({
-  VERDE:     'verde',
-  AMARELO:   'amarelo',
-  VERMELHO:  'vermelho',
-});
-
-const CARGA_NIVEL = Object.freeze({
-  SOBRECARGA: 'sobrecarga',
-  PRESSAO:    'pressao',
-  OK:         'ok',
-  FOLGA:      'folga',
-  SEM_CAP:    'sem-cap',
-});
-
-// Expõe em window pra Alpine x-show/x-text/x-bind acessar os mesmos
-// símbolos. Constantes `const` no escopo de módulo não vão pra window
-// automaticamente. Object.freeze já garante imutabilidade.
-Object.assign(window, { STATUS, ROLE, TIER, PRIORIDADE, SEVERIDADE, SIGNAL, CARGA_NIVEL });
+// CONSTANTS (STATUS, ROLE, TIER, PRIORIDADE, SEVERIDADE, SIGNAL, CARGA_NIVEL)
+// vivem em lib/helpers.js (testáveis em tests/index.html). Carregados em
+// window por aquele script — disponíveis aqui e em x-show/x-text.
 
 // ============ Field map declarativo: fonte única de verdade pra
 // mapeamento JS <-> DB. Cada entrada: [jsName, dbName, type, opts?].
@@ -4939,9 +4891,7 @@ function app() {
       // que vive em tabela separada, não tem mapeamento direto de coluna.
       return makeBlank(TASK_FIELDS, { dependencias: [] });
     },
-    normalizeTag(s) {
-      return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24);
-    },
+    normalizeTag(s) { return normalizeTag(s); },
     addTag() {
       const t = this.normalizeTag(this.newTag);
       if (!t) { this.newTag = ''; return; }
@@ -4964,15 +4914,7 @@ function app() {
     },
     // Filtra um vocabulário (allTags / allSkills) pelo input atual,
     // exclui os já adicionados, e limita a 12 sugestões.
-    suggest(input, all, current) {
-      const q = String(input || '').trim().toLowerCase();
-      const cur = new Set(current || []);
-      const filt = (all || []).filter(t => !cur.has(t));
-      if (!q) return filt.slice(0, 12);
-      const startsWith = filt.filter(t => t.startsWith(q));
-      const contains   = filt.filter(t => !t.startsWith(q) && t.includes(q));
-      return [...startsWith, ...contains].slice(0, 12);
-    },
+    suggest(input, all, current) { return suggest(input, all, current); },
     addExistingTag(t) {
       this.editing.tags = this.editing.tags || [];
       if (!this.editing.tags.includes(t)) this.editing.tags.push(t);
@@ -5023,23 +4965,10 @@ function app() {
     nomeCliente(id) { const c = this.clientesById.get(id); return (c && c.nome) || '—'; },
     nomeProjeto(id) { const p = this.projetosById.get(id); return (p && p.nome) || '—'; },
     nomePessoa(id)  { const p = this.pessoasById.get(id);  return (p && p.nome) || '—'; },
-    // Esforço efetivo pra charts/PDF/Dashboard: assume 4h quando esforço
-    // está em 0 (default convencional). Não afeta tabelas de detalhe
-    // (Backlog/Kanban) onde mostramos o valor real informado.
-    effEsforco(t) {
-      const v = +(t && t.esforco);
-      return v > 0 ? v : 4;
-    },
-    // Tamanho derivado automaticamente do esforço efetivo. Usado só
-    // em analytics/heurísticas — não vai pro card nem pro form.
-    effTamanho(t) {
-      const h = this.effEsforco(t);
-      if (h < 2)  return 'mini';
-      if (h < 8)  return 'small';
-      if (h < 24) return 'medio';
-      if (h < 80) return 'grande';
-      return 'mini_projeto';
-    },
+    // effEsforco / effTamanho — delegam pros puros em lib/helpers.js
+    // (testáveis). Mantemos como métodos pra preservar `this.X` calls.
+    effEsforco(t) { return effEsforco(t); },
+    effTamanho(t) { return effTamanho(t); },
     lblComplex(c) {
       return ({ alta: 'Alta', media: 'Média', baixa: 'Baixa' })[c] || 'Média';
     },
@@ -5066,21 +4995,10 @@ function app() {
       if (field === 'esforco' || field === 'tempo_real_horas') return v + 'h';
       return String(v);
     },
-    fmtDate(d) {
-      if (!d) return '—';
-      const [y,m,da] = d.split('-');
-      return `${da}/${m}/${y}`;
-    },
-    fmtDateShort(d) {
-      if (!d) return '—';
-      const [y,m,da] = d.split('-');
-      return `${da}/${m}`;
-    },
-    atrasada(t) {
-      if (!t.prazo) return false;
-      if (t.status === STATUS.CONCLUIDO) return false;
-      return t.prazo < new Date().toISOString().slice(0,10);
-    },
+    // Helpers de data + atrasada — delegam pros puros em lib/helpers.js.
+    fmtDate(d) { return fmtDate(d); },
+    fmtDateShort(d) { return fmtDateShort(d); },
+    atrasada(t) { return atrasada(t); },
     diasAtraso(t) {
       if (!t.prazo) return 0;
       const hoje = new Date(); hoje.setHours(0,0,0,0);
