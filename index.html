@@ -1374,17 +1374,19 @@
     .tmodal-composer textarea { min-height: 64px; padding: 10px 12px; }
     .tmodal-thread { padding: var(--sp-3); }
 
-    /* footer mobile: 1 linha sem quebra, 4 botões touch-friendly */
+    /* footer mobile: 4 botões distribuídos por igual ao longo da largura,
+       1 linha sem quebra, touch-friendly */
     .tmodal-foot {
-      flex-wrap: nowrap; gap: 6px;
+      flex-wrap: nowrap; gap: 8px;
       padding: 10px 12px;
     }
     .tmodal-foot .hint { display: none; }
     .tmodal-foot .btn,
     .tmodal-foot .btn-foot {
-      flex-shrink: 1; flex-grow: 0;
-      padding: 9px 10px; font-size: var(--fs-xs);
-      min-height: 40px; white-space: nowrap;
+      flex: 1 1 0; min-width: 0;
+      padding: 12px 8px; font-size: var(--fs-sm);
+      min-height: 44px; white-space: nowrap;
+      justify-content: center;
     }
     .tmodal-foot .spacer { display: none; }
     .tmodal-foot .btn-txt { display: inline; }
