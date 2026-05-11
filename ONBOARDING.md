@@ -33,10 +33,15 @@ O tasks 360 é a fonte de verdade do que está rolando na operação. Você não
 5. **Aging do backlog** — tarefas paradas há muito tempo são dívida silenciosa.
 6. **Aguardando cliente** — sua munição pra cobrar. Mostra o que está parado por *eles*, não por você.
 
+## Onde abrir todo dia
+
+- **Briefing** (aba dedicada, só admin) — 4 cards que respondem suas 4 decisões: que cliente conversar hoje, que pessoa conversar hoje, tendência da operação, capacidade vs demanda. Headline narrativa no topo muda com o estado. **Esta é sua primeira tela do dia.**
+- **Adoption** (só admin) — saber quais features o time realmente usa e quais estão órfãs (telemetria de 90d).
+
 ## Casos de uso práticos
 
 **1-on-1 com sócio / head de operação**
-- Abrir Dashboard → banner heurísticas → puxar cada item.
+- Abrir **Briefing** → bullets de ação requerida com nome próprio. Decisão direta.
 - "Por que essa tarefa estratégica está em vermelho?" Click → modal da task → histórico unificado mostra quando entrou, quem mexeu, quando foi reaberta.
 
 **Reunião de cliente**
@@ -44,19 +49,22 @@ O tasks 360 é a fonte de verdade do que está rolando na operação. Você não
 - Ou abrir o **Portal do cliente** (mesmo a partir do seu login admin) pra ver exatamente o que o cliente vê.
 
 **Decisão de contratação**
-- Capacidade por pessoa em vermelho persistente por 3+ semanas → time sub-dimensionado.
-- Aguardando cliente subindo → o problema não é capacidade, é cobrança.
+- **Briefing → Capacidade vs demanda** dá a recomendação direta (contratar / manter / cortar) com base em utilização e sobrecargas persistentes.
 
 **Decisão de demitir cliente**
-- Cliente transacional consumindo horas de projeto estratégico → ver Volume por cliente + Lead time por cliente.
+- Cliente transacional consumindo horas de projeto estratégico → ver Dashboard (Volume por cliente + Lead time por cliente).
+
+**Decisão de deprecar feature**
+- **Adoption → Features órfãs** — features com uso abaixo do limite saudável (pessoas ativas × 4 / 30d). Candidatas a sumir na próxima revisão.
 
 ## Dicas de produtividade
 
-- **Cmd+K (command palette)** — buscar qualquer task/cliente/projeto sem clicar. Use isso como ponto de entrada padrão.
-- **Atalho `g d`** — vai pro Dashboard. `g b` Backlog. `g f` Meu foco.
-- **Não preencha tarefas**. Sua função é ler o sistema, não alimentá-lo. Se você está abrindo task, o time não está fazendo o trabalho dele.
-- **Olhe o Dashboard 1x/dia, não 1x/semana**. O banner muda; você quer ver mudança, não acúmulo.
+- **Briefing antes do Dashboard**. Briefing é a leitura de 1min com ação; Dashboard é a leitura de 5min com dado bruto.
+- **Cmd+K (command palette)** — buscar qualquer task/cliente/projeto sem clicar. Ponto de entrada padrão.
+- **Atalho `g d`** Dashboard · `g b` Backlog · `g f` Meu foco.
+- **Não preencha tarefas**. Sua função é ler o sistema, não alimentá-lo.
 - **Defina `tier` em todos os clientes**. Sem isso, metade das heurísticas não funciona.
+- **Exportar PDF executivo** (Cmd+K → "Exportar PDF") quando precisar levar pra reunião offline — 1 página, memo narrativo, 2 tabelas.
 
 ## O que NÃO fazer
 
@@ -88,13 +96,17 @@ Você é a pessoa que mais usa o app no dia-a-dia depois dos analistas.
 - **Aguardando cliente** (subetapa) — *muito* importante. Quando uso isso, sai da nossa contagem de tempo.
 - **`visivel_cliente` na task / comment** — controla o que aparece no Portal. Use com intenção.
 
+## Onde abrir todo dia
+
+- **Triagem** (aba dedicada) — sua primeira parada da manhã. Fila de tasks que ainda **não estão prontas pra serem trabalhadas** (faltam: responsável, cliente, prazo em etapa avançada, ou esforço em etapa de execução). Chips âmbar mostram exatamente o que falta. Resolver a fila = nada parado por falta de informação.
+
 ## Guia de uso por cerimônia
 
 ### Refinamento (1-2x/semana)
-1. Filtre Backlog por subetapa = `triagem`.
-2. Pra cada task: definir título claro, cliente, projeto, esforço estimado, complexidade, prioridade.
+1. Abrir **Triagem** → cards já priorizam o que falta resolver.
+2. Pra cada task: completar título claro, cliente, projeto, esforço estimado, complexidade, prioridade.
 3. Se depende de outra, ligar via chips de dependência.
-4. Mover pra subetapa `pronto pra fazer`.
+4. Mover pra subetapa adequada (`priorizado`, `escopo_definido`, etc). Quando todos os critérios são satisfeitos, a task **sai automaticamente da Triagem**.
 
 ### Daily (15min)
 1. Abrir **Kanban**.
@@ -214,8 +226,8 @@ A regra de ouro: **se mexeu, atualiza**. Status desatualizado prejudica todo mun
 - Registra `tempo_real_horas` honestamente. Heurística "estimativa furada" vai pingar; não é cobrança, é insumo pra time estimar melhor da próxima.
 
 **Chegou pedido novo direto pra você**
-- Criar task (`n` ou Cmd+K → "criar"). Cliente, projeto, descrição mínima.
-- Mover pra `triagem`. Gerente refina e prioriza.
+- Criar task (`n` ou Cmd+K → "criar"). Título + cliente + descrição mínima.
+- Deixa em `backlog` sem responsável/prazo — vai aparecer na **Triagem** pro gerente refinar e priorizar.
 
 ## Dicas de produtividade
 
