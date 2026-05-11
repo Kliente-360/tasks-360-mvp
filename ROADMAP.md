@@ -974,8 +974,9 @@ Decisão: visões fixas no app, sem ferramenta externa de BI. A lista cresce **o
 5. **Saúde por projeto** ✅ — semáforo determinístico. Vermelho: atrasadas / SLA quase vencido / bloqueio +5d. Âmbar: aguardando cliente / aging warn. Verde: saudável.
 6. **Saúde por pessoa** ✅ — semáforo análogo, baseado em atrasadas/stale (vermelho), aguardando cliente / bloqueio interno / warn (âmbar), saudável (verde). Sem cadastral.
 7. **Distribuição de esforço por cliente** ✅ — "Volume por cliente" (horas em tarefas abertas).
-8. **Aging do backlog** ✅ — stacked horizontal por status × faixa (0-7 / 8-30 / 30-60 / 60+).
-9. **Itens aguardando cliente** ✅ — lista de `subetapa=bloqueado AND bloqueado_por=cliente` ordenada por aging desc.
+8. **Itens aguardando cliente** ✅ — lista de `subetapa=bloqueado AND bloqueado_por=cliente` ordenada por aging desc.
+
+> Removidas: "Aging do backlog" (v1.01.146) — informação útil já vem inline nos cards via aging badge, redundante com Saúde por projeto/pessoa.
 
 ### Briefing executivo (admin) · derivado
 
