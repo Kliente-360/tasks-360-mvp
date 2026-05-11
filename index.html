@@ -6248,8 +6248,7 @@ function app() {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { backgroundColor: v('--bg-elev'), titleColor: v('--ink'), bodyColor: v('--ink-soft'), borderColor: v('--line'), borderWidth: 1, padding: 8, displayColors: false } },
       };
-      if (this.charts.mvpVolume) this.charts.mvpVolume.destroy();
-      if (this.charts.mvpDau)    this.charts.mvpDau.destroy();
+      // _upsertChart cuida do reuse/destroy.
 
       const fmtDay = (iso) => {
         const d = new Date(iso + 'T00:00:00');
@@ -6259,7 +6258,7 @@ function app() {
       const vol = this.mvpVolume30d;
       const ctxV = document.getElementById('chartMvpVolume');
       if (ctxV) {
-        this.charts.mvpVolume = new Chart(ctxV, {
+        this._upsertChart('mvpVolume', ctxV, {
           type: 'bar',
           data: { labels: vol.map(d => fmtDay(d.dia)), datasets: [{ data: vol.map(d => d.eventos), backgroundColor: brand, borderRadius: 3, maxBarThickness: 16 }] },
           options: { ...baseOpts,
@@ -6274,7 +6273,7 @@ function app() {
       const dau = this.mvpDau14d;
       const ctxD = document.getElementById('chartMvpDau');
       if (ctxD) {
-        this.charts.mvpDau = new Chart(ctxD, {
+        this._upsertChart('mvpDau', ctxD, {
           type: 'bar',
           data: { labels: dau.map(d => fmtDay(d.dia)), datasets: [{ data: dau.map(d => d.pessoas), backgroundColor: dau.map((_, i) => i === dau.length - 1 ? brandDark : brand), borderRadius: 3, maxBarThickness: 24 }] },
           options: { ...baseOpts,
@@ -6615,6 +6614,23 @@ function app() {
       return { palette, fontBrand, fontMono, baseOpts };
     },
 
+    // Reusa instância de Chart.js quando possível. Trocar dados via
+    // .update() é ~10x mais rápido que destruir e recriar o canvas.
+    // Funciona enquanto o type não muda (todos charts são fixos no app).
+    _upsertChart(key, ctx, config) {
+      const existing = this.charts[key];
+      if (existing && existing.canvas === ctx) {
+        existing.data = config.data;
+        existing.options = config.options;
+        existing.update('none'); // sem animação no refresh
+        return existing;
+      }
+      // Canvas diferente (DOM remontado via x-if) ou primeiro render: cria.
+      if (existing) { try { existing.destroy(); } catch(_){} }
+      this.charts[key] = new Chart(ctx, config);
+      return this.charts[key];
+    },
+
     renderCharts() {
       const ativas = this.dashTasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const theme = this.chartTheme();
@@ -6692,10 +6708,8 @@ function app() {
         if (bi >= 0) agingMatrix[si][bi]++;
       });
 
-      // destruir charts anteriores
-      ['clientes','capacidade','timeline','throughput','aging','leadtime'].forEach(k => {
-        if (this.charts[k]) { this.charts[k].destroy(); this.charts[k] = null; }
-      });
+      // _upsertChart reusa instâncias do mesmo canvas; cria/destroi
+      // só quando o ctx muda (ex: x-if remontou o DOM).
 
       const horizBarOpts = {
         ...baseOpts, indexAxis: 'y',
@@ -6714,7 +6728,7 @@ function app() {
 
       const ctxC = document.getElementById('chartClientes');
       if (ctxC) {
-        this.charts.clientes = new Chart(ctxC, {
+        this._upsertChart('clientes', ctxC, {
           type: 'bar',
           data: {
             labels: cliEntries.map(e => e[0]),
@@ -6727,7 +6741,7 @@ function app() {
       const ctxCap = document.getElementById('chartCapacidade');
       if (ctxCap && capRows.length) {
         const colorPct = (pct) => pct >= 100 ? palette.danger : pct >= 80 ? palette.warn : palette.brand;
-        this.charts.capacidade = new Chart(ctxCap, {
+        this._upsertChart('capacidade', ctxCap, {
           type: 'bar',
           data: {
             labels: capRows.map(r => r.nome),
@@ -6777,7 +6791,7 @@ function app() {
       const ts = this.throughputSemanas;
       const ctxTh = document.getElementById('chartThroughput');
       if (ctxTh) {
-        this.charts.throughput = new Chart(ctxTh, {
+        this._upsertChart('throughput', ctxTh, {
           type: 'bar',
           data: {
             labels: ts.map(s => s.label),
@@ -6809,7 +6823,7 @@ function app() {
 
       const ctxT = document.getElementById('chartTimeline');
       if (ctxT) {
-        this.charts.timeline = new Chart(ctxT, {
+        this._upsertChart('timeline', ctxT, {
           type: 'bar',
           data: {
             labels: tlLabels,
@@ -6848,7 +6862,7 @@ function app() {
       const ltRows = this.leadTimePorCliente;
       const ctxLT = document.getElementById('chartLeadTime');
       if (ctxLT && ltRows.length) {
-        this.charts.leadtime = new Chart(ctxLT, {
+        this._upsertChart('leadtime', ctxLT, {
           type: 'bar',
           data: {
             labels: ltRows.map(r => r.cliente),
@@ -6884,7 +6898,7 @@ function app() {
       const ctxAg = document.getElementById('chartAging');
       if (ctxAg) {
         const lblStatus = (s) => ({ backlog: 'Backlog', andamento: 'Em andamento', bloqueado: 'Bloqueado' })[s] || s;
-        this.charts.aging = new Chart(ctxAg, {
+        this._upsertChart('aging', ctxAg, {
           type: 'bar',
           data: {
             labels: agingStatuses.map(lblStatus),
