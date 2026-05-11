@@ -412,6 +412,36 @@ Lista levantada via comparação com Linear, Asana, ClickUp, Height, Motion, Jir
 - **Mobile app nativo / PWA offline** — overhead alto vs. ganho. Web responsivo já cobre.
 - **Integrações Slack/email pra criar task** — avaliar só se virar pedido recorrente do time.
 
+#### 🛠️ Backlog técnico — perf/escala de médio prazo
+
+Diagnóstico técnico (rev 2) executou 8 itens curtos com ganhos imediatos. Os abaixo ficam pra quando o app começar a sentir escala real (5k+ tasks, 50+ usuários ativos, sessions de horas) ou quando aparecer dor concreta.
+
+**Cache local persistente (IndexedDB)**
+- Hoje toda boot re-busca clientes/projetos/pessoas do servidor. Mudam raramente.
+- Cache local + invalidação por timestamp → boot offline-first, parece "instantâneo".
+- Ganho: time-to-interactive de 2-3s → <500ms em conexão lenta.
+- Custo: ~4h. Risco: médio (precisa invalidação correta).
+
+**Realtime channel scoping por cliente**
+- Cliente externo (role=cliente) hoje recebe broadcast de TODAS tasks via realtime (RLS filtra antes de chegar ao cliente, mas bandwidth ainda é consumido).
+- Filtrar via `channel.on('postgres_changes', { filter: 'cliente_id=eq.X' })`.
+- Ganho: reduz tráfego de realtime em ~80% pra clientes externos. Server-side menos broadcast.
+- Custo: ~2h.
+
+**Notifications: archive + paginate**
+- Tabela cresce monotonicamente. Em 1 ano podem ser 10k+ rows por usuário ativo.
+- Edge function ou trigger pra archive >90d numa tabela `notifications_archive`.
+- Frontend pagina (carrega últimos 50, "ver mais antigos" sob demanda).
+- Custo: ~3h (SQL + UI).
+
+**Partition de tasks ativas/concluídas em estado local**
+- `this.tasks.filter(t => t.status !== 'concluido')` aparece em 20+ lugares hoje.
+- Centralizar em `_tasksAtivas` getter (memoizado via _tasksSig).
+- Ganho: ~10x menos iterações em hot getters (heuristics, briefing, dashboard).
+- Custo: ~1h. Risco: baixo (já temos memo infra).
+
+**Quando reavaliar**: quando aparecer dor concreta (boot >3s, lag em digitar, notif lenta) ou periodicamente a cada 1-2 ondas.
+
 ---
 
 ### Premissas de timeline
