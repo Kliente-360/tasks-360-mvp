@@ -947,7 +947,7 @@
 </section>
 
 <!-- ============ BRIEFING EXECUTIVO ============ -->
-<section x-show="tab==='brief'" class="fade-up">
+<template x-if="tab==='brief'"><section class="fade-up">
   <div class="max-w-[1100px] mx-auto space-y-5 md:space-y-6">
     <!-- Header narrativa -->
     <div class="flex items-baseline justify-between gap-4 flex-wrap">
@@ -1054,7 +1054,7 @@
       <p class="text-sm text-ink-soft leading-relaxed" x-text="briefingCapacidade.recomendacao"></p>
     </div>
   </div>
-</section>
+</section></template>
 
 <!-- ============ BACKLOG ============ -->
 <section x-show="tab==='backlog'" class="fade-up">
@@ -1826,7 +1826,7 @@
 </div>
 
 <!-- ============ DASHBOARD ============ -->
-<section x-show="tab==='dash'" class="fade-up">
+<template x-if="tab==='dash'"><section class="fade-up">
   <!-- Heurísticas pré-IA: banner de alertas no topo (Dashboard) -->
   <div x-show="heuristicAlerts.length > 0" class="card mb-4 md:mb-5 overflow-hidden" style="border-left: 4px solid var(--p0)">
     <div class="px-4 py-3 border-b border-line flex items-center justify-between">
@@ -2094,10 +2094,10 @@
       </template>
     </div>
   </div>
-</section>
+</section></template>
 
 <!-- ============ CADASTROS ============ -->
-<section x-show="tab==='cad'" class="fade-up">
+<template x-if="tab==='cad'"><section class="fade-up">
   <div class="tabs-row border-b border-line mb-5 md:mb-6">
     <div class="tab" :class="cadTab==='clientes' && 'active'" @click="cadTab='clientes'">Clientes <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + clientes.length"></span></div>
     <div class="tab" :class="cadTab==='projetos' && 'active'" @click="cadTab='projetos'">Projetos <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + projetos.length"></span></div>
@@ -2259,10 +2259,10 @@
       </div>
     </div>
   </div>
-</section>
+</section></template>
 
 <!-- ============ DADOS MVP ============ -->
-<section x-show="tab==='mvp'" class="fade-up">
+<template x-if="tab==='mvp'"><section class="fade-up">
 
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-6">
     <div class="kpi">
@@ -2348,7 +2348,7 @@
       <li>Esta aba não exige login pra ser vista — ficou propositalmente aberta.</li>
     </ul>
   </div>
-</section>
+</section></template>
 
 </main>
 
