@@ -1244,11 +1244,85 @@
   }
   .tmodal-foot .spacer { flex: 1; }
 
-  /* responsivo: stack em mobile, conversa vira aba colapsável */
-  @media (max-width: 860px) {
-    .tmodal-body { grid-template-columns: 1fr; }
-    .tmodal-right { border-left: 0; border-top: 1px solid var(--line); }
-    .tmodal-left  { padding: var(--sp-4); }
+  /* ============ mobile: 3 abas full-screen single-pane ============
+     Em mobile a two-pane vira pilha: tab bar superior com Detalhes/Conversa/
+     Histórico controla qual seção é visível. Modal vira full-screen pra
+     priorizar conteúdo, inputs ganham font-size 16px (impede zoom iOS),
+     autosave migra do header pro footer (header tem pouco espaço).
+     `.mob-hidden` é aplicada via x-bind quando isMobileViewport && tab atual
+     não corresponde — desktop ignora a classe. */
+  .tmodal-mobile-tabs { display: none; }
+  .autosave-mob { display: none; }
+
+  @media (max-width: 767px) {
+    /* full-screen sheet */
+    .tmodal {
+      max-width: 100% !important; width: 100% !important;
+      height: 100vh !important; max-height: 100vh !important;
+      border-radius: 0 !important;
+    }
+    /* parent flexbox padding zerado pra full bleed */
+    .modal-bg.p-2, .modal-bg.p-4 { padding: 0 !important; }
+
+    /* header compacto: crumb some, autosave migra pro footer */
+    .tmodal-head { padding: var(--sp-2) var(--sp-3); gap: var(--sp-2); flex-wrap: nowrap; }
+    .tmodal-head .crumb { display: none; }
+    .tmodal-head .tmodal-title { font-size: var(--fs-sm); padding: 4px 6px; }
+    .tmodal-head .autosave { display: none; }
+    .tmodal-head .pri { font-size: 10px; padding: 2px 6px; }
+
+    /* tab bar mobile (Detalhes / Conversa / Histórico) */
+    .tmodal-mobile-tabs {
+      display: flex; flex: 0 0 auto;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-1);
+    }
+    .tmodal-mobile-tabs .tmtab {
+      flex: 1; text-align: center;
+      padding: 11px 6px; font-size: var(--fs-sm); font-weight: 500;
+      color: var(--muted); border-bottom: 2px solid transparent;
+      cursor: pointer; user-select: none;
+      display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .tmodal-mobile-tabs .tmtab .count {
+      font-family: var(--font-mono); font-feature-settings: "tnum";
+      font-size: 10px; color: var(--muted);
+      background: var(--surface-2); padding: 1px 5px; border-radius: 999px;
+    }
+    .tmodal-mobile-tabs .tmtab.active {
+      color: var(--ink); border-bottom-color: var(--brand);
+    }
+    .tmodal-mobile-tabs .tmtab.active .count { background: var(--brand-soft); color: var(--brand-dark); }
+
+    /* tabs internas do right pane somem (mobile usa a bar acima) */
+    .tmodal-tabs { display: none; }
+
+    /* body single column, ocupa todo espaço restante */
+    .tmodal-body { grid-template-columns: 1fr; flex: 1 1 auto; min-height: 0; }
+    .tmodal-left  { padding: var(--sp-3); }
+    .tmodal-right { border-left: 0; border-top: 0; }
+
+    /* visibilidade controlada por modalTab via .mob-hidden */
+    .mob-hidden { display: none !important; }
+
+    /* fields em coluna unica pra ganhar largura */
+    .tmodal-fields { grid-template-columns: 1fr; }
+
+    /* inputs touch-friendly: 16px impede zoom iOS, padding maior */
+    .tmodal .inp,
+    .tmodal .tmodal-title,
+    .tmodal .tmodal-composer textarea {
+      font-size: 16px;
+    }
+    .tmodal .inp { padding: 10px 12px; }
+    .tmodal-composer { padding: var(--sp-2) var(--sp-3); }
+    .tmodal-composer textarea { min-height: 64px; padding: 10px 12px; }
+    .tmodal-thread { padding: var(--sp-3); }
+
+    /* footer compacto + autosave migrado */
+    .tmodal-foot { flex-wrap: wrap; padding: var(--sp-2) var(--sp-3); gap: var(--sp-2); }
+    .tmodal-foot .hint { display: none; }
+    .tmodal-foot .autosave-mob { display: inline-flex; }
   }
 
 </style>
@@ -3654,11 +3728,27 @@
       </div>
     </div>
 
+    <!-- ============ TABS MOBILE (3 abas full-screen) ============
+         Só aparece em viewport <768px. Controla qual seção do body é visível
+         (left=detalhes vs right=conversa/historico). Em desktop, .tmodal-tabs
+         dentro do right pane segue alternando conversa/historico normalmente. -->
+    <div class="tmodal-mobile-tabs">
+      <div class="tmtab" :class="modalTab === 'detalhes' && 'active'" @click="modalTab = 'detalhes'">
+        Detalhes
+      </div>
+      <div class="tmtab" :class="modalTab === 'conversa' && 'active'" @click="modalTab = 'conversa'">
+        Conversa <span class="count" x-text="editingComments.length"></span>
+      </div>
+      <div class="tmtab" :class="modalTab === 'historico' && 'active'" @click="modalTab = 'historico'">
+        Histórico <span class="count" x-text="editingHistory.length"></span>
+      </div>
+    </div>
+
     <!-- ============ CORPO two-pane ============ -->
     <div class="tmodal-body">
 
       <!-- ESQUERDA · dados -->
-      <div class="tmodal-left">
+      <div class="tmodal-left" :class="isMobileViewport && modalTab !== 'detalhes' && 'mob-hidden'">
 
         <!-- Descrição -->
         <div class="tmodal-section">
@@ -3779,7 +3869,14 @@
               </select>
               <div class="text-[10px] text-muted mt-1">macro: <span class="font-mono" x-text="lblStatus(SUB_TO_MACRO[editing.subetapa] || 'backlog')"></span></div>
             </div>
-            <div x-show="editing.subetapa === 'bloqueado'">
+            <div>
+              <label class="lbl">Visível ao cliente</label>
+              <label for="visivelClienteCk" class="inp flex items-center gap-2 cursor-pointer select-none" style="background: var(--bg-elev);">
+                <input type="checkbox" id="visivelClienteCk" class="cursor-pointer" x-model="editing.visivelCliente">
+                <span class="text-sm" x-text="editing.visivelCliente ? '✓ sim' : '— não'"></span>
+              </label>
+            </div>
+            <div x-show="editing.subetapa === 'bloqueado'" class="sm:col-span-2">
               <label class="lbl">Bloqueado por</label>
               <select class="inp" x-model="editing.bloqueadoPor">
                 <option value="">— a classificar</option>
@@ -3788,27 +3885,23 @@
                 <option value="terceiro">Terceiro</option>
               </select>
             </div>
-            <div class="sm:col-span-2 flex items-center gap-2 pt-1">
-              <input type="checkbox" id="visivelClienteCk" class="cursor-pointer" x-model="editing.visivelCliente">
-              <label for="visivelClienteCk" class="text-sm text-ink-soft cursor-pointer select-none">Tarefa visível ao cliente no Portal</label>
-            </div>
           </div>
         </div>
       </div>
 
       <!-- DIREITA · conversa + histórico (tabs) -->
-      <div class="tmodal-right">
+      <div class="tmodal-right" :class="isMobileViewport && modalTab === 'detalhes' && 'mob-hidden'">
         <div class="tmodal-tabs">
-          <div class="tmodal-tab" :class="modalRightTab === 'conversa' && 'active'" @click="modalRightTab = 'conversa'">
+          <div class="tmodal-tab" :class="modalTab === 'conversa' && 'active'" @click="modalTab = 'conversa'">
             Conversa <span class="count" x-text="editingComments.length"></span>
           </div>
-          <div class="tmodal-tab" :class="modalRightTab === 'historico' && 'active'" @click="modalRightTab = 'historico'">
+          <div class="tmodal-tab" :class="modalTab === 'historico' && 'active'" @click="modalTab = 'historico'">
             Histórico <span class="count" x-text="editingHistory.length"></span>
           </div>
         </div>
 
         <!-- TAB · histórico -->
-        <div x-show="modalRightTab === 'historico'" class="tmodal-thread">
+        <div x-show="modalTab === 'historico'" class="tmodal-thread">
           <template x-for="h in editingHistory" :key="(h.kind || 'status') + ':' + h.id">
             <div class="flex items-start gap-2 text-xs py-1.5 border-b border-line last:border-0">
               <span class="font-mono text-muted shrink-0" x-text="fmtPostedEm(h.occurred_at)"></span>
@@ -3827,8 +3920,8 @@
           <div x-show="editing.id && editingHistory.length === 0" class="text-xs text-muted italic py-3">Sem histórico ainda.</div>
         </div>
 
-        <!-- TAB · conversa -->
-        <div x-show="modalRightTab === 'conversa'" class="tmodal-thread">
+        <!-- TAB · conversa (desktop: default quando não é histórico) -->
+        <div x-show="modalTab !== 'historico'" class="tmodal-thread">
           <template x-for="c in topLevelComments" :key="c.id">
             <div>
               <div class="cmsg" :class="c.from_cliente && 'from-cliente'">
@@ -3867,7 +3960,7 @@
           <div x-show="editing.id && editingComments.length === 0" class="text-xs text-muted italic py-3">Sem comentários ainda.</div>
         </div>
 
-        <div x-show="editing.id && modalRightTab === 'conversa'" class="tmodal-composer">
+        <div x-show="editing.id && modalTab !== 'historico'" class="tmodal-composer">
           <textarea x-model="newComment" placeholder="Escrever comentário… (⌘↵ envia)"
                     @keydown.meta.enter.prevent="postComment()" @keydown.ctrl.enter.prevent="postComment()"></textarea>
           <div class="tmodal-composer-row">
@@ -3897,6 +3990,12 @@
     <div class="tmodal-foot">
       <span class="hint" x-show="editing.id">autosave · debounce 800ms · ⌘S força salvar</span>
       <span class="hint" x-show="!editing.id">tarefa nova · clique em Salvar pra criar</span>
+      <!-- autosave-mob: indicador migrado pro footer em mobile (header não cabe) -->
+      <span x-show="editing.id" class="autosave autosave-mob" :data-state="saveState"
+            :title="saveState === 'error' ? 'Autosave falhou — clique em Salvar' : 'Autosave ativo'">
+        <span class="as-dot"></span>
+        <span x-text="autosaveLabel()"></span>
+      </span>
       <div class="spacer"></div>
       <button x-show="editing.id && !editing.arquivadoEm" class="btn btn-ghost text-xs" @click="arquivarTask()" title="Esconder de listas/dashboards/heurísticas">arquivar</button>
       <button x-show="editing.id && editing.arquivadoEm" class="btn btn-ghost text-xs" @click="desarquivarTask()">desarquivar</button>
@@ -4318,7 +4417,10 @@ function app() {
     _autosaveTimer: null,
     _autosaveSeq: 0,
     // Aba ativa do pane direito do modal task: 'conversa' | 'historico'
-    modalRightTab: 'conversa',
+    // Aba do modal task. Mobile: 'detalhes' | 'conversa' | 'historico' (3 abas
+    // full-screen). Desktop: 'detalhes' é ignorado (esquerda sempre visível),
+    // só alterna 'conversa'/'historico' na direita. Reset por _initialModalTab().
+    modalTab: 'conversa',
     loading: true,
     refreshing: false,
     theme: (() => { try { return localStorage.getItem('kliente360-theme') || 'light'; } catch(_) { return 'light'; } })(),
@@ -8120,7 +8222,7 @@ function app() {
       // editing muda inteiro — supressamos limpando o timer logo após o tick.
       this.saveState = 'saved';
       this.lastSavedAt = Date.now();
-      this.modalRightTab = 'conversa';
+      this.modalTab = this.isMobileViewport ? 'detalhes' : 'conversa';
       clearTimeout(this._autosaveTimer);
       this.$nextTick(() => { clearTimeout(this._autosaveTimer); this.saveState = 'saved'; });
       this.modal = true;
