@@ -14,6 +14,8 @@ Estamos no **protótipo do protótipo** — um único `index.html` standalone (A
 
 **Bug atual conhecido**: nenhum botão funciona ao abrir no navegador. Suspeita: race condition na inicialização do Alpine — `editing: this ? this.blankTask() : null` foi escrito de forma defensiva mas pode estar causando o problema. Investigar console do browser primeiro.
 
+**Convenção de versão**: `APP_VERSION` em `lib/helpers.js` segue o **número do PR que entrega a mudança**. Ex: PR #130 → `v1.01.130`. Bump no commit que inclui o feature; nem todo PR precisa bumpar (docs-only não exige). Exposto no header como subtítulo do logo pra time saber qual versão está rodando.
+
 ## 3. Princípios de produto (NÃO violar)
 
 - **Opinativo, não configurável.** Sem campos customizados, workflows configuráveis, sub-tarefas aninhadas, sprints, story points.
