@@ -3273,76 +3273,113 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const AUTH_ENABLED = true;
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function taskFromDb(r) {
+// ============ Field map declarativo: fonte única de verdade pra
+// mapeamento JS <-> DB. Cada entrada: [jsName, dbName, type, opts?].
+// `type` define from/to/default; `opts.blank` override pro blank().
+// `opts.from` / `opts.to` permitem override pontual sem clonar o tipo.
+// Campos sem `to` (ex: date) são read-only do banco. ============
+const F = {
+  raw:      { from: r => r,                              to: t => t,                                          default: '' },
+  string:   { from: r => r || '',                        to: t => t || '',                                    default: '' },
+  fkNull:   { from: r => r || '',                        to: t => t || null,                                  default: '' },
+  num:      { from: r => Number(r) || 0,                 to: t => Number(t) || 0,                             default: 0 },
+  numNull:  { from: r => r == null ? null : +r,          to: t => (t == null || t === '') ? null : +t,        default: null },
+  boolTrue: { from: r => r !== false,                    to: t => t !== false,                                default: true },
+  arr:      { from: r => Array.isArray(r) ? r : [],      to: t => Array.isArray(t) ? t : [],                  default: [] },
+  date:     { from: r => r ? new Date(r).getTime() : 0 /* readonly */,                                        default: 0 },
+};
+
+function _resolve(field) {
+  const [js, db, type, opts = {}] = field;
   return {
-    id: r.id,
-    titulo: r.titulo || '',
-    descricao: r.descricao || '',
-    clienteId: r.cliente_id || '',
-    projetoId: r.projeto_id || '',
-    pessoaId: r.pessoa_id || '',
-    prioridade: r.prioridade,
-    esforco: Number(r.esforco) || 0,
-    complexidade: r.complexidade || 'media',
-    prazo: r.prazo || '',
-    status: r.status,
-    subetapa: r.subetapa || 'backlog',
-    bloqueadoPor: r.bloqueado_por || '',
-    visivelCliente: r.visivel_cliente !== false,
-    criadoEm: r.criado_em ? new Date(r.criado_em).getTime() : 0,
-    statusEm: r.status_em ? new Date(r.status_em).getTime() : 0,
-    subetapaEm: r.subetapa_em ? new Date(r.subetapa_em).getTime() : 0,
-    ordem: r.ordem == null ? null : Number(r.ordem),
-    tags: Array.isArray(r.tags) ? r.tags : [],
-    reopenCount: Number(r.reopen_count) || 0,
-    tipoTrabalho: r.tipo_trabalho || '',
-    tempoRealHoras: r.tempo_real_horas == null ? null : +r.tempo_real_horas,
-    externalSource: r.external_source || '',
-    externalId: r.external_id || '',
+    js, db, opts,
+    from: opts.from || type.from,
+    to:   opts.to   !== undefined ? opts.to : type.to,
+    default: 'blank' in opts ? opts.blank : ('default' in type ? type.default : ''),
   };
 }
-function taskToDb(t) {
-  return {
-    titulo: t.titulo,
-    descricao: t.descricao || '',
-    cliente_id: t.clienteId || null,
-    projeto_id: t.projetoId || null,
-    pessoa_id: t.pessoaId || null,
-    prioridade: t.prioridade,
-    esforco: Number(t.esforco) || 0,
-    complexidade: t.complexidade || 'media',
-    prazo: t.prazo || null,
-    status: t.status,
-    subetapa: t.subetapa || 'backlog',
-    bloqueado_por: t.bloqueadoPor || null,
-    visivel_cliente: t.visivelCliente !== false,
-    tags: Array.isArray(t.tags) ? t.tags : [],
-    tipo_trabalho: t.tipoTrabalho || null,
-    tempo_real_horas: t.tempoRealHoras == null || t.tempoRealHoras === '' ? null : +t.tempoRealHoras,
-    external_source: t.externalSource ? t.externalSource : (t.externalId ? 'salesforce' : null),
-    external_id: t.externalId || null,
+function makeFromDb(fields) {
+  const fs = fields.map(_resolve);
+  return (r) => {
+    const out = {};
+    for (const f of fs) out[f.js] = f.from ? f.from(r[f.db]) : r[f.db];
+    return out;
   };
 }
-function projetoFromDb(r) {
-  return {
-    id: r.id,
-    nome: r.nome,
-    clienteId: r.cliente_id,
-    slaRespostaHoras: r.sla_resposta_horas == null ? null : +r.sla_resposta_horas,
-    slaEntregaDias:   r.sla_entrega_dias   == null ? null : +r.sla_entrega_dias,
-    orcamentoHoras:   r.orcamento_horas    == null ? null : +r.orcamento_horas,
-    tipo:             r.tipo || '',
-    arquivadoEm:      r.arquivado_em || null,
+function makeToDb(fields, postBuild) {
+  const fs = fields.map(_resolve);
+  return (t) => {
+    const out = {};
+    for (const f of fs) {
+      if (!f.to) continue;
+      out[f.db] = f.to(t[f.js]);
+    }
+    if (postBuild) postBuild(t, out);
+    return out;
   };
 }
-function clienteFromDb(r) {
-  return {
-    id: r.id,
-    nome: r.nome,
-    tier: r.tier || '',
-    arquivadoEm: r.arquivado_em || null,
-  };
+function makeBlank(fields, overrides = {}) {
+  const fs = fields.map(_resolve);
+  const out = {};
+  for (const f of fs) {
+    out[f.js] = Array.isArray(f.default) ? [...f.default] : f.default;
+  }
+  return Object.assign(out, overrides);
 }
+
+const TASK_FIELDS = [
+  ['id',              'id',                F.raw,    { to: null /* gerado pelo banco no insert */ }],
+  ['titulo',          'titulo',            F.string],
+  ['descricao',       'descricao',         F.string],
+  ['clienteId',       'cliente_id',        F.fkNull],
+  ['projetoId',       'projeto_id',        F.fkNull],
+  ['pessoaId',        'pessoa_id',         F.fkNull],
+  ['prioridade',      'prioridade',        F.raw,    { blank: 'P2' }],
+  ['esforco',         'esforco',           F.num,    { blank: 4 }],
+  ['complexidade',    'complexidade',      F.string, { from: r => r || 'media', to: t => t || 'media', blank: 'media' }],
+  ['prazo',           'prazo',             F.fkNull],
+  ['status',          'status',            F.raw,    { blank: 'backlog' }],
+  ['subetapa',        'subetapa',          F.string, { from: r => r || 'backlog', to: t => t || 'backlog', blank: 'backlog' }],
+  ['bloqueadoPor',    'bloqueado_por',     F.fkNull],
+  ['visivelCliente',  'visivel_cliente',   F.boolTrue],
+  ['criadoEm',        'criado_em',         F.date],
+  ['statusEm',        'status_em',         F.date],
+  ['subetapaEm',      'subetapa_em',       F.date],
+  ['ordem',           'ordem',             F.numNull, { to: null /* nunca persiste via toDb; só via update direto */ }],
+  ['tags',            'tags',              F.arr],
+  ['reopenCount',     'reopen_count',      F.num,    { to: null /* gerado pelo trigger */ }],
+  ['tipoTrabalho',    'tipo_trabalho',     F.fkNull],
+  ['tempoRealHoras',  'tempo_real_horas',  F.numNull, { blank: '' }],
+  ['externalSource',  'external_source',   F.fkNull],
+  ['externalId',      'external_id',       F.fkNull],
+];
+
+const taskFromDb = makeFromDb(TASK_FIELDS);
+const taskToDb   = makeToDb(TASK_FIELDS, (t, out) => {
+  // Auto-classifica external_source como 'salesforce' quando ID externo
+  // foi preenchido manualmente sem source explícito.
+  if (!t.externalSource && t.externalId) out.external_source = 'salesforce';
+});
+
+const PROJETO_FIELDS = [
+  ['id',                'id',                  F.raw],
+  ['nome',              'nome',                F.string],
+  ['clienteId',         'cliente_id',          F.fkNull],
+  ['slaRespostaHoras',  'sla_resposta_horas',  F.numNull],
+  ['slaEntregaDias',    'sla_entrega_dias',    F.numNull],
+  ['orcamentoHoras',    'orcamento_horas',     F.numNull],
+  ['tipo',              'tipo',                F.string],
+  ['arquivadoEm',       'arquivado_em',        { from: r => r || null, default: null }],
+];
+const projetoFromDb = makeFromDb(PROJETO_FIELDS);
+
+const CLIENTE_FIELDS = [
+  ['id',           'id',           F.raw],
+  ['nome',         'nome',         F.string],
+  ['tier',         'tier',         F.string],
+  ['arquivadoEm',  'arquivado_em', { from: r => r || null, default: null }],
+];
+const clienteFromDb = makeFromDb(CLIENTE_FIELDS);
 
 function app() {
   return {
@@ -4741,7 +4778,9 @@ function app() {
 
     // ===================== HELPERS =====================
     blankTask() {
-      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true, tags: [], reopenCount: 0, tipoTrabalho: '', tempoRealHoras: '', dependencias: [], externalSource: '', externalId: '' };
+      // Gera a partir do TASK_FIELDS (single source of truth) + `dependencias`
+      // que vive em tabela separada, não tem mapeamento direto de coluna.
+      return makeBlank(TASK_FIELDS, { dependencias: [] });
     },
     normalizeTag(s) {
       return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24);
