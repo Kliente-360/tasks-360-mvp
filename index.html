@@ -2139,6 +2139,36 @@
     </div>
 
     <div class="card p-4 md:p-6">
+      <div class="mb-4">
+        <div class="font-brand text-xl font-semibold">Saúde por pessoa</div>
+        <div class="text-xs text-muted mt-0.5">semáforo: vermelho = atrasadas ou aging stale · âmbar = aguardando cliente / bloqueio interno / aging warn</div>
+      </div>
+      <template x-if="saudePessoas.length===0">
+        <div class="text-sm text-muted italic py-6">Ninguém com tarefas abertas.</div>
+      </template>
+      <ul class="divide-y divide-line">
+        <template x-for="p in saudePessoas" :key="p.id">
+          <li class="py-2.5 flex items-start gap-3">
+            <span class="inline-block w-2.5 h-2.5 rounded-full mt-1.5 shrink-0"
+                  :style="p.status === 'vermelho' ? 'background:var(--p0)' : (p.status === 'ambar' ? 'background:var(--p1)' : 'background:var(--brand)')"></span>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium truncate" x-text="p.nome"></div>
+              <div class="text-xs text-muted font-mono" x-text="p.total + ' tarefa(s) · ' + p.horas + 'h'"></div>
+            </div>
+            <div class="text-right text-xs font-mono shrink-0 flex flex-col items-end gap-0.5">
+              <span class="flex items-center gap-2">
+                <template x-if="p.atrasadas > 0"><span class="text-[color:var(--p0)]" x-text="p.atrasadas + ' atras.'"></span></template>
+                <template x-if="p.aguardCli > 0"><span class="text-[color:var(--p1)]" x-text="p.aguardCli + ' aguard.'"></span></template>
+                <template x-if="p.bloqInt > 0"><span class="text-muted" x-text="p.bloqInt + ' bloq.'"></span></template>
+                <template x-if="p.stale > 0"><span class="text-[color:var(--p0)]" x-text="p.stale + ' parada(s)'"></span></template>
+              </span>
+            </div>
+          </li>
+        </template>
+      </ul>
+    </div>
+
+    <div class="card p-4 md:p-6">
       <div class="mb-4 flex items-start justify-between gap-3 flex-wrap">
         <div>
           <div class="font-brand text-xl font-semibold">Aging do backlog</div>
@@ -7056,6 +7086,49 @@ function app() {
         const o = { P0:0,P1:1,P2:2,P3:3 };
         return o[a.prioridade] - o[b.prioridade];
       }).slice(0, 8);
+    },
+
+    // Saúde por pessoa — semáforo determinístico operacional.
+    // Inspirado em saudeProjetos mas sem expor cadastral (capacidade,
+    // senioridade). Só métricas derivadas das tasks ativas.
+    // verde: nada urgente · âmbar: atenção · vermelho: ação imediata.
+    get saudePessoas() {
+      const ativas = this.dashTasks.filter(t => t.status !== STATUS.CONCLUIDO);
+      const porPes = new Map();
+      for (const t of ativas) {
+        if (!t.pessoaId) continue;
+        if (!porPes.has(t.pessoaId)) porPes.set(t.pessoaId, []);
+        porPes.get(t.pessoaId).push(t);
+      }
+      const out = [];
+      for (const p of this.pessoas) {
+        if (p.role === ROLE.CLIENTE) continue;
+        const tasks = porPes.get(p.id) || [];
+        if (!tasks.length) continue;
+        const atrasadas  = tasks.filter(t => this.atrasada(t)).length;
+        const aguardCli  = tasks.filter(t => t.subetapa === 'bloqueado' && t.bloqueadoPor === 'cliente').length;
+        const bloqInt    = tasks.filter(t => t.subetapa === 'bloqueado' && t.bloqueadoPor !== 'cliente').length;
+        const stale      = tasks.filter(t => this.agingLevel(t) === 'stale').length;
+        const warn       = tasks.filter(t => this.agingLevel(t) === 'warn').length;
+        const horas      = tasks.reduce((s, t) => s + this.effEsforco(t), 0);
+        let status = 'verde';
+        if (atrasadas > 0 || stale > 0) status = 'vermelho';
+        else if (aguardCli > 0 || bloqInt > 0 || warn > 0) status = 'ambar';
+        out.push({
+          id: p.id,
+          nome: p.nome,
+          total: tasks.length,
+          horas,
+          atrasadas, aguardCli, bloqInt, stale,
+          status,
+        });
+      }
+      const ord = { vermelho: 0, ambar: 1, verde: 2 };
+      return out.sort((a,b) =>
+        ord[a.status] - ord[b.status]
+        || b.atrasadas - a.atrasadas
+        || b.horas - a.horas
+      );
     },
 
     // Saúde por projeto — semáforo determinístico baseado em
