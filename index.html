@@ -2519,6 +2519,87 @@
     </ul>
   </div>
 
+  <!-- ============ ADOÇÃO POR PESSOA ============ -->
+  <div class="card p-4 md:p-6 mb-5">
+    <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
+      <div class="font-brand text-xl font-semibold">Adoção por pessoa (30d)</div>
+      <span class="text-xs text-muted font-mono">linha vermelha = silencioso há +7d</span>
+    </div>
+    <div class="text-xs text-muted mb-3">Quem está usando, com que profundidade, em qual feature. Identifica quem precisa de conversa.</div>
+    <div x-show="usagePorPessoa.length === 0" class="text-sm text-muted py-4">Nenhum dado de telemetria ainda (precisa de algumas sessões de uso).</div>
+    <div x-show="usagePorPessoa.length > 0" class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-xs text-muted font-mono">
+          <tr class="text-left">
+            <th class="py-1.5 pr-2">Pessoa</th>
+            <th class="py-1.5 px-2 text-right">Eventos</th>
+            <th class="py-1.5 px-2 text-right">Dias ativos</th>
+            <th class="py-1.5 px-2 text-right">Sessões</th>
+            <th class="py-1.5 px-2 text-right">Logins</th>
+            <th class="py-1.5 px-2 text-right">Última atividade</th>
+            <th class="py-1.5 pl-2">Top features (30d)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="r in usagePorPessoa" :key="r.pessoaId">
+            <tr class="border-b border-line last:border-0" :class="r.silencioso7d ? 'bg-[color-mix(in_srgb,var(--p0)_5%,transparent)]' : ''">
+              <td class="py-1.5 pr-2">
+                <span class="font-medium" x-text="r.nome"></span>
+                <span class="text-xs text-muted ml-1" x-text="r.senioridade ? '· ' + r.senioridade : ''"></span>
+              </td>
+              <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.total"></td>
+              <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.dias_ativos + ' / 30'"></td>
+              <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.sessions"></td>
+              <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.logins"></td>
+              <td class="py-1.5 px-2 text-right font-mono text-xs" :class="r.silencioso7d ? 'text-[color:var(--p0)]' : 'text-muted'"
+                  x-text="r.ultimo_dias == null ? 'sem registro' : (r.ultimo_dias === 0 ? 'hoje' : 'há ' + r.ultimo_dias + 'd')"></td>
+              <td class="py-1.5 pl-2 font-mono text-xs text-muted truncate max-w-[280px]" x-text="r.top3 || '—'"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ SILENCIOSOS ============ -->
+  <div class="card p-4 md:p-6 mb-5" :class="usuariosSilenciosos.length > 0 && 'border-[color:var(--p0)]'">
+    <div class="font-brand text-xl font-semibold mb-1">Silenciosos (7d sem evento)</div>
+    <div class="text-xs text-muted mb-3">Pessoas internas cadastradas que não geraram nenhum evento na última semana. Motivo direto pra puxar conversa de adoção.</div>
+    <div x-show="usuariosSilenciosos.length === 0" class="text-sm text-emerald-700 py-2">Todo mundo ativo nos últimos 7 dias. 👌</div>
+    <ul x-show="usuariosSilenciosos.length > 0" class="space-y-1.5">
+      <template x-for="r in usuariosSilenciosos" :key="r.pessoaId">
+        <li class="flex items-baseline justify-between py-1.5 border-b border-line last:border-0">
+          <div>
+            <span class="font-medium text-sm" x-text="r.nome"></span>
+            <span class="text-xs text-muted ml-2" x-text="r.senioridade ? '· ' + r.senioridade : ''"></span>
+          </div>
+          <span class="text-xs font-mono"
+                :class="r.ultimo_dias == null ? 'text-[color:var(--p0)]' : 'text-amber-700'"
+                x-text="r.ultimo_dias == null ? 'nunca usou' : 'última: há ' + r.ultimo_dias + 'd'"></span>
+        </li>
+      </template>
+    </ul>
+  </div>
+
+  <!-- ============ ADOÇÃO POR FEATURE (largura) ============ -->
+  <div class="card p-4 md:p-6 mb-5">
+    <div class="font-brand text-xl font-semibold mb-1">Adoção por feature · largura (30d)</div>
+    <div class="text-xs text-muted mb-3">% de pessoas internas que usaram cada feature pelo menos 1 vez. Mede largura de adoção (complementa 'Top features' que mede volume).</div>
+    <div x-show="featureAdocao.length === 0" class="text-sm text-muted py-4">Sem dados ainda.</div>
+    <div x-show="featureAdocao.length > 0" class="space-y-1.5">
+      <template x-for="r in featureAdocao" :key="r.event">
+        <div class="flex items-center gap-3 py-1 border-b border-line last:border-0">
+          <span class="font-mono text-xs flex-1 min-w-0 truncate" x-text="r.event"></span>
+          <span class="font-mono text-xs text-muted shrink-0" x-text="r.pessoas + ' pessoa(s)'"></span>
+          <div class="w-24 md:w-40 h-2 bg-bg rounded overflow-hidden shrink-0">
+            <div class="h-full bg-brand" :style="'width:' + Math.min(100, r.pct) + '%'"></div>
+          </div>
+          <span class="font-mono text-xs w-10 text-right shrink-0" :class="r.pct >= 70 ? 'text-emerald-700' : (r.pct >= 30 ? '' : 'text-muted')" x-text="r.pct + '%'"></span>
+        </div>
+      </template>
+    </div>
+  </div>
+
   <div class="card p-4 md:p-6">
     <div class="font-brand text-xl font-semibold mb-1">Como ler estes números</div>
     <ul class="text-sm text-ink-soft space-y-1 list-disc pl-5">
@@ -2526,7 +2607,9 @@
       <li>Enquanto o login estiver desligado, eventos não conseguem ser atribuídos a pessoas (campo <span class="font-mono">actor_pessoa_id</span> fica null). O KPI "Pessoas ativas" e o gráfico de DAU só ganham significado depois de religar o login.</li>
       <li>O critério 1 do roadmap é satisfeito quando: <strong>2+ pessoas distintas com 10+ dias ativos no período de 14 dias</strong>. Margem pra fim de semana e feriados embutida.</li>
       <li>Esta aba não exige login pra ser vista — ficou propositalmente aberta.</li>
-      <li><strong>Telemetria (usage_events)</strong>: fire-and-forget de ações específicas. Retenção 90d. Eventos atuais incluem tab_open, palette_*, export, help_open, onboarding_open, task_create/edit, comment_post, bulk_action. Opt-out via <span class="font-mono">localStorage['kliente360-telemetry'] = 'false'</span>.</li>
+      <li><strong>Telemetria (usage_events)</strong>: fire-and-forget de ações específicas. Retenção 90d. Eventos: <span class="font-mono">login</span>, <span class="font-mono">session_start</span> (automático, 1x/sessão), tab_open, palette_*, export, help_open, onboarding_open, task_create/edit, comment_post, bulk_action. Opt-out via <span class="font-mono">localStorage['kliente360-telemetry'] = 'false'</span>.</li>
+      <li><strong>Adoção por pessoa</strong>: agrega últimos 30d. <em>Silencioso há +7d</em> = nenhum evento na última semana — sinal forte de baixa adoção. <em>Pessoa sem registro</em> = cadastrada mas que nunca abriu o app logada.</li>
+      <li><strong>Adoção por feature · largura</strong>: % de pessoas internas únicas que tocaram a feature. Complementa "Top features" (volume): se 1 pessoa usa muito uma feature, top features sobe mas largura fica baixa = só 1 power user.</li>
     </ul>
   </div>
 </section></template>
@@ -3779,6 +3862,11 @@ function app() {
           if (!sameUser) {
             await this.ensureCurrentPessoa(sess);
           }
+          // Telemetria: login event uma vez por SIGNED_IN, depois que pessoa
+          // foi resolvida (precisa do currentPessoa.id pra atribuir).
+          if (event === 'SIGNED_IN' && this.currentPessoa) {
+            this.track('login', { provider: (sess && sess.user && sess.user.app_metadata && sess.user.app_metadata.provider) || null });
+          }
           if (this.session && this.currentPessoa && this.tasks.length === 0) {
             await this.load();
             this.subscribeRealtime();
@@ -4475,13 +4563,30 @@ function app() {
       try {
         if (localStorage.getItem('kliente360-telemetry') === 'false') return;
       } catch (_) {}
-      sb.from('usage_events').insert({
+      const sid = this._sessionId();
+      const payload = {
         event,
         meta: meta || null,
         pessoa_id: this.currentPessoa.id,
-        session_id: this._sessionId(),
+        session_id: sid,
         app_version: APP_VERSION,
-      }).then(() => {}, () => {});
+      };
+      // Emite session_start uma única vez por sessão, antes do primeiro
+      // evento real. Marca em sessionStorage pra não repetir no reload da
+      // mesma aba/sessão.
+      let sessionStartFired = false;
+      try { sessionStartFired = sessionStorage.getItem('kliente360-session-tracked') === sid; } catch (_) {}
+      if (!sessionStartFired && event !== 'session_start') {
+        try { sessionStorage.setItem('kliente360-session-tracked', sid); } catch (_) {}
+        sb.from('usage_events').insert({
+          event: 'session_start',
+          meta: null,
+          pessoa_id: this.currentPessoa.id,
+          session_id: sid,
+          app_version: APP_VERSION,
+        }).then(() => {}, () => {});
+      }
+      sb.from('usage_events').insert(payload).then(() => {}, () => {});
     },
 
     toggleTheme() {
@@ -6552,6 +6657,87 @@ function app() {
       return Array.from(counts.entries())
         .map(([tab, count]) => ({ tab, count }))
         .sort((a, b) => b.count - a.count);
+    },
+    // Adoção por pessoa: agregação ao nível usuário pra ver quem usa o quê.
+    // Acende sinais de baixa adoção (linha vermelha = silencioso há +7d).
+    get usagePorPessoa() {
+      const now = Date.now();
+      const cut7 = now - 7 * 86400000;
+      const cut30 = now - 30 * 86400000;
+      // Agrega por pessoa
+      const acc = new Map();
+      for (const e of this.usageEvents) {
+        if (!e.pessoa_id) continue;
+        const ts = new Date(e.ts).getTime();
+        if (ts < cut30) continue;
+        let r = acc.get(e.pessoa_id);
+        if (!r) {
+          r = { pessoaId: e.pessoa_id, total: 0, last: 0, dias: new Set(), logins: 0, sessions: new Set(), features: new Map() };
+          acc.set(e.pessoa_id, r);
+        }
+        r.total++;
+        if (ts > r.last) r.last = ts;
+        r.dias.add(new Date(ts).toISOString().slice(0, 10));
+        if (e.event === 'login') r.logins++;
+        if (e.session_id) r.sessions.add(e.session_id);
+        r.features.set(e.event, (r.features.get(e.event) || 0) + 1);
+      }
+      // Inclui pessoas cadastradas sem eventos (silenciosas)
+      for (const p of this.pessoas) {
+        if (p.role === ROLE.CLIENTE) continue;
+        if (!acc.has(p.id)) {
+          acc.set(p.id, { pessoaId: p.id, total: 0, last: 0, dias: new Set(), logins: 0, sessions: new Set(), features: new Map() });
+        }
+      }
+      const out = [];
+      for (const [pid, r] of acc) {
+        const p = this.pessoasById.get(pid);
+        if (!p || p.role === ROLE.CLIENTE) continue;
+        const top3 = Array.from(r.features.entries())
+          .sort((a, b) => b[1] - a[1]).slice(0, 3)
+          .map(([k, v]) => `${k}(${v})`).join(' · ');
+        const silencioso7d = r.last === 0 || r.last < cut7;
+        out.push({
+          pessoaId: pid,
+          nome: p.nome,
+          senioridade: p.senioridade || '',
+          total: r.total,
+          dias_ativos: r.dias.size,
+          sessions: r.sessions.size,
+          logins: r.logins,
+          ultima_atividade: r.last ? new Date(r.last).toISOString() : null,
+          ultimo_dias: r.last ? Math.floor((now - r.last) / 86400000) : null,
+          top3,
+          silencioso7d,
+        });
+      }
+      // Ordena: silenciosos (mais críticos) primeiro, depois por total desc
+      return out.sort((a, b) => {
+        if (a.silencioso7d !== b.silencioso7d) return a.silencioso7d ? -1 : 1;
+        return b.total - a.total;
+      });
+    },
+    // Pessoas que NÃO geraram nenhum evento em 7d. Subset de usagePorPessoa.
+    get usuariosSilenciosos() {
+      return this.usagePorPessoa.filter(r => r.silencioso7d);
+    },
+    // Adoção por feature: % de pessoas únicas que usaram cada feature
+    // (largura do uso, não só profundidade). Complementa usageTopFeatures.
+    get featureAdocao() {
+      const internos = this.pessoas.filter(p => p.role !== ROLE.CLIENTE).length || 1;
+      const byEvent = new Map();
+      for (const e of this.usageEvents) {
+        if (!e.pessoa_id) continue;
+        if (!byEvent.has(e.event)) byEvent.set(e.event, new Set());
+        byEvent.get(e.event).add(e.pessoa_id);
+      }
+      return Array.from(byEvent.entries())
+        .map(([event, set]) => ({
+          event,
+          pessoas: set.size,
+          pct: Math.round((set.size / internos) * 100),
+        }))
+        .sort((a, b) => b.pct - a.pct);
     },
     renderMvpCharts() {
       if (typeof Chart === 'undefined') return;
