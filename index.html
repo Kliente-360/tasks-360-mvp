@@ -2554,15 +2554,6 @@
       </ul>
     </div>
 
-    <div class="card p-4 md:p-6">
-      <div class="mb-4 flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <div class="font-brand text-xl font-semibold">Aging do backlog</div>
-          <div class="text-xs text-muted mt-0.5">tempo parado no status atual · faixas em dias</div>
-        </div>
-      </div>
-      <div style="height:260px"><canvas id="chartAging"></canvas></div>
-    </div>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
@@ -7686,24 +7677,6 @@ function app() {
       const tlData   = [atrasadasH, ...semanas.map(s => s.horas)];
       const tlCounts = [atrasadasN, ...semanas.map(s => s.count)];
 
-      // aging do backlog — para tarefas abertas, agrupa por status macro
-      // em faixas de aging (0-7 / 8-30 / 30-60 / 60+)
-      const agingStatuses = ['backlog','andamento','bloqueado'];
-      const agingBands = [
-        { key: '0-7d',   max: 7,   color: palette.brand },
-        { key: '8-30d',  max: 30,  color: palette.neutral },
-        { key: '30-60d', max: 60,  color: palette.warn },
-        { key: '60d+',   max: Infinity, color: palette.danger },
-      ];
-      const agingMatrix = agingStatuses.map(() => agingBands.map(() => 0));
-      ativas.forEach(t => {
-        const si = agingStatuses.indexOf(t.status);
-        if (si < 0) return;
-        const d = this.agingDays(t);
-        const bi = agingBands.findIndex(b => d <= b.max);
-        if (bi >= 0) agingMatrix[si][bi]++;
-      });
-
       // _upsertChart reusa instâncias do mesmo canvas; cria/destroi
       // só quando o ctx muda (ex: x-if remontou o DOM).
 
@@ -7910,45 +7883,6 @@ function app() {
         });
       }
 
-      const ctxAg = document.getElementById('chartAging');
-      if (ctxAg) {
-        const lblStatus = (s) => ({ backlog: 'Backlog', andamento: 'Em andamento', bloqueado: 'Bloqueado' })[s] || s;
-        this._upsertChart('aging', ctxAg, {
-          type: 'bar',
-          data: {
-            labels: agingStatuses.map(lblStatus),
-            datasets: agingBands.map((b, bi) => ({
-              label: b.key,
-              data: agingStatuses.map((_, si) => agingMatrix[si][bi]),
-              backgroundColor: b.color,
-              borderRadius: 2,
-              barThickness: 26,
-              stack: 'a',
-            })),
-          },
-          options: {
-            ...baseOpts, indexAxis: 'y',
-            plugins: {
-              ...baseOpts.plugins,
-              legend: {
-                display: true, position: 'bottom',
-                labels: { color: palette.muted, font: { family: this.chartTheme().fontMono, size: 11 }, boxWidth: 10, boxHeight: 10 }
-              },
-              tooltip: {
-                ...baseOpts.plugins.tooltip,
-                callbacks: {
-                  title: (items) => lblStatus(agingStatuses[items[0].dataIndex]),
-                  label: (c) => `${agingBands[c.datasetIndex].key} · ${c.parsed.x} tarefa(s)`,
-                }
-              }
-            },
-            scales: {
-              x: { ...baseOpts.scales.x, stacked: true, beginAtZero: true, ticks: { ...baseOpts.scales.x.ticks, stepSize: 1, precision: 0 } },
-              y: { ...baseOpts.scales.y, stacked: true, grid: { display: false } },
-            }
-          }
-        });
-      }
     },
 
     // ===================== MODAL TAREFA =====================
