@@ -1077,6 +1077,29 @@
   }
   .tmodal-head .icon-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
 
+  /* ============ Head chips (prio · prazo · cliente) ============
+     Exibidos depois do título, antes do head-right. Estilo tipo crumb mas
+     em formato chip pra facilitar leitura no header escuro. */
+  .tmodal-head .head-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--font-mono); font-feature-settings: "tnum";
+    font-size: 11px; letter-spacing: 0.04em;
+    color: rgba(255,255,255,0.85);
+    background: rgba(255,255,255,0.08);
+    padding: 3px 8px; border-radius: 999px;
+    flex-shrink: 0; white-space: nowrap; max-width: 200px;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .tmodal-head .head-chip-ico { opacity: 0.7; font-size: 10px; }
+  .tmodal-head .head-chip-cliente {
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.7); font-size: 10px;
+  }
+  .tmodal-head .head-chip-muted { color: rgba(255,255,255,0.5); font-style: italic; }
+
+  /* footer: força lowercase pra labels (defensivo contra heranças) */
+  .tmodal-foot .btn { text-transform: none; }
+
   /* === Autosave indicator ===
      4 estados: idle (sem visual) · dirty (cyan, "editando…") · saving (cyan pulse) · saved (muted check).
      Vive no header pra ficar discreto; o botão Salvar do footer espelha o mesmo estado. */
@@ -1291,6 +1314,7 @@
     /* header compacto: crumb + chips secundários somem; autosave migra pro footer */
     .tmodal-head { padding: var(--sp-2) var(--sp-3); gap: var(--sp-2); flex-wrap: nowrap; }
     .tmodal-head .crumb { display: none; }
+    .tmodal-head .head-chip { display: none !important; }
     .tmodal-head .reopen-chip,
     .tmodal-head .arquivada-chip { display: none !important; }
     .tmodal-head .tmodal-title {
@@ -3738,19 +3762,23 @@
 <div x-show="modal" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modal=false" x-transition.opacity>
   <div class="tmodal" role="dialog" aria-label="Editar tarefa" x-transition>
 
-    <!-- ============ HEADER navy ============ -->
+    <!-- ============ HEADER slate · ordem: título / prioridade / prazo / cliente ============
+         Título primeiro (atenção principal). Chips de contexto à direita do
+         título: prio + prazo + cliente. Projeto removido do header (ainda
+         visível em Metadata). reopen/arquivada continuam como chips inline
+         (aparecem só quando aplicável). -->
     <div class="tmodal-head">
+      <input class="tmodal-title" x-model="editing.titulo" placeholder="O que precisa ser feito?" x-ref="tituloInput" aria-label="Título da tarefa">
       <span x-show="editing.prioridade" class="pri" :class="'pri-' + editing.prioridade">
         <span class="pri-dot"></span>
         <span x-text="editing.prioridade"></span>
       </span>
-      <span class="crumb">
-        <span x-show="editing.clienteId" x-text="(nomeCliente(editing.clienteId) || '').toUpperCase()"></span>
-        <span x-show="editing.clienteId && editing.projetoId" class="sep">/</span>
-        <span x-show="editing.projetoId" x-text="(nomeProjeto(editing.projetoId) || '').toUpperCase()"></span>
-        <span x-show="!editing.clienteId && !editing.projetoId" class="text-muted" x-text="editing.id ? 'Sem cliente · sem projeto' : 'Nova tarefa'"></span>
+      <span x-show="editing.prazo" class="head-chip" :title="'Prazo: ' + fmtDate(editing.prazo)">
+        <span class="head-chip-ico" aria-hidden="true">⏱</span>
+        <span x-text="fmtDateShort(editing.prazo)"></span>
       </span>
-      <input class="tmodal-title" x-model="editing.titulo" placeholder="O que precisa ser feito?" x-ref="tituloInput" aria-label="Título da tarefa">
+      <span x-show="editing.clienteId" class="head-chip head-chip-cliente" :title="nomeCliente(editing.clienteId)" x-text="(nomeCliente(editing.clienteId) || '').toUpperCase()"></span>
+      <span x-show="!editing.id && !editing.clienteId" class="head-chip head-chip-muted">Nova tarefa</span>
       <span x-show="editing.id && (editing.reopenCount || 0) > 0" class="reopen-chip text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:var(--p1-soft);color:var(--p1)" :title="'Reaberta ' + editing.reopenCount + ' vez(es)'" x-text="'reaberta ' + editing.reopenCount + 'x'"></span>
       <span x-show="editing.id && editing.arquivadoEm" class="arquivada-chip text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7)" title="Tarefa arquivada">arquivada</span>
       <div class="tmodal-head-right">
@@ -4023,7 +4051,6 @@
 
     <!-- ============ FOOTER ============ -->
     <div class="tmodal-foot">
-      <span class="hint" x-show="editing.id">autosave · debounce 800ms · ⌘S força salvar</span>
       <span class="hint" x-show="!editing.id">tarefa nova · clique em Salvar pra criar</span>
       <!-- autosave-mob: indicador migrado pro footer em mobile (header não cabe) -->
       <span x-show="editing.id" class="autosave autosave-mob" :data-state="saveState"
