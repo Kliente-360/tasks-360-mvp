@@ -2454,6 +2454,71 @@
     </div>
   </div>
 
+  <!-- ============ TELEMETRIA · features (usage_events) ============ -->
+  <div class="grid grid-cols-2 gap-3 md:gap-4 mb-5 mt-5">
+    <div class="kpi">
+      <div class="kpi-lbl">Usuários únicos · 7d</div>
+      <div class="kpi-num brand" x-text="usageDauWau.dau7"></div>
+      <div class="kpi-trend">qualquer evento</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Usuários únicos · 30d</div>
+      <div class="kpi-num" x-text="usageDauWau.wau30"></div>
+      <div class="kpi-trend">qualquer evento</div>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-3 md:gap-4 mb-5">
+    <div class="card p-4 md:p-5">
+      <div class="font-brand text-lg font-semibold mb-1">Top features (30d)</div>
+      <div class="text-xs text-muted mb-3">Ranking por contagem de eventos. Use pra investir nos mais usados.</div>
+      <div x-show="usageTopFeatures.length === 0" class="text-sm text-muted py-4">Nenhum evento registrado ainda. Telemetria começa quando alguém usa o app logado.</div>
+      <table x-show="usageTopFeatures.length > 0" class="w-full text-sm">
+        <tbody>
+          <template x-for="r in usageTopFeatures" :key="r.event">
+            <tr class="border-b border-line last:border-0">
+              <td class="py-1.5 font-mono text-xs" x-text="r.event"></td>
+              <td class="py-1.5 text-right font-mono text-xs" x-text="r.count"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card p-4 md:p-5">
+      <div class="font-brand text-lg font-semibold mb-1">Tendência · ±15d</div>
+      <div class="text-xs text-muted mb-3">Crescimento ou declínio vs 15 dias anteriores. Δ% maior = mais relevante.</div>
+      <div x-show="usageTendencia.length === 0" class="text-sm text-muted py-4">Dados insuficientes pra calcular tendência (precisa &gt;30d).</div>
+      <table x-show="usageTendencia.length > 0" class="w-full text-sm">
+        <tbody>
+          <template x-for="r in usageTendencia" :key="r.event">
+            <tr class="border-b border-line last:border-0">
+              <td class="py-1.5 font-mono text-xs" x-text="r.event"></td>
+              <td class="py-1.5 text-right font-mono text-xs text-muted" x-text="r.prev + ' → ' + r.recent"></td>
+              <td class="py-1.5 text-right font-mono text-xs"
+                  :class="r.delta > 0 ? 'text-emerald-700' : (r.delta < 0 ? 'text-[color:var(--p0)]' : 'text-muted')"
+                  x-text="(r.delta > 0 ? '↑ +' : (r.delta < 0 ? '↓ ' : '→ ')) + Math.abs(r.delta) + '%'"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card p-4 md:p-6 mb-5">
+    <div class="font-brand text-xl font-semibold mb-1">Features órfãs</div>
+    <div class="text-xs text-muted mb-3">Eventos com uso abaixo do limite saudável (<span class="font-mono">&lt; pessoas ativas × 4 / 30d</span>). Candidatas a deprecação ou melhor descoberta.</div>
+    <div x-show="usageOrfas.length === 0" class="text-sm text-emerald-700 py-2">Nenhuma feature monitorada está órfã. Todas têm uso saudável.</div>
+    <ul x-show="usageOrfas.length > 0" class="space-y-1.5">
+      <template x-for="r in usageOrfas" :key="r.event">
+        <li class="flex items-baseline justify-between text-sm py-1 border-b border-line last:border-0">
+          <span class="font-mono text-xs" x-text="r.event"></span>
+          <span class="font-mono text-xs text-muted" x-text="r.count + ' uso(s) · esperado &gt;' + r.limite"></span>
+        </li>
+      </template>
+    </ul>
+  </div>
+
   <div class="card p-4 md:p-6">
     <div class="font-brand text-xl font-semibold mb-1">Como ler estes números</div>
     <ul class="text-sm text-ink-soft space-y-1 list-disc pl-5">
@@ -2461,6 +2526,7 @@
       <li>Enquanto o login estiver desligado, eventos não conseguem ser atribuídos a pessoas (campo <span class="font-mono">actor_pessoa_id</span> fica null). O KPI "Pessoas ativas" e o gráfico de DAU só ganham significado depois de religar o login.</li>
       <li>O critério 1 do roadmap é satisfeito quando: <strong>2+ pessoas distintas com 10+ dias ativos no período de 14 dias</strong>. Margem pra fim de semana e feriados embutida.</li>
       <li>Esta aba não exige login pra ser vista — ficou propositalmente aberta.</li>
+      <li><strong>Telemetria (usage_events)</strong>: fire-and-forget de ações específicas. Retenção 90d. Eventos atuais incluem tab_open, palette_*, export, help_open, onboarding_open, task_create/edit, comment_post, bulk_action. Opt-out via <span class="font-mono">localStorage['kliente360-telemetry'] = 'false'</span>.</li>
     </ul>
   </div>
 </section></template>
@@ -3660,6 +3726,7 @@ function app() {
     taskDeps: [], // [{task_id, depende_de_id}, ...] do banco, fonte da verdade
     newDepId: '', // select de adicionar dependência no modal
     mvpComments: [],
+    usageEvents: [],
     mvpLoadedAt: 0,
     charts: { clientes: null, capacidade: null, aging: null, timeline: null, throughput: null, leadtime: null, mvpVolume: null, mvpDau: null },
     printCharts: { status: null, clientes: null, throughput: null },
@@ -4387,6 +4454,36 @@ function app() {
       setTimeout(() => this.dismissToast(id), ms || (kind === 'error' ? 6000 : 3500));
     },
     dismissToast(id) { this.toasts = this.toasts.filter(t => t.id !== id); },
+
+    // ============ TELEMETRIA ============
+    // Fire-and-forget pra usage_events. Nunca bloqueia UI nem mostra erro.
+    // Opt-out via localStorage['kliente360-telemetry'] = 'false'.
+    // Retenção 90d garantida via fn_usage_events_cleanup (server).
+    _sessionId() {
+      try {
+        let id = sessionStorage.getItem('kliente360-session');
+        if (!id) {
+          id = (crypto.randomUUID && crypto.randomUUID()) ||
+               (Date.now() + '-' + Math.random().toString(36).slice(2, 10));
+          sessionStorage.setItem('kliente360-session', id);
+        }
+        return id;
+      } catch (_) { return null; }
+    },
+    track(event, meta) {
+      if (!this.authEnabled || !this.currentPessoa) return;
+      try {
+        if (localStorage.getItem('kliente360-telemetry') === 'false') return;
+      } catch (_) {}
+      sb.from('usage_events').insert({
+        event,
+        meta: meta || null,
+        pessoa_id: this.currentPessoa.id,
+        session_id: this._sessionId(),
+        app_version: APP_VERSION,
+      }).then(() => {}, () => {});
+    },
+
     toggleTheme() {
       this.theme = this.theme === 'dark' ? 'light' : 'dark';
       if (this.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
@@ -4397,6 +4494,7 @@ function app() {
     },
     exportCSV() {
       this.exportOpen = false;
+      this.track('export', { kind: 'csv', rows: this.filtered.length });
       const rows = this.filtered; // exporta o que tá filtrado na visão atual
       const head = ['Título','Cliente','Projeto','Responsável','Prioridade','Status','Esforço (h)','Prazo','Tags','Descrição','Criado em'];
       const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""').replace(/\r?\n/g, ' ') + '"';
@@ -4989,6 +5087,7 @@ function app() {
     },
     async exportPDF() {
       this.exportOpen = false;
+      this.track('export', { kind: 'pdf' });
       const now = new Date();
       this.reportStampDate = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
       this.reportStampTime = 'gerado às ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
@@ -5594,6 +5693,7 @@ function app() {
         const el = document.getElementById('paletteInput');
         if (el) el.focus();
       });
+      this.track('palette_open');
     },
     closePalette() {
       this.paletteOpen = false;
@@ -5673,6 +5773,7 @@ function app() {
     paletteSelect(item) {
       if (!item || !item.action) return;
       const fn = item.action;
+      this.track('palette_select', { id: item.id, kind: item.kind, label: item.label });
       this.closePalette();
       this.$nextTick(() => fn());
     },
@@ -5680,6 +5781,7 @@ function app() {
     // ===================== AJUDA / MANUAL =====================
     async openHelp() {
       this.helpOpen = true;
+      this.track('help_open');
       if (this._helpLoaded) return;
       this.helpLoading = true; this.helpError = '';
       try {
@@ -5717,6 +5819,7 @@ function app() {
       // default por role: admin → CEO, interno → analista, cliente → analista
       const role = this.viewerRole;
       this.onboardingPersona = role === ROLE.ADMIN ? 'ceo' : 'analista';
+      this.track('onboarding_open', { persona: this.onboardingPersona });
       this.onboardingOpen = true;
       if (this._onboardingLoaded) return;
       this.onboardingLoading = true; this.onboardingError = '';
@@ -5790,9 +5893,11 @@ function app() {
       );
     },
     goToTab(key) {
+      const prev = this.tab;
       this.tab = key;
       if (key === 'dash') this.$nextTick(() => this.renderCharts());
       if (key === 'mvp')  this.loadMvpDados();
+      if (key !== prev) this.track('tab_open', { tab: key, from: prev });
     },
 
     // ===================== PORTAL DO CLIENTE =====================
@@ -6028,6 +6133,7 @@ function app() {
     async bulkSetSubetapa(sub) {
       if (!sub) return;
       const ids = [...this.selectedIds];
+      this.track('bulk_action', { kind: 'setSubetapa', count: ids.length, value: sub });
       for (const id of ids) {
         const t = this.tasksById.get(id);
         if (t && t.subetapa !== sub) await this.setTaskSubetapa(t, sub);
@@ -6038,6 +6144,7 @@ function app() {
       if (!pid) return;
       const target = pid === '__none__' ? null : pid;
       const ids = [...this.selectedIds];
+      this.track('bulk_action', { kind: 'setPessoa', count: ids.length });
       const { error } = await sb.from('tasks').update({ pessoa_id: target }).in('id', ids);
       if (error) { this.toast('error', 'Erro: ' + error.message); return; }
       // Optimistic local update
@@ -6047,6 +6154,7 @@ function app() {
     async bulkSetPriority(p) {
       if (!p) return;
       const ids = [...this.selectedIds];
+      this.track('bulk_action', { kind: 'setPriority', count: ids.length, value: p });
       const { error } = await sb.from('tasks').update({ prioridade: p }).in('id', ids);
       if (error) { this.toast('error', 'Erro: ' + error.message); return; }
       this.tasks = this.tasks.map(t => ids.includes(t.id) ? { ...t, prioridade: p } : t);
@@ -6057,6 +6165,7 @@ function app() {
       if (!n) return;
       this.askConfirm('Excluir ' + n + ' tarefa(s)? Esta ação não pode ser desfeita.', async () => {
         const ids = [...this.selectedIds];
+        this.track('bulk_action', { kind: 'delete', count: ids.length });
         const { error } = await sb.from('tasks').delete().in('id', ids);
         if (error) { this.toast('error', 'Erro: ' + error.message); return; }
         this.tasks = this.tasks.filter(t => !ids.includes(t.id));
@@ -6277,14 +6386,23 @@ function app() {
     // ====== Dados MVP ======
     async loadMvpDados() {
       // Carrega comments do app dos últimos 60 dias (com author_pessoa_id)
-      const since = new Date(Date.now() - 60 * 86400000).toISOString();
-      const { data, error } = await sb.from('task_comments')
-        .select('id, author, author_pessoa_id, criado_em, external_source, parent_id')
-        .gte('criado_em', since)
-        .order('criado_em', { ascending: false })
-        .limit(10000);
-      if (error) { this.toast('error', 'Erro ao carregar dados MVP: ' + error.message); return; }
-      this.mvpComments = data || [];
+      const since60 = new Date(Date.now() - 60 * 86400000).toISOString();
+      const since30 = new Date(Date.now() - 30 * 86400000).toISOString();
+      const [cm, ev] = await Promise.all([
+        sb.from('task_comments')
+          .select('id, author, author_pessoa_id, criado_em, external_source, parent_id')
+          .gte('criado_em', since60)
+          .order('criado_em', { ascending: false })
+          .limit(10000),
+        sb.from('usage_events')
+          .select('id, ts, pessoa_id, event, meta, session_id')
+          .gte('ts', since30)
+          .order('ts', { ascending: false })
+          .limit(20000),
+      ]);
+      if (cm.error) { this.toast('error', 'Erro ao carregar dados MVP: ' + cm.error.message); return; }
+      this.mvpComments = cm.data || [];
+      this.usageEvents = ev.error ? [] : (ev.data || []);
       this.mvpLoadedAt = Date.now();
       this.$nextTick(() => this.renderMvpCharts());
     },
@@ -6359,6 +6477,81 @@ function app() {
         atribuidos30d: totalComPessoa,
         pessoasAtivas14d: this.mvpStickiness14d.length,
       };
+    },
+
+    // ============ TELEMETRIA · features ============
+    // Top features por contagem (30d). Limita a 20 pra caber em chart.
+    get usageTopFeatures() {
+      const counts = new Map();
+      for (const e of this.usageEvents) counts.set(e.event, (counts.get(e.event) || 0) + 1);
+      return Array.from(counts.entries())
+        .map(([event, count]) => ({ event, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 20);
+    },
+    // Tendência: features com crescimento/declínio entre últimos 15d e 15-30d.
+    get usageTendencia() {
+      const cutMid = Date.now() - 15 * 86400000;
+      const a = new Map(), b = new Map(); // recente vs anterior
+      for (const e of this.usageEvents) {
+        const t = new Date(e.ts).getTime();
+        const m = t >= cutMid ? a : b;
+        m.set(e.event, (m.get(e.event) || 0) + 1);
+      }
+      const keys = new Set([...a.keys(), ...b.keys()]);
+      const out = [];
+      for (const k of keys) {
+        const recent = a.get(k) || 0;
+        const prev = b.get(k) || 0;
+        if (recent + prev < 5) continue; // ignora ruído
+        const delta = prev === 0 ? 100 : Math.round((recent - prev) / prev * 100);
+        out.push({ event: k, recent, prev, delta });
+      }
+      return out.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 10);
+    },
+    // Features órfãs: <1 uso por usuário ativo por semana (candidatas a deprecar).
+    get usageOrfas() {
+      const pessoasAtivas = this.mvpStickiness14d.length || 1;
+      const limite = pessoasAtivas * 4; // 4 semanas em 30d
+      // Eventos esperados a registrar (whitelist conhecida)
+      const tracked = [
+        'tab_open', 'palette_open', 'palette_select', 'export', 'help_open',
+        'onboarding_open', 'task_create', 'task_edit', 'comment_post', 'bulk_action',
+      ];
+      const counts = new Map(tracked.map(k => [k, 0]));
+      for (const e of this.usageEvents) {
+        if (counts.has(e.event)) counts.set(e.event, counts.get(e.event) + 1);
+      }
+      return Array.from(counts.entries())
+        .map(([event, count]) => ({ event, count, limite }))
+        .filter(x => x.count < x.limite)
+        .sort((a, b) => a.count - b.count);
+    },
+    // Únicos: usuários únicos com qualquer evento últimos 7d/30d.
+    get usageDauWau() {
+      const cut7 = Date.now() - 7 * 86400000;
+      const cut30 = Date.now() - 30 * 86400000;
+      const s7 = new Set(), s30 = new Set();
+      for (const e of this.usageEvents) {
+        if (!e.pessoa_id) continue;
+        const t = new Date(e.ts).getTime();
+        if (t >= cut7) s7.add(e.pessoa_id);
+        if (t >= cut30) s30.add(e.pessoa_id);
+      }
+      return { dau7: s7.size, wau30: s30.size };
+    },
+    // Breakdown de tab_open: quais tabs são mais visitadas.
+    get usageTabBreakdown() {
+      const counts = new Map();
+      for (const e of this.usageEvents) {
+        if (e.event !== 'tab_open' || !e.meta) continue;
+        const tab = e.meta.tab;
+        if (!tab) continue;
+        counts.set(tab, (counts.get(tab) || 0) + 1);
+      }
+      return Array.from(counts.entries())
+        .map(([tab, count]) => ({ tab, count }))
+        .sort((a, b) => b.count - a.count);
     },
     renderMvpCharts() {
       if (typeof Chart === 'undefined') return;
@@ -7115,6 +7308,7 @@ function app() {
     async postComment() {
       const body = (this.newComment || '').trim();
       if (!body || !this.editing.id) return;
+      this.track('comment_post', { public: !!this.newCommentPublico, has_mention: /@/.test(body) });
       const author = (this.currentPessoa && this.currentPessoa.nome) || 'app';
       const authorPessoaId = (this.currentPessoa && this.currentPessoa.id) || null;
       const visivel = !!this.newCommentPublico;
@@ -7169,6 +7363,7 @@ function app() {
         this.toast('error', 'Dê um título à tarefa.');
         return;
       }
+      this.track(e.id ? 'task_edit' : 'task_create', { subetapa: e.subetapa, prioridade: e.prioridade });
       e.titulo = e.titulo.trim();
       e.esforco = +e.esforco || 0;
       // Status (macro) é derivado da subetapa.
