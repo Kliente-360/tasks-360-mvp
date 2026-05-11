@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Backlog — Kliente 360</title>
+<title>tasks 360</title>
 
 <!-- ícones e PWA -->
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
@@ -5121,6 +5121,11 @@ function app() {
         return;
       }
       this.editingComments = this.editingComments.map(c => c.id === tempId ? data : c);
+      this.track('comment_reply', { has_mention: /@/.test(body) });
+      // Notificações: @mentions no corpo da resposta (mesmo parser do postComment).
+      try {
+        await this._notifyMentions(this.editing.id, data.id, body);
+      } catch (e) { console.warn('[notif] postReply notify failed:', e); }
     },
     fmtPostedEm(iso) {
       if (!iso) return '—';
