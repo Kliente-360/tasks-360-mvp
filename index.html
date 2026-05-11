@@ -533,9 +533,9 @@
      "isso é a Kliente 360 te mostrando o status, não o app interno". */
   .portal-header {
     background: var(--navy); color: #fff;
-    border-radius: var(--r-md);
-    padding: var(--sp-6) var(--sp-7);
-    border: 1px solid var(--navy-soft);
+    border-radius: var(--r-lg);
+    padding: var(--sp-5) var(--sp-6);
+    border: 0;
   }
   .portal-header-eyebrow {
     font-family: var(--font-mono); font-size: 10px;
@@ -1038,7 +1038,12 @@
     background: var(--navy); color: #fff;
     padding: var(--sp-3) var(--sp-5);
     display: flex; align-items: center; gap: var(--sp-3);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 0;
+  }
+  .tmodal-head-right {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    flex-shrink: 0;
   }
   .tmodal-head .crumb {
     font-family: var(--font-mono); font-size: 10px;
@@ -3639,12 +3644,14 @@
       <input class="tmodal-title" x-model="editing.titulo" placeholder="O que precisa ser feito?" x-ref="tituloInput" aria-label="Título da tarefa">
       <span x-show="editing.id && (editing.reopenCount || 0) > 0" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:var(--p1-soft);color:var(--p1)" :title="'Reaberta ' + editing.reopenCount + ' vez(es)'" x-text="'reaberta ' + editing.reopenCount + 'x'"></span>
       <span x-show="editing.id && editing.arquivadoEm" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7)" title="Tarefa arquivada">arquivada</span>
-      <span x-show="editing.id" class="autosave shrink-0" :data-state="saveState"
-            :title="saveState === 'error' ? 'Autosave falhou — clique em Salvar' : 'Autosave ativo · ⌘S força salvar'">
-        <span class="as-dot"></span>
-        <span x-text="autosaveLabel()"></span>
-      </span>
-      <button class="icon-btn" aria-label="Fechar" @click="modal=false">×</button>
+      <div class="tmodal-head-right">
+        <span x-show="editing.id" class="autosave" :data-state="saveState"
+              :title="saveState === 'error' ? 'Autosave falhou — clique em Salvar' : 'Autosave ativo · ⌘S força salvar'">
+          <span class="as-dot"></span>
+          <span x-text="autosaveLabel()"></span>
+        </span>
+        <button class="icon-btn" aria-label="Fechar" @click="modal=false">×</button>
+      </div>
     </div>
 
     <!-- ============ CORPO two-pane ============ -->
@@ -3781,51 +3788,47 @@
                 <option value="terceiro">Terceiro</option>
               </select>
             </div>
-            <!-- HIDDEN_DESDE_v1.01.147 · "Visível ao cliente" checkbox (task)
-                 Schema mantido (tasks.visivel_cliente, default true); fica
-                 sempre true até abrirmos Portal real e definirmos curadoria.
-            -->
-          </div>
-        </div>
-
-        <!-- Histórico (campos + status mesclados) -->
-        <div x-show="editing.id" class="tmodal-section">
-          <div class="tmodal-section-title flex items-center gap-2">
-            Histórico
-            <span class="text-[10px] font-mono text-muted normal-case tracking-normal" x-text="editingHistory.length + ' eventos'" style="font-weight:400"></span>
-          </div>
-          <div class="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
-            <template x-for="h in editingHistory" :key="(h.kind || 'status') + ':' + h.id">
-              <div class="flex items-start gap-2 text-xs py-1">
-                <span class="font-mono text-muted shrink-0" x-text="fmtPostedEm(h.occurred_at)"></span>
-                <div class="flex-1 min-w-0">
-                  <span class="font-medium text-ink" x-text="h.actor_pessoa_id ? (nomePessoa(h.actor_pessoa_id)) : (h.actor_source === 'salesforce' ? 'Salesforce' : '—')"></span>
-                  <template x-if="h.kind !== 'field'">
-                    <span><span class="text-muted"> moveu </span><span class="font-medium" x-text="h.from_status ? lblStatus(h.from_status) : '∅'"></span><span class="text-muted"> → </span><span class="font-medium" x-text="lblStatus(h.to_status)"></span></span>
-                  </template>
-                  <template x-if="h.kind === 'field'">
-                    <span><span class="text-muted"> mudou </span><span class="font-medium" x-text="lblField(h.field)"></span><span class="text-muted"> de </span><span class="font-medium" x-text="fmtFieldValue(h.field, h.from_value)"></span><span class="text-muted"> → </span><span class="font-medium" x-text="fmtFieldValue(h.field, h.to_value)"></span></span>
-                  </template>
-                </div>
-              </div>
-            </template>
-            <div x-show="editingHistory.length === 0" class="text-xs text-muted italic py-2">Sem histórico.</div>
+            <div class="sm:col-span-2 flex items-center gap-2 pt-1">
+              <input type="checkbox" id="visivelClienteCk" class="cursor-pointer" x-model="editing.visivelCliente">
+              <label for="visivelClienteCk" class="text-sm text-ink-soft cursor-pointer select-none">Tarefa visível ao cliente no Portal</label>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- DIREITA · conversa + atividade -->
+      <!-- DIREITA · conversa + histórico (tabs) -->
       <div class="tmodal-right">
         <div class="tmodal-tabs">
-          <div class="tmodal-tab active">
+          <div class="tmodal-tab" :class="modalRightTab === 'conversa' && 'active'" @click="modalRightTab = 'conversa'">
             Conversa <span class="count" x-text="editingComments.length"></span>
           </div>
-          <!-- aba Atividade · placeholder pra próxima iteração (mostrar o histórico aqui em vez de na esquerda)
-          <div class="tmodal-tab">Atividade <span class="count" x-text="editingHistory.length"></span></div>
-          -->
+          <div class="tmodal-tab" :class="modalRightTab === 'historico' && 'active'" @click="modalRightTab = 'historico'">
+            Histórico <span class="count" x-text="editingHistory.length"></span>
+          </div>
         </div>
 
-        <div class="tmodal-thread">
+        <!-- TAB · histórico -->
+        <div x-show="modalRightTab === 'historico'" class="tmodal-thread">
+          <template x-for="h in editingHistory" :key="(h.kind || 'status') + ':' + h.id">
+            <div class="flex items-start gap-2 text-xs py-1.5 border-b border-line last:border-0">
+              <span class="font-mono text-muted shrink-0" x-text="fmtPostedEm(h.occurred_at)"></span>
+              <div class="flex-1 min-w-0">
+                <span class="font-medium text-ink" x-text="h.actor_pessoa_id ? (nomePessoa(h.actor_pessoa_id)) : (h.actor_source === 'salesforce' ? 'Salesforce' : '—')"></span>
+                <template x-if="h.kind !== 'field'">
+                  <span><span class="text-muted"> moveu </span><span class="font-medium" x-text="h.from_status ? lblStatus(h.from_status) : '∅'"></span><span class="text-muted"> → </span><span class="font-medium" x-text="lblStatus(h.to_status)"></span></span>
+                </template>
+                <template x-if="h.kind === 'field'">
+                  <span><span class="text-muted"> mudou </span><span class="font-medium" x-text="lblField(h.field)"></span><span class="text-muted"> de </span><span class="font-medium" x-text="fmtFieldValue(h.field, h.from_value)"></span><span class="text-muted"> → </span><span class="font-medium" x-text="fmtFieldValue(h.field, h.to_value)"></span></span>
+                </template>
+              </div>
+            </div>
+          </template>
+          <div x-show="!editing.id" class="text-xs text-muted italic py-3">Histórico aparece após salvar a tarefa.</div>
+          <div x-show="editing.id && editingHistory.length === 0" class="text-xs text-muted italic py-3">Sem histórico ainda.</div>
+        </div>
+
+        <!-- TAB · conversa -->
+        <div x-show="modalRightTab === 'conversa'" class="tmodal-thread">
           <template x-for="c in topLevelComments" :key="c.id">
             <div>
               <div class="cmsg" :class="c.from_cliente && 'from-cliente'">
@@ -3864,7 +3867,7 @@
           <div x-show="editing.id && editingComments.length === 0" class="text-xs text-muted italic py-3">Sem comentários ainda.</div>
         </div>
 
-        <div x-show="editing.id" class="tmodal-composer">
+        <div x-show="editing.id && modalRightTab === 'conversa'" class="tmodal-composer">
           <textarea x-model="newComment" placeholder="Escrever comentário… (⌘↵ envia)"
                     @keydown.meta.enter.prevent="postComment()" @keydown.ctrl.enter.prevent="postComment()"></textarea>
           <div class="tmodal-composer-row">
@@ -4314,6 +4317,8 @@ function app() {
     lastSavedAt: 0,
     _autosaveTimer: null,
     _autosaveSeq: 0,
+    // Aba ativa do pane direito do modal task: 'conversa' | 'historico'
+    modalRightTab: 'conversa',
     loading: true,
     refreshing: false,
     theme: (() => { try { return localStorage.getItem('kliente360-theme') || 'light'; } catch(_) { return 'light'; } })(),
@@ -8115,6 +8120,7 @@ function app() {
       // editing muda inteiro — supressamos limpando o timer logo após o tick.
       this.saveState = 'saved';
       this.lastSavedAt = Date.now();
+      this.modalRightTab = 'conversa';
       clearTimeout(this._autosaveTimer);
       this.$nextTick(() => { clearTimeout(this._autosaveTimer); this.saveState = 'saved'; });
       this.modal = true;
