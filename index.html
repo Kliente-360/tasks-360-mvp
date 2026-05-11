@@ -1050,10 +1050,9 @@
           <li class="flex items-start gap-3 py-2 border-b border-line last:border-0">
             <span class="brief-tag" :class="'brief-tag-' + p.cargaNivel" x-text="p.cargaNivel === 'sobrecarga' ? 'sobrec' : (p.cargaNivel === 'pressao' ? 'pressão' : 'folga')"></span>
             <div class="flex-1 min-w-0">
-              <div class="font-medium text-ink" x-text="p.nome + (p.senioridade ? ' · ' + p.senioridade : '')"></div>
+              <div class="font-medium text-ink" x-text="p.nome"></div>
               <div class="text-sm text-ink-soft mt-0.5">
-                <span x-show="p.pctCap != null"><strong x-text="p.pctCap + '%'"></strong> de capacidade · </span>
-                <span x-text="p.tasks + ' tasks (' + p.horas + 'h)'"></span>
+                <span x-text="p.tasks + ' tasks'"></span>
                 <span x-show="p.atrasadas > 0" class="text-[color:var(--p0)]"> · <span x-text="p.atrasadas + ' atrasadas'"></span></span>
               </div>
               <div class="text-xs font-mono mt-1 text-amber-700" x-text="'→ ' + p.acao"></div>
@@ -2089,27 +2088,13 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-5 md:mb-6">
+  <div class="grid grid-cols-1 gap-3 md:gap-4 mb-5 md:mb-6">
     <div class="card p-4 md:p-6">
       <div class="mb-4">
         <div class="font-brand text-xl font-semibold">Volume por cliente</div>
         <div class="text-xs text-muted mt-0.5">horas em tarefas abertas</div>
       </div>
       <div style="height:260px"><canvas id="chartClientes"></canvas></div>
-    </div>
-    <div class="card p-4 md:p-6">
-      <div class="mb-4 flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <div class="font-brand text-xl font-semibold">Capacidade por pessoa</div>
-          <div class="text-xs text-muted mt-0.5">% da capacidade semanal alocada · vermelho = acima de 100%</div>
-        </div>
-        <div class="flex items-center gap-2 text-[10px] uppercase tracking-wider font-semibold text-muted">
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm" style="background:var(--brand)"></span>&lt;80%</span>
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm" style="background:var(--p1)"></span>80–99%</span>
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm" style="background:var(--p0)"></span>≥100%</span>
-        </div>
-      </div>
-      <div style="height:260px"><canvas id="chartCapacidade"></canvas></div>
     </div>
   </div>
 
@@ -2552,7 +2537,6 @@
             <tr class="border-b border-line last:border-0" :class="r.silencioso7d ? 'bg-[color-mix(in_srgb,var(--p0)_5%,transparent)]' : ''">
               <td class="py-1.5 pr-2">
                 <span class="font-medium" x-text="r.nome"></span>
-                <span class="text-xs text-muted ml-1" x-text="r.senioridade ? '· ' + r.senioridade : ''"></span>
               </td>
               <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.total"></td>
               <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.dias_ativos + ' / 30'"></td>
@@ -2578,7 +2562,6 @@
         <li class="flex items-baseline justify-between py-1.5 border-b border-line last:border-0">
           <div>
             <span class="font-medium text-sm" x-text="r.nome"></span>
-            <span class="text-xs text-muted ml-2" x-text="r.senioridade ? '· ' + r.senioridade : ''"></span>
           </div>
           <span class="text-xs font-mono"
                 :class="r.ultimo_dias == null ? 'text-[color:var(--p0)]' : 'text-amber-700'"
@@ -2893,17 +2876,15 @@
     </section>
 
     <section class="memo-block memo-block-table">
-      <h2>Time interno · capacidade e sobrecarga</h2>
+      <h2>Time interno · carga</h2>
       <table class="memo-tbl">
         <thead>
           <tr>
             <th>Pessoa</th>
-            <th style="width:11%">Nível</th>
-            <th style="width:7%" class="memo-num">Tasks</th>
-            <th style="width:9%" class="memo-num">Horas</th>
-            <th style="width:10%" class="memo-num">% Cap.</th>
-            <th style="width:10%" class="memo-num">Atrasadas</th>
-            <th style="width:26%">Distribuição</th>
+            <th style="width:9%" class="memo-num">Tasks</th>
+            <th style="width:11%" class="memo-num">Horas</th>
+            <th style="width:11%" class="memo-num">Atrasadas</th>
+            <th style="width:36%">Distribuição</th>
           </tr>
         </thead>
         <tbody>
@@ -2915,15 +2896,8 @@
                 <template x-if="p.cargaNivel==='pressao'"><span class="memo-tag memo-tag-amarelo">pressão</span></template>
                 <template x-if="p.cargaNivel==='folga'"><span class="memo-tag memo-tag-verde">folga</span></template>
               </td>
-              <td class="memo-muted" x-text="p.senioridade || '—'"></td>
               <td class="memo-num" x-text="p.tasks"></td>
               <td class="memo-num" x-text="p.horas + 'h'"></td>
-              <td class="memo-num">
-                <template x-if="p.pctCap != null">
-                  <span x-text="p.pctCap + '%'" :class="p.cargaNivel==='sobrecarga' ? 'memo-bad' : (p.cargaNivel==='pressao' ? 'memo-amber' : (p.cargaNivel==='folga' ? 'memo-good' : ''))"></span>
-                </template>
-                <template x-if="p.pctCap == null"><span class="memo-muted">—</span></template>
-              </td>
               <td class="memo-num" :class="p.atrasadas > 0 && 'memo-bad'" x-text="p.atrasadas"></td>
               <td>
                 <div class="memo-bar">
@@ -6933,11 +6907,10 @@ function app() {
 
       if (sobrecarregados.length) {
         sobrecarregados.sort((a, b) => b.pct - a.pct);
-        const top = sobrecarregados.slice(0, 3).map(s => `${s.p.nome.split(' ')[0]} (${s.pct}%)`).join(', ');
         out.push({
           severity: 'alta', kind: 'sobrecarga',
           titulo: `${sobrecarregados.length} pessoa(s) acima da capacidade semanal`,
-          detalhe: `Top: ${top}. Considerar redistribuição.`,
+          detalhe: 'Considerar redistribuição. (Detalhes por pessoa em Cadastros · Pessoas.)',
           pessoaIds: sobrecarregados.map(s => s.p.id),
         });
       }
@@ -7190,23 +7163,6 @@ function app() {
       });
       const cliEntries = Object.entries(porCliente).filter(([_,v]) => v > 0).sort((a,b) => b[1] - a[1]);
 
-      // capacidade vs alocação por pessoa (% de capacity, com overflow em vermelho)
-      const cargaPorPes = new Map();
-      ativas.forEach(t => {
-        if (!t.pessoaId) return;
-        cargaPorPes.set(t.pessoaId, (cargaPorPes.get(t.pessoaId) || 0) + this.effEsforco(t));
-      });
-      const capRows = this.pessoas
-        .filter(p => p.role !== ROLE.CLIENTE)
-        .map(p => {
-          const horas = cargaPorPes.get(p.id) || 0;
-          const cap   = +p.capacidade_horas_semana || 40;
-          const pct   = cap ? Math.round((horas / cap) * 100) : 0;
-          return { nome: p.nome, horas, cap, pct };
-        })
-        .filter(r => r.horas > 0)
-        .sort((a,b) => b.pct - a.pct);
-
       // entregas — próximas 8 semanas (1ª barra = atrasadas)
       const startOfWeek = (d) => {
         const dt = new Date(d); dt.setHours(0,0,0,0);
@@ -7283,55 +7239,9 @@ function app() {
         });
       }
 
-      const ctxCap = document.getElementById('chartCapacidade');
-      if (ctxCap && capRows.length) {
-        const colorPct = (pct) => pct >= 100 ? palette.danger : pct >= 80 ? palette.warn : palette.brand;
-        this._upsertChart('capacidade', ctxCap, {
-          type: 'bar',
-          data: {
-            labels: capRows.map(r => r.nome),
-            datasets: [
-              {
-                label: 'Dentro da capacidade',
-                data: capRows.map(r => Math.min(r.pct, 100)),
-                backgroundColor: capRows.map(r => colorPct(r.pct)),
-                borderRadius: { topLeft: 4, bottomLeft: 4 },
-                barThickness: 22,
-                stack: 's',
-              },
-              {
-                label: 'Acima',
-                data: capRows.map(r => Math.max(0, r.pct - 100)),
-                backgroundColor: palette.danger,
-                borderRadius: { topRight: 4, bottomRight: 4 },
-                barThickness: 22,
-                stack: 's',
-              },
-            ]
-          },
-          options: {
-            ...baseOpts, indexAxis: 'y',
-            scales: {
-              x: { ...baseOpts.scales.x, beginAtZero: true, suggestedMax: 120, ticks: { ...baseOpts.scales.x.ticks, callback: (v) => v + '%' } },
-              y: { ...baseOpts.scales.y, grid: { display: false }, stacked: true },
-            },
-            plugins: {
-              ...baseOpts.plugins,
-              tooltip: {
-                ...baseOpts.plugins.tooltip,
-                filter: (item) => item.datasetIndex === 0, // só uma linha de tooltip
-                callbacks: {
-                  title: (items) => capRows[items[0].dataIndex].nome,
-                  label: (c) => {
-                    const r = capRows[c.dataIndex];
-                    return `${r.horas}h / ${r.cap}h · ${r.pct}%`;
-                  }
-                }
-              }
-            }
-          }
-        });
-      }
+      // (Chart 'Capacidade por pessoa' removido — dados sensíveis ficam só
+      // em Cadastros + heurísticas internas. Use a heurística 'sobrecarga'
+      // no banner pra agir sem expor números.)
 
       const ts = this.throughputSemanas;
       const ctxTh = document.getElementById('chartThroughput');
