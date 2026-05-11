@@ -4497,14 +4497,15 @@ function app() {
       const out = [];
       for (const h of baseHealth) {
         const cli = this.clientesById.get(h.id) || {};
-        // Horas alocadas em ativas (estimativa)
-        const horas = ativas.filter(t => t.clienteId === h.id).reduce((s, t) => s + this.effEsforco(t), 0);
-        // Orçamento total = soma orcamento_horas dos projetos do cliente
-        const projsCli = this.projetos.filter(p => p.cliente_id === h.id || p.clienteId === h.id);
-        const orcTotal = projsCli.reduce((s, p) => s + (Number(p.orcamento_horas || p.orcamentoHoras) || 0), 0);
-        // Horas consumidas = ativas (estimadas) + concluídas (real ou estimado)
-        const concluidas = this.tasks.filter(t => t.clienteId === h.id && t.status === STATUS.CONCLUIDO);
-        const horasConc = concluidas.reduce((s, t) => s + (Number(t.tempoRealHoras) || this.effEsforco(t) || 0), 0);
+        // Buckets cliente — O(1) lookup via Map em vez de filter linear.
+        const cliTasks = this.tasksByCliente.get(h.id) || [];
+        const projsCli = this.projetosByCliente.get(h.id) || [];
+        const orcTotal = projsCli.reduce((s, p) => s + (Number(p.orcamentoHoras) || 0), 0);
+        let horas = 0, horasConc = 0;
+        for (const t of cliTasks) {
+          if (t.status === STATUS.CONCLUIDO) horasConc += Number(t.tempoRealHoras) || this.effEsforco(t) || 0;
+          else if (t.status !== STATUS.CONCLUIDO) horas += this.effEsforco(t);
+        }
         const horasConsumidas = horas + horasConc;
         const pctOrc = orcTotal > 0 ? Math.round(horasConsumidas / orcTotal * 100) : null;
         out.push({
@@ -4719,8 +4720,9 @@ function app() {
       const cutoff14 = now - 14 * 86400000;
       const cutoff28 = now - 28 * 86400000;
       const out = [];
+      const tasksByCli = this.tasksByCliente; // bucket O(1)
       for (const c of this.clientes) {
-        const allTasks = this.tasks.filter(t => t.clienteId === c.id);
+        const allTasks = tasksByCli.get(c.id) || [];
         if (allTasks.length === 0) continue;
         const ativas = allTasks.filter(t => t.status !== STATUS.CONCLUIDO);
         const atrasadas = ativas.filter(t => this.atrasada(t));
@@ -4974,6 +4976,42 @@ function app() {
       for (const t of this.tasks) m.set(t.id, t);
       return m;
     },
+    // Buckets cross-entity. Reconstroem quando tasks muda (length+sig); memoizados
+    // pra evitar O(n) por getter caro que itera "tasks de um cliente/pessoa".
+    get tasksByCliente() {
+      return this._memo('tasksByCliente', this._tasksSig, () => {
+        const m = new Map();
+        for (const t of this.tasks) {
+          if (!t.clienteId) continue;
+          let arr = m.get(t.clienteId);
+          if (!arr) { arr = []; m.set(t.clienteId, arr); }
+          arr.push(t);
+        }
+        return m;
+      });
+    },
+    get tasksByPessoa() {
+      return this._memo('tasksByPessoa', this._tasksSig, () => {
+        const m = new Map();
+        for (const t of this.tasks) {
+          if (!t.pessoaId) continue;
+          let arr = m.get(t.pessoaId);
+          if (!arr) { arr = []; m.set(t.pessoaId, arr); }
+          arr.push(t);
+        }
+        return m;
+      });
+    },
+    get projetosByCliente() {
+      const m = new Map();
+      for (const p of this.projetos) {
+        if (!p.clienteId) continue;
+        let arr = m.get(p.clienteId);
+        if (!arr) { arr = []; m.set(p.clienteId, arr); }
+        arr.push(p);
+      }
+      return m;
+    },
     nomeCliente(id) { const c = this.clientesById.get(id); return (c && c.nome) || '—'; },
     nomeProjeto(id) { const p = this.projetosById.get(id); return (p && p.nome) || '—'; },
     nomePessoa(id)  { const p = this.pessoasById.get(id);  return (p && p.nome) || '—'; },
@@ -5080,15 +5118,25 @@ function app() {
     get projetosVisiveis() {
       return this.showArchivedCadastros ? this.projetos : this.projetosAtivos;
     },
-    contarTarefasCliente(id)  { return this.tasks.filter(t => t.clienteId === id && t.status !== STATUS.CONCLUIDO).length; },
-    contarProjetosCliente(id) { return this.projetos.filter(p => p.clienteId === id).length; },
+    contarTarefasCliente(id)  {
+      const arr = this.tasksByCliente.get(id) || [];
+      let n = 0;
+      for (const t of arr) if (t.status !== STATUS.CONCLUIDO) n++;
+      return n;
+    },
+    contarProjetosCliente(id) { return (this.projetosByCliente.get(id) || []).length; },
     contarTarefasProjeto(id)  { return this.tasks.filter(t => t.projetoId === id && t.status !== STATUS.CONCLUIDO).length; },
-    contarTarefasPessoa(id)   { return this.tasks.filter(t => t.pessoaId  === id && t.status !== STATUS.CONCLUIDO).length; },
+    contarTarefasPessoa(id)   {
+      const arr = this.tasksByPessoa.get(id) || [];
+      let n = 0;
+      for (const t of arr) if (t.status !== STATUS.CONCLUIDO) n++;
+      return n;
+    },
 
     // ===================== BACKLOG (filtros + sort) =====================
     get projetosFiltrados() {
       if (!this.f.cliente) return this.projetos;
-      return this.projetos.filter(p => p.clienteId === this.f.cliente);
+      return this.projetosByCliente.get(this.f.cliente) || [];
     },
     get filtered() {
       const f = this.f;
@@ -5751,7 +5799,8 @@ function app() {
       const empty = { atrasadas: [], hoje: [], bloqueadas: [], urgentes: [] };
       const focusId = this.effectiveFocusPessoaId;
       if (!focusId) return empty;
-      const mine = this.tasks.filter(t => t.pessoaId === focusId && t.status !== STATUS.CONCLUIDO);
+      const myTasks = this.tasksByPessoa.get(focusId) || [];
+      const mine = myTasks.filter(t => t.status !== STATUS.CONCLUIDO);
       const todayIso = new Date().toISOString().slice(0,10);
       const prioRank = { P0: 0, P1: 1, P2: 2, P3: 3 };
       const sortPri = (a,b) => (prioRank[a.prioridade]??9) - (prioRank[b.prioridade]??9);
@@ -7209,8 +7258,8 @@ function app() {
       this.toast('success', `"${c.nome}" desarquivado.`);
     },
     async deleteCliente(c) {
-      const tasks = this.tasks.filter(t => t.clienteId === c.id).length;
-      const projs = this.projetos.filter(p => p.clienteId === c.id).length;
+      const tasks = (this.tasksByCliente.get(c.id) || []).length;
+      const projs = (this.projetosByCliente.get(c.id) || []).length;
       if (tasks || projs) {
         this.toast('error', `Não é possível excluir: existem ${tasks} tarefa(s) e ${projs} projeto(s) vinculados.`);
         return;
@@ -7450,7 +7499,7 @@ function app() {
       this.toast('success', kind.charAt(0).toUpperCase()+kind.slice(1) + ' renomeado.');
     },
     async deletePessoa(p) {
-      const tasks = this.tasks.filter(t => t.pessoaId === p.id).length;
+      const tasks = (this.tasksByPessoa.get(p.id) || []).length;
       if (tasks) { this.toast('error', `Não é possível excluir: existem ${tasks} tarefa(s) atribuídas.`); return; }
       this.askConfirm(`Excluir "${p.nome}"?`, async () => {
         const i = this.pessoas.findIndex(x => x.id === p.id);
