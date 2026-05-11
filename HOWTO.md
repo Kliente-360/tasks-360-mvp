@@ -4,14 +4,14 @@
 >
 > **Dentro do app**: clique no botão **?** no topo (ou ⌘K → "Manual") pra abrir esse documento renderizado bonito, com índice navegável.
 >
-> Última atualização: 08/05/2026 · após onda de polimento (Meu foco · Calendário · ⌘K · atalhos · bulk actions · quick add · manual no app)
+> Última atualização: 11/05/2026 · após onda de Triagem, Briefing executivo, telemetria de uso, pagination no backlog e revisões técnicas perf/escala.
 
 ---
 
 ## Sumário
 
 1. [Visão geral](#visão-geral)
-2. [Abas do app](#abas-do-app)
+2. [Abas do app](#abas-do-app) — Notificações · Meu foco · Briefing · Triagem · Backlog · Kanban · Calendário · Dashboard · Cadastros · Adoption · Portal
 3. [Modelo de uma tarefa](#modelo-de-uma-tarefa)
 4. [Criando, editando e movendo tarefas](#criando-editando-e-movendo-tarefas)
 5. [Filtros e busca](#filtros-e-busca)
@@ -76,6 +76,31 @@ Painel curado pra começar o dia. Quando você está logado, **mostra automatica
 
 Sem login? Use o seletor manual. Quando o login voltar, isso será automático.
 
+### Briefing executivo
+
+Visível apenas para `admin`. Aba de **decisão executiva** — responde 4 perguntas do dia-a-dia do CEO/sócios sem precisar abrir tabela:
+
+1. **Clientes pra conversar hoje** — cards com nome + motivo + ação sugerida (renegociar escopo, cobrar resposta, alinhar prazo). Click no card filtra o Backlog pelo cliente.
+2. **Pessoas pra conversar hoje** — sobrecarga / pressão de capacidade com ação sugerida (redistribuir, aliviar).
+3. **Tendência da operação** — 4 KPIs com Δ vs período anterior (throughput, lead time, % atrasadas, capacidade média) + narrativa textual sintética.
+4. **Capacidade vs demanda** — utilização do time e recomendação (contratar / manter / cortar).
+
+Headline no topo muda com o estado real: "3 clientes em risco · 2 pessoas precisando de conversa" ou "Nada crítico. Operação fluindo."
+
+### Triagem
+
+Visível para `admin` e `interno`. Fila de tarefas que ainda **não estão prontas pra serem trabalhadas** — falta responsável, cliente, prazo ou esforço, conforme a etapa.
+
+**Critérios** (heurística pura, sem nova subetapa):
+- Sem responsável → qualquer etapa
+- Sem cliente → qualquer etapa
+- Sem prazo → em etapa ≥ `priorizado`
+- Sem esforço → em etapa ≥ `em_desenvolvimento`
+
+Cards ordenados por gravidade (mais critérios falhando primeiro). Chips âmbar mostram exatamente **o que falta**. Click no card abre o modal pra preencher — ao satisfazer todos os critérios, a task **sai da fila automaticamente**.
+
+> Badge `triar` (âmbar) aparece inline em qualquer task que precise (Foco, Backlog, Kanban, Calendário) — assim o triador identifica de qualquer view, não só da aba dedicada.
+
 ### Backlog
 
 Tabela mestre. Cabeçalho ordenável por qualquer coluna (clique). Colunas: Tarefa · Cliente · Projeto · Responsável · Pri · Hrs · Cmplx · Prazo · Status. Linha clicada abre o detalhe.
@@ -87,6 +112,7 @@ Tabela mestre. Cabeçalho ordenável por qualquer coluna (clique). Colunas: Tare
 - **Ordem manual**: botão "≡ ordem manual" → arraste linhas pra reordenar (desabilitado quando há agrupamento; só desktop)
 - **Filtros**: cliente, projeto, pessoa, status, prioridade, tag (ver [Filtros](#filtros-e-busca))
 - **Bulk actions**: checkbox por linha (ver [Bulk actions](#bulk-actions-na-tabela))
+- **Pagination**: cada grupo mostra até 100 rows por padrão; botão **"mostrando X de Y · carregar mais"** no fim da lista pra revelar o restante. Mantém o render leve mesmo com centenas de tasks.
 
 ### Kanban
 
@@ -149,7 +175,21 @@ Badges:
 
 ### Adoption
 
-Métricas de uso interno do app (DAUs, eventos, comentários). Pra acompanhar adoção do protótipo. *Visível apenas para `admin`.*
+Métricas de uso interno do app — *visível apenas para `admin`*. Tem duas fontes de dados:
+
+**Bloco 1 — Atividade orgânica** (engagement passivo via artefatos):
+- Eventos do app (criar/mover task, comentar) últimos 30d
+- DAU 14d (pessoas ativas por dia)
+- Stickiness 14d (quem bate 10+ dias ativos)
+- Critério 1 do protótipo: 2+ pessoas com 10+ dias ativos em 14d
+
+**Bloco 2 — Telemetria de features** (`usage_events`, fire-and-forget, retenção 90d):
+- **Usuários únicos 7d/30d** com qualquer evento
+- **Top features (30d)** — ranking pra ver o que é usado de verdade
+- **Tendência ±15d** — features ganhando ou perdendo tração (Δ%)
+- **Features órfãs** — uso abaixo do limite saudável, candidatas a deprecar
+
+Eventos capturados: `tab_open`, `palette_open/select`, `export`, `help_open`, `onboarding_open`, `task_create/edit`, `comment_post`, `bulk_action`. Opt-out via `localStorage['kliente360-telemetry'] = 'false'`.
 
 ### Portal cliente
 
@@ -176,21 +216,27 @@ Aba dedicada para o cliente externo. Layout simples com 4 cards (Aguardando voc�
 
 ## Heurísticas (sinais de risco)
 
-Banner no topo do **Dashboard** mostra alertas determinísticos (sem IA) baseados nos atributos da tarefa, pessoa, cliente e projeto. Severidade `alta` (vermelho) ou `media` (âmbar). Atualmente:
+Banner no topo do **Dashboard** mostra alertas determinísticos (sem IA) baseados em atributos de task, pessoa, cliente e projeto. Severidade `alta` (vermelho) ou `media` (âmbar). 10 heurísticas ativas:
 
-- **Tarefa grande sem início** com prazo a ≤10 dias
-- **Sobrecarga real** — pessoa com horas alocadas > capacidade semanal
-- **Cliente estratégico com atrasada(s)**
-- **Bloqueio aguardando cliente há +5 dias**
-- **SLA contratado quase vencido** (projetos com `sla_entrega_dias` configurado)
+**Onda A** (5):
+1. **Tarefa grande sem início** com prazo a ≤10 dias
+2. **Sobrecarga real** — pessoa com horas alocadas > capacidade semanal
+3. **Cliente estratégico com atrasada(s)**
+4. **Bloqueio aguardando cliente há +5 dias**
+5. **SLA contratado quase vencido** (projetos com `sla_entrega_dias`)
 
-> Atributos novos disponíveis no patch `heuristicas_onda_a_patch.sql`:
-> - **Tasks**: `tamanho` (mini/small/medio/grande/mini_projeto)
-> - **Pessoas**: `cliente_principal_id`, `cliente_secundario_id`, `capacidade_horas_semana`, `skills[]`
-> - **Clientes**: `tier` (estratégico/regular/oportunidade)
-> - **Projetos**: `sla_resposta_horas`, `sla_entrega_dias`, `orcamento_horas`
->
-> UI inicial: **task.tamanho** no form de edição da tarefa; **pessoa.\*** no modal de pessoa. **cliente.tier** e **projeto.sla\*** ainda sem UI dedicada — setar via Supabase Studio direto, ou aguardar próxima iteração.
+**Onda B** (2):
+6. **Júnior + complexidade alta** — task de alta complexidade atribuída a pessoa júnior
+7. **Reaberturas crônicas** — task com `reopen_count ≥ 2` (qualidade)
+
+**Onda C** (2):
+8. **Bloqueio por dependência** — task em backlog com prazo ≤14d e dependência ainda aberta
+9. **Estimativa furada** — `tempo_real_horas > 1.5x esforço`
+
+**Operacional** (1):
+10. **Triagem represada** — N tasks precisando de triagem (sem responsável / cliente / prazo / esforço em etapa onde aplica). Alta se ≥10, média caso contrário.
+
+> Cálculo em single-pass + memo: o conjunto inteiro de heurísticas é recomputado só quando tasks/pessoas/clientes/projetos mudam relevantemente.
 
 ---
 
