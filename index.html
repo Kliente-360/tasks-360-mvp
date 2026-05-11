@@ -4088,13 +4088,34 @@ function app() {
         this.refreshing = false;
       }
     },
+    // Janela de tasks concluídas carregadas por default (em dias).
+    // Tasks concluídas há mais tempo só vêm via loadOlderConcluidas().
+    TASKS_CONCLUIDAS_WINDOW_DAYS: 90,
+    historicoCompletoCarregado: false,
+
+    _tasksWindowCutoff() {
+      const d = new Date();
+      d.setDate(d.getDate() - this.TASKS_CONCLUIDAS_WINDOW_DAYS);
+      return d.toISOString();
+    },
+    _buildTasksQuery(extra) {
+      // Default: todas não-concluídas + concluídas dos últimos N dias.
+      // status_em é setado pelo banco quando muda status; concluídas sem
+      // status_em (cenário improvável) entram pelo OR de status.
+      const cutoff = this._tasksWindowCutoff();
+      let q = sb.from('tasks').select('*')
+        .or(`status.neq.concluido,status_em.gte.${cutoff}`)
+        .order('criado_em', { ascending: false });
+      if (extra) q = extra(q);
+      return q;
+    },
     async load() {
       try {
         const [c, p, ps, t, h, td] = await Promise.all([
           sb.from('clientes').select('id,nome,tier,arquivado_em').order('nome'),
           sb.from('projetos').select('id,nome,cliente_id,sla_resposta_horas,sla_entrega_dias,orcamento_horas,tipo,arquivado_em').order('nome'),
           sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id,cliente_principal_id,cliente_secundario_id,capacidade_horas_semana,skills,senioridade').order('nome'),
-          sb.from('tasks').select('*').order('criado_em', { ascending: false }),
+          this._buildTasksQuery(),
           sb.from('task_status_history')
             .select('task_id, from_status, to_status, actor_pessoa_id, actor_source, occurred_at')
             .order('occurred_at', { ascending: false })
@@ -4109,14 +4130,37 @@ function app() {
         this.tasks    = t.data.map(taskFromDb);
         this.historyAll = h.data || [];
         this.taskDeps = td.data || [];
+        this.historicoCompletoCarregado = false;
       } catch (e) {
         console.error('Falha ao carregar do Supabase', e);
         this.toast('error', 'Falha ao carregar: ' + (e.message || e));
       }
     },
     async refreshTasks() {
-      const { data, error } = await sb.from('tasks').select('*').order('criado_em', { ascending: false });
+      // Mantém o filtro de janela se ainda não pediu histórico completo.
+      const q = this.historicoCompletoCarregado
+        ? sb.from('tasks').select('*').order('criado_em', { ascending: false })
+        : this._buildTasksQuery();
+      const { data, error } = await q;
       if (!error) this.tasks = data.map(taskFromDb);
+    },
+    // Sob demanda: puxa concluídas antigas. Idempotente — mescla pelo id.
+    async loadOlderConcluidas() {
+      if (this.historicoCompletoCarregado) {
+        this.toast('info', 'Histórico completo já carregado.');
+        return;
+      }
+      const cutoff = this._tasksWindowCutoff();
+      const { data, error } = await sb.from('tasks').select('*')
+        .eq('status', 'concluido')
+        .lt('status_em', cutoff)
+        .order('status_em', { ascending: false });
+      if (error) { this.toast('error', 'Erro ao carregar histórico: ' + error.message); return; }
+      const older = (data || []).map(taskFromDb);
+      const existing = new Set(this.tasks.map(t => t.id));
+      this.tasks = [...this.tasks, ...older.filter(t => !existing.has(t.id))];
+      this.historicoCompletoCarregado = true;
+      this.toast('success', `+${older.length} tarefa(s) concluída(s) antigas carregadas.`);
     },
     async refreshClientes() {
       const { data, error } = await sb.from('clientes').select('id,nome,tier,arquivado_em').order('nome');
@@ -5392,6 +5436,7 @@ function app() {
         { id: 'act-clear',  kind: 'ação', label: 'Limpar filtros',        hint: 'reseta busca, cliente, etc.',    action: () => this.clearFilters() },
         { id: 'act-theme',  kind: 'ação', label: 'Alternar tema',         hint: 'claro / escuro',                 action: () => this.toggleTheme() },
         { id: 'act-reload', kind: 'ação', label: 'Recarregar dados',      hint: 'busca tudo do Supabase',         action: () => this.refreshFromLogo() },
+        { id: 'act-hist',   kind: 'ação', label: 'Carregar histórico completo', hint: 'tarefas concluídas antigas (>90d)', action: () => this.loadOlderConcluidas() },
         { id: 'act-manual', kind: 'ação', label: 'Manual da ferramenta',  hint: 'como usar · HOWTO completo',     action: () => this.openHelp() },
         { id: 'act-help',   kind: 'ação', label: 'Atalhos de teclado',    hint: 'ver lista completa',             action: () => this.shortcutsHelpOpen = true },
       ];
