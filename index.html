@@ -34,8 +34,8 @@
     --brand-tint:  #F2FAF2;
 
     /* === NAVY === header institucional, bulk actions bar, portal cliente skin */
-    --navy:        #040427;
-    --navy-soft:   #06073E;
+    --navy:        #1f2937;
+    --navy-soft:   #374151;
 
     /* === CYAN === info, P2, link, focus ring (substitui o azul saturado antigo) */
     --cyan:        #0084E1;
@@ -104,8 +104,8 @@
     --shadow-modal: 0 12px 32px -8px rgba(0,0,0,.18);
 
     /* === MISC compostos === */
-    --kcol-bg:  rgba(4,4,39,0.03);    /* hint de navy nos fundos das colunas kanban */
-    --modal-bg: rgba(4,4,39,0.45);    /* backdrop modal — navy translúcido */
+    --kcol-bg:  rgba(31,41,55,0.03);  /* hint de slate nos fundos das colunas kanban */
+    --modal-bg: rgba(31,41,55,0.45);  /* backdrop modal — slate translúcido */
 
     /* botão primário (no light = brand cheio) */
     --btn-primary-bg:        var(--brand);
@@ -138,8 +138,8 @@
     --brand-soft:  #0B2D0B;
     --brand-tint:  #0E2913;
 
-    --navy:        #040427;
-    --navy-soft:   #06073E;
+    --navy:        #1f2937;
+    --navy-soft:   #374151;
 
     --cyan:        #2A9DEE;
     --cyan-soft:   #0E2942;
@@ -329,11 +329,19 @@
 
   /* ============ INPUTS ============ focus ring cyan (era brand) — ação fica reservada pro botão */
   .inp {
-    width: 100%; padding: var(--sp-2) var(--sp-3);
+    width: 100%; max-width: 100%; min-width: 0;
+    box-sizing: border-box;
+    padding: var(--sp-2) var(--sp-3);
     font-size: var(--fs-sm); border: 1px solid var(--line-strong);
     border-radius: var(--r-sm); background: var(--surface-1);
     transition: border 150ms ease, box-shadow 150ms ease;
     font-family: inherit; color: var(--ink);
+  }
+  /* input[type=date] no iOS/Safari ignora width:100% e usa min-content do
+     widget interno (data + ícone), estourando o grid em mobile. Forçar. */
+  .inp[type="date"], .inp[type="time"], .inp[type="datetime-local"] {
+    -webkit-appearance: none; appearance: none;
+    min-height: 38px;
   }
   .inp:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
   .lbl {
@@ -498,7 +506,7 @@
     background: var(--navy); color: #fff;
     border: 1px solid var(--navy-soft);
     border-radius: var(--r-md);
-    box-shadow: 0 12px 32px -8px rgba(4,4,39,0.5), 0 4px 12px -4px rgba(4,4,39,0.35);
+    box-shadow: 0 12px 32px -8px rgba(31,41,55,0.5), 0 4px 12px -4px rgba(31,41,55,0.35);
   }
   .bulk-bar-count {
     font-family: var(--font-mono); font-size: 12px;
@@ -1029,7 +1037,9 @@
      Botão Salvar continua como fallback explícito — ver comentário inline na seção do footer.        */
   .tmodal {
     width: 100%; max-width: 1080px; background: var(--surface-1);
-    border: 1px solid var(--line); border-radius: var(--r-lg);
+    /* sem border: a borda branca em volta do head escuro era a linha 1px aqui;
+       sombra do modal já garante separação do fundo */
+    border: 0; border-radius: var(--r-lg);
     box-shadow: var(--shadow-modal); overflow: hidden;
     display: flex; flex-direction: column;
     max-height: 90vh;
