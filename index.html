@@ -2872,6 +2872,11 @@
           <div class="text-[10px] text-muted mt-1">se &gt;1.5x do esforço estimado, vira alerta.</div>
         </div>
         <div class="sm:col-span-2">
+          <label class="lbl">ID externo · Salesforce <span class="text-muted text-[10px] normal-case tracking-normal">(temporário)</span></label>
+          <input type="text" class="inp font-mono text-sm" x-model="editing.externalId" placeholder="ex: a0X1A000001abcdEAA" autocomplete="off">
+          <div class="text-[10px] text-muted mt-1">deixa vazio se não tiver. preenchendo, ativa dedupe pela chave (salesforce, external_id).</div>
+        </div>
+        <div class="sm:col-span-2">
           <label class="lbl">Dependências</label>
           <div class="flex flex-wrap gap-1.5 mb-2" x-show="editing.dependencias && editing.dependencias.length > 0">
             <template x-for="depId in (editing.dependencias || [])" :key="depId">
@@ -3292,6 +3297,8 @@ function taskFromDb(r) {
     reopenCount: Number(r.reopen_count) || 0,
     tipoTrabalho: r.tipo_trabalho || '',
     tempoRealHoras: r.tempo_real_horas == null ? null : +r.tempo_real_horas,
+    externalSource: r.external_source || '',
+    externalId: r.external_id || '',
   };
 }
 function taskToDb(t) {
@@ -3312,6 +3319,8 @@ function taskToDb(t) {
     tags: Array.isArray(t.tags) ? t.tags : [],
     tipo_trabalho: t.tipoTrabalho || null,
     tempo_real_horas: t.tempoRealHoras == null || t.tempoRealHoras === '' ? null : +t.tempoRealHoras,
+    external_source: t.externalSource ? t.externalSource : (t.externalId ? 'salesforce' : null),
+    external_id: t.externalId || null,
   };
 }
 function projetoFromDb(r) {
@@ -4732,7 +4741,7 @@ function app() {
 
     // ===================== HELPERS =====================
     blankTask() {
-      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true, tags: [], reopenCount: 0, tipoTrabalho: '', tempoRealHoras: '', dependencias: [] };
+      return { id: '', titulo: '', descricao: '', clienteId: '', projetoId: '', pessoaId: '', prioridade: 'P2', esforco: 4, prazo: '', status: 'backlog', subetapa: 'backlog', complexidade: 'media', bloqueadoPor: '', visivelCliente: true, tags: [], reopenCount: 0, tipoTrabalho: '', tempoRealHoras: '', dependencias: [], externalSource: '', externalId: '' };
     },
     normalizeTag(s) {
       return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24);
