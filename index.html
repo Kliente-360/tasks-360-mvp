@@ -2247,8 +2247,8 @@
               <div class="text-sm font-medium flex items-center gap-2 flex-wrap">
                 <span x-text="c.nome"></span>
                 <span x-show="c.tier === 'estrategico'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)" title="Cliente estratégico">estratégico</span>
-                <span x-show="c.tier === 'recorrente'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--p2-soft);color:var(--p2)" title="Cliente recorrente">recorrente</span>
-                <span x-show="c.tier === 'spot'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Cliente pontual">spot</span>
+                <span x-show="c.tier === 'potencial'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--p2-soft);color:var(--p2)" title="Cliente potencial">potencial</span>
+                <span x-show="c.tier === 'descoberta'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Cliente em descoberta">descoberta</span>
                 <span x-show="c.arquivadoEm" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Cliente arquivado">arquivado</span>
               </div>
               <div class="text-xs text-muted" x-text="contarTarefasCliente(c.id) + ' tarefas · ' + contarProjetosCliente(c.id) + ' projetos'"></div>
@@ -3423,8 +3423,8 @@
         <select class="inp" x-model="editingCliente.tier">
           <option value="">— sem classificação —</option>
           <option value="estrategico">Estratégico · prioridade alta + SLA crítico</option>
-          <option value="recorrente">Recorrente · contrato contínuo</option>
-          <option value="spot">Spot · pontual ou descoberta</option>
+          <option value="potencial">Potencial · oportunidade de crescimento</option>
+          <option value="descoberta">Descoberta · pontual ou exploratório</option>
         </select>
         <div class="text-[10px] text-muted mt-1">"Estratégico" alimenta a heurística de atrasadas em cliente crítico.</div>
       </div>
@@ -3462,10 +3462,9 @@
         <label class="lbl">Tipo</label>
         <select class="inp" x-model="editingProjeto.tipo">
           <option value="">—</option>
-          <option value="implantacao">Implantação · entrega de uma frente</option>
           <option value="sustentacao">Sustentação · contínuo</option>
-          <option value="discovery">Discovery · investigação</option>
           <option value="projeto">Projeto · escopo fechado</option>
+          <option value="discovery">Discovery · investigação</option>
         </select>
       </div>
       <div class="space-y-3 pt-3 border-t border-line">
@@ -4820,9 +4819,9 @@ function app() {
           pctOrc,
         });
       }
-      // Ordena por: sinal pior primeiro, depois tier (estratégico > recorrente > transacional > vazio), depois mais horas
+      // Ordena por: sinal pior primeiro, depois tier (estratégico > potencial > descoberta > vazio), depois mais horas
       const sinalRank = { vermelho: 0, amarelo: 1, verde: 2 };
-      const tierRank = { estrategico: 0, 'estratégico': 0, recorrente: 1, transacional: 2 };
+      const tierRank = { estrategico: 0, 'estratégico': 0, potencial: 1, descoberta: 2 };
       out.sort((a,b) => {
         const ds = (sinalRank[a.sinal] ?? 9) - (sinalRank[b.sinal] ?? 9); if (ds) return ds;
         const dt = (tierRank[(a.tier || '').toLowerCase()] ?? 9) - (tierRank[(b.tier || '').toLowerCase()] ?? 9); if (dt) return dt;
