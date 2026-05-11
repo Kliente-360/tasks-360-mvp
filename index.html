@@ -16,7 +16,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
@@ -26,44 +26,94 @@
 <script src="lib/helpers.js"></script>
 <style>
   :root {
-    /* identidade Kliente 360 */
-    --brand: #009900;
-    --brand-dark: #007A00;
-    --brand-soft: #E6F5E6;
-    --brand-tint: #F2FAF2;
+    /* === BRAND === Kliente 360 — uso pontual (CTA, ação, sucesso). 1 verde + no máx 1 secundária brand visível por tela. */
+    --brand:       #009900;
+    --brand-dark:  #007A00;
+    --brand-light: #00B300;   /* reservada pro dark mode (verde puro perde força em bg escuro) */
+    --brand-soft:  #E6F5E6;
+    --brand-tint:  #F2FAF2;
 
-    /* base neutra */
-    --bg: #FAFAF8;
-    --bg-elev: #FFFFFF;
-    --ink: #0F1A14;
-    --ink-soft: #3A4A40;
-    --muted: #7C8A82;
-    --line: #E8ECE8;
-    --line-strong: #D4DAD4;
+    /* === NAVY === header institucional, bulk actions bar, portal cliente skin */
+    --navy:        #040427;
+    --navy-soft:   #06073E;
 
-    /* status semânticos (não conflitam com verde da marca) */
-    --p0: #C8392B;          /* urgente — vermelho */
+    /* === CYAN === info, P2, link, focus ring (substitui o azul saturado antigo) */
+    --cyan:        #0084E1;
+    --cyan-soft:   #E6F3FB;
+
+    /* === YELLOW === aging warn texto/dot, "novo desde X", highlight de busca */
+    --yellow:      #F8DF61;
+    --yellow-soft: #FAE992;
+
+    /* === STATUS === linguagem semântica — NÃO mexer em hue além do mapeado abaixo. */
+    --p0: #C8392B;            /* urgente — vermelho */
     --p0-soft: #FBEAE7;
-    --p1: #C77A1A;          /* alta — âmbar */
+    --p1: #C77A1A;            /* alta — âmbar */
     --p1-soft: #FAEFDD;
-    --p2: #2D7AA8;          /* normal — azul */
-    --p2-soft: #E3EEF5;
-    --p3: #6E7A72;          /* baixa — cinza */
+    --p2: #0084E1;            /* normal — MIGRADO de #2D7AA8 pro cyan brand */
+    --p2-soft: #E6F3FB;
+    --p3: #7D8185;            /* baixa — MIGRADO de #6E7A72 pro neutro brand */
     --p3-soft: #ECEEEC;
 
-    --warn: #C77A1A;
+    --warn:   #C77A1A;
     --danger: #C8392B;
 
-    /* tokens compostos */
-    --kcol-bg: rgba(0,0,0,0.025);
-    --modal-bg: rgba(15,26,20,0.5);
-    --shadow-card: 0 4px 12px rgba(0,153,0,0.06);
-    --shadow-modal: 0 20px 60px rgba(0,0,0,0.20);
+    /* === NEUTROS === preto puro pra ink (era #0F1A14), neutros realinhados ao brand */
+    --ink:         #000000;
+    --ink-soft:    #2A2A2A;
+    --muted:       #7D8185;
+    --line:        #E6E6E6;
+    --line-strong: #D4D6D2;
+
+    /* === SURFACES === 3 camadas; ALIAS dos nomes antigos (--bg, --bg-elev) pra não quebrar usos downstream */
+    --surface-1:   #FFFFFF;   /* paper — cards, inputs, modais */
+    --surface-2:   #F1F2F0;   /* bg da página */
+    --surface-3:   #FAFAF8;   /* bg muito sutil — hover, zebra */
+    --bg:          var(--surface-2);
+    --bg-elev:     var(--surface-1);
+
+    /* === ESCALA TIPOGRÁFICA === modular 1.250, base 16. Aplicar via var(--fs-*). */
+    --fs-xs:    12px;   /* chips, meta, labels uppercase */
+    --fs-sm:    14px;   /* body sm, table cell */
+    --fs-base:  16px;   /* body */
+    --fs-md:    18px;   /* lead */
+    --fs-lg:    20px;   /* h3, card title */
+    --fs-xl:    25px;   /* h2 */
+    --fs-2xl:   32px;   /* h1, KPI hero */
+    --fs-3xl:   40px;   /* hero KPI mega */
+
+    /* === SPACING === 4-base. Auditar p-3/p-5 ad hoc, gap-2/3/4 misturados. */
+    --sp-1:  4px;
+    --sp-2:  8px;
+    --sp-3:  12px;
+    --sp-4:  16px;
+    --sp-5:  20px;
+    --sp-6:  24px;
+    --sp-8:  32px;
+    --sp-10: 40px;
+    --sp-12: 48px;
+    --sp-16: 64px;
+
+    /* === RADIUS === 3 tamanhos. chips/inputs · cards · modais/hero. */
+    --r-sm: 6px;
+    --r-md: 8px;
+    --r-lg: 12px;
+
+    /* === ELEVATION === 2 sombras só. Card discreto + modal pronunciado. */
+    --shadow-card:  0 1px 2px rgba(0,0,0,.04), 0 1px 0 rgba(0,0,0,.02);
+    --shadow-modal: 0 12px 32px -8px rgba(0,0,0,.18);
+
+    /* === MISC compostos === */
+    --kcol-bg:  rgba(4,4,39,0.03);    /* hint de navy nos fundos das colunas kanban */
+    --modal-bg: rgba(4,4,39,0.45);    /* backdrop modal — navy translúcido */
 
     /* botão primário (no light = brand cheio) */
-    --btn-primary-bg: var(--brand);
-    --btn-primary-bg-hover: var(--brand-dark);
-    --btn-primary-fg: #FFFFFF;
+    --btn-primary-bg:        var(--brand);
+    --btn-primary-bg-hover:  var(--brand-dark);
+    --btn-primary-fg:        #FFFFFF;
+
+    /* foco — anel cyan 2px com offset 2px (WCAG AA) */
+    --ring-focus: 0 0 0 2px var(--surface-1), 0 0 0 4px var(--cyan);
 
     /* paleta semafórica (signals) — usar em qualquer cardinalidade
        (.brief-, .memo-, .pr-, .heuristic-, etc) pra ter UM lugar pra
@@ -81,27 +131,42 @@
   }
 
   [data-theme="dark"] {
-    --brand: #1AAF1A;
-    --brand-dark: #2BC72B;
-    --brand-soft: #133D17;
-    --brand-tint: #0E2913;
+    /* navy como bg principal, brand sobe pro verde puro (perde força em bg escuro) */
+    --brand:       #00B300;
+    --brand-dark:  #00CC00;
+    --brand-light: #1AD41A;
+    --brand-soft:  #0B2D0B;
+    --brand-tint:  #0E2913;
 
-    --bg: #0E1411;
-    --bg-elev: #16201A;
-    --ink: #E8ECE8;
-    --ink-soft: #B6C0BA;
-    --muted: #7C8A82;
-    --line: #243029;
-    --line-strong: #2F3D34;
+    --navy:        #040427;
+    --navy-soft:   #06073E;
+
+    --cyan:        #2A9DEE;
+    --cyan-soft:   #0E2942;
+
+    --yellow:      #F8DF61;
+    --yellow-soft: rgba(248,223,97,0.12);
+
+    --surface-1:   #0A0A1F;     /* paper sobre navy */
+    --surface-2:   #040427;     /* navy puro pro bg base */
+    --surface-3:   #0E0E33;
+    --bg:          var(--surface-2);
+    --bg-elev:     var(--surface-1);
+
+    --ink:         #F0F0EE;
+    --ink-soft:    #BFC0BE;
+    --muted:       #7D8185;
+    --line:        #1F1F3D;
+    --line-strong: #2A2A4D;
 
     --p0: #E55B4D;
-    --p0-soft: #3A1A17;
+    --p0-soft: rgba(229,91,77,0.14);
     --p1: #E29A3F;
-    --p1-soft: #3A2A14;
-    --p2: #5BA3D0;
-    --p2-soft: #142838;
+    --p1-soft: rgba(226,154,63,0.14);
+    --p2: #2A9DEE;
+    --p2-soft: rgba(42,157,238,0.14);
     --p3: #9AA89E;
-    --p3-soft: #232C26;
+    --p3-soft: rgba(154,168,158,0.10);
 
     --warn: #E29A3F;
     --danger: #E55B4D;
@@ -118,26 +183,33 @@
     --sig-green-bg:   #0f2418;
     --sig-green-soft: #14532d;
 
-    --kcol-bg: rgba(255,255,255,0.04);
+    --kcol-bg:  rgba(255,255,255,0.03);
     --modal-bg: rgba(0,0,0,0.65);
-    --shadow-card: 0 4px 12px rgba(26,175,26,0.10);
-    --shadow-modal: 0 20px 60px rgba(0,0,0,0.6);
+    --shadow-card:  0 1px 2px rgba(0,0,0,.35), 0 1px 0 rgba(0,0,0,.20);
+    --shadow-modal: 0 16px 40px -8px rgba(0,0,0,.55);
 
-    /* botão primário no dark: verde floresta calmo, não vibra contra fundo escuro */
-    --btn-primary-bg: #1F7A33;
-    --btn-primary-bg-hover: #279340;
-    --btn-primary-fg: #F2FAF2;
+    /* botão primário no dark: brand-light (verde mais brilhante pra contraste com navy) */
+    --btn-primary-bg:       var(--brand);
+    --btn-primary-bg-hover: var(--brand-light);
+    --btn-primary-fg:       #FFFFFF;
+
+    --ring-focus: 0 0 0 2px var(--surface-2), 0 0 0 4px var(--cyan);
   }
 
   html, body {
     background: var(--bg);
     color: var(--ink);
-    font-family: 'Manrope', system-ui, -apple-system, sans-serif;
-    font-feature-settings: 'ss01','cv11';
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    /* Plex respira melhor com leve negativo no body */
+    letter-spacing: -0.005em;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
-  .font-brand { font-family: 'Quicksand', system-ui, sans-serif; letter-spacing: -0.01em; }
-  .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  /* .font-brand é o pé do design system: Plex Sans 600 com tracking generoso pra labels/headers institucionais.
+     Mantido o nome (.font-brand) pra não quebrar usos legados no markup. */
+  .font-brand { font-family: 'IBM Plex Sans', system-ui, sans-serif; font-weight: 600; letter-spacing: -0.01em; }
+  /* .font-mono — Plex Mono com tnum pra números tabulares alinharem. */
+  .font-mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-feature-settings: 'tnum' 1, 'zero' 1; letter-spacing: 0; }
 
   .border-line { border-color: var(--line); }
   .border-line-strong { border-color: var(--line-strong); }
@@ -162,93 +234,392 @@
   .k360-mark span:nth-child(3) { top: 50%; right: 0; transform: translateY(-50%); }
   .k360-mark span:nth-child(4) { bottom: 0; left: 50%; transform: translateX(-50%); }
 
-  /* tabela executiva */
+  /* tabela executiva (Backlog)
+     - tracking uppercase 0.08em (padrão do sistema)
+     - row hover passa de brand-tint pra surface-3 (verde fica reservado pra ação)
+     - tipografia Plex via var(--fs-*) */
   .tbl { border-collapse: separate; border-spacing: 0; width: 100%; }
   .tbl thead th {
-    text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
-    text-transform: uppercase; color: var(--muted); padding: 14px 16px;
-    border-bottom: 1px solid var(--line-strong); user-select: none; background: var(--bg-elev);
+    text-align: left; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); padding: var(--sp-3) var(--sp-4);
+    border-bottom: 1px solid var(--line-strong); user-select: none; background: var(--surface-3);
   }
-  .tbl tbody td { padding: 16px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: top; }
-  .tbl tbody tr { transition: background 120ms ease; cursor: pointer; }
-  .tbl tbody tr:hover { background: var(--brand-tint); }
+  .tbl tbody td { padding: var(--sp-4); border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: top; }
+  .tbl tbody tr { transition: background 150ms ease; cursor: pointer; }
+  .tbl tbody tr:hover { background: var(--surface-3); }
   .tbl thead th.sortable { cursor: pointer; }
   .tbl thead th.sortable:hover { color: var(--ink); }
 
-  /* prioridades */
-  .pri { display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:500; padding: 3px 8px; border-radius: 3px; white-space: nowrap; }
+  /* ============ CHIPS ============
+     Regra de hierarquia: P0 e aging-stale SALTAM (cor cheia),
+     P2/P3/cmplx-baixa silenciam (muted + neutro). Chips menos importantes ficam
+     legais sem barulhar contra a tabela. */
+  .pri {
+    display:inline-flex; align-items:center; gap: var(--sp-1);
+    font-family:'IBM Plex Mono', ui-monospace, monospace;
+    font-feature-settings: 'tnum' 1;
+    font-size: var(--fs-xs); font-weight: 500;
+    padding: 2px var(--sp-2); border-radius: var(--r-sm);
+    white-space: nowrap; line-height: 1.4;
+  }
   .pri-dot { width: 6px; height: 6px; border-radius: 50%; }
   .pri-P0 { background: var(--p0-soft); color: var(--p0); }
   .pri-P0 .pri-dot { background: var(--p0); }
   .pri-P1 { background: var(--p1-soft); color: var(--p1); }
   .pri-P1 .pri-dot { background: var(--p1); }
-  .pri-P2 { background: var(--p2-soft); color: var(--p2); }
-  .pri-P2 .pri-dot { background: var(--p2); }
-  .pri-P3 { background: var(--p3-soft); color: var(--p3); }
+  /* P2 silenciado: fundo neutro + dot cyan (era fundo cyan-soft cheio — muito barulho) */
+  .pri-P2 { background: var(--surface-3); color: var(--muted); border: 1px solid var(--line); }
+  .pri-P2 .pri-dot { background: var(--cyan); }
+  /* P3 silenciado ao máximo: tudo neutro */
+  .pri-P3 { background: var(--surface-3); color: var(--muted); border: 1px solid var(--line); }
   .pri-P3 .pri-dot { background: var(--p3); }
-  /* complexidade */
-  .cx { display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:500; padding: 2px 7px; border-radius: 3px; white-space: nowrap; border: 1px solid var(--line); background: var(--bg-elev); color: var(--ink-soft); }
-  .cx-bar { display:inline-flex; gap:2px; }
-  .cx-bar i { width:3px; border-radius: 1px; background: currentColor; opacity: 0.25; }
+
+  /* complexidade — cx-alta salta (âmbar); média/baixa silenciam */
+  .cx {
+    display:inline-flex; align-items:center; gap: var(--sp-1);
+    font-family:'IBM Plex Mono', ui-monospace, monospace;
+    font-size: var(--fs-xs); font-weight: 500;
+    padding: 2px var(--sp-2); border-radius: var(--r-sm); white-space: nowrap;
+    border: 1px solid var(--line); background: var(--surface-1); color: var(--muted);
+    line-height: 1.4;
+  }
+  .cx-bar { display:inline-flex; gap: 2px; }
+  .cx-bar i { width: 3px; border-radius: 1px; background: currentColor; opacity: 0.25; }
   .cx-bar i.on { opacity: 1; }
-  .cx-alta  { color: #b45309; background: #fef3c7; border-color: #fde68a; }
+  .cx-alta  { color: var(--p1); background: var(--p1-soft); border-color: transparent; }
   .cx-media { color: var(--ink-soft); }
   .cx-baixa { color: var(--muted); }
-  html.dark .cx-alta { color: #fcd34d; background: rgba(180,83,9,0.18); border-color: rgba(252,211,77,0.4); }
+  html.dark .cx-alta { color: var(--p1); background: var(--p1-soft); border-color: transparent; }
 
-  /* status */
-  .status { display:inline-flex; align-items:center; gap:6px; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--bg-elev); white-space: nowrap; }
+  /* status — chip arredondado; andamento usa brand-tint (único verde do row), bloqueado salta */
+  .status {
+    display:inline-flex; align-items:center; gap: var(--sp-1);
+    font-size: var(--fs-xs); padding: 2px var(--sp-3); border-radius: 999px;
+    border: 1px solid var(--line-strong); background: var(--surface-1);
+    white-space: nowrap; color: var(--ink-soft); line-height: 1.4;
+  }
   .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
   .status[data-s="andamento"] .status-dot { background: var(--brand); }
   .status[data-s="andamento"] { border-color: var(--brand); color: var(--brand-dark); background: var(--brand-tint); }
   .status[data-s="bloqueado"] .status-dot { background: var(--p0); }
-  .status[data-s="bloqueado"] { color: var(--p0); }
+  .status[data-s="bloqueado"] { color: var(--p0); border-color: color-mix(in srgb, var(--p0) 30%, transparent); }
   .status[data-s="concluido"] .status-dot { background: var(--p3); }
-  .status[data-s="concluido"] { color: var(--p3); }
-  .status[data-s="backlog"] .status-dot { background: var(--p1); }
+  .status[data-s="concluido"] { color: var(--muted); }
+  .status[data-s="backlog"] .status-dot { background: var(--muted); }
 
-  /* botões */
-  .btn { display:inline-flex; align-items:center; gap:6px; font-size:13px; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--bg-elev); transition: all 140ms ease; font-weight: 500; }
+  /* ============ BOTÕES ============ transitions padronizadas 150ms */
+  .btn {
+    display:inline-flex; align-items:center; gap: var(--sp-1);
+    font-size: var(--fs-sm); padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--r-sm); border: 1px solid var(--line-strong);
+    background: var(--surface-1); transition: all 150ms ease;
+    font-weight: 500; font-family: inherit; color: var(--ink);
+  }
   .btn:hover { border-color: var(--ink); }
+  /* foco WCAG: anel cyan 2px com offset 2px */
+  .btn:focus-visible { outline: none; box-shadow: var(--ring-focus); border-color: var(--cyan); }
   .btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-fg); border-color: var(--btn-primary-bg); }
   .btn-primary:hover { background: var(--btn-primary-bg-hover); border-color: var(--btn-primary-bg-hover); color: var(--btn-primary-fg); }
   .btn-ghost { border-color: transparent; background: transparent; }
-  .btn-ghost:hover { background: var(--brand-tint); border-color: transparent; color: var(--brand-dark); }
+  .btn-ghost:hover { background: var(--surface-3); border-color: transparent; color: var(--ink); }
   .btn-danger { color: var(--p0); border-color: transparent; background: transparent; }
   .btn-danger:hover { background: var(--p0-soft); border-color: transparent; }
-  .btn-icon { padding: 6px 10px; }
+  .btn-icon { padding: var(--sp-1) var(--sp-2); }
   .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-  /* inputs */
-  .inp { width:100%; padding: 9px 12px; font-size: 14px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--bg-elev); transition: border 120ms ease; font-family: inherit; color: var(--ink); }
-  .inp:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
-  .lbl { display:block; font-size: 11px; font-weight:600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  /* ============ INPUTS ============ focus ring cyan (era brand) — ação fica reservada pro botão */
+  .inp {
+    width: 100%; padding: var(--sp-2) var(--sp-3);
+    font-size: var(--fs-sm); border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm); background: var(--surface-1);
+    transition: border 150ms ease, box-shadow 150ms ease;
+    font-family: inherit; color: var(--ink);
+  }
+  .inp:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
+  .lbl {
+    display: block; font-size: var(--fs-xs); font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: var(--sp-1);
+  }
 
-  /* tabs */
-  .tab { font-size: 14px; font-weight: 500; padding: 14px 0; margin-right: 32px; color: var(--muted); border-bottom: 2px solid transparent; transition: all 140ms ease; cursor: pointer; }
+  /* ============ TABS ============ */
+  .tab {
+    font-size: var(--fs-sm); font-weight: 500;
+    padding: var(--sp-3) 0; margin-right: var(--sp-8);
+    color: var(--muted); border-bottom: 2px solid transparent;
+    transition: all 150ms ease; cursor: pointer;
+  }
   .tab:hover { color: var(--ink); }
-  .tab.active { color: var(--brand-dark); border-color: var(--brand); }
+  .tab.active { color: var(--ink); border-color: var(--brand); }
 
-  /* kanban */
-  .kcard { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 6px; padding: 14px; margin-bottom: 10px; transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease; cursor: grab; }
-  .kcard:hover { border-color: var(--brand); transform: translateY(-1px); box-shadow: var(--shadow-card); }
+  /* ============ KANBAN ============ */
+  .kcard {
+    background: var(--surface-1); border: 1px solid var(--line);
+    border-radius: var(--r-sm); padding: var(--sp-3);
+    margin-bottom: var(--sp-2);
+    transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+    cursor: grab;
+  }
+  .kcard:hover { border-color: var(--line-strong); transform: translateY(-1px); box-shadow: var(--shadow-card); }
   .kcard:active { cursor: grabbing; }
   .kcard.dragging { opacity: 0.4; transform: none; box-shadow: none; }
-  .kcol { background: var(--kcol-bg); border-radius: 8px; padding: 14px; min-height: 200px; transition: background 120ms ease, outline-color 120ms ease; outline: 2px dashed transparent; outline-offset: -4px; }
+  .kcol {
+    background: var(--kcol-bg); border-radius: var(--r-md);
+    padding: var(--sp-3); min-height: 200px;
+    transition: background 150ms ease, outline-color 150ms ease;
+    outline: 2px dashed transparent; outline-offset: -4px;
+  }
   .kcol.drop-target { background: var(--brand-tint); outline-color: var(--brand); }
 
   /* modal */
   .modal-bg { background: var(--modal-bg); backdrop-filter: blur(3px); }
   .modal-card { box-shadow: var(--shadow-modal); }
 
-  /* kpi */
-  .kpi { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 8px; padding: 22px 24px; transition: all 140ms ease; }
-  .kpi:hover { border-color: var(--brand); }
-  .kpi-num { font-family: 'Quicksand', sans-serif; font-weight: 600; font-size: 44px; letter-spacing: -0.03em; line-height: 1; color: var(--ink); }
+  /* === Autosave indicator (modal task) ===
+     Roda em paralelo ao botão Salvar — debounce 800ms após mutação em `editing`.
+     4 estados: idle (sem visual forte) · dirty (cyan) · saving (cyan pulse) · saved (muted check) · error (vermelho).
+     Botão Salvar continua presente como fallback explícito. */
+  .autosave {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--muted); padding: 4px 8px; border-radius: 999px;
+    background: var(--surface-3);
+    transition: color 150ms ease-out, background 150ms ease-out;
+    user-select: none; white-space: nowrap;
+  }
+  .autosave .as-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); transition: background 150ms ease-out; }
+  .autosave[data-state="dirty"]  { color: #0066AD; background: var(--cyan-soft); }
+  .autosave[data-state="dirty"]  .as-dot { background: var(--cyan); }
+  .autosave[data-state="saving"] { color: #0066AD; background: var(--cyan-soft); }
+  .autosave[data-state="saving"] .as-dot { background: var(--cyan); animation: as-pulse 1s ease-in-out infinite; }
+  .autosave[data-state="saved"]  { color: var(--muted); }
+  .autosave[data-state="saved"]  .as-dot { background: var(--brand); }
+  .autosave[data-state="error"]  { color: var(--p0); background: var(--p0-soft); }
+  .autosave[data-state="error"]  .as-dot { background: var(--p0); }
+  @keyframes as-pulse {
+    0%,100% { opacity: 1;   transform: scale(1); }
+    50%     { opacity: 0.35; transform: scale(1.4); }
+  }
+
+  /* ============ COMMAND PALETTE ============
+     Vencedor C: largura maior, contraste mais alto, empty state com prefix hints.
+     A behavior dos prefixos (!t !c !p >) está só descrita visualmente — parsing fica como
+     próximo passo (sinalizado no markup). */
+  .palette-backdrop { background: rgba(11,18,32,0.48); backdrop-filter: blur(4px); }
+  .palette-shell {
+    width: 100%; max-width: 640px;
+    background: var(--surface-1); border: 1px solid var(--line);
+    border-radius: var(--r-lg); box-shadow: var(--shadow-modal);
+    overflow: hidden;
+  }
+  .palette-header {
+    display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line);
+  }
+  .palette-kbd {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    color: var(--brand-dark); background: var(--brand-tint);
+    border: 1px solid var(--brand-soft); padding: 2px 7px; border-radius: 4px;
+    line-height: 1.3; letter-spacing: 0.04em;
+  }
+  .palette-input {
+    flex: 1; background: transparent; border: 0; outline: none;
+    font-size: 15px; color: var(--ink); padding: 4px 0;
+    font-family: var(--font-sans);
+  }
+  .palette-input::placeholder { color: var(--muted); }
+  .palette-count {
+    font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+    font-feature-settings: "tnum"; min-width: 18px; text-align: right;
+  }
+  .palette-list { max-height: 56vh; overflow-y: auto; }
+  .palette-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--sp-3); padding: var(--sp-3) var(--sp-4);
+    cursor: pointer; border-bottom: 1px solid var(--line);
+    transition: background 0.1s;
+  }
+  .palette-row:last-child { border-bottom: 0; }
+  .palette-row:hover { background: var(--bg-elev); }
+  .palette-row.is-active { background: var(--brand-tint); }
+  .palette-row.is-active .palette-label { color: var(--brand-dark); }
+  .palette-kind {
+    display: inline-block; font-family: var(--font-mono); font-size: 9.5px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); border: 1px solid var(--line);
+    padding: 1px 6px; border-radius: 3px; line-height: 1.4;
+  }
+  .palette-label { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .palette-hint { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .palette-enter { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+  /* empty state */
+  .palette-empty {
+    padding: var(--sp-6) var(--sp-5); text-align: center;
+  }
+  .palette-empty-title {
+    font-family: var(--font-sans); font-weight: 600; font-size: 14px;
+    color: var(--ink); margin-bottom: 4px;
+  }
+  .palette-empty-sub { font-size: 12px; color: var(--muted); margin-bottom: var(--sp-4); }
+  .palette-prefix-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2);
+    max-width: 380px; margin: 0 auto;
+  }
+  .palette-prefix {
+    display: flex; align-items: center; gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--bg-elev); border: 1px solid var(--line);
+    border-radius: var(--r-sm); text-align: left;
+  }
+  .palette-prefix-key {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    color: var(--brand-dark); background: var(--surface-1);
+    border: 1px solid var(--brand-soft); padding: 1px 6px; border-radius: 3px;
+    min-width: 28px; text-align: center;
+  }
+  .palette-prefix-desc { font-size: 11.5px; color: var(--ink-soft); }
+  .palette-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--sp-2) var(--sp-4); border-top: 1px solid var(--line);
+    font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+    background: var(--bg);
+  }
+  .palette-footer kbd {
+    display: inline-block; padding: 0 4px; margin: 0 2px;
+    background: var(--surface-1); border: 1px solid var(--line);
+    border-radius: 3px; font-family: var(--font-mono); font-size: 9.5px;
+    color: var(--ink-soft); line-height: 1.5;
+  }
+
+  /* ============ BULK ACTIONS BAR (fixed-bottom navy) ============
+     Surface navy reforça que é ação em-massa, destacando do fluxo neutro do app. */
+  .bulk-bar {
+    position: fixed; z-index: 55;
+    background: var(--navy); color: #fff;
+    border: 1px solid var(--navy-soft);
+    border-radius: var(--r-md);
+    box-shadow: 0 12px 32px -8px rgba(4,4,39,0.5), 0 4px 12px -4px rgba(4,4,39,0.35);
+  }
+  .bulk-bar-count {
+    font-family: var(--font-mono); font-size: 12px;
+    color: rgba(255,255,255,0.92); white-space: nowrap;
+  }
+  .bulk-bar-count strong { color: #fff; font-weight: 600; }
+  .bulk-bar-sep {
+    width: 1px; height: 18px; background: rgba(255,255,255,0.18);
+    margin: 0 var(--sp-2);
+  }
+  .bulk-bar-clear {
+    background: transparent; border: 0; color: rgba(255,255,255,0.7);
+    font-size: 11px; font-family: var(--font-mono);
+    padding: 4px 8px; border-radius: 4px; cursor: pointer;
+  }
+  .bulk-bar-clear:hover { color: #fff; background: rgba(255,255,255,0.08); }
+  /* selects/buttons dentro do bulk-bar herdam tema escuro */
+  .bulk-bar .inp {
+    background: var(--navy-soft); border-color: rgba(255,255,255,0.15);
+    color: #fff;
+  }
+  .bulk-bar .inp:focus { border-color: rgba(255,255,255,0.5); }
+  .bulk-bar .btn-ghost {
+    color: rgba(255,255,255,0.85); border-color: rgba(255,255,255,0.15);
+    background: transparent;
+  }
+  .bulk-bar .btn-ghost:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+  /* ============ PORTAL CLIENTE (skin separado) ============
+     Cliente NÃO é interno: header navy institucional + hero "Aguardando você"
+     com âmbar quando há ação pendente. Visualmente diferente pra cliente entender
+     "isso é a Kliente 360 te mostrando o status, não o app interno". */
+  .portal-header {
+    background: var(--navy); color: #fff;
+    border-radius: var(--r-md);
+    padding: var(--sp-6) var(--sp-7);
+    border: 1px solid var(--navy-soft);
+  }
+  .portal-header-eyebrow {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+  }
+  .portal-header-name {
+    font-family: var(--font-sans); font-weight: 600;
+    font-size: 28px; line-height: 1.15; color: #fff;
+    margin-top: var(--sp-2);
+  }
+  .portal-header-sub {
+    font-size: 13px; color: rgba(255,255,255,0.7);
+    margin-top: var(--sp-2);
+  }
+  /* hero "aguardando você" — chamada de ação quando cliente tem pendência */
+  .portal-hero-aguardando {
+    background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+    border: 1px solid #fde68a; border-radius: var(--r-md);
+    padding: var(--sp-5) var(--sp-6);
+    display: flex; align-items: center; gap: var(--sp-5);
+  }
+  .portal-hero-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #fef3c7; color: #b45309;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; flex-shrink: 0;
+  }
+  .portal-hero-title {
+    font-family: var(--font-sans); font-weight: 600; font-size: 16px;
+    color: #b45309;
+  }
+  .portal-hero-sub { font-size: 13px; color: #92400e; margin-top: 2px; }
+  /* timeline portal */
+  .portal-timeline-item {
+    display: grid; grid-template-columns: 90px 1fr; gap: var(--sp-3);
+    padding: var(--sp-2) 0; border-bottom: 1px dashed var(--line);
+    font-size: 13px;
+  }
+  .portal-timeline-item:last-child { border-bottom: 0; }
+  .portal-timeline-date {
+    font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+    font-feature-settings: "tnum";
+  }
+  .portal-timeline-evt { color: var(--ink-soft); }
+
+  /* ============ KPI ============
+     Número em Plex Mono 500 com tnum — mono pra números fixa larguras e dá peso executivo. */
+  .kpi {
+    background: var(--surface-1); border: 1px solid var(--line);
+    border-radius: var(--r-md); padding: var(--sp-5) var(--sp-6);
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+    box-shadow: var(--shadow-card);
+  }
+  .kpi:hover { border-color: var(--line-strong); }
+  .kpi-num {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-feature-settings: 'tnum' 1, 'zero' 1;
+    font-weight: 500; font-size: var(--fs-2xl);
+    letter-spacing: -0.02em; line-height: 1; color: var(--ink);
+  }
   .kpi-num.danger { color: var(--p0); }
-  .kpi-num.brand { color: var(--brand); }
-  .kpi-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
-  .kpi-trend { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .kpi-num.brand  { color: var(--brand); }
+  .kpi-num.cyan   { color: var(--cyan); }
+  .kpi-num.warn   { color: var(--p1); }
+  .kpi-lbl {
+    font-size: var(--fs-xs); font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: var(--sp-3);
+  }
+  .kpi-trend { font-size: var(--fs-xs); color: var(--muted); margin-top: var(--sp-2); }
+
+  /* ============ KPI HERO (Meu Foco vencedor A / Dashboard) ============
+     Variante com border-left 3px colorida pra categorizar:
+     - [data-tone="danger"] = atrasadas (P0)
+     - [data-tone="brand"]  = pra hoje
+     - [data-tone="warn"]   = bloqueadas (P1)
+     - [data-tone="info"]   = P0/P1 ativas (cyan)
+     Markup: <div class="kpi kpi-hero" data-tone="danger"> */
+  .kpi-hero { border-left: 3px solid var(--line-strong); padding-left: var(--sp-5); }
+  .kpi-hero[data-tone="danger"] { border-left-color: var(--p0); }
+  .kpi-hero[data-tone="brand"]  { border-left-color: var(--brand); }
+  .kpi-hero[data-tone="warn"]   { border-left-color: var(--p1); }
+  .kpi-hero[data-tone="info"]   { border-left-color: var(--cyan); }
 
   /* atraso */
   .late { color: var(--p0); font-weight: 600; }
@@ -295,18 +666,21 @@
   }
   .manual-row td:first-child { padding-left: 22px; }
 
-  /* aging badge — sinaliza represa por status */
+  /* aging badge — yellow do brand pro warn; p0 cheio pra stale.
+     stale faz parte do conjunto que SALTA (com P0); warn fica médio. */
   .aging-badge {
     display: inline-flex; align-items: center;
-    font-size: 10px; font-weight: 600; font-family: var(--font-mono);
-    padding: 1px 6px; border-radius: 999px;
-    border: 1px solid transparent; line-height: 1.3;
+    font-size: 10px; font-weight: 600;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-feature-settings: 'tnum' 1;
+    padding: 1px var(--sp-2); border-radius: 999px;
+    border: 1px solid transparent; line-height: 1.4;
     white-space: nowrap;
   }
-  .aging-warn  { color: #b45309; background: #fef3c7; border-color: #fde68a; }
-  .aging-stale { color: #fff;    background: var(--danger); border-color: var(--danger); }
-  html.dark .aging-warn  { color: #fcd34d; background: rgba(180,83,9,0.18); border-color: rgba(252,211,77,0.4); }
-  html.dark .aging-stale { color: #fff;    background: var(--danger); border-color: var(--danger); }
+  .aging-warn  { color: #8A6D1F; background: var(--yellow-soft); border-color: var(--yellow); }
+  .aging-stale { color: #fff;    background: var(--p0); border-color: var(--p0); }
+  html.dark .aging-warn  { color: var(--yellow); background: var(--yellow-soft); border-color: transparent; }
+  html.dark .aging-stale { color: #fff;    background: var(--p0); border-color: var(--p0); }
 
   /* toasts */
   .toast {
@@ -328,8 +702,8 @@
   .cal-day { height: 52px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-elev); }
   .cal-day.out { opacity: 0.32; }
   .cal-day.today { border-color: var(--brand); border-width: 2px; padding: 3px 5px; }
-  .cal-day-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-soft); line-height: 1; }
-  .cal-day .cal-count { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 999px; align-self: flex-end; line-height: 1.4; }
+  .cal-day-num { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); line-height: 1; }
+  .cal-day .cal-count { font-family: var(--font-mono); font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 999px; align-self: flex-end; line-height: 1.4; }
   .cal-day-l1                { background: var(--brand-tint); }
   .cal-day-l1 .cal-count     { background: var(--brand-soft); color: var(--brand-dark); }
   .cal-day-l2                { background: var(--p1-soft); }
@@ -344,8 +718,13 @@
     .cal-day .cal-count { font-size: 9px; padding: 1px 4px; }
   }
 
-  /* card padrão */
-  .card { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 8px; }
+  /* card padrão — sombra discreta (1 único nível pra não competir com modal) */
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-card);
+  }
 
   /* scrollbar */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -370,23 +749,29 @@
   .kanban-scroll { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
   /* operacional: 11 colunas, scroll horizontal sempre */
   .kanban-scroll-op { display: grid; grid-template-columns: repeat(11, minmax(240px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
-  /* faixa colorida no topo da coluna indicando o grupo macro */
-  .kcol-op { position: relative; padding-top: 14px; }
+  /* Faixa contínua macro no topo das colunas op (vencedor Kanban A):
+     - 4px (era 3px) — mais perceptível como guia
+     - backlog/concluido neutros pra deixar andamento e bloqueado saltarem */
+  .kcol-op { position: relative; padding-top: var(--sp-4); }
   .kcol-op::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 3px 3px 0 0;
-    background: var(--line);
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    border-radius: 4px 4px 0 0; background: var(--line-strong);
   }
   .kcol-op[data-m="andamento"]::before { background: var(--brand); }
   .kcol-op[data-m="bloqueado"]::before { background: var(--p0); }
-  .kcol-op[data-m="concluido"]::before { background: var(--p3); opacity: 0.5; }
-  .kcol-op[data-m="backlog"]::before    { background: var(--muted); opacity: 0.4; }
+  .kcol-op[data-m="concluido"]::before { background: var(--brand-soft); }
+  .kcol-op[data-m="backlog"]::before    { background: var(--line-strong); }
   .kcol-op-crumb {
-    font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600;
-    color: var(--muted); font-family: 'JetBrains Mono', monospace;
-    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    display: flex; align-items: center; gap: var(--sp-1);
   }
   .kcol-op-crumb::after { content: '›'; opacity: 0.5; }
-  .kcol-op-name { font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600; line-height: 1.15; color: var(--ink); margin-top: 3px; }
+  .kcol-op-name {
+    font-family: 'IBM Plex Sans', sans-serif; font-size: var(--fs-sm);
+    font-weight: 600; line-height: 1.2; color: var(--ink); margin-top: 3px;
+  }
   .view-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--bg-elev); }
   .view-toggle button { padding: 6px 12px; font-size: 12px; font-weight: 500; color: var(--muted); border: none; background: transparent; cursor: pointer; transition: all 0.15s; }
   .view-toggle button:hover { color: var(--ink); }
@@ -396,7 +781,7 @@
 
   /* calendário */
   .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
-  .cal-head { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: var(--muted); padding: 4px 6px; font-family: 'JetBrains Mono', monospace; }
+  .cal-head { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: var(--muted); padding: 4px 6px; font-family: var(--font-mono); }
   .cal-cell { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 4px; min-height: 64px; padding: 4px 5px; cursor: default; overflow: hidden; transition: box-shadow 0.15s, border-color 0.15s; }
   @media (min-width: 768px) { .cal-cell { min-height: 120px; padding: 6px 8px; } }
   .cal-cell.has-tasks { cursor: pointer; }
@@ -404,7 +789,7 @@
   .cal-cell.today { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); }
   .cal-cell.selected { border-color: var(--brand-dark); box-shadow: inset 0 0 0 2px var(--brand-dark); background: var(--brand-tint); }
   .cal-cell.weekend { background: var(--bg); }
-  .cal-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: var(--ink-soft); }
+  .cal-num { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--ink-soft); }
   .cal-cell.today .cal-num { color: var(--brand-dark); }
   .cal-task { display: block; margin-top: 2px; padding: 1px 4px; border-radius: 2px; font-size: 10px; line-height: 1.3; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--brand-tint); color: var(--brand-dark); border: 1px solid var(--brand); }
   .cal-task.late    { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
@@ -447,12 +832,13 @@
   }
 
   /* ============ Mentions em comments ============ */
-  .mention { display: inline-block; padding: 0 4px; border-radius: 3px; background: var(--brand-tint); color: var(--brand-dark); font-weight: 500; }
+  /* mentions — cyan-soft (era brand-tint) pra não competir com botões brand */
+  .mention { display: inline-block; padding: 0 4px; border-radius: 3px; background: var(--cyan-soft); color: var(--cyan); font-weight: 500; }
 
   /* ============ MANUAL (markdown rendered) ============ */
-  .help-md { color: var(--ink); font-family: 'Inter', sans-serif; line-height: 1.65; font-size: 14.5px; }
+  .help-md { color: var(--ink); font-family: var(--font-sans); line-height: 1.65; font-size: 14.5px; }
   .help-md > *:first-child { margin-top: 0 !important; }
-  .help-md h1, .help-md h2, .help-md h3, .help-md h4 { font-family: 'Manrope', sans-serif; color: var(--ink); font-weight: 700; line-height: 1.25; scroll-margin-top: 12px; }
+  .help-md h1, .help-md h2, .help-md h3, .help-md h4 { font-family: var(--font-sans); color: var(--ink); font-weight: 700; line-height: 1.25; scroll-margin-top: 12px; }
   .help-md h1 { font-size: 26px; margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--brand); color: var(--brand); }
   .help-md h2 { font-size: 20px; margin: 28px 0 10px; padding-left: 8px; border-left: 3px solid var(--brand); }
   .help-md h3 { font-size: 16px; margin: 20px 0 8px; color: var(--ink); }
@@ -464,7 +850,7 @@
   .help-md li > p { margin: 2px 0; }
   .help-md a { color: var(--brand-dark); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
   .help-md a:hover { color: var(--brand); }
-  .help-md code { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; background: var(--bg-elev); border: 1px solid var(--line); padding: 1px 5px; border-radius: 3px; color: var(--brand-dark); }
+  .help-md code { font-family: var(--font-mono); font-size: 12.5px; background: var(--bg-elev); border: 1px solid var(--line); padding: 1px 5px; border-radius: 3px; color: var(--brand-dark); }
   .help-md pre { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; margin: 10px 0; }
   .help-md pre code { background: transparent; border: 0; padding: 0; color: var(--ink); }
   .help-md blockquote { border-left: 3px solid var(--brand); background: var(--brand-tint); color: var(--ink-soft); margin: 10px 0; padding: 8px 14px; border-radius: 0 4px 4px 0; }
@@ -483,7 +869,7 @@
     padding: 2px 7px; border-radius: 4px;
     background: var(--sig-amber-bg); color: var(--sig-amber-fg);
     border: 1px solid var(--sig-amber); border-color: color-mix(in srgb, var(--sig-amber) 40%, transparent);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     text-transform: lowercase; letter-spacing: 0.02em;
     white-space: nowrap;
   }
@@ -492,7 +878,7 @@
     font-size: 9px; font-weight: 700;
     padding: 1px 5px; border-radius: 3px;
     background: var(--sig-amber); color: #fff;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     text-transform: uppercase; letter-spacing: 0.05em;
   }
 
@@ -504,7 +890,7 @@
   .brief-tag {
     display: inline-block; font-size: 9.5px; font-weight: 700;
     padding: 3px 8px; border-radius: 4px; text-transform: uppercase;
-    letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em; font-family: var(--font-mono);
     flex-shrink: 0; min-width: 64px; text-align: center;
   }
   .brief-tag-sobrecarga { background: var(--sig-red);   color: #fff; }
@@ -518,8 +904,8 @@
   .brief-kpi-danger { border-color: var(--p0); background: color-mix(in srgb, var(--p0) 8%, var(--bg)); }
   .brief-kpi-warn   { border-color: #f59e0b; background: #fff7ed; }
   .brief-kpi-label { font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-  .brief-kpi-value { font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 700; line-height: 1.1; margin-top: 4px; color: var(--ink); }
-  .brief-kpi-delta { font-size: 10.5px; margin-top: 5px; font-family: 'JetBrains Mono', monospace; line-height: 1.4; }
+  .brief-kpi-value { font-family: var(--font-sans); font-size: 28px; font-weight: 700; line-height: 1.1; margin-top: 4px; color: var(--ink); }
+  .brief-kpi-delta { font-size: 10.5px; margin-top: 5px; font-family: var(--font-mono); line-height: 1.4; }
 
   /* ============ MEMO EXECUTIVO (PDF via print) ============
      Layout linear, narrativo. Flui em 1-2 páginas naturalmente.
@@ -529,7 +915,7 @@
     width: 794px;
     visibility: hidden; pointer-events: none; z-index: -1;
     background: #fff; color: #111;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-sans);
   }
   .print-only * { box-sizing: border-box; }
   .print-only .memo { padding: 14mm 16mm; max-width: 100%; }
@@ -537,19 +923,19 @@
     border-bottom: 2px solid #009900; padding-bottom: 10px; margin-bottom: 16px;
   }
   .print-only .memo-title {
-    font-family: 'Manrope', 'Inter', sans-serif; font-size: 22px;
+    font-family: var(--font-sans); font-size: 22px;
     font-weight: 700; color: #009900; line-height: 1.1;
   }
   .print-only .memo-meta {
     display: flex; justify-content: space-between; font-size: 9.5px;
-    color: #666; margin-top: 6px; font-family: 'JetBrains Mono', monospace;
+    color: #666; margin-top: 6px; font-family: var(--font-mono);
   }
   .print-only .memo-meta strong { color: #111; }
 
   .print-only .memo-block { margin-bottom: 14px; page-break-inside: avoid; break-inside: avoid; }
   .print-only .memo-block-table { page-break-inside: auto; }
   .print-only .memo-block h2 {
-    font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700;
+    font-family: var(--font-sans); font-size: 12px; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.12em; color: #111;
     margin: 0 0 8px; padding-left: 8px; border-left: 3px solid #009900;
   }
@@ -578,7 +964,7 @@
     display: inline-block; font-size: 8.5px; font-weight: 700;
     padding: 1.5px 6px; border-radius: 3px; margin-right: 6px;
     text-transform: uppercase; letter-spacing: 0.05em;
-    font-family: 'JetBrains Mono', monospace; vertical-align: middle;
+    font-family: var(--font-mono); vertical-align: middle;
     min-width: 48px; text-align: center;
   }
   .print-only .memo-tag-vermelho { background: #dc2626; color: #fff; }
@@ -591,8 +977,8 @@
     display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap;
   }
   .print-only .memo-trend-label { color: #555; min-width: 130px; }
-  .print-only .memo-trend strong { color: #111; font-family: 'JetBrains Mono', monospace; }
-  .print-only .memo-trend-delta { font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+  .print-only .memo-trend strong { color: #111; font-family: var(--font-mono); }
+  .print-only .memo-trend-delta { font-size: 10px; font-family: var(--font-mono); }
 
   /* Tabelas memo */
   .print-only table.memo-tbl { width: 100%; border-collapse: collapse; font-size: 10px; }
@@ -605,7 +991,7 @@
     padding: 5px 6px; border-bottom: 1px solid #eee; vertical-align: top;
   }
   .print-only table.memo-tbl tbody tr:nth-child(even) td { background: #fafafa; }
-  .print-only .memo-num { text-align: right; font-family: 'JetBrains Mono', monospace; }
+  .print-only .memo-num { text-align: right; font-family: var(--font-mono); }
   .print-only .memo-signal { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
   .print-only .memo-signal-verde     { background: #16a34a; }
   .print-only .memo-signal-amarelo   { background: #f59e0b; }
@@ -624,7 +1010,7 @@
 
   .print-only .memo-foot {
     margin-top: 18px; padding-top: 8px; border-top: 1px solid #e5e5e5;
-    font-size: 8.5px; color: #999; font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px; color: #999; font-family: var(--font-mono);
     text-align: center;
   }
 
@@ -3015,6 +3401,12 @@
         <span class="font-brand text-lg md:text-xl font-semibold" x-text="editing.id ? 'Editar tarefa' : 'Nova tarefa'"></span>
         <span x-show="editing.id && (editing.reopenCount || 0) > 0" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--p1-soft);color:var(--p1)" :title="'Reaberta ' + editing.reopenCount + ' vez(es)'" x-text="'reaberta ' + editing.reopenCount + 'x'"></span>
         <span x-show="editing.id && editing.arquivadoEm" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Tarefa arquivada (oculta de listas/dashboards)">arquivada</span>
+        <!-- Autosave indicator — só pra tasks existentes (id presente). Roda em paralelo ao botão Salvar do footer. -->
+        <span x-show="editing.id" class="autosave" :data-state="saveState"
+              :title="saveState === 'error' ? 'Autosave falhou — clique em Salvar' : 'Autosave ativo · ⌘S força salvar'">
+          <span class="as-dot"></span>
+          <span x-text="autosaveLabel()"></span>
+        </span>
       </div>
       <button class="btn btn-ghost btn-icon" @click="modal=false">✕</button>
     </div>
@@ -3717,6 +4109,16 @@ function app() {
     ],
     backlogDragId: '',
     modal: false,
+    // === Autosave (modal task) ===
+    // saveState: 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
+    // _autosaveTimer: handle do setTimeout (debounce 800ms)
+    // _autosaveSeq: sequência pra ignorar respostas stale (out-of-order writes)
+    // lastSavedAt: ms epoch do último save bem-sucedido (pra renderizar "salvo · há Ns")
+    // Botão Salvar do footer continua funcionando — autosave roda em paralelo.
+    saveState: 'idle',
+    lastSavedAt: 0,
+    _autosaveTimer: null,
+    _autosaveSeq: 0,
     loading: true,
     refreshing: false,
     theme: (() => { try { return localStorage.getItem('kliente360-theme') || 'light'; } catch(_) { return 'light'; } })(),
@@ -3846,6 +4248,17 @@ function app() {
       this.editing = this.blankTask();
       this.hydrateFiltersFromUrl();
       this.$watch('f', () => this.syncFiltersToUrl(), { deep: true });
+      // === Autosave watcher: debounce 800ms após mutação em editing ===
+      // Só dispara quando: (a) modal aberto, (b) task já existe (id presente),
+      // (c) título não está vazio. Tasks novas exigem clique no botão Salvar.
+      this.$watch('editing', (next) => {
+        if (!this.modal) return;
+        if (!next || !next.id) return;
+        if (!next.titulo || !next.titulo.trim()) return;
+        this.saveState = 'dirty';
+        clearTimeout(this._autosaveTimer);
+        this._autosaveTimer = setTimeout(() => this.autosaveTaskNow(), 800);
+      }, { deep: true });
       // Atalhos globais de teclado.
       window.addEventListener('keydown', (e) => this.handleGlobalShortcut(e));
       // Restaura "atuando como" do storage
@@ -6801,8 +7214,8 @@ function app() {
           data: { labels: vol.map(d => fmtDay(d.dia)), datasets: [{ data: vol.map(d => d.eventos), backgroundColor: brand, borderRadius: 3, maxBarThickness: 16 }] },
           options: { ...baseOpts,
             scales: {
-              x: { grid: { display: false }, ticks: { color: muted, font: { family: 'JetBrains Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }, border: { display: false } },
-              y: { grid: { color: line }, ticks: { color: inkSoft, font: { family: 'JetBrains Mono', size: 10 }, stepSize: 1, precision: 0 }, border: { display: false } }
+              x: { grid: { display: false }, ticks: { color: muted, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }, border: { display: false } },
+              y: { grid: { color: line }, ticks: { color: inkSoft, font: { family: 'IBM Plex Mono', size: 10 }, stepSize: 1, precision: 0 }, border: { display: false } }
             }
           }
         });
@@ -6816,8 +7229,8 @@ function app() {
           data: { labels: dau.map(d => fmtDay(d.dia)), datasets: [{ data: dau.map(d => d.pessoas), backgroundColor: dau.map((_, i) => i === dau.length - 1 ? brandDark : brand), borderRadius: 3, maxBarThickness: 24 }] },
           options: { ...baseOpts,
             scales: {
-              x: { grid: { display: false }, ticks: { color: muted, font: { family: 'JetBrains Mono', size: 10 } }, border: { display: false } },
-              y: { grid: { color: line }, ticks: { color: inkSoft, font: { family: 'JetBrains Mono', size: 10 }, stepSize: 1, precision: 0 }, border: { display: false } }
+              x: { grid: { display: false }, ticks: { color: muted, font: { family: 'IBM Plex Mono', size: 10 } }, border: { display: false } },
+              y: { grid: { color: line }, ticks: { color: inkSoft, font: { family: 'IBM Plex Mono', size: 10 }, stepSize: 1, precision: 0 }, border: { display: false } }
             }
           }
         });
@@ -7192,8 +7605,8 @@ function app() {
         ink: v('--ink'), inkSoft: v('--ink-soft'), muted: v('--muted'),
         line: v('--line'), bgElev: v('--bg-elev'),
       };
-      const fontBrand = 'Manrope';
-      const fontMono  = 'JetBrains Mono';
+      const fontBrand = 'IBM Plex Sans';
+      const fontMono  = 'IBM Plex Mono';
       const baseOpts = {
         responsive: true, maintainAspectRatio: false,
         plugins: {
@@ -7560,6 +7973,12 @@ function app() {
       this.newComment = '';
       this.replyingToId = '';
       this.newReply = '';
+      // Autosave: reseta estado ao abrir. Watcher inicial dispara um "dirty" falso porque
+      // editing muda inteiro — supressamos limpando o timer logo após o tick.
+      this.saveState = 'saved';
+      this.lastSavedAt = Date.now();
+      clearTimeout(this._autosaveTimer);
+      this.$nextTick(() => { clearTimeout(this._autosaveTimer); this.saveState = 'saved'; });
       this.modal = true;
       this.loadComments(t.id);
       this.loadHistory(t.id);
@@ -7627,10 +8046,46 @@ function app() {
         (a, b) => new Date(b.occurred_at) - new Date(a.occurred_at)
       );
     },
-    async saveTask() {
+    // === Autosave silencioso ===
+    // Roda em paralelo ao saveTask() do botão. NÃO fecha modal, NÃO toasta sucesso,
+    // só atualiza o indicador. Reaproveita saveTask({ silent: true }).
+    async autosaveTaskNow() {
+      if (!this.modal) return;
+      if (!this.editing || !this.editing.id) return;
+      if (!this.editing.titulo || !this.editing.titulo.trim()) return;
+      const seq = ++this._autosaveSeq;
+      this.saveState = 'saving';
+      try {
+        await this.saveTask({ silent: true });
+        // Ignora resposta stale (outra mutação já disparou save)
+        if (seq !== this._autosaveSeq) return;
+        this.saveState = 'saved';
+        this.lastSavedAt = Date.now();
+      } catch (err) {
+        if (seq !== this._autosaveSeq) return;
+        this.saveState = 'error';
+        console.warn('[autosave] falhou:', err);
+      }
+    },
+    // String "salvo · há Ns" para o indicador. Reativa via lastSavedAt + tick implícito do Alpine.
+    autosaveLabel() {
+      if (this.saveState === 'saving') return 'salvando…';
+      if (this.saveState === 'dirty')  return 'editando…';
+      if (this.saveState === 'error')  return 'falhou · tentar de novo';
+      if (this.saveState === 'saved' && this.lastSavedAt) {
+        const s = Math.max(0, Math.round((Date.now() - this.lastSavedAt) / 1000));
+        if (s < 3)   return 'salvo · agora';
+        if (s < 60)  return 'salvo · há ' + s + 's';
+        const m = Math.round(s / 60);
+        return 'salvo · há ' + m + 'min';
+      }
+      return 'autosave ativo';
+    },
+    async saveTask(opts) {
+      const silent = !!(opts && opts.silent);
       const e = this.editing;
       if (!e.titulo || !e.titulo.trim()) {
-        this.toast('error', 'Dê um título à tarefa.');
+        if (!silent) this.toast('error', 'Dê um título à tarefa.');
         return;
       }
       this.track(e.id ? 'task_edit' : 'task_create', { subetapa: e.subetapa, prioridade: e.prioridade });
@@ -7668,11 +8123,13 @@ function app() {
             subetapaEm: subChanged    ? nowMs : prev.subetapaEm,
           };
         }
-        this.modal = false;
+        // Autosave: NÃO fecha modal. Botão Salvar mantém comportamento antigo (fecha).
+        if (!silent) this.modal = false;
         const { error } = await sb.from('tasks').update(payload).eq('id', e.id);
         if (error) {
           if (prev) this.tasks[i] = prev;
-          this.toast('error', 'Erro ao salvar: ' + error.message);
+          if (!silent) this.toast('error', 'Erro ao salvar: ' + error.message);
+          else throw new Error(error.message);
           return;
         }
         if (statusChanged) {
@@ -7696,9 +8153,13 @@ function app() {
         // Insert
         payload.status_em = nowIso;
         payload.subetapa_em = nowIso;
-        this.modal = false;
+        if (!silent) this.modal = false;
         const { data, error } = await sb.from('tasks').insert(payload).select('*').single();
-        if (error) { this.toast('error', 'Erro ao criar: ' + error.message); return; }
+        if (error) {
+          if (!silent) this.toast('error', 'Erro ao criar: ' + error.message);
+          else throw new Error(error.message);
+          return;
+        }
         if (data && !this.tasks.some(t => t.id === data.id)) {
           this.tasks = [taskFromDb(data), ...this.tasks];
         }
