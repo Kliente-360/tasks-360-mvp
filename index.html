@@ -1122,7 +1122,7 @@
   <!-- Filtros — ordem espelha colunas da tabela: Tarefa · Cliente · Projeto · Resp · Pri · Cmplx · Status · Tag -->
   <div class="grid grid-cols-2 md:grid-cols-12 gap-2 md:gap-3 mb-4 md:mb-5">
     <div class="col-span-1 md:col-span-2">
-      <input type="text" class="inp" placeholder="Buscar título…" x-model="f.q">
+      <input type="text" class="inp" placeholder="Buscar título…" x-model.debounce.150ms="f.q">
     </div>
     <div class="col-span-1 md:hidden">
       <button class="btn w-full justify-center" @click="filtersOpen = !filtersOpen" type="button">
@@ -4158,8 +4158,8 @@ function app() {
           this._buildTasksQuery(),
           sb.from('task_status_history')
             .select('task_id, from_status, to_status, actor_pessoa_id, actor_source, occurred_at')
-            .order('occurred_at', { ascending: false })
-            .limit(5000),
+            .gte('occurred_at', this._tasksWindowCutoff())
+            .order('occurred_at', { ascending: false }),
           sb.from('task_dependencies').select('task_id, depende_de_id'),
         ]);
         const err = c.error || p.error || ps.error || t.error || h.error || td.error;
@@ -4392,11 +4392,23 @@ function app() {
       for (const t of this.tasks) s = (s * 31 + (t.statusEm | 0) + (t.subetapaEm | 0)) | 0;
       return s;
     },
+    // LRU: limita memos a 50 entries pra não inflar memória em sessão longa.
+    // Map preserva ordem de inserção; reinsere ao hit pra "renovar" position.
+    _MEMO_MAX: 50,
     _memo(key, sig, fn) {
       const c = this._memos.get(key);
-      if (c && c.sig === sig) return c.value;
+      if (c && c.sig === sig) {
+        // hit: move pra fim (LRU)
+        this._memos.delete(key);
+        this._memos.set(key, c);
+        return c.value;
+      }
       const value = fn();
       this._memos.set(key, { sig, value });
+      if (this._memos.size > this._MEMO_MAX) {
+        const oldest = this._memos.keys().next().value;
+        this._memos.delete(oldest);
+      }
       return value;
     },
 
