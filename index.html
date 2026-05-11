@@ -477,6 +477,25 @@
 
   [x-cloak] { display: none !important; }
 
+  /* ============ TRIAGEM ============ */
+  .triage-chip {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 4px;
+    background: var(--sig-amber-bg); color: var(--sig-amber-fg);
+    border: 1px solid var(--sig-amber); border-color: color-mix(in srgb, var(--sig-amber) 40%, transparent);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: lowercase; letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .triage-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 9px; font-weight: 700;
+    padding: 1px 5px; border-radius: 3px;
+    background: var(--sig-amber); color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
   /* ============ BRIEFING EXECUTIVO ============ */
   .brief-signal { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .brief-signal-verde     { background: var(--sig-green); }
@@ -960,6 +979,7 @@
                   <span class="text-[10px] font-mono text-muted">› <span class="text-ink-soft" x-text="lblSub(t.subetapa)"></span></span>
                 </template>
                 <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" x-text="agingDays(t)+'d'"></span>
+                <span x-show="needsTriage(t)" class="triage-badge" :title="triageFailures(t).join(' · ')">triar</span>
               </div>
             </div>
           </template>
@@ -1081,6 +1101,58 @@
       </div>
       <p class="text-sm text-ink-soft leading-relaxed" x-text="briefingCapacidade.recomendacao"></p>
     </div>
+  </div>
+</section></template>
+
+<!-- ============ TRIAGEM ============ -->
+<template x-if="tab==='triagem'"><section class="fade-up">
+  <div class="max-w-[1100px] mx-auto space-y-4 md:space-y-5">
+    <!-- Header narrativa -->
+    <div class="flex items-baseline justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="font-brand text-2xl md:text-3xl font-bold leading-tight">Triagem</h1>
+        <p class="text-muted text-sm mt-1">
+          <span x-show="triagemTasks.length === 0">Backlog está triado. Bom trabalho.</span>
+          <span x-show="triagemTasks.length > 0">
+            <strong x-text="triagemTasks.length"></strong> tarefa<span x-show="triagemTasks.length !== 1">s</span> precisa<span x-show="triagemTasks.length !== 1">m</span> de revisão · responsável, cliente, prazo ou esforço faltando.
+          </span>
+        </p>
+      </div>
+      <div class="text-xs text-muted font-mono">click no card pra editar e completar</div>
+    </div>
+
+    <!-- Empty state -->
+    <div x-show="triagemTasks.length === 0" class="card p-8 md:p-10 text-center">
+      <div class="font-brand text-lg text-ink mb-2">Nenhuma tarefa em triagem</div>
+      <div class="text-sm text-muted">Toda task tem responsável, cliente e — onde aplica — prazo e esforço.</div>
+    </div>
+
+    <!-- Cards -->
+    <template x-for="t in triagemTasks" :key="t.id">
+      <div class="card p-4 md:p-5 cursor-pointer hover:border-line-strong transition-colors" @click="openEdit(t)">
+        <div class="flex items-start justify-between gap-3 mb-2">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-baseline gap-2 flex-wrap mb-1">
+              <span class="pri" :class="'pri-'+t.prioridade" x-show="t.prioridade">
+                <span class="pri-dot"></span>
+                <span x-text="t.prioridade"></span>
+              </span>
+              <span class="font-medium text-ink" x-text="t.titulo"></span>
+            </div>
+            <div class="text-xs text-muted font-mono">
+              <span x-text="lblSub(t.subetapa)"></span>
+              <span x-show="t.clienteId"> · <span x-text="nomeCliente(t.clienteId)"></span></span>
+              <span x-show="t.criadoEm"> · criada há <span x-text="agingDays({ subetapaEm: t.criadoEm }) + 'd'"></span></span>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-1 shrink-0 justify-end max-w-[55%]">
+            <template x-for="f in t._failures" :key="f">
+              <span class="triage-chip" x-text="f"></span>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </section></template>
 
@@ -1312,6 +1384,7 @@
                     <span x-text="lblStatus(t.status)"></span>
                   </span>
                   <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias neste status'" x-text="agingDays(t)+'d'"></span>
+                <span x-show="needsTriage(t)" class="triage-badge" :title="triageFailures(t).join(' · ')">triar</span>
                 </div>
                 <div class="text-[10px] text-muted font-mono mt-1" x-text="tempoNaEtapa(t)"></div>
               </td>
@@ -1393,6 +1466,7 @@
                   <span class="text-[10px] font-mono text-muted">› <span class="text-ink-soft" x-text="lblSub(t.subetapa)"></span></span>
                 </template>
                 <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" x-text="agingDays(t)+'d'"></span>
+                <span x-show="needsTriage(t)" class="triage-badge" :title="triageFailures(t).join(' · ')">triar</span>
               </div>
             </div>
           </template>
@@ -1493,6 +1567,7 @@
             <div class="flex items-center gap-1.5 mt-2">
               <div class="text-[10px] text-muted font-mono" x-text="tempoNaSubetapa(t) + ' nesta etapa'"></div>
               <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias na macro'" x-text="agingDays(t)+'d'"></span>
+                <span x-show="needsTriage(t)" class="triage-badge" :title="triageFailures(t).join(' · ')">triar</span>
             </div>
             <div class="mt-3 pt-3 border-t border-line" @click.stop>
               <select class="inp text-xs py-1.5" :value="t.subetapa" @change="setTaskSubetapa(t, $event.target.value)" title="Mover para…">
@@ -1557,6 +1632,7 @@
             <div class="flex items-center gap-1.5 mt-2">
               <div class="text-[10px] text-muted font-mono" x-text="tempoNaEtapa(t) + ' nesta etapa'"></div>
               <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias neste status'" x-text="agingDays(t)+'d'"></span>
+                <span x-show="needsTriage(t)" class="triage-badge" :title="triageFailures(t).join(' · ')">triar</span>
             </div>
           </div>
         </template>
@@ -1656,6 +1732,7 @@
             <div class="flex items-center gap-1.5 mt-2">
               <div class="text-[10px] text-muted font-mono" x-text="tempoNaSubetapa(t) + ' nesta etapa'"></div>
               <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias na macro'" x-text="agingDays(t)+'d'"></span>
+                <span x-show="needsTriage(t)" class="triage-badge" :title="triageFailures(t).join(' · ')">triar</span>
             </div>
             <div class="mt-3 pt-3 border-t border-line" @click.stop>
               <select class="inp text-xs py-1.5" :value="t.subetapa" @change="setTaskSubetapa(t, $event.target.value)" title="Mover para…">
@@ -3533,6 +3610,7 @@ function app() {
     tabsList: [
       { key: 'foco',    label: 'Meu foco', roles: ['admin','interno'] },
       { key: 'brief',   label: 'Briefing', roles: ['admin'] },
+      { key: 'triagem', label: 'Triagem',  roles: ['admin','interno'] },
       { key: 'backlog', label: 'Backlog',  roles: ['admin','interno'] },
       { key: 'kanban',  label: 'Kanban',   roles: ['admin','interno'], hideMobile: true },
       { key: 'cal',     label: 'Calendário', roles: ['admin','interno'] },
@@ -4553,6 +4631,23 @@ function app() {
     // Top do time pra cabe na página (8 pessoas)
     get reportTeamCompact() {
       return this.reportTeamLoad.slice(0, 8);
+    },
+
+    // ============ TRIAGEM ============
+    // Tasks que precisam de triagem (sem responsável/cliente/prazo/esforço
+    // conforme etapa). Memoizado pra não recalcular em todo render.
+    get triagemTasks() {
+      return this._memo('triagemTasks', this._tasksSig, () => {
+        const out = [];
+        for (const t of this.tasks) {
+          const failures = triageFailures(t);
+          if (failures.length === 0) continue;
+          out.push({ ...t, _failures: failures, _failCount: failures.length });
+        }
+        // Mais críticas primeiro (mais critérios falhando)
+        out.sort((a, b) => b._failCount - a._failCount || (a.criadoEm || 0) - (b.criadoEm || 0));
+        return out;
+      });
     },
 
     // ===================== BRIEFING EXECUTIVO =====================
@@ -6487,6 +6582,25 @@ function app() {
         detalhe: 'Calibrar estimativa pra próxima similar; entender o gap.',
         taskIds: bEstimFurada.map(t => t.id),
       });
+
+      // 10. Triagem represada — tasks com responsável/cliente/prazo/esforço
+      // faltando conforme etapa. Reusa o memo de triagemTasks via getter.
+      const triagem = this.triagemTasks;
+      if (triagem.length) {
+        // Conta por critério mais comum pra detalhe
+        const counters = { 'sem responsável': 0, 'sem cliente': 0, 'sem prazo': 0, 'sem esforço': 0 };
+        for (const t of triagem) for (const f of t._failures) counters[f] = (counters[f] || 0) + 1;
+        const detalhe = Object.entries(counters)
+          .filter(([_, n]) => n > 0)
+          .map(([k, n]) => `${n} ${k}`).join(' · ');
+        out.push({
+          severity: triagem.length >= 10 ? 'alta' : 'media',
+          kind: 'triagem-represada',
+          titulo: `${triagem.length} tarefa(s) precisando de triagem`,
+          detalhe,
+          taskIds: triagem.map(t => t.id),
+        });
+      }
 
       const sevRank = { alta: 0, media: 1, baixa: 2 };
       out.sort((a, b) => (sevRank[a.severity] ?? 9) - (sevRank[b.severity] ?? 9));

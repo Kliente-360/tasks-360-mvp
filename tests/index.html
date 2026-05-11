@@ -170,6 +170,47 @@
     it('100h → mini_projeto', () => eq(effTamanho({ esforco: 100 }), 'mini_projeto'));
   });
 
+  describe('triageFailures', () => {
+    const full = { pessoaId: 'p1', clienteId: 'c1', prazo: '2026-06-01', esforco: 4, subetapa: 'em_desenvolvimento', status: 'andamento' };
+    it('task completa em etapa avançada → vazio', () => {
+      eq(triageFailures(full), []);
+    });
+    it('concluída nunca precisa triar', () => {
+      eq(triageFailures({ ...full, status: 'concluido', pessoaId: '', clienteId: '' }), []);
+    });
+    it('sem responsável (backlog) → sinaliza', () => {
+      eq(triageFailures({ ...full, subetapa: 'backlog', pessoaId: '' }), ['sem responsável']);
+    });
+    it('sem cliente em qualquer etapa → sinaliza', () => {
+      eq(triageFailures({ ...full, subetapa: 'backlog', clienteId: '' }), ['sem cliente']);
+    });
+    it('sem prazo em backlog → não sinaliza (rank 0)', () => {
+      eq(triageFailures({ ...full, subetapa: 'backlog', prazo: '' }), []);
+    });
+    it('sem prazo em priorizado (rank 2) → sinaliza', () => {
+      eq(triageFailures({ ...full, subetapa: 'priorizado', prazo: '' }), ['sem prazo']);
+    });
+    it('sem esforço em escopo_definido (rank 3) → não sinaliza ainda', () => {
+      eq(triageFailures({ ...full, subetapa: 'escopo_definido', esforco: 0 }), []);
+    });
+    it('sem esforço em em_desenvolvimento (rank 4) → sinaliza', () => {
+      eq(triageFailures({ ...full, subetapa: 'em_desenvolvimento', esforco: 0 }), ['sem esforço']);
+    });
+    it('múltiplos critérios falhando', () => {
+      const out = triageFailures({ ...full, subetapa: 'em_desenvolvimento', pessoaId: '', clienteId: '', prazo: '', esforco: 0 });
+      eq(out, ['sem responsável', 'sem cliente', 'sem prazo', 'sem esforço']);
+    });
+    it('bloqueado não aplica (rank -1)', () => {
+      eq(triageFailures({ ...full, subetapa: 'bloqueado', prazo: '', esforco: 0 }), []);
+    });
+    it('needsTriage true quando alguma falha', () => {
+      truthy(needsTriage({ ...full, pessoaId: '' }));
+    });
+    it('needsTriage false quando completa', () => {
+      eq(needsTriage(full), false);
+    });
+  });
+
   // =================== RENDER ===================
   const results = document.getElementById('results');
   let pass = 0, fail = 0;
