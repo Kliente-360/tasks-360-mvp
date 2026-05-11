@@ -1294,12 +1294,16 @@
     /* Sheet card: NÃO full-screen. Pequena margem mostra overlay e mantém
        percepção de "modal sobre tela anterior". Usa dvh (dynamic viewport
        height) pra evitar bug do Safari onde 100vh inclui URL bar e empurra
-       header/footer pra fora da área visível. */
-    .modal-bg.p-2, .modal-bg.p-4 { padding: 12px !important; }
+       header/footer pra fora da área visível. Bottom padding respeita
+       safe-area-inset (home indicator iPhone) pra não cortar footer. */
+    .modal-bg.p-2, .modal-bg.p-4 {
+      padding: 12px !important;
+      padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    }
     .tmodal {
       max-width: 100% !important; width: 100% !important;
       height: auto !important;
-      max-height: calc(100dvh - 24px) !important;
+      max-height: calc(100dvh - 24px - env(safe-area-inset-bottom, 0px)) !important;
       border-radius: var(--r-md) !important;
       min-width: 0 !important;
     }
@@ -1373,14 +1377,22 @@
     .tmodal-composer textarea { min-height: 64px; padding: 10px 12px; }
     .tmodal-thread { padding: var(--sp-3); }
 
-    /* footer compacto + autosave migrado · arquivar/excluir viram só ícone */
-    .tmodal-foot { flex-wrap: nowrap; padding: var(--sp-2); gap: 6px; }
+    /* footer mobile: touch-friendly (44px alvo), labels visíveis, wrap
+       quando não couber pra evitar corte. */
+    .tmodal-foot {
+      flex-wrap: wrap; gap: 6px;
+      padding: 10px 12px;
+    }
     .tmodal-foot .hint { display: none; }
     .tmodal-foot .autosave-mob { display: inline-flex; flex-shrink: 0; }
-    .tmodal-foot .btn-foot .lbl { display: none; }
-    .tmodal-foot .btn-foot .ico { display: inline; font-size: 14px; line-height: 1; }
-    .tmodal-foot .btn-foot { padding: 6px 9px; flex-shrink: 0; }
-    .tmodal-foot .btn { flex-shrink: 0; padding: 6px 10px; font-size: var(--fs-xs); }
+    .tmodal-foot .btn-foot .lbl { display: inline; }
+    .tmodal-foot .btn-foot .ico { display: none; }
+    .tmodal-foot .btn,
+    .tmodal-foot .btn-foot {
+      flex-shrink: 0;
+      padding: 10px 14px; font-size: var(--fs-sm);
+      min-height: 40px;
+    }
     .tmodal-foot .spacer { min-width: 4px; }
   }
 
