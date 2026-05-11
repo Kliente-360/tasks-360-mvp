@@ -1253,23 +1253,37 @@
      não corresponde — desktop ignora a classe. */
   .tmodal-mobile-tabs { display: none; }
   .autosave-mob { display: none; }
+  /* Default desktop: footer buttons mostram label, sem ícone */
+  .tmodal-foot .btn-foot .ico { display: none; }
+  .tmodal-foot .btn-foot .lbl { display: inline; }
 
   @media (max-width: 767px) {
-    /* full-screen sheet */
+    /* full-screen sheet · containment via min-width:0 nos flex children */
     .tmodal {
-      max-width: 100% !important; width: 100% !important;
+      max-width: 100vw !important; width: 100vw !important;
       height: 100vh !important; max-height: 100vh !important;
-      border-radius: 0 !important;
+      border-radius: 0 !important; border: 0 !important;
+      min-width: 0 !important;
     }
     /* parent flexbox padding zerado pra full bleed */
     .modal-bg.p-2, .modal-bg.p-4 { padding: 0 !important; }
 
-    /* header compacto: crumb some, autosave migra pro footer */
-    .tmodal-head { padding: var(--sp-2) var(--sp-3); gap: var(--sp-2); flex-wrap: nowrap; }
+    /* min-width:0 em todos flex children pra evitar overflow horizontal */
+    .tmodal-head, .tmodal-foot, .tmodal-body,
+    .tmodal-left, .tmodal-right, .tmodal-mobile-tabs { min-width: 0; }
+
+    /* header compacto: crumb + chips secundários somem; autosave migra pro footer */
+    .tmodal-head { padding: var(--sp-2) var(--sp-3); gap: var(--sp-2); flex-wrap: nowrap; overflow: hidden; }
     .tmodal-head .crumb { display: none; }
-    .tmodal-head .tmodal-title { font-size: var(--fs-sm); padding: 4px 6px; }
+    .tmodal-head .reopen-chip,
+    .tmodal-head .arquivada-chip { display: none !important; }
+    .tmodal-head .tmodal-title {
+      font-size: var(--fs-sm); padding: 4px 6px;
+      min-width: 0 !important; max-width: none !important; flex: 1 1 auto;
+    }
     .tmodal-head .autosave { display: none; }
-    .tmodal-head .pri { font-size: 10px; padding: 2px 6px; }
+    .tmodal-head .pri { font-size: 10px; padding: 2px 6px; flex-shrink: 0; }
+    .tmodal-head-right { flex-shrink: 0; }
 
     /* tab bar mobile (Detalhes / Conversa / Histórico) */
     .tmodal-mobile-tabs {
@@ -1319,10 +1333,15 @@
     .tmodal-composer textarea { min-height: 64px; padding: 10px 12px; }
     .tmodal-thread { padding: var(--sp-3); }
 
-    /* footer compacto + autosave migrado */
-    .tmodal-foot { flex-wrap: wrap; padding: var(--sp-2) var(--sp-3); gap: var(--sp-2); }
+    /* footer compacto + autosave migrado · arquivar/excluir viram só ícone */
+    .tmodal-foot { flex-wrap: nowrap; padding: var(--sp-2); gap: 6px; overflow: hidden; }
     .tmodal-foot .hint { display: none; }
-    .tmodal-foot .autosave-mob { display: inline-flex; }
+    .tmodal-foot .autosave-mob { display: inline-flex; flex-shrink: 0; }
+    .tmodal-foot .btn-foot .lbl { display: none; }
+    .tmodal-foot .btn-foot .ico { display: inline; font-size: 14px; line-height: 1; }
+    .tmodal-foot .btn-foot { padding: 6px 9px; flex-shrink: 0; }
+    .tmodal-foot .btn { flex-shrink: 0; padding: 6px 10px; font-size: var(--fs-xs); }
+    .tmodal-foot .spacer { min-width: 4px; }
   }
 
 </style>
@@ -3716,8 +3735,8 @@
         <span x-show="!editing.clienteId && !editing.projetoId" class="text-muted" x-text="editing.id ? 'Sem cliente · sem projeto' : 'Nova tarefa'"></span>
       </span>
       <input class="tmodal-title" x-model="editing.titulo" placeholder="O que precisa ser feito?" x-ref="tituloInput" aria-label="Título da tarefa">
-      <span x-show="editing.id && (editing.reopenCount || 0) > 0" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:var(--p1-soft);color:var(--p1)" :title="'Reaberta ' + editing.reopenCount + ' vez(es)'" x-text="'reaberta ' + editing.reopenCount + 'x'"></span>
-      <span x-show="editing.id && editing.arquivadoEm" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7)" title="Tarefa arquivada">arquivada</span>
+      <span x-show="editing.id && (editing.reopenCount || 0) > 0" class="reopen-chip text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:var(--p1-soft);color:var(--p1)" :title="'Reaberta ' + editing.reopenCount + ' vez(es)'" x-text="'reaberta ' + editing.reopenCount + 'x'"></span>
+      <span x-show="editing.id && editing.arquivadoEm" class="arquivada-chip text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7)" title="Tarefa arquivada">arquivada</span>
       <div class="tmodal-head-right">
         <span x-show="editing.id" class="autosave" :data-state="saveState"
               :title="saveState === 'error' ? 'Autosave falhou — clique em Salvar' : 'Autosave ativo · ⌘S força salvar'">
@@ -3997,9 +4016,15 @@
         <span x-text="autosaveLabel()"></span>
       </span>
       <div class="spacer"></div>
-      <button x-show="editing.id && !editing.arquivadoEm" class="btn btn-ghost text-xs" @click="arquivarTask()" title="Esconder de listas/dashboards/heurísticas">arquivar</button>
-      <button x-show="editing.id && editing.arquivadoEm" class="btn btn-ghost text-xs" @click="desarquivarTask()">desarquivar</button>
-      <button x-show="editing.id && viewerRole === ROLE.ADMIN" class="btn btn-danger text-xs" @click="deleteTask()">excluir</button>
+      <button x-show="editing.id && !editing.arquivadoEm" class="btn btn-ghost text-xs btn-foot" @click="arquivarTask()" title="Arquivar (esconder de listas/dashboards/heurísticas)">
+        <span class="ico" aria-hidden="true">📥</span><span class="lbl">arquivar</span>
+      </button>
+      <button x-show="editing.id && editing.arquivadoEm" class="btn btn-ghost text-xs btn-foot" @click="desarquivarTask()" title="Desarquivar">
+        <span class="ico" aria-hidden="true">📤</span><span class="lbl">desarquivar</span>
+      </button>
+      <button x-show="editing.id && viewerRole === ROLE.ADMIN" class="btn btn-danger text-xs btn-foot" @click="deleteTask()" title="Excluir tarefa">
+        <span class="ico" aria-hidden="true">✕</span><span class="lbl">excluir</span>
+      </button>
       <button class="btn" @click="modal=false">fechar</button>
       <button class="btn btn-primary" @click="saveTask()" x-text="editing.id ? 'salvar' : 'criar'"></button>
     </div>
