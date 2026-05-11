@@ -16,7 +16,9 @@
 6. [Modelo de dados](#6-modelo-de-dados)
 7. [Workflow Cloud Design → Claude Code](#7-workflow-cloud-design--claude-code)
 8. [CLAUDE.md inicial](#8-claudemd-inicial)
-9. [Roadmap de ondas](#9-roadmap-de-ondas)
+9. [Roadmap](#9-roadmap)
+   - 9.1 [Status do protótipo](#91-status-do-prot%C3%B3tipo) · funcional · técnico · benchmark
+   - 9.2 [Pós-protótipo · visão de longo prazo](#92-p%C3%B3s-prot%C3%B3tipo--vis%C3%A3o-de-longo-prazo)
 10. [Analytics — as 8 visões](#10-analytics--as-8-visões)
 11. [Armadilhas conhecidas](#11-armadilhas-conhecidas)
 12. [Registro de decisões](#12-registro-de-decisões)
@@ -334,128 +336,132 @@ Expandir conforme decisões surgirem.
 
 ---
 
-## 9. Roadmap de ondas
+## 9. Roadmap
 
-### Status do protótipo (último update: 10/05/2026 — pós-sessão tamanho/dashboard/UX/heurísticas B+C)
+> Dois grandes blocos: **9.1** o que está pendente/em curso no protótipo (3 frentes: funcional, técnico, benchmark) + changelog; **9.2** a visão de longo prazo (Onda 0 e além — assume migração pra stack definitiva).
 
-Painel rápido pra retomar contexto. Atualizar cada vez que algo entrar/sair.
+### 9.1 Status do protótipo
 
-#### 🔴 Caminho crítico
+> Estrutura: três frentes (**Funcional · Técnico · Benchmark**) + changelog + o que sai do escopo. Visão de longo prazo (Ondas 0+) está em **§9.2**.
 
-1. **Pão e Talho real** — cadastrar pessoa cliente externo com `role=cliente`, convidar via magic link, validar Portal end-to-end com cliente real. Tudo do lado técnico está pronto.
+Painel rápido pra retomar contexto. Atualizar quando algo entrar/sair.
 
-#### 🟢 IA — depende de chave Anthropic + orçamento
+Último update: 10/05/2026 — pós-revisão técnica rev 2 (PRs #116-#122).
 
+---
+
+#### 9.1.1 Funcional · features do produto
+
+🔴 **Caminho crítico**
+1. **Pão e Talho real** — cadastrar pessoa cliente externo com `role=cliente`, convidar via magic link, validar Portal end-to-end com cliente real. Lado técnico pronto.
+
+🟢 **IA Onda 5+** (depende de chave Anthropic + orçamento)
 2. **Sugestão complexidade + esforço** (`ai-suggest`) — começar aqui (~R$ 0,015/exec).
 3. **Resumo executivo semanal por projeto** — cron + LLM (~R$ 0,05/exec com cache).
 4. **Detector de risco antecipado** — cron diário (~R$ 0,07/exec com cache).
 5. **Auto-categorização de tags**.
 6. **Chat com seu backlog** (tool use).
 
-#### 🔵 Design
+🔵 **Design**
+7. **DESIGN_HANDOFF.md** pronto pra entregar a um agente de design. Foco: tipografia + spacing + hierarquia. Tom executivo-consultivo. Notion como referência.
 
-7. **DESIGN_HANDOFF.md** pronto pra entregar pra um agente de design. Foco: tipografia + spacing + hierarquia. Tom executivo-consultivo. Notion como referência.
+**Ordem sugerida**:
+1. Pão e Talho real — único bloqueador "produto".
+2. IA `ai-suggest` — primeiro feature de IA que paga em adoção visível.
+3. Design overhaul.
+4. Demais features de IA conforme orçamento.
 
-#### ✅ Recém-fechados (maio/2026)
+---
 
-- Auth definitivo: Google OAuth interno + magic link cliente externo, cache de pessoa em localStorage, guard contra realtime duplicado.
-- 3 roles (admin / interno / cliente), `viewerRole` reativo, "Meu foco" e Portal automáticos.
-- Notifications in-app (sino + badge), mentions com picker + highlight.
-- **9 heurísticas pré-IA** ativas no banner do Dashboard:
-  - **Onda A** (5): grande sem início, sobrecarga, tier estratégico atrasado, bloqueio cliente +5d, SLA iminente.
-  - **Onda B** (2): júnior + complexidade alta, reaberturas crônicas (≥2 reopens).
-  - **Onda C** (2): bloqueio por dependência aberta com prazo ≤14d, estimativa furada (tempo real >1.5x estimado).
-- Pessoas: ativar/inativar interno; senioridade, skills, capacidade horas/semana, cliente principal/secundário no modal.
-- Mobile header consolidado (exportar/manual/tema migrados pro menu do avatar).
-- Tamanho de task automático via `effEsforco` (default 4h se vazio); fora do form, só analytics.
-- Dashboard padronizado: `chartTheme()` central + **8/8 visões do §10** (capacidade por pessoa, saúde por projeto, aging do backlog, aguardando cliente, tendência de lead time por cliente).
-- UI completa de Cadastros: `cliente.tier`, `projeto.tipo`/`sla_*`/`orcamento_horas` em modais com badges discretas.
-- Arquivamento de clientes/projetos (`arquivado_em`): some dos selects/dashboards mas acessível via toggle "incluir arquivados".
-- Tasks: `tipo_trabalho`, `tempo_real_horas`, `reopen_count` (trigger) e dependências via tabela `task_dependencies` com chips no modal.
+#### 9.1.2 Técnico · perf, escala e dívida de código
 
-#### Ordem sugerida agora
+**Já entregue** (revisões 1 + 2 — PRs #108-#122):
+- Lookups via Maps (`pessoasById`, `clientesById`, `tasksByCliente`, `tasksByPessoa`, `projetosByCliente`)
+- `template x-if` em tabs pesadas (brief/dash/cad/mvp)
+- Field map declarativo pros mappers FromDb/ToDb/blank
+- Lazy load de concluídas (janela 90d + Cmd+K)
+- Memoização de getters caros (`heuristicAlerts`, `reportClientHealth`, `reportTeamLoad`) + LRU
+- Constants módulo (`STATUS`, `ROLE`, `TIER`, …)
+- CSS vars `--sig-*` pra paleta semafórica
+- `lib/helpers.js` + `tests/index.html` (testes puros sem framework)
+- Debounce no filtro do backlog
+- Single-pass `_computeHeuristicAlerts`
+- Column projection no boot (`descricao` lazy)
+- `_upsertChart` (reuse Chart.js)
+- Pagination 100 rows/grupo no backlog
+- History boot alinhado com janela 90d
 
-1. Pão e Talho real (item 1) — único bloqueador "produto".
-2. IA `ai-suggest` (item 2) — primeiro feature de IA que paga em adoção visível.
-3. Design overhaul com claude-design (item 7).
-4. Demais features de IA (itens 3-6) conforme orçamento.
+**Pendente · médio prazo** (executar quando aparecer dor concreta — boot >3s, lag em digitar, notif lenta — ou a cada 1-2 ondas):
 
-#### 🚫 Fora do protótipo (vai pra Onda 0+)
+| Item | Custo | Ganho |
+|---|---|---|
+| Cache local persistente (IndexedDB) pra clientes/projetos/pessoas | ~4h | Boot offline-first, TTI <500ms |
+| Realtime channel scoping por cliente | ~2h | -80% tráfego em Portal |
+| Notifications archive + paginate | ~3h | Evita crescer monotônico |
+| Partition `_tasksAtivas` / `_tasksConcluidas` memoizadas | ~1h | ~10x menos iterações em hot getters |
 
-Anexos (Storage), notificações email/push, recorrência, search FTS, RLS granular por papel, multi-responsável, histórico de campos não-status.
+---
 
-#### 📚 Backlog de benchmark (mercado) — não priorizado
+#### 9.1.3 Benchmark · features do mercado (não priorizado)
 
-Lista levantada via comparação com Linear, Asana, ClickUp, Height, Motion, Jira, Notion. **Não está priorizado nem no caminho crítico** — serve como menu pra futuras ondas quando surgir dor real ou quando o produto buscar diferenciação. Reavaliar a cada 1–2 ondas.
+Lista levantada via comparação com Linear, Asana, ClickUp, Height, Motion, Jira, Notion. **Não está no caminho crítico** — menu pra futuras ondas quando surgir dor real ou pra diferenciação. Reavaliar a cada 1-2 ondas.
 
-**Já temos** (riscar quando confirmado): bulk actions na tabela (etapa/pessoa/prioridade/excluir), kanban, calendário, histórico unificado de status + 9 campos, heurísticas pré-IA, multi-tenancy + RLS, realtime, Portal cliente, dependências, reopen_count, SLA por projeto.
+**Já temos** (riscar quando confirmado): command palette (Cmd+K), bulk actions, kanban, calendário, histórico unificado de status + 9 campos, heurísticas pré-IA, multi-tenancy + RLS, realtime, Portal cliente, dependências, reopen_count, SLA por projeto, briefing executivo, onboarding 3 perspectivas.
 
 **Alto impacto, baixo esforço**
-- **Command palette (Cmd+K)** — Linear-style. Buscar task, pular pra cliente/projeto, ações rápidas (criar, mudar status). Mata fricção de navegação no single-page.
-- **Anexos** (Supabase Storage) em tasks/comments — quase obrigatório pra consultoria (briefs, prints, docs). Já listado em "Fora do protótipo".
-- **@mentions com notificação** — parser `@nome` em comments + notif. (Nota: já existe mention picker; falta validar o disparo de notif no comment.)
-- **Saved views / filtros nomeados** — "Minhas tasks atrasadas", "Aguardando cliente X". Hoje filtro é volátil.
+- **Anexos** (Supabase Storage) em tasks/comments — quase obrigatório pra consultoria (briefs, prints, docs).
+- **@mentions com notificação** — parser `@nome` em comments + notif. Mention picker já existe; falta validar disparo.
+- **Saved views / filtros nomeados** — "Minhas tasks atrasadas", "Aguardando cliente X".
 
 **Médio impacto, médio esforço**
-- **Recurring tasks** — reuniões semanais, relatórios mensais. Template + cron edge function.
-- **Time tracking real** (start/stop timer) vs. só `tempo_real_horas` manual. Tabela `time_entries`. Habilita billing real e relatório de utilização.
-- **iCal feed por pessoa** — sync com Google Cal/Outlook do prazo das tasks atribuídas. (Calendário in-app já existe.)
-- **Templates de projeto** — "Novo projeto Pão e Talho" instancia N tasks padrão. Onboarding de cliente novo cai de horas pra minutos.
-- **Triage inbox** (Linear-style) — fila de tasks novas sem responsável/projeto pra triar em lote.
+- **Recurring tasks** — template + cron edge function.
+- **Time tracking real** (start/stop timer) — tabela `time_entries`. Habilita billing real.
+- **iCal feed por pessoa** — sync com Google Cal/Outlook do prazo das tasks atribuídas.
+- **Templates de projeto** — "Novo projeto X" instancia N tasks padrão.
+- **Triage inbox** (Linear-style) — fila pra triar tasks novas em lote.
 
-**Estratégico (depende de IA, casa com Onda 5+)**
-- **Auto-triage com IA** — IA classifica task nova (tipo_trabalho, complexidade, projeto, responsável) baseado no título/descrição. Já tem campos, falta o agente.
-- **SLA breach alerts proativos** — job que dispara notif antes de estourar `sla_*`. Não precisa de IA, mas combina com risk-scanner.
+**Estratégico** (combina com IA Onda 5+)
+- **Auto-triage com IA** — classifica task nova (tipo_trabalho, complexidade, projeto, responsável) baseado no título/descrição.
+- **SLA breach alerts proativos** — job que dispara notif antes de estourar `sla_*`.
 
-**Avaliados e descartados (por ora)**
-- **Wiki/docs por projeto** (Notion-style) — fora do escopo "task manager opinativo". Cliente continua usando Notion/Drive pra docs.
-- **Mobile app nativo / PWA offline** — overhead alto vs. ganho. Web responsivo já cobre.
-- **Integrações Slack/email pra criar task** — avaliar só se virar pedido recorrente do time.
-
-#### 🛠️ Backlog técnico — perf/escala de médio prazo
-
-Diagnóstico técnico (rev 2) executou 8 itens curtos com ganhos imediatos. Os abaixo ficam pra quando o app começar a sentir escala real (5k+ tasks, 50+ usuários ativos, sessions de horas) ou quando aparecer dor concreta.
-
-**Cache local persistente (IndexedDB)**
-- Hoje toda boot re-busca clientes/projetos/pessoas do servidor. Mudam raramente.
-- Cache local + invalidação por timestamp → boot offline-first, parece "instantâneo".
-- Ganho: time-to-interactive de 2-3s → <500ms em conexão lenta.
-- Custo: ~4h. Risco: médio (precisa invalidação correta).
-
-**Realtime channel scoping por cliente**
-- Cliente externo (role=cliente) hoje recebe broadcast de TODAS tasks via realtime (RLS filtra antes de chegar ao cliente, mas bandwidth ainda é consumido).
-- Filtrar via `channel.on('postgres_changes', { filter: 'cliente_id=eq.X' })`.
-- Ganho: reduz tráfego de realtime em ~80% pra clientes externos. Server-side menos broadcast.
-- Custo: ~2h.
-
-**Notifications: archive + paginate**
-- Tabela cresce monotonicamente. Em 1 ano podem ser 10k+ rows por usuário ativo.
-- Edge function ou trigger pra archive >90d numa tabela `notifications_archive`.
-- Frontend pagina (carrega últimos 50, "ver mais antigos" sob demanda).
-- Custo: ~3h (SQL + UI).
-
-**Partition de tasks ativas/concluídas em estado local**
-- `this.tasks.filter(t => t.status !== 'concluido')` aparece em 20+ lugares hoje.
-- Centralizar em `_tasksAtivas` getter (memoizado via _tasksSig).
-- Ganho: ~10x menos iterações em hot getters (heuristics, briefing, dashboard).
-- Custo: ~1h. Risco: baixo (já temos memo infra).
-
-**Quando reavaliar**: quando aparecer dor concreta (boot >3s, lag em digitar, notif lenta) ou periodicamente a cada 1-2 ondas.
+**Avaliados e descartados**
+- **Wiki/docs por projeto** (Notion-style) — fora do escopo. Cliente usa Notion/Drive.
+- **Mobile app nativo / PWA offline** — overhead alto vs. ganho.
+- **Integrações Slack/email pra criar task** — avaliar só se virar pedido recorrente.
 
 ---
 
-### Premissas de timeline
+#### 9.1.4 Recém-fechados (changelog)
 
-- **1 dev full-time competente**: MVP usável internamente em ~6 semanas; portal cliente em produção em ~9 semanas; versão completa com analytics em ~13 semanas.
-- **2 devs full-time**: versão completa em ~8–9 semanas.
-
-Timelines abaixo assumem 1 dev. Multiplicar por ~0.6 para 2 devs.
+**Maio/2026**
+- Auth definitivo: Google OAuth interno + magic link cliente externo, cache de pessoa em localStorage, guard contra realtime duplicado.
+- 3 roles (admin/interno/cliente), `viewerRole` reativo, "Meu foco" e Portal automáticos.
+- Notifications in-app (sino + badge), mentions com picker + highlight.
+- **9 heurísticas pré-IA** ativas no banner do Dashboard:
+  - Onda A (5): grande sem início, sobrecarga, tier estratégico atrasado, bloqueio cliente +5d, SLA iminente.
+  - Onda B (2): júnior + complexidade alta, reaberturas crônicas (≥2 reopens).
+  - Onda C (2): bloqueio por dependência aberta com prazo ≤14d, estimativa furada (tempo real >1.5x estimado).
+- Pessoas: ativar/inativar interno; senioridade, skills, capacidade horas/semana, cliente principal/secundário.
+- Tamanho de task automático via `effEsforco` (default 4h); fora do form, só analytics.
+- Dashboard: `chartTheme()` central + 8/8 visões do §10 (capacidade por pessoa, saúde por projeto, aging do backlog, aguardando cliente, tendência lead time).
+- Cadastros: `cliente.tier`, `projeto.tipo`/`sla_*`/`orcamento_horas` com badges.
+- Arquivamento de clientes/projetos com toggle "incluir arquivados".
+- Tasks: `tipo_trabalho`, `tempo_real_horas`, `reopen_count` (trigger), dependências via tabela `task_dependencies`.
+- Briefing executivo in-app (admin) + PDF memo narrativo.
+- Onboarding · 3 perspectivas (CEO/Gerente/Analista).
+- Revisões técnicas 1+2 (15 PRs de perf/escala/qualidade).
 
 ---
 
-### 9.0 Onda protótipo pós-H1/H2/H3 — ganhos de fechamento (maio/2026)
+#### 9.1.5 🚫 Fora do escopo do protótipo (vai pra Onda 0+)
 
-> Onda informal feita **dentro do protótipo single-file**, antes da Onda 0. Objetivo: extrair valor máximo do `index.html` antes do investimento da Onda 0, e maturar requisitos com base em uso real.
+Anexos (Storage), notificações email/push, recorrência, search FTS, RLS granular por papel, multi-responsável.
+
+---
+
+#### 9.1.6 Histórico interno · ondas H1-H3 (mai/2026)
+
+> Ondas informais **dentro do protótipo single-file**, antes da Onda 0. Objetivo: extrair valor máximo do `index.html` e maturar requisitos com base em uso real.
 
 #### Onda H1 — UX rasa (✅ concluída)
 
@@ -526,6 +532,19 @@ Não inventar features novas até bater todos:
 3. ≥1 cliente externo formalmente pedindo acesso ao próprio backlog.
 
 Se 2-3 semanas de uso passarem sem bater os 3 critérios, abrir conversa séria sobre se vale construir Onda 0 ou se a Kliente fica neste protótipo (que é mais robusto do que parece).
+
+---
+
+### 9.2 Pós-protótipo · visão de longo prazo
+
+> A partir daqui, premissa é migração pra **stack definitiva** (Next.js + tRPC + Postgres + Vercel Blob). Tudo abaixo assume saída do `index.html` single-file.
+
+### Premissas de timeline
+
+- **1 dev full-time competente**: MVP usável internamente em ~6 semanas; portal cliente em produção em ~9 semanas; versão completa com analytics em ~13 semanas.
+- **2 devs full-time**: versão completa em ~8–9 semanas.
+
+Timelines abaixo assumem 1 dev. Multiplicar por ~0.6 para 2 devs.
 
 ---
 
