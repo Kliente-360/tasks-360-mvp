@@ -3767,7 +3767,9 @@
 </footer>
 
 <!-- ============ MODAL TAREFA · two-pane ============ -->
-<div x-show="modal" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modal=false" x-transition.opacity>
+<div x-show="modal" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modal=false"
+     @keydown.escape.window="if (mentionPickerFor) { mentionPickerFor=''; _mentionAnchor=null; } else if (modal && !replyingToId) modal=false"
+     x-transition.opacity>
   <div class="tmodal" role="dialog" aria-label="Editar tarefa" x-transition>
 
     <!-- ============ HEADER slate · ordem: título / prioridade / prazo / cliente ============
@@ -4017,9 +4019,19 @@
                   <div class="cmsg-body" x-html="renderCommentBody(r.body)"></div>
                 </div>
               </template>
-              <div x-show="replyingToId === c.id" class="flex flex-col gap-1.5" style="margin-left:24px;margin-top:8px">
-                <textarea class="inp resize-y min-h-[50px] text-sm" x-model="newReply" :data-reply-input="c.id" placeholder="responder…"
-                          @keydown.meta.enter.prevent="postReply(c.id)" @keydown.ctrl.enter.prevent="postReply(c.id)" @keydown.escape="cancelReply()"></textarea>
+              <div x-show="replyingToId === c.id" class="relative flex flex-col gap-1.5" style="margin-left:24px;margin-top:8px"
+                   @click.outside="mentionPickerFor==='newReply' && (mentionPickerFor='')">
+                <textarea class="inp resize-y min-h-[50px] text-sm" x-model="newReply" :data-reply-input="c.id" placeholder="responder… (digite @ pra mencionar)"
+                          @input="onMentionInput('newReply', $event)"
+                          @keydown.meta.enter.prevent="postReply(c.id)" @keydown.ctrl.enter.prevent="postReply(c.id)" @keydown.escape.stop="cancelReply()"></textarea>
+                <!-- Picker @ inline (newReply) -->
+                <div x-show="mentionPickerFor === 'newReply'" x-transition.opacity
+                     class="absolute left-0 top-full mt-1 bg-elev border border-line rounded-md shadow-xl z-50 w-[220px] py-1 max-h-[200px] overflow-y-auto">
+                  <template x-for="p in mentionablePessoas(mentionPickerQuery)" :key="p.id">
+                    <button type="button" class="w-full text-left px-3 py-1.5 text-xs hover:bg-brand-tint" @click="appendMention('newReply', (p.nome||'').split(' ')[0])" x-text="p.nome"></button>
+                  </template>
+                  <div x-show="mentionablePessoas(mentionPickerQuery).length === 0" class="px-3 py-1.5 text-xs text-muted italic">sem pessoa correspondente</div>
+                </div>
                 <div class="flex gap-2">
                   <button class="btn btn-primary text-xs" @click="postReply(c.id)" :disabled="!newReply.trim()">responder</button>
                   <button class="btn btn-ghost text-xs" @click="cancelReply()">cancelar</button>
@@ -4031,23 +4043,26 @@
           <div x-show="editing.id && editingComments.length === 0" class="text-xs text-muted italic py-3">Sem comentários ainda.</div>
         </div>
 
-        <div x-show="editing.id && modalTab !== 'historico'" class="tmodal-composer">
-          <textarea x-model="newComment" placeholder="Escrever comentário… (⌘↵ envia)"
+        <div x-show="editing.id && modalTab !== 'historico'" class="tmodal-composer"
+             @click.outside="mentionPickerFor==='newComment' && (mentionPickerFor='')">
+          <textarea x-model="newComment" placeholder="Escrever comentário… (⌘↵ envia · digite @ pra mencionar)"
+                    x-ref="newCommentTa"
+                    @input="onMentionInput('newComment', $event)"
                     @keydown.meta.enter.prevent="postComment()" @keydown.ctrl.enter.prevent="postComment()"></textarea>
           <div class="tmodal-composer-row">
             <!-- HIDDEN_DESDE_v1.01.147 · "visível ao cliente" no comentário
                  Schema mantido (task_comments.visivel_cliente). Habilitar quando
                  abrir Portal real + treinar curadoria de comentários.
             -->
-            <div class="relative" @click.outside="mentionPickerFor==='newComment' && (mentionPickerFor='')">
+            <div class="relative">
               <button type="button" class="btn btn-ghost text-[11px] py-0.5 px-2"
-                      @click="mentionPickerFor = mentionPickerFor === 'newComment' ? '' : 'newComment'; mentionPickerQuery=''">@ mencionar</button>
+                      @click="mentionPickerFor = mentionPickerFor === 'newComment' ? '' : 'newComment'; mentionPickerQuery=''; _mentionAnchor=null">@ mencionar</button>
               <div x-show="mentionPickerFor === 'newComment'" x-transition.opacity
-                   class="absolute left-0 bottom-full mb-1 bg-elev border border-line rounded-md shadow-xl z-50 w-[200px] py-1 max-h-[200px] overflow-y-auto">
-                <input type="text" class="inp text-xs py-1 mx-2 mb-1" x-model="mentionPickerQuery" placeholder="filtrar pessoa…" @click.stop>
+                   class="absolute left-0 bottom-full mb-1 bg-elev border border-line rounded-md shadow-xl z-50 w-[220px] py-1 max-h-[200px] overflow-y-auto">
                 <template x-for="p in mentionablePessoas(mentionPickerQuery)" :key="p.id">
                   <button type="button" class="w-full text-left px-3 py-1.5 text-xs hover:bg-brand-tint" @click="appendMention('newComment', (p.nome||'').split(' ')[0])" x-text="p.nome"></button>
                 </template>
+                <div x-show="mentionablePessoas(mentionPickerQuery).length === 0" class="px-3 py-1.5 text-xs text-muted italic">sem pessoa correspondente</div>
               </div>
             </div>
             <div class="spacer" style="flex:1"></div>
@@ -4600,6 +4615,10 @@ function app() {
     newCommentPublico: false,
     mentionPickerFor: '',  // '' | 'newComment' | 'newReply' | 'portalNewComment' | 'portalReplyText'
     mentionPickerQuery: '',
+    // Anchor + field do @ sendo digitado inline — usados pra substituir o
+    // partial '@xxx' por '@FirstName' no lugar certo ao escolher.
+    _mentionAnchor: null,
+    _mentionField: null,
     notifications: [],
     notifPanelOpen: false,
     _notifsSubscribed: false,
@@ -5175,11 +5194,42 @@ function app() {
         return firstNames.has(name) ? `<span class="mention">@${name}</span>` : m;
       });
     },
+    // Detecta @\w* sendo digitado no textarea e abre o picker com a query
+    // que veio direto do texto (sem precisar clicar no botão "@ mencionar").
+    // Salva o anchor (posição do @) pra substituir o partial certinho ao
+    // escolher uma pessoa via appendMention.
+    onMentionInput(field, ev) {
+      const txt = this[field] || '';
+      const caret = (ev && ev.target && typeof ev.target.selectionStart === 'number') ? ev.target.selectionStart : txt.length;
+      const before = txt.slice(0, caret);
+      // Pega último token tipo "@xxx" se estiver no fim e sem whitespace dentro.
+      const m = before.match(/(?:^|\s)@([A-Za-zÀ-ÿ0-9-]*)$/);
+      if (m) {
+        this._mentionAnchor = caret - m[1].length - 1; // posição do '@'
+        this._mentionField = field;
+        this.mentionPickerQuery = m[1];
+        this.mentionPickerFor = field;
+      } else if (this.mentionPickerFor === field) {
+        this.mentionPickerFor = '';
+        this._mentionAnchor = null;
+      }
+    },
     appendMention(field, firstName) {
-      const current = this[field] || '';
-      const sep = current && !current.endsWith(' ') && !current.endsWith('\n') ? ' ' : '';
-      this[field] = current + sep + '@' + firstName + ' ';
+      const txt = this[field] || '';
+      // Fluxo inline: substitui '@partial' no anchor por '@FirstName '.
+      if (this._mentionAnchor != null && this._mentionField === field) {
+        const anchor = this._mentionAnchor;
+        const rest = txt.slice(anchor).replace(/^@[A-Za-zÀ-ÿ0-9-]*/, '@' + firstName + ' ');
+        this[field] = txt.slice(0, anchor) + rest;
+      } else {
+        // Fluxo botão: concatena no fim.
+        const sep = txt && !txt.endsWith(' ') && !txt.endsWith('\n') ? ' ' : '';
+        this[field] = txt + sep + '@' + firstName + ' ';
+      }
       this.mentionPickerFor = '';
+      this.mentionPickerQuery = '';
+      this._mentionAnchor = null;
+      this._mentionField = null;
     },
     mentionablePessoas(query) {
       const q = (query || '').toLowerCase();
