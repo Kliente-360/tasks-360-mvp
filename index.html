@@ -7859,13 +7859,51 @@ function app() {
     async arquivarCliente(c) {
       const i = this.clientes.findIndex(x => x.id === c.id);
       if (i < 0) return;
+      // Conta filhos ativos pra propor cascade.
+      const projsAtivos = (this.projetosByCliente.get(c.id) || []).filter(p => !p.arquivadoEm);
+      const tasksAtivas = (this.tasks || []).filter(t => t.clienteId === c.id && !t.arquivadoEm);
+      if (projsAtivos.length === 0 && tasksAtivas.length === 0) {
+        return this._doArquivarCliente(c, [], []);
+      }
+      // Confirm explícito: lista o que vai cascatear.
+      const parts = [];
+      if (projsAtivos.length) parts.push(`${projsAtivos.length} projeto${projsAtivos.length === 1 ? '' : 's'}`);
+      if (tasksAtivas.length) parts.push(`${tasksAtivas.length} tarefa${tasksAtivas.length === 1 ? '' : 's'} ativa${tasksAtivas.length === 1 ? '' : 's'}`);
+      this.askConfirm(
+        `Arquivar "${c.nome}" e também ${parts.join(' e ')}? Desarquivar é manual depois (sem cascade reverso).`,
+        () => this._doArquivarCliente(c, projsAtivos, tasksAtivas),
+        { label: 'arquivar tudo', danger: false }
+      );
+    },
+    async _doArquivarCliente(c, projsAtivos, tasksAtivas) {
+      const i = this.clientes.findIndex(x => x.id === c.id);
+      if (i < 0) return;
       const prev = this.clientes[i];
       const nowIso = new Date().toISOString();
+      // Optimistic local
       this.clientes[i] = { ...prev, arquivadoEm: nowIso };
+      if (projsAtivos.length) {
+        const projIds = new Set(projsAtivos.map(p => p.id));
+        this.projetos = this.projetos.map(p => projIds.has(p.id) ? { ...p, arquivadoEm: nowIso } : p);
+      }
+      if (tasksAtivas.length) {
+        const taskIds = new Set(tasksAtivas.map(t => t.id));
+        this.tasks = this.tasks.map(t => taskIds.has(t.id) ? { ...t, arquivadoEm: nowIso } : t);
+      }
       this._dataRev++;
-      const { error } = await sb.from('clientes').update({ arquivado_em: nowIso }).eq('id', c.id);
-      if (error) { this.clientes[i] = prev; this._dataRev++; this.toast('error', 'Erro: ' + error.message); return; }
-      this.toast('success', `"${c.nome}" arquivado.`);
+      this.track('cliente_arquivar', { id: c.id, projetos: projsAtivos.length, tasks: tasksAtivas.length });
+
+      // Server-side (em paralelo)
+      const ops = [sb.from('clientes').update({ arquivado_em: nowIso }).eq('id', c.id)];
+      if (projsAtivos.length) ops.push(sb.from('projetos').update({ arquivado_em: nowIso }).in('id', projsAtivos.map(p => p.id)));
+      if (tasksAtivas.length) ops.push(sb.from('tasks').update({ arquivado_em: nowIso }).in('id', tasksAtivas.map(t => t.id)));
+      const results = await Promise.all(ops);
+      const err = results.find(r => r.error);
+      if (err) { this.toast('error', 'Erro parcial no arquivamento: ' + err.error.message); return; }
+      const detalhe = [];
+      if (projsAtivos.length) detalhe.push(`${projsAtivos.length} projeto(s)`);
+      if (tasksAtivas.length) detalhe.push(`${tasksAtivas.length} tarefa(s)`);
+      this.toast('success', `"${c.nome}" arquivado${detalhe.length ? ' · ' + detalhe.join(' · ') + ' também' : ''}.`);
     },
     async desarquivarCliente(c) {
       const i = this.clientes.findIndex(x => x.id === c.id);
@@ -7873,9 +7911,10 @@ function app() {
       const prev = this.clientes[i];
       this.clientes[i] = { ...prev, arquivadoEm: null };
       this._dataRev++;
+      this.track('cliente_desarquivar', { id: c.id });
       const { error } = await sb.from('clientes').update({ arquivado_em: null }).eq('id', c.id);
       if (error) { this.clientes[i] = prev; this._dataRev++; this.toast('error', 'Erro: ' + error.message); return; }
-      this.toast('success', `"${c.nome}" desarquivado.`);
+      this.toast('success', `"${c.nome}" desarquivado. (projetos/tarefas continuam arquivados — restaure manualmente se precisar)`);
     },
     async deleteCliente(c) {
       const tasks = (this.tasksByCliente.get(c.id) || []).length;
@@ -7967,13 +8006,35 @@ function app() {
     async arquivarProjeto(p) {
       const i = this.projetos.findIndex(x => x.id === p.id);
       if (i < 0) return;
+      const tasksAtivas = (this.tasks || []).filter(t => t.projetoId === p.id && !t.arquivadoEm);
+      if (tasksAtivas.length === 0) {
+        return this._doArquivarProjeto(p, []);
+      }
+      this.askConfirm(
+        `Arquivar "${p.nome}" e também ${tasksAtivas.length} tarefa${tasksAtivas.length === 1 ? '' : 's'} ativa${tasksAtivas.length === 1 ? '' : 's'}? Desarquivar é manual depois.`,
+        () => this._doArquivarProjeto(p, tasksAtivas),
+        { label: 'arquivar tudo', danger: false }
+      );
+    },
+    async _doArquivarProjeto(p, tasksAtivas) {
+      const i = this.projetos.findIndex(x => x.id === p.id);
+      if (i < 0) return;
       const prev = this.projetos[i];
       const nowIso = new Date().toISOString();
       this.projetos[i] = { ...prev, arquivadoEm: nowIso };
+      if (tasksAtivas.length) {
+        const taskIds = new Set(tasksAtivas.map(t => t.id));
+        this.tasks = this.tasks.map(t => taskIds.has(t.id) ? { ...t, arquivadoEm: nowIso } : t);
+      }
       this._dataRev++;
-      const { error } = await sb.from('projetos').update({ arquivado_em: nowIso }).eq('id', p.id);
-      if (error) { this.projetos[i] = prev; this._dataRev++; this.toast('error', 'Erro: ' + error.message); return; }
-      this.toast('success', `"${p.nome}" arquivado.`);
+      this.track('projeto_arquivar', { id: p.id, tasks: tasksAtivas.length });
+
+      const ops = [sb.from('projetos').update({ arquivado_em: nowIso }).eq('id', p.id)];
+      if (tasksAtivas.length) ops.push(sb.from('tasks').update({ arquivado_em: nowIso }).in('id', tasksAtivas.map(t => t.id)));
+      const results = await Promise.all(ops);
+      const err = results.find(r => r.error);
+      if (err) { this.toast('error', 'Erro parcial no arquivamento: ' + err.error.message); return; }
+      this.toast('success', `"${p.nome}" arquivado${tasksAtivas.length ? ' · ' + tasksAtivas.length + ' tarefa(s) também' : ''}.`);
     },
     async desarquivarProjeto(p) {
       const i = this.projetos.findIndex(x => x.id === p.id);
@@ -7981,9 +8042,10 @@ function app() {
       const prev = this.projetos[i];
       this.projetos[i] = { ...prev, arquivadoEm: null };
       this._dataRev++;
+      this.track('projeto_desarquivar', { id: p.id });
       const { error } = await sb.from('projetos').update({ arquivado_em: null }).eq('id', p.id);
       if (error) { this.projetos[i] = prev; this._dataRev++; this.toast('error', 'Erro: ' + error.message); return; }
-      this.toast('success', `"${p.nome}" desarquivado.`);
+      this.toast('success', `"${p.nome}" desarquivado. (tarefas continuam arquivadas — restaure manualmente se precisar)`);
     },
     async deleteProjeto(p) {
       const tasks = this.tasks.filter(t => t.projetoId === p.id).length;
