@@ -3389,6 +3389,14 @@ function app() {
     projetos: [],
     pessoas: [],
     tasks: [],
+    // Cache de getters caros. Map fica fora do Proxy do Alpine, então
+    // .set() não dispara reatividade. Invalidação automática via
+    // assinatura barata baseada em this.tasks (length + xor de timestamps).
+    _memos: new Map(),
+    // Counter bumpado em mutations de pessoas/clientes/projetos pra
+    // invalidar memos que dependem deles (ex: capacidade da pessoa muda
+    // → reportTeamLoad refresh).
+    _dataRev: 0,
     f: { q: '', cliente: '', projeto: '', pessoa: '', pri: '', complexidade: '', status: 'abertas', tag: '' },
     newTag: '',
     sortKey: 'prazo',
@@ -4342,6 +4350,25 @@ function app() {
       ];
     },
 
+    // ============ MEMOIZATION ============
+    // Assinatura barata pra invalidar memos baseados em tasks.
+    // Captura mudanças em quantidade + status_em/subetapa_em — campos que
+    // disparam quase todas as recomputações de getter caro. Edição de
+    // título/descrição não muda assinatura (e getters caros não dependem).
+    get _tasksSig() {
+      let s = this.tasks.length;
+      for (const t of this.tasks) s = (s * 31 + (t.statusEm | 0) + (t.subetapaEm | 0)) | 0;
+      return s;
+    },
+    _memo(key, sig, fn) {
+      const c = this._memos.get(key);
+      if (c && c.sig === sig) return c.value;
+      const value = fn();
+      this._memos.set(key, { sig, value });
+      return value;
+    },
+
+
     // Eficiência da operação (bloco esquerdo da página executiva)
     get reportEfficiency() {
       const t = this.tasks;
@@ -4641,6 +4668,9 @@ function app() {
     },
     // Saúde por cliente (página 3 do report).
     get reportClientHealth() {
+      return this._memo('reportClientHealth', this._tasksSig + ':' + this.clientes.length + ':' + this._dataRev, () => this._computeReportClientHealth());
+    },
+    _computeReportClientHealth() {
       const now = Date.now();
       const cutoff14 = now - 14 * 86400000;
       const cutoff28 = now - 28 * 86400000;
@@ -4710,6 +4740,9 @@ function app() {
     },
     // Carga por pessoa (página 3).
     get reportTeamLoad() {
+      return this._memo('reportTeamLoad', this._tasksSig + ':' + this.pessoas.length + ':' + this._dataRev, () => this._computeReportTeamLoad());
+    },
+    _computeReportTeamLoad() {
       const map = new Map();
       for (const p of this.pessoas) {
         if (p.role === 'cliente') continue; // não inclui clientes externos
@@ -6185,6 +6218,11 @@ function app() {
     // Heurísticas pré-IA — Onda A. Detector determinístico (sem LLM).
     // Retorna lista ordenada de alertas pra mostrar no banner do Dashboard.
     get heuristicAlerts() {
+      // Inclui taskDeps e pessoas no sig porque algumas heurísticas leem.
+      const sig = this._tasksSig + ':' + this.pessoas.length + ':' + (this.taskDeps && this.taskDeps.length || 0) + ':' + this._dataRev;
+      return this._memo('heuristicAlerts', sig, () => this._computeHeuristicAlerts());
+    },
+    _computeHeuristicAlerts() {
       const out = [];
       const now = Date.now();
       const today = new Date(); today.setHours(0,0,0,0);
@@ -7127,10 +7165,12 @@ function app() {
       const i = this.clientes.findIndex(x => x.id === e.id);
       const prev = i >= 0 ? this.clientes[i] : null;
       if (i >= 0) this.clientes[i] = { ...prev, nome, tier: e.tier || '' };
+      this._dataRev++;
       this.modalCliente = false;
       const { error } = await sb.from('clientes').update(payload).eq('id', e.id);
       if (error) {
         if (prev) this.clientes[i] = prev;
+        this._dataRev++;
         this.toast('error', 'Erro ao salvar: ' + error.message);
         return;
       }
@@ -7143,8 +7183,9 @@ function app() {
       const prev = this.clientes[i];
       const nowIso = new Date().toISOString();
       this.clientes[i] = { ...prev, arquivadoEm: nowIso };
+      this._dataRev++;
       const { error } = await sb.from('clientes').update({ arquivado_em: nowIso }).eq('id', c.id);
-      if (error) { this.clientes[i] = prev; this.toast('error', 'Erro: ' + error.message); return; }
+      if (error) { this.clientes[i] = prev; this._dataRev++; this.toast('error', 'Erro: ' + error.message); return; }
       this.toast('success', `"${c.nome}" arquivado.`);
     },
     async desarquivarCliente(c) {
@@ -7152,8 +7193,9 @@ function app() {
       if (i < 0) return;
       const prev = this.clientes[i];
       this.clientes[i] = { ...prev, arquivadoEm: null };
+      this._dataRev++;
       const { error } = await sb.from('clientes').update({ arquivado_em: null }).eq('id', c.id);
-      if (error) { this.clientes[i] = prev; this.toast('error', 'Erro: ' + error.message); return; }
+      if (error) { this.clientes[i] = prev; this._dataRev++; this.toast('error', 'Erro: ' + error.message); return; }
       this.toast('success', `"${c.nome}" desarquivado.`);
     },
     async deleteCliente(c) {
@@ -7231,10 +7273,12 @@ function app() {
           tipo:             payload.tipo || '',
         };
       }
+      this._dataRev++;
       this.modalProjeto = false;
       const { error } = await sb.from('projetos').update(payload).eq('id', e.id);
       if (error) {
         if (prev) this.projetos[i] = prev;
+        this._dataRev++;
         this.toast('error', 'Erro ao salvar: ' + error.message);
         return;
       }
@@ -7247,8 +7291,9 @@ function app() {
       const prev = this.projetos[i];
       const nowIso = new Date().toISOString();
       this.projetos[i] = { ...prev, arquivadoEm: nowIso };
+      this._dataRev++;
       const { error } = await sb.from('projetos').update({ arquivado_em: nowIso }).eq('id', p.id);
-      if (error) { this.projetos[i] = prev; this.toast('error', 'Erro: ' + error.message); return; }
+      if (error) { this.projetos[i] = prev; this._dataRev++; this.toast('error', 'Erro: ' + error.message); return; }
       this.toast('success', `"${p.nome}" arquivado.`);
     },
     async desarquivarProjeto(p) {
@@ -7256,8 +7301,9 @@ function app() {
       if (i < 0) return;
       const prev = this.projetos[i];
       this.projetos[i] = { ...prev, arquivadoEm: null };
+      this._dataRev++;
       const { error } = await sb.from('projetos').update({ arquivado_em: null }).eq('id', p.id);
-      if (error) { this.projetos[i] = prev; this.toast('error', 'Erro: ' + error.message); return; }
+      if (error) { this.projetos[i] = prev; this._dataRev++; this.toast('error', 'Erro: ' + error.message); return; }
       this.toast('success', `"${p.nome}" desarquivado.`);
     },
     async deleteProjeto(p) {
@@ -7341,10 +7387,12 @@ function app() {
         const i = this.pessoas.findIndex(x => x.id === e.id);
         const prev = i >= 0 ? this.pessoas[i] : null;
         if (i >= 0) this.pessoas[i] = { ...prev, ...payload };
+        this._dataRev++;
         this.modalPessoa = false;
         const { error } = await sb.from('pessoas').update(payload).eq('id', e.id);
         if (error) {
           if (prev) this.pessoas[i] = prev;
+          this._dataRev++;
           this.toast('error', 'Erro ao salvar: ' + error.message);
           return;
         }
@@ -7354,6 +7402,7 @@ function app() {
         const tempId = 'tmp-' + Math.random().toString(36).slice(2, 8);
         const optimistic = { id: tempId, ...payload, invited_at: null, user_id: null };
         this.pessoas = [...this.pessoas, optimistic].sort((a,b) => a.nome.localeCompare(b.nome));
+        this._dataRev++;
         this.modalPessoa = false;
         const { data, error } = await sb.from('pessoas').insert(payload).select('id, nome, email, user_id, invited_at, role, cliente_id, cliente_principal_id, cliente_secundario_id, capacidade_horas_semana,skills,senioridade').single();
         if (error) {
