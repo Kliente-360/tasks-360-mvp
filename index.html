@@ -1285,10 +1285,6 @@
      `.mob-hidden` é aplicada via x-bind quando isMobileViewport && tab atual
      não corresponde — desktop ignora a classe. */
   .tmodal-mobile-tabs { display: none; }
-  .autosave-mob { display: none; }
-  /* Default desktop: footer buttons mostram label, sem ícone */
-  .tmodal-foot .btn-foot .ico { display: none; }
-  .tmodal-foot .btn-foot .lbl { display: inline; }
 
   @media (max-width: 767px) {
     /* Sheet card: NÃO full-screen. Pequena margem mostra overlay e mantém
@@ -1302,7 +1298,8 @@
     }
     .tmodal {
       max-width: 100% !important; width: 100% !important;
-      height: auto !important;
+      /* altura FIXA pra não variar entre abas (Detalhes/Conversa/Histórico) */
+      height: calc(100dvh - 24px - env(safe-area-inset-bottom, 0px)) !important;
       max-height: calc(100dvh - 24px - env(safe-area-inset-bottom, 0px)) !important;
       border-radius: var(--r-md) !important;
       min-width: 0 !important;
@@ -1377,23 +1374,20 @@
     .tmodal-composer textarea { min-height: 64px; padding: 10px 12px; }
     .tmodal-thread { padding: var(--sp-3); }
 
-    /* footer mobile: touch-friendly (44px alvo), labels visíveis, wrap
-       quando não couber pra evitar corte. */
+    /* footer mobile: 1 linha sem quebra, 4 botões touch-friendly */
     .tmodal-foot {
-      flex-wrap: wrap; gap: 6px;
+      flex-wrap: nowrap; gap: 6px;
       padding: 10px 12px;
     }
     .tmodal-foot .hint { display: none; }
-    .tmodal-foot .autosave-mob { display: inline-flex; flex-shrink: 0; }
-    .tmodal-foot .btn-foot .lbl { display: inline; }
-    .tmodal-foot .btn-foot .ico { display: none; }
     .tmodal-foot .btn,
     .tmodal-foot .btn-foot {
-      flex-shrink: 0;
-      padding: 10px 14px; font-size: var(--fs-sm);
-      min-height: 40px;
+      flex-shrink: 1; flex-grow: 0;
+      padding: 9px 10px; font-size: var(--fs-xs);
+      min-height: 40px; white-space: nowrap;
     }
-    .tmodal-foot .spacer { min-width: 4px; }
+    .tmodal-foot .spacer { display: none; }
+    .tmodal-foot .btn-txt { display: inline; }
   }
 
 </style>
@@ -4061,24 +4055,21 @@
       </div>
     </div>
 
-    <!-- ============ FOOTER ============ -->
+    <!-- ============ FOOTER · 4 ações: arquivar · excluir · fechar · salvar ============
+         Autosave indicator vive no header (desktop). Em mobile foi removido
+         pra deixar footer 1-linha sem quebra. .btn-txt (não .lbl!) — .lbl
+         tem text-transform: uppercase de form labels. -->
     <div class="tmodal-foot">
       <span class="hint" x-show="!editing.id">tarefa nova · clique em Salvar pra criar</span>
-      <!-- autosave-mob: indicador migrado pro footer em mobile (header não cabe) -->
-      <span x-show="editing.id" class="autosave autosave-mob" :data-state="saveState"
-            :title="saveState === 'error' ? 'Autosave falhou — clique em Salvar' : 'Autosave ativo'">
-        <span class="as-dot"></span>
-        <span x-text="autosaveLabel()"></span>
-      </span>
       <div class="spacer"></div>
       <button x-show="editing.id && !editing.arquivadoEm" class="btn btn-ghost text-xs btn-foot" @click="arquivarTask()" title="Arquivar (esconder de listas/dashboards/heurísticas)">
-        <span class="ico" aria-hidden="true">📥</span><span class="lbl">arquivar</span>
+        <span class="btn-txt">arquivar</span>
       </button>
       <button x-show="editing.id && editing.arquivadoEm" class="btn btn-ghost text-xs btn-foot" @click="desarquivarTask()" title="Desarquivar">
-        <span class="ico" aria-hidden="true">📤</span><span class="lbl">desarquivar</span>
+        <span class="btn-txt">desarquivar</span>
       </button>
       <button x-show="editing.id && viewerRole === ROLE.ADMIN" class="btn btn-danger text-xs btn-foot" @click="deleteTask()" title="Excluir tarefa">
-        <span class="ico" aria-hidden="true">✕</span><span class="lbl">excluir</span>
+        <span class="btn-txt">excluir</span>
       </button>
       <button class="btn" @click="modal=false">fechar</button>
       <button class="btn btn-primary" @click="saveTask()" x-text="editing.id ? 'salvar' : 'criar'"></button>
