@@ -904,6 +904,29 @@
   .brief-tag-sobrecarga { background: var(--sig-red);   color: #fff; }
   .brief-tag-pressao    { background: var(--sig-amber); color: #fff; }
   .brief-tag-folga      { background: var(--sig-green-soft); color: var(--sig-green-strong); }
+  .brief-tag-ok         { background: var(--sig-green-soft); color: var(--sig-green-strong); }
+
+  /* Heatmap pessoa × semana no Briefing (Capacidade 4 semanas) */
+  .cap-cell {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 6px 4px; border-radius: 4px; font-family: var(--font-mono);
+    line-height: 1.1; min-height: 38px; border: 1px solid transparent;
+  }
+  .cap-cell-hours { font-size: 11px; font-weight: 600; }
+  .cap-cell-pct   { font-size: 9.5px; opacity: 0.8; margin-top: 1px; }
+  .cap-cell-sem-cap    { background: var(--bg); color: var(--muted); border-color: var(--line); }
+  .cap-cell-folga      { background: var(--sig-green-soft); color: var(--sig-green-strong); }
+  .cap-cell-ok         { background: var(--sig-green-soft); color: var(--sig-green-strong); }
+  .cap-cell-pressao    { background: color-mix(in srgb, var(--sig-amber) 18%, var(--bg)); color: #92400e; }
+  .cap-cell-sobrecarga { background: var(--sig-red); color: #fff; }
+
+  /* Versão compacta usada nas linhas de sustentação/projeto */
+  .cap-cell-mini {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 42px; padding: 3px 6px; border-radius: 3px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    border: 1px solid transparent;
+  }
 
   .brief-kpi {
     border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
@@ -1006,6 +1029,7 @@
   .print-only .memo-signal-vermelho  { background: #dc2626; }
   .print-only .memo-good  { color: #166534; font-weight: 600; }
   .print-only .memo-bad   { color: #b91c1c; font-weight: 600; }
+  .print-only .memo-warn  { color: #b45309; font-weight: 600; }
   .print-only .memo-amber { color: #b45309; font-weight: 600; }
   .print-only .memo-muted { color: #888; }
 
@@ -1864,6 +1888,83 @@
         </div>
       </div>
       <p class="text-sm text-ink-soft leading-relaxed" x-text="briefingCapacidade.recomendacao"></p>
+    </div>
+
+    <!-- Card 5 · Capacidade próximas 4 semanas (granular) -->
+    <div class="card p-5 md:p-7">
+      <div class="flex items-baseline justify-between mb-3 flex-wrap gap-2">
+        <h2 class="font-brand text-lg font-semibold">Capacidade · próximas 4 semanas</h2>
+        <span class="text-xs text-muted font-mono">bucket por prazo · default semana atual</span>
+      </div>
+
+      <!-- Heatmap pessoa × semana -->
+      <div x-show="weeklyCapacityAnalysis.pessoas.length === 0" class="text-sm text-muted py-3 italic">Nenhuma pessoa interna cadastrada.</div>
+      <div x-show="weeklyCapacityAnalysis.pessoas.length > 0" class="space-y-1">
+        <div class="grid items-center gap-2 text-[10px] uppercase tracking-wider text-muted font-mono pb-1" style="grid-template-columns: minmax(120px, 1fr) repeat(4, minmax(70px, 1fr));">
+          <div>pessoa</div>
+          <div class="text-center">esta sem.</div>
+          <div class="text-center">+1 sem.</div>
+          <div class="text-center">+2 sem.</div>
+          <div class="text-center">+3 sem.</div>
+        </div>
+        <template x-for="p in weeklyCapacityAnalysis.pessoas" :key="p.pessoaId">
+          <div class="grid items-center gap-2 text-xs py-1.5 border-b border-line last:border-0" style="grid-template-columns: minmax(120px, 1fr) repeat(4, minmax(70px, 1fr));">
+            <div class="min-w-0">
+              <div class="font-medium text-ink truncate" x-text="p.nome"></div>
+              <div class="text-[10px] text-muted font-mono" x-show="p.capacidade > 0" x-text="'cap ' + p.capacidade + 'h/sem'"></div>
+              <div class="text-[10px] text-muted font-mono italic" x-show="p.capacidade === 0">sem cap declarada</div>
+            </div>
+            <template x-for="(w, idx) in p.weeks" :key="idx">
+              <div class="cap-cell" :class="'cap-cell-' + w.nivel" :title="w.hours + 'h · ' + (w.pctCap == null ? 'sem cap' : w.pctCap + '%')">
+                <span class="cap-cell-hours" x-text="Math.round(w.hours) + 'h'"></span>
+                <span class="cap-cell-pct" x-show="w.pctCap != null" x-text="w.pctCap + '%'"></span>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <!-- Sustentação: estourando / ociosa -->
+      <div x-show="weeklyCapacityAnalysis.sustentacoes.length > 0" class="mt-5 pt-4 border-t border-line">
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono font-semibold mb-2">Sustentações · cap. mensal contratada / 4</div>
+        <div class="space-y-2">
+          <template x-for="s in weeklyCapacityAnalysis.sustentacoes" :key="s.projetoId">
+            <div class="flex items-center gap-3 py-1.5 border-b border-line last:border-0">
+              <span class="brief-tag" :class="s.estourando ? 'brief-tag-sobrecarga' : (s.ociosaFlag ? 'brief-tag-folga' : 'brief-tag-ok')" x-text="s.estourando ? 'estourando' : (s.ociosaFlag ? 'ociosa' : 'ok')"></span>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-ink truncate" x-text="s.nome"></div>
+                <div class="text-[10px] text-muted font-mono" x-text="nomeCliente(s.clienteId) + ' · ' + s.orcMensal + 'h/mês contratado · ' + Math.round(s.capSemanal) + 'h/sem'"></div>
+              </div>
+              <div class="flex gap-1">
+                <template x-for="(w, idx) in s.weeks" :key="idx">
+                  <div class="cap-cell-mini" :class="'cap-cell-' + w.nivel" :title="'sem ' + idx + ': ' + Math.round(w.hours) + 'h · ' + w.pctCap + '%'" x-text="w.pctCap + '%'"></div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Projetos fechados: escopo -->
+      <div x-show="weeklyCapacityAnalysis.projetosFechados.length > 0" class="mt-5 pt-4 border-t border-line">
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono font-semibold mb-2">Projetos · escopo comprometido vs orçamento total</div>
+        <div class="space-y-2">
+          <template x-for="pj in weeklyCapacityAnalysis.projetosFechados" :key="pj.projetoId">
+            <div class="flex items-center gap-3 py-1.5 border-b border-line last:border-0">
+              <span class="brief-tag" :class="pj.estourado ? 'brief-tag-sobrecarga' : (pj.risco ? 'brief-tag-pressao' : 'brief-tag-ok')" x-text="pj.estourado ? 'estourado' : (pj.risco ? 'risco' : 'ok')"></span>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-ink truncate" x-text="pj.nome"></div>
+                <div class="text-[10px] text-muted font-mono" x-text="nomeCliente(pj.clienteId) + ' · ' + pj.countTasks + ' tasks · ' + Math.round(pj.usado) + 'h usadas + ' + Math.round(pj.comprometido) + 'h abertas / ' + pj.orcTotal + 'h'"></div>
+              </div>
+              <div class="text-sm font-mono font-semibold" :class="pj.estourado ? 'text-[color:var(--p0)]' : (pj.risco ? 'text-amber-700' : 'text-ink-soft')" x-text="pj.pctEsgotamento + '%'"></div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div x-show="weeklyCapacityAnalysis.sustentacoes.length === 0 && weeklyCapacityAnalysis.projetosFechados.length === 0" class="mt-4 text-xs text-muted italic">
+        Nenhum projeto com tipo + orçamento cadastrado. Em Cadastros · Projetos, marque tipo (sustentação/projeto) e preencha as horas pra ativar análise contratual.
+      </div>
     </div>
   </div>
 </section></template>
@@ -2737,14 +2838,19 @@
 
 <!-- ============ DASHBOARD ============ -->
 <template x-if="tab==='dash'"><section class="fade-up">
-  <!-- Heurísticas pré-IA: banner de alertas no topo (Dashboard) -->
+  <!-- Heurísticas pré-IA: banner resumido (Dashboard).
+       Os 3 alertas mais críticos aparecem aqui. Detalhes completos vão
+       no Briefing executivo (CTA abaixo). -->
   <div x-show="heuristicAlerts.length > 0" class="card mb-4 md:mb-5 overflow-hidden" style="border-left: 4px solid var(--p0)">
-    <div class="px-4 py-3 border-b border-line flex items-center justify-between">
-      <div class="font-brand font-semibold text-sm text-[color:var(--p0)]">⚠ Sinais de risco · heurísticas</div>
-      <span class="text-xs font-mono text-muted" x-text="heuristicAlerts.length + ' alerta(s)'"></span>
+    <div class="px-4 py-3 border-b border-line flex items-center justify-between gap-3 flex-wrap">
+      <div class="font-brand font-semibold text-sm text-[color:var(--p0)]">⚠ Sinais de risco · resumo</div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-mono text-muted" x-text="heuristicAlerts.length + ' alerta(s)'"></span>
+        <button x-show="viewerRole === ROLE.ADMIN" class="text-xs font-medium text-brand-dark hover:underline" @click="tab='brief'">→ ver no Briefing</button>
+      </div>
     </div>
     <ul class="divide-y divide-line">
-      <template x-for="a in heuristicAlerts" :key="a.kind + a.titulo">
+      <template x-for="a in heuristicAlerts.slice(0, 3)" :key="a.kind + a.titulo">
         <li class="px-4 py-2.5 flex items-start gap-3">
           <span class="text-xs uppercase tracking-wider font-mono font-semibold shrink-0 mt-0.5"
                 :style="a.severity === 'alta' ? 'color:var(--p0)' : (a.severity === 'media' ? 'color:#b45309' : 'color:var(--muted)')"
@@ -2756,6 +2862,10 @@
         </li>
       </template>
     </ul>
+    <div x-show="heuristicAlerts.length > 3" class="px-4 py-2 text-xs text-muted bg-surface-2 border-t border-line">
+      <span x-text="'+ ' + (heuristicAlerts.length - 3) + ' outros alertas'"></span>
+      <span x-show="viewerRole === ROLE.ADMIN"> · <button class="text-brand-dark hover:underline" @click="tab='brief'">abrir Briefing</button></span>
+    </div>
   </div>
 
   <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 md:gap-3 mb-5 md:mb-6">
@@ -3731,6 +3841,97 @@
     </section>
 
     <section class="memo-block memo-block-table">
+      <h2>Capacidade · próximas 4 semanas</h2>
+      <table class="memo-tbl" x-show="weeklyCapacityAnalysis.pessoas.length > 0">
+        <thead>
+          <tr>
+            <th>Pessoa</th>
+            <th style="width:10%" class="memo-num">Cap.</th>
+            <th style="width:12%" class="memo-num">esta sem.</th>
+            <th style="width:12%" class="memo-num">+1 sem.</th>
+            <th style="width:12%" class="memo-num">+2 sem.</th>
+            <th style="width:12%" class="memo-num">+3 sem.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="p in weeklyCapacityAnalysis.pessoas" :key="p.pessoaId">
+            <tr>
+              <td><strong x-text="p.nome"></strong></td>
+              <td class="memo-num" x-text="p.capacidade > 0 ? p.capacidade + 'h' : '—'"></td>
+              <template x-for="(w, idx) in p.weeks" :key="idx">
+                <td class="memo-num" :class="w.nivel === 'sobrecarga' ? 'memo-bad' : (w.nivel === 'pressao' ? 'memo-warn' : '')">
+                  <span x-text="Math.round(w.hours) + 'h'"></span>
+                  <span x-show="w.pctCap != null" class="memo-trend-delta" x-text="' ' + w.pctCap + '%'"></span>
+                </td>
+              </template>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+
+      <div x-show="weeklyCapacityAnalysis.sustentacoes.length > 0" style="margin-top: 10px;">
+        <h2 style="font-size: 11px; margin-bottom: 4px;">Sustentações · cap. mensal contratada / 4</h2>
+        <table class="memo-tbl">
+          <thead>
+            <tr>
+              <th>Projeto · cliente</th>
+              <th style="width:12%" class="memo-num">h/sem cap.</th>
+              <th style="width:11%" class="memo-num">esta</th>
+              <th style="width:11%" class="memo-num">+1</th>
+              <th style="width:11%" class="memo-num">+2</th>
+              <th style="width:11%" class="memo-num">+3</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="s in weeklyCapacityAnalysis.sustentacoes" :key="s.projetoId">
+              <tr>
+                <td>
+                  <strong x-text="s.nome"></strong> · <span x-text="nomeCliente(s.clienteId)"></span>
+                  <template x-if="s.estourando"><span class="memo-tag memo-tag-vermelho">estourando</span></template>
+                  <template x-if="s.ociosaFlag && !s.estourando"><span class="memo-tag memo-tag-amarelo">ociosa</span></template>
+                </td>
+                <td class="memo-num" x-text="Math.round(s.capSemanal) + 'h'"></td>
+                <template x-for="(w, idx) in s.weeks" :key="idx">
+                  <td class="memo-num" :class="w.pctCap > 100 ? 'memo-bad' : (w.pctCap < 50 ? 'memo-warn' : '')" x-text="w.pctCap + '%'"></td>
+                </template>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <div x-show="weeklyCapacityAnalysis.projetosFechados.length > 0" style="margin-top: 10px;">
+        <h2 style="font-size: 11px; margin-bottom: 4px;">Projetos fechados · escopo comprometido vs orçamento</h2>
+        <table class="memo-tbl">
+          <thead>
+            <tr>
+              <th>Projeto · cliente</th>
+              <th style="width:11%" class="memo-num">Orç. total</th>
+              <th style="width:11%" class="memo-num">Usado</th>
+              <th style="width:11%" class="memo-num">Aberto</th>
+              <th style="width:11%" class="memo-num">% Esgot.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="pj in weeklyCapacityAnalysis.projetosFechados" :key="pj.projetoId">
+              <tr>
+                <td>
+                  <strong x-text="pj.nome"></strong> · <span x-text="nomeCliente(pj.clienteId)"></span>
+                  <template x-if="pj.estourado"><span class="memo-tag memo-tag-vermelho">estourado</span></template>
+                  <template x-if="pj.risco"><span class="memo-tag memo-tag-amarelo">risco</span></template>
+                </td>
+                <td class="memo-num" x-text="pj.orcTotal + 'h'"></td>
+                <td class="memo-num" x-text="Math.round(pj.usado) + 'h'"></td>
+                <td class="memo-num" x-text="Math.round(pj.comprometido) + 'h'"></td>
+                <td class="memo-num" :class="pj.estourado ? 'memo-bad' : (pj.risco ? 'memo-warn' : '')" x-text="pj.pctEsgotamento + '%'"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="memo-block memo-block-table">
       <h2>Clientes ativos · saúde, atrasos e consumo de horas orçadas</h2>
       <table class="memo-tbl">
         <thead>
@@ -4407,8 +4608,17 @@
           </div>
         </div>
         <div>
-          <label class="lbl">Orçamento total · horas</label>
+          <label class="lbl">
+            <span x-show="editingProjeto.tipo === 'sustentacao'">Horas contratadas / mês</span>
+            <span x-show="editingProjeto.tipo === 'projeto'">Orçamento total · horas</span>
+            <span x-show="editingProjeto.tipo === 'discovery' || !editingProjeto.tipo">Orçamento · horas</span>
+          </label>
           <input type="number" min="0" step="1" class="inp" x-model.number="editingProjeto.orcamentoHoras" placeholder="—">
+          <div class="text-[10px] text-muted mt-1">
+            <span x-show="editingProjeto.tipo === 'sustentacao'">Capacidade semanal = orçamento mensal / 4. Heurística "sustentação estourando" alerta semana a semana.</span>
+            <span x-show="editingProjeto.tipo === 'projeto'">Escopo total fechado. Heurística "projeto estourando escopo" compara contra soma de esforço de todas as tasks.</span>
+            <span x-show="editingProjeto.tipo === 'discovery'">Discovery não entra em heurísticas de capacidade — só informativo.</span>
+          </div>
         </div>
       </div>
     </div>
@@ -6471,6 +6681,130 @@ function app() {
       arr.sort((a,b) => b.horas - a.horas);
       return arr;
     },
+    // ============ ANÁLISE SEMANAL DE CAPACIDADE (4 semanas) ============
+    // Agrega tasks abertas em 4 buckets (semana atual + 3 próximas) por pessoa
+    // e por projeto (sustentação e fechado). Tasks atrasadas puxam pra W0.
+    // Defaults pra análise: prazo vazio → semana atual; esforço 0 → 4h.
+    // Não escreve nada no banco — só agrega pra heurística e Briefing.
+    get weeklyCapacityAnalysis() {
+      const sig = this._tasksSig + ':' + this.pessoas.length + ':' + this.projetos.length + ':' + this._dataRev;
+      return this._memo('weeklyCapacityAnalysis', sig, () => this._computeWeeklyCapacityAnalysis());
+    },
+    _computeWeeklyCapacityAnalysis() {
+      const today = new Date().toISOString().slice(0, 10);
+      const ativas = this._visibleTasks.filter(t => t.status !== STATUS.CONCLUIDO && !t.arquivadoEm);
+
+      // ---- Pessoa × semana ----
+      const pessoaWeekly = new Map();   // pessoaId → [w0, w1, w2, w3]
+      for (const p of this.pessoas) {
+        if (p.role === ROLE.CLIENTE) continue;
+        pessoaWeekly.set(p.id, [0, 0, 0, 0]);
+      }
+      for (const t of ativas) {
+        if (!t.pessoaId) continue;
+        const arr = pessoaWeekly.get(t.pessoaId);
+        if (!arr) continue;
+        const idx = taskWeekIndex(t, today);
+        if (idx === -1) arr[0] += effEsforco(t);                  // atrasada puxa pra W0
+        else if (idx !== null) arr[idx] += effEsforco(t);
+      }
+      const pessoasResult = [];
+      for (const p of this.pessoas) {
+        if (p.role === ROLE.CLIENTE) continue;
+        const hours = pessoaWeekly.get(p.id) || [0,0,0,0];
+        const cap = +p.capacidade_horas_semana || 0;
+        const weeks = hours.map(h => {
+          const pctCap = cap > 0 ? Math.round((h / cap) * 100) : null;
+          return { hours: h, pctCap, nivel: cargaNivelFromPctCap(pctCap) };
+        });
+        const anyOverload = weeks.some(w => w.nivel === 'sobrecarga' || w.nivel === 'pressao');
+        pessoasResult.push({ pessoaId: p.id, nome: p.nome, capacidade: cap, weeks, anyOverload });
+      }
+      pessoasResult.sort((a,b) => {
+        // sobrecarga primeiro, depois maior pico de pctCap
+        const peakA = Math.max(...a.weeks.map(w => w.pctCap ?? -1));
+        const peakB = Math.max(...b.weeks.map(w => w.pctCap ?? -1));
+        return peakB - peakA;
+      });
+
+      // ---- Projeto sustentação × semana ----
+      const sustWeekly = new Map();
+      for (const proj of this.projetos) {
+        if (proj.arquivadoEm) continue;
+        if (proj.tipo !== 'sustentacao') continue;
+        if (!(+proj.orcamentoHoras > 0)) continue;
+        sustWeekly.set(proj.id, [0,0,0,0]);
+      }
+      for (const t of ativas) {
+        if (!t.projetoId) continue;
+        const arr = sustWeekly.get(t.projetoId);
+        if (!arr) continue;
+        const idx = taskWeekIndex(t, today);
+        if (idx === -1) arr[0] += effEsforco(t);
+        else if (idx !== null) arr[idx] += effEsforco(t);
+      }
+      const sustentacoesResult = [];
+      for (const proj of this.projetos) {
+        if (proj.arquivadoEm) continue;
+        if (proj.tipo !== 'sustentacao') continue;
+        const orcMensal = +proj.orcamentoHoras || 0;
+        if (!(orcMensal > 0)) continue;
+        const capSem = orcMensal / 4;
+        const hours = sustWeekly.get(proj.id) || [0,0,0,0];
+        const weeks = hours.map(h => {
+          const pctCap = Math.round((h / capSem) * 100);
+          return { hours: h, pctCap, nivel: cargaNivelFromPctCap(pctCap) };
+        });
+        // Ociosa: 2+ semanas consecutivas <50% utilização
+        let ociosaStreak = 0, ociosaFlag = false;
+        for (const w of weeks) {
+          if (w.pctCap < 50) { ociosaStreak++; if (ociosaStreak >= 2) ociosaFlag = true; }
+          else ociosaStreak = 0;
+        }
+        const estourando = weeks.some(w => w.pctCap > 100);
+        sustentacoesResult.push({
+          projetoId: proj.id, nome: proj.nome, clienteId: proj.clienteId,
+          capSemanal: capSem, orcMensal, weeks, estourando, ociosaFlag,
+        });
+      }
+      sustentacoesResult.sort((a,b) => {
+        const sevA = a.estourando ? 2 : (a.ociosaFlag ? 1 : 0);
+        const sevB = b.estourando ? 2 : (b.ociosaFlag ? 1 : 0);
+        return sevB - sevA;
+      });
+
+      // ---- Projeto fechado × escopo total ----
+      const projetosFechadosResult = [];
+      for (const proj of this.projetos) {
+        if (proj.arquivadoEm) continue;
+        if (proj.tipo !== 'projeto') continue;
+        const orcTotal = +proj.orcamentoHoras || 0;
+        if (!(orcTotal > 0)) continue;
+        let usado = 0, comprometido = 0, countTasks = 0;
+        for (const t of this.tasks) {
+          if (t.projetoId !== proj.id) continue;
+          if (t.arquivadoEm) continue;
+          countTasks++;
+          if (t.status === STATUS.CONCLUIDO) {
+            usado += +t.tempoRealHoras || effEsforco(t);
+          } else {
+            comprometido += effEsforco(t);
+          }
+        }
+        const total = usado + comprometido;
+        const pctEsgotamento = Math.round((total / orcTotal) * 100);
+        projetosFechadosResult.push({
+          projetoId: proj.id, nome: proj.nome, clienteId: proj.clienteId,
+          orcTotal, usado, comprometido, total, pctEsgotamento, countTasks,
+          estourado: pctEsgotamento > 110,
+          risco: pctEsgotamento >= 90 && pctEsgotamento <= 110,
+        });
+      }
+      projetosFechadosResult.sort((a,b) => b.pctEsgotamento - a.pctEsgotamento);
+
+      return { pessoas: pessoasResult, sustentacoes: sustentacoesResult, projetosFechados: projetosFechadosResult };
+    },
+
     // Sugestões de redistribuição (página 2). Heurística simples:
     // pra cada pessoa sobrecarregada (>50h), buscar 2-3 tasks dela
     // (atrasadas / P0 / P1) que poderiam ser passadas pra alguém
@@ -8224,13 +8558,20 @@ function app() {
         }
       }
 
-      // Sobrecarga (segunda passada — sobre pessoas, não tasks)
-      const sobrecarregados = [];
-      for (const p of this.pessoas) {
-        if (p.role === ROLE.CLIENTE) continue;
-        const cap = +p.capacidade_horas_semana || 40;
-        const horas = cargaPorPessoa.get(p.id) || 0;
-        if (horas > cap) sobrecarregados.push({ p, horas, cap, pct: Math.round((horas / cap) * 100) });
+      // Análise semanal de capacidade (4 semanas) — alimenta H11..H15.
+      // Substitui o antigo "sobrecarga global" (somava todo backlog aberto)
+      // por análise granular por semana, usando prazo como bucket.
+      const weekly = this.weeklyCapacityAnalysis;
+      const semanaLabel = (w) => w === 0 ? 'esta semana' : (w === 1 ? 'próxima' : `em ${w} semanas`);
+
+      // H15 · Pessoa sobrecarga semanal (granular)
+      const overloadByWeek = [[], [], [], []];   // w → pessoas sobrecarregadas naquela semana
+      for (const p of weekly.pessoas) {
+        p.weeks.forEach((wk, idx) => {
+          if (wk.nivel === 'sobrecarga' || wk.nivel === 'pressao') {
+            overloadByWeek[idx].push({ pessoaId: p.pessoaId, nome: p.nome, pctCap: wk.pctCap, hours: wk.hours, cap: p.capacidade });
+          }
+        });
       }
 
       // Constrói alertas a partir dos buckets
@@ -8243,13 +8584,64 @@ function app() {
         taskIds: bGrandes.map(t => t.id),
       });
 
-      if (sobrecarregados.length) {
-        sobrecarregados.sort((a, b) => b.pct - a.pct);
+      // H15 alertas (uma entrada por semana com sobrecarga, severidade decai pra futuro)
+      overloadByWeek.forEach((pessoas, idx) => {
+        if (!pessoas.length) return;
+        pessoas.sort((a, b) => b.pctCap - a.pctCap);
         out.push({
-          severity: 'alta', kind: 'sobrecarga',
-          titulo: `${sobrecarregados.length} pessoa(s) acima da capacidade semanal`,
-          detalhe: 'Considerar redistribuição. (Detalhes por pessoa em Cadastros · Pessoas.)',
-          pessoaIds: sobrecarregados.map(s => s.p.id),
+          severity: idx === 0 ? 'alta' : 'media',
+          kind: 'sobrecarga-semana',
+          titulo: `${pessoas.length} pessoa(s) acima da capacidade ${semanaLabel(idx)}`,
+          detalhe: pessoas.slice(0, 3).map(p => `${p.nome.split(' ')[0]} ${p.pctCap}%`).join(' · ') + (pessoas.length > 3 ? ` · +${pessoas.length - 3}` : ''),
+          pessoaIds: pessoas.map(p => p.pessoaId),
+          weekIdx: idx,
+        });
+      });
+
+      // H11 · Sustentação estourando capacidade semanal
+      const sustEstourando = weekly.sustentacoes.filter(s => s.estourando);
+      if (sustEstourando.length) {
+        const detalhe = sustEstourando.slice(0, 3).map(s => {
+          const wk = s.weeks.findIndex(w => w.pctCap > 100);
+          return `${s.nome} · ${semanaLabel(wk)} ${s.weeks[wk].pctCap}%`;
+        }).join(' · ');
+        out.push({
+          severity: 'alta', kind: 'sustentacao-estourando',
+          titulo: `${sustEstourando.length} sustentação(ões) estourando contrato em alguma semana`,
+          detalhe, projetoIds: sustEstourando.map(s => s.projetoId),
+        });
+      }
+
+      // H12 · Sustentação ociosa 2+ semanas consecutivas
+      const sustOciosa = weekly.sustentacoes.filter(s => s.ociosaFlag && !s.estourando);
+      if (sustOciosa.length) {
+        out.push({
+          severity: 'media', kind: 'sustentacao-ociosa',
+          titulo: `${sustOciosa.length} sustentação(ões) com capacidade ociosa por 2+ semanas`,
+          detalhe: sustOciosa.slice(0, 3).map(s => s.nome).join(' · '),
+          projetoIds: sustOciosa.map(s => s.projetoId),
+        });
+      }
+
+      // H13 · Projeto fechado estourando escopo (>110% comprometido)
+      const projEstourando = weekly.projetosFechados.filter(p => p.estourado);
+      if (projEstourando.length) {
+        out.push({
+          severity: 'alta', kind: 'projeto-estourando-escopo',
+          titulo: `${projEstourando.length} projeto(s) com escopo estourado (>110%)`,
+          detalhe: projEstourando.slice(0, 3).map(p => `${p.nome} ${p.pctEsgotamento}%`).join(' · '),
+          projetoIds: projEstourando.map(p => p.projetoId),
+        });
+      }
+
+      // H14 · Projeto fechado em risco de estouro (90-110%)
+      const projRisco = weekly.projetosFechados.filter(p => p.risco);
+      if (projRisco.length) {
+        out.push({
+          severity: 'media', kind: 'projeto-risco-estouro',
+          titulo: `${projRisco.length} projeto(s) em risco de estourar escopo (90-110%)`,
+          detalhe: projRisco.slice(0, 3).map(p => `${p.nome} ${p.pctEsgotamento}%`).join(' · '),
+          projetoIds: projRisco.map(p => p.projetoId),
         });
       }
 
