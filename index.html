@@ -891,13 +891,17 @@
   }
   /* Chip toggle pros filtros da Triagem (sem responsável/prazo/esforço) */
   .triage-filter-chip {
-    font-size: 11px; font-weight: 500;
-    padding: 4px 10px; border-radius: 999px;
+    display: inline-flex; align-items: center;
+    font-size: 10.5px; font-weight: 500;
+    padding: 4px 8px; border-radius: 999px;
     background: transparent; color: var(--muted);
     border: 1px solid var(--line);
     font-family: var(--font-mono);
     cursor: pointer; transition: all 120ms;
     white-space: nowrap;
+  }
+  @media (min-width: 768px) {
+    .triage-filter-chip { font-size: 11px; padding: 4px 10px; }
   }
   .triage-filter-chip:hover { border-color: var(--line-strong); color: var(--ink-soft); }
   .triage-filter-chip.is-on {
@@ -2101,35 +2105,27 @@
       <div class="text-xs text-muted font-mono">selecionar + atualizar em massa abaixo</div>
     </div>
 
-    <!-- Filtros + Select all (só aparecem se tem tarefa pra triar) -->
-    <div x-show="triagemTasks.length > 0" class="flex items-center gap-2 flex-wrap">
-      <label class="flex items-center gap-2 text-xs text-muted cursor-pointer mr-2"
-             x-show="triagemTasksFiltered.length > 0">
-        <input type="checkbox"
-               :checked="triagemTasksFiltered.length > 0 && triagemTasksFiltered.every(t => selectedIds.includes(t.id))"
-               :indeterminate.prop="selectedIds.length > 0 && triagemTasksFiltered.some(t => selectedIds.includes(t.id)) && !triagemTasksFiltered.every(t => selectedIds.includes(t.id))"
-               @change="toggleSelectAllTriagem()">
-        <span>selecionar tudo</span>
-      </label>
-      <button type="button" class="triage-filter-chip"
+    <!-- Filtros (só aparecem se tem tarefa pra triar) -->
+    <div x-show="triagemTasks.length > 0" class="flex items-center gap-1.5 md:gap-2">
+      <button type="button" class="triage-filter-chip flex-1 md:flex-none justify-center"
               :class="triagemFilter.semResp && 'is-on'"
               @click="triagemFilter.semResp = !triagemFilter.semResp">
-        sem responsável
+        sem resp.
       </button>
-      <button type="button" class="triage-filter-chip"
+      <button type="button" class="triage-filter-chip flex-1 md:flex-none justify-center"
               :class="triagemFilter.semPrazo && 'is-on'"
               @click="triagemFilter.semPrazo = !triagemFilter.semPrazo">
         sem prazo
       </button>
-      <button type="button" class="triage-filter-chip"
+      <button type="button" class="triage-filter-chip flex-1 md:flex-none justify-center"
               :class="triagemFilter.semEsforco && 'is-on'"
               @click="triagemFilter.semEsforco = !triagemFilter.semEsforco">
         sem esforço
       </button>
-      <button type="button" class="btn btn-ghost text-xs"
+      <button type="button" class="btn btn-ghost text-xs shrink-0"
               x-show="triagemAnyFilter()"
               @click="triagemFilter = { semResp: false, semPrazo: false, semEsforco: false }">
-        ✕ limpar
+        ✕
       </button>
     </div>
 
@@ -3851,7 +3847,7 @@
 
   <!-- Ações: stack mobile, inline desktop -->
   <div class="flex flex-col md:flex-row md:items-center gap-2 mt-2 md:mt-0 md:ml-2">
-    <select class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[160px]" @change="bulkSetSubetapa($event.target.value); $event.target.value=''" title="Mover para…">
+    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[160px]" @change="bulkSetSubetapa($event.target.value); $event.target.value=''" title="Mover para…">
       <option value="" disabled selected>mover etapa…</option>
       <optgroup label="Backlog">
         <option value="backlog">Backlog</option>
@@ -3878,15 +3874,17 @@
       <option value="__none__">— sem responsável —</option>
       <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
-    <select class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]" @change="bulkSetPriority($event.target.value); $event.target.value=''" title="Prioridade…">
+    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]" @change="bulkSetPriority($event.target.value); $event.target.value=''" title="Prioridade…">
       <option value="" disabled selected>prioridade…</option>
       <option value="P0">P0 · Urgente</option>
       <option value="P1">P1 · Alta</option>
       <option value="P2">P2 · Normal</option>
       <option value="P3">P3 · Baixa</option>
     </select>
-    <input type="date" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[140px]"
-           @change="bulkSetPrazo($event.target.value); $event.target.value=''"
+    <input type="text" placeholder="prazo (data)"
+           class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[140px]"
+           onfocus="this.type='date'" onblur="if(!this.value) this.type='text'"
+           @change="bulkSetPrazo($event.target.value); $event.target.value=''; $event.target.type='text'"
            title="Definir prazo em massa">
     <input type="number" min="0" step="1" placeholder="esforço (h)"
            class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[110px]"
@@ -3894,8 +3892,8 @@
            title="Definir esforço em horas">
 
     <div class="flex gap-2 md:contents">
-      <button class="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkArquivar()">arquivar</button>
-      <button x-show="viewerRole === ROLE.ADMIN" class="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkDelete()">excluir</button>
+      <button x-show="tab==='backlog'" class="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkArquivar()">arquivar</button>
+      <button x-show="viewerRole === ROLE.ADMIN && tab==='backlog'" class="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkDelete()">excluir</button>
       <div class="hidden md:block w-px h-5 bg-line mx-1"></div>
       <button class="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 hidden md:inline-flex" @click="clearSelection()">limpar</button>
     </div>
