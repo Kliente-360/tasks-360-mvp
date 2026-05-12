@@ -889,6 +889,21 @@
     font-family: var(--font-mono);
     text-transform: uppercase; letter-spacing: 0.05em;
   }
+  /* Chip toggle pros filtros da Triagem (sem responsável/prazo/esforço) */
+  .triage-filter-chip {
+    font-size: 11px; font-weight: 500;
+    padding: 4px 10px; border-radius: 999px;
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--line);
+    font-family: var(--font-mono);
+    cursor: pointer; transition: all 120ms;
+    white-space: nowrap;
+  }
+  .triage-filter-chip:hover { border-color: var(--line-strong); color: var(--ink-soft); }
+  .triage-filter-chip.is-on {
+    background: var(--sig-amber-bg); color: var(--sig-amber-fg);
+    border-color: color-mix(in srgb, var(--sig-amber) 50%, transparent);
+  }
 
   /* ============ BRIEFING EXECUTIVO ============ */
   .brief-signal { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
@@ -2077,11 +2092,45 @@
         <p class="text-muted text-sm mt-1">
           <span x-show="triagemTasks.length === 0">Backlog está triado. Bom trabalho.</span>
           <span x-show="triagemTasks.length > 0">
-            <strong x-text="triagemTasks.length"></strong> tarefa<span x-show="triagemTasks.length !== 1">s</span> precisa<span x-show="triagemTasks.length !== 1">m</span> de revisão · responsável, cliente, prazo ou esforço faltando.
+            <strong x-text="triagemTasksFiltered.length"></strong>
+            <span x-show="triagemAnyFilter()" class="text-muted" x-text="' / ' + triagemTasks.length"></span>
+            tarefa<span x-show="triagemTasksFiltered.length !== 1">s</span> · responsável, cliente, prazo ou esforço faltando.
           </span>
         </p>
       </div>
-      <div class="text-xs text-muted font-mono">click no card pra editar e completar</div>
+      <div class="text-xs text-muted font-mono">selecionar + atualizar em massa abaixo</div>
+    </div>
+
+    <!-- Filtros + Select all (só aparecem se tem tarefa pra triar) -->
+    <div x-show="triagemTasks.length > 0" class="flex items-center gap-2 flex-wrap">
+      <label class="flex items-center gap-2 text-xs text-muted cursor-pointer mr-2"
+             x-show="triagemTasksFiltered.length > 0">
+        <input type="checkbox"
+               :checked="triagemTasksFiltered.length > 0 && triagemTasksFiltered.every(t => selectedIds.includes(t.id))"
+               :indeterminate.prop="selectedIds.length > 0 && triagemTasksFiltered.some(t => selectedIds.includes(t.id)) && !triagemTasksFiltered.every(t => selectedIds.includes(t.id))"
+               @change="toggleSelectAllTriagem()">
+        <span>selecionar tudo</span>
+      </label>
+      <button type="button" class="triage-filter-chip"
+              :class="triagemFilter.semResp && 'is-on'"
+              @click="triagemFilter.semResp = !triagemFilter.semResp">
+        sem responsável
+      </button>
+      <button type="button" class="triage-filter-chip"
+              :class="triagemFilter.semPrazo && 'is-on'"
+              @click="triagemFilter.semPrazo = !triagemFilter.semPrazo">
+        sem prazo
+      </button>
+      <button type="button" class="triage-filter-chip"
+              :class="triagemFilter.semEsforco && 'is-on'"
+              @click="triagemFilter.semEsforco = !triagemFilter.semEsforco">
+        sem esforço
+      </button>
+      <button type="button" class="btn btn-ghost text-xs"
+              x-show="triagemAnyFilter()"
+              @click="triagemFilter = { semResp: false, semPrazo: false, semEsforco: false }">
+        ✕ limpar
+      </button>
     </div>
 
     <!-- Empty state -->
@@ -2089,23 +2138,33 @@
       <div class="font-brand text-lg text-ink mb-2">Nenhuma tarefa em triagem</div>
       <div class="text-sm text-muted">Toda task tem responsável, cliente e — onde aplica — prazo e esforço.</div>
     </div>
+    <div x-show="triagemTasks.length > 0 && triagemTasksFiltered.length === 0" class="card p-6 text-center text-sm text-muted italic">
+      Nenhuma task casa com os filtros ativos.
+    </div>
 
     <!-- Cards -->
-    <template x-for="t in triagemTasks" :key="t.id">
-      <div class="card p-4 md:p-5 cursor-pointer hover:border-line-strong transition-colors" @click="openEdit(t)">
+    <template x-for="t in triagemTasksFiltered" :key="t.id">
+      <div class="card p-4 md:p-5 cursor-pointer hover:border-line-strong transition-colors"
+           :class="selectedIds.includes(t.id) && 'bg-brand-tint'"
+           @click="openEdit(t)">
         <div class="flex items-start justify-between gap-3 mb-2">
-          <div class="min-w-0 flex-1">
-            <div class="flex items-baseline gap-2 flex-wrap mb-1">
-              <span class="pri" :class="'pri-'+t.prioridade" x-show="t.prioridade">
-                <span class="pri-dot"></span>
-                <span x-text="t.prioridade"></span>
-              </span>
-              <span class="font-medium text-ink" x-text="t.titulo"></span>
-            </div>
-            <div class="text-xs text-muted font-mono">
-              <span x-text="lblSub(t.subetapa)"></span>
-              <span x-show="t.clienteId"> · <span x-text="nomeCliente(t.clienteId)"></span></span>
-              <span x-show="t.criadoEm"> · criada há <span x-text="agingDays({ subetapaEm: t.criadoEm }) + 'd'"></span></span>
+          <div class="min-w-0 flex-1 flex items-start gap-3">
+            <input type="checkbox" class="mt-1 shrink-0"
+                   :checked="selectedIds.includes(t.id)"
+                   @click.stop="toggleSelected(t.id)">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-baseline gap-2 flex-wrap mb-1">
+                <span class="pri" :class="'pri-'+t.prioridade" x-show="t.prioridade">
+                  <span class="pri-dot"></span>
+                  <span x-text="t.prioridade"></span>
+                </span>
+                <span class="font-medium text-ink" x-text="t.titulo"></span>
+              </div>
+              <div class="text-xs text-muted font-mono">
+                <span x-text="lblSub(t.subetapa)"></span>
+                <span x-show="t.clienteId"> · <span x-text="nomeCliente(t.clienteId)"></span></span>
+                <span x-show="t.criadoEm"> · criada há <span x-text="agingDays({ subetapaEm: t.criadoEm }) + 'd'"></span></span>
+              </div>
             </div>
           </div>
           <div class="flex flex-wrap gap-1 shrink-0 justify-end max-w-[55%]">
@@ -2152,6 +2211,10 @@
     <span class="text-muted text-[11px] uppercase tracking-wider font-semibold">mostrando</span>
     <span class="font-mono text-sm" x-text="filtered.length + ' visíveis / ' + tasks.length + ' total'"></span>
     <span class="font-mono text-xs text-muted" x-show="tasks.length - filtered.length > 0" x-text="'· ' + (tasks.length - filtered.length) + ' ocultas'"></span>
+    <label class="flex items-center gap-1.5 text-xs text-muted cursor-pointer ml-2" title="Inclui tarefas arquivadas na listagem">
+      <input type="checkbox" x-model="showArchivedTasks">
+      <span>arquivadas</span>
+    </label>
   </div>
 
   <!-- Filtros — ordem espelha colunas da tabela: Tarefa · Cliente · Projeto · Resp · Pri · Cmplx · Status · Tag -->
@@ -2254,13 +2317,6 @@
             @click="clearFilters()">
       ✕ limpar filtros<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
     </button>
-  </div>
-
-  <div class="flex items-center justify-end mb-2">
-    <label class="flex items-center gap-2 text-xs text-muted cursor-pointer">
-      <input type="checkbox" x-model="showArchivedTasks">
-      <span>incluir arquivadas</span>
-    </label>
   </div>
 
   <div class="card tbl-wrap hidden md:block">
@@ -3778,7 +3834,7 @@
 </div>
 
 <!-- ============ BULK ACTIONS BAR ============ -->
-<div x-show="selectedIds.length > 0 && tab==='backlog'"
+<div x-show="selectedIds.length > 0 && (tab==='backlog' || tab==='triagem')"
      x-transition.opacity
      class="fixed z-[55] bg-elev border border-line shadow-2xl
             bottom-3 left-3 right-3 rounded-lg p-3
@@ -3829,6 +3885,14 @@
       <option value="P2">P2 · Normal</option>
       <option value="P3">P3 · Baixa</option>
     </select>
+    <input type="date" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[140px]"
+           @change="bulkSetPrazo($event.target.value); $event.target.value=''"
+           title="Definir prazo em massa">
+    <input type="number" min="0" step="1" placeholder="esforço (h)"
+           class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[110px]"
+           @change="bulkSetEsforco($event.target.value); $event.target.value=''"
+           title="Definir esforço em horas">
+
     <div class="flex gap-2 md:contents">
       <button class="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkArquivar()">arquivar</button>
       <button x-show="viewerRole === ROLE.ADMIN" class="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkDelete()">excluir</button>
@@ -4980,6 +5044,7 @@ function app() {
     quickAddSub: '',
     quickAddTitle: '',
     selectedIds: [],
+    triagemFilter: { semResp: false, semPrazo: false, semEsforco: false },
     groupBy: '', // '' | 'pessoa' | 'cliente' | 'projeto' | 'status' | 'subetapa' | 'prioridade' | 'complexidade'
     collapsedGroups: [],
     // Calendário: mês corrente exibido (1º dia, normalizado)
@@ -5085,6 +5150,8 @@ function app() {
       this.editing = this.blankTask();
       this.hydrateFiltersFromUrl();
       this.$watch('f', () => this.syncFiltersToUrl(), { deep: true });
+      // Limpa seleção ao trocar de tab pra evitar bulk acidental cross-contexto.
+      this.$watch('tab', () => { if (this.selectedIds.length) this.selectedIds = []; });
       // === Autosave watcher: debounce 800ms após mutação em editing ===
       // Só dispara quando: (a) modal aberto, (b) task já existe (id presente),
       // (c) título não está vazio. Tasks novas exigem clique no botão Salvar.
@@ -6478,6 +6545,19 @@ function app() {
         out.sort((a, b) => b._failCount - a._failCount || (a.criadoEm || 0) - (b.criadoEm || 0));
         return out;
       });
+    },
+    get triagemTasksFiltered() {
+      const f = this.triagemFilter;
+      return this.triagemTasks.filter(t => {
+        if (f.semResp    && !t._failures.includes('sem responsável')) return false;
+        if (f.semPrazo   && !t._failures.includes('sem prazo'))       return false;
+        if (f.semEsforco && !t._failures.includes('sem esforço'))     return false;
+        return true;
+      });
+    },
+    triagemAnyFilter() {
+      const f = this.triagemFilter;
+      return f.semResp || f.semPrazo || f.semEsforco;
     },
 
     // ===================== BRIEFING EXECUTIVO =====================
@@ -8174,6 +8254,35 @@ function app() {
       if (error) { this.toast('error', 'Erro: ' + error.message); return; }
       this.tasks = this.tasks.map(t => ids.includes(t.id) ? { ...t, prioridade: p } : t);
       this.toast('success', ids.length + ' tarefa(s) atualizada(s).');
+    },
+    async bulkSetPrazo(prazo) {
+      // string vazia = limpar prazo
+      const target = prazo || null;
+      const ids = [...this.selectedIds];
+      if (!ids.length) return;
+      this.track('bulk_action', { kind: 'setPrazo', count: ids.length });
+      const { error } = await sb.from('tasks').update({ prazo: target }).in('id', ids);
+      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
+      this.tasks = this.tasks.map(t => ids.includes(t.id) ? { ...t, prazo: target || '' } : t);
+      this.toast('success', ids.length + ' tarefa(s) atualizada(s).');
+    },
+    async bulkSetEsforco(val) {
+      const num = val === '' || val == null ? null : Number(val);
+      if (num != null && !(num >= 0)) { this.toast('error', 'Esforço inválido.'); return; }
+      const ids = [...this.selectedIds];
+      if (!ids.length) return;
+      this.track('bulk_action', { kind: 'setEsforco', count: ids.length, value: num });
+      const { error } = await sb.from('tasks').update({ esforco: num }).in('id', ids);
+      if (error) { this.toast('error', 'Erro: ' + error.message); return; }
+      this.tasks = this.tasks.map(t => ids.includes(t.id) ? { ...t, esforco: num ?? 0 } : t);
+      this.toast('success', ids.length + ' tarefa(s) atualizada(s).');
+    },
+    // Select all aplicado às tarefas atualmente visíveis na Triagem (após filtro).
+    toggleSelectAllTriagem() {
+      const visible = this.triagemTasksFiltered.map(t => t.id);
+      const allSelected = visible.length > 0 && visible.every(id => this.selectedIds.includes(id));
+      if (allSelected) this.selectedIds = this.selectedIds.filter(id => !visible.includes(id));
+      else this.selectedIds = Array.from(new Set([...this.selectedIds, ...visible]));
     },
     bulkDelete() {
       const n = this.selectedIds.length;
