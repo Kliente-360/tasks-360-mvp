@@ -4003,7 +4003,7 @@
                   <span class="cmsg-who" x-text="c.author || '—'"></span>
                   <span x-show="c.external_source==='salesforce'" class="cmsg-badge" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
                   <span x-show="c.from_cliente" class="cmsg-badge">cliente</span>
-                  <span class="cmsg-when" x-text="fmtPostedEm(c.posted_em || c.criado_em) + (c.from_cliente ? '' : ' · interno')"></span>
+                  <span class="cmsg-when" x-text="fmtPostedEm(c.posted_em || c.criado_em) + (c.from_cliente ? '' : (c.visivel_cliente ? ' · visível ao cliente' : ' · interno'))"></span>
                   <div class="ml-auto flex items-center gap-2">
                     <button x-show="replyingToId !== c.id" class="text-[11px] text-muted hover:text-ink" @click="startReply(c.id)">↳ responder</button>
                     <button x-show="_canDeleteComment(c)" class="text-[11px] text-muted hover:text-danger" title="Excluir comentário" @click="deleteComment(c)">✕</button>
