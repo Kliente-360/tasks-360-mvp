@@ -2228,24 +2228,28 @@
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.cliente">
         <option value="">Todos os clientes</option>
+        <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.projeto">
         <option value="">Todos os projetos</option>
+        <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.pessoa">
         <option value="">Todas as pessoas</option>
+        <option value="__empty__">— sem responsável</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
     <div class="col-span-2 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.pri">
         <option value="">Pri</option>
+        <option value="__empty__">— vazio</option>
         <option value="P0">P0</option>
         <option value="P1">P1</option>
         <option value="P2">P2</option>
@@ -2255,6 +2259,7 @@
     <div class="col-span-2 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" x-model="f.complexidade">
         <option value="">Cmplx</option>
+        <option value="__empty__">— vazio</option>
         <option value="alta">Alta</option>
         <option value="media">Média</option>
         <option value="baixa">Baixa</option>
@@ -2273,6 +2278,7 @@
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'" x-show="allTags.length>0">
       <select class="inp" x-model="f.tag">
         <option value="">Todas as tags</option>
+        <option value="__empty__">— sem tags</option>
         <template x-for="t in allTags" :key="t"><option :value="t" x-text="'#' + t"></option></template>
       </select>
     </div>
@@ -2519,10 +2525,12 @@
     <div class="flex flex-col md:flex-row gap-2 md:gap-3">
       <select class="inp w-full md:w-[200px]" x-model="f.cliente">
         <option value="">Todos os clientes</option>
+        <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
       <select class="inp w-full md:w-[180px]" x-model="f.pessoa">
         <option value="">Todos os responsáveis</option>
+        <option value="__empty__">— sem responsável</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
@@ -2669,10 +2677,12 @@
   <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 mb-5 md:mb-6">
     <select class="inp w-full md:w-[200px]" x-model="f.cliente">
       <option value="">Todos os clientes</option>
+      <option value="__empty__">— sem cliente</option>
       <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
     </select>
     <select class="inp w-full md:w-[180px]" x-model="f.pessoa">
       <option value="">Todos os responsáveis</option>
+      <option value="__empty__">— sem responsável</option>
       <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
   </div>
@@ -3021,10 +3031,12 @@
   <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 md:gap-3 mb-5 md:mb-6">
     <select class="inp w-full md:w-[200px]" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
       <option value="">Todos os clientes</option>
+      <option value="__empty__">— sem cliente</option>
       <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
     </select>
     <select class="inp w-full md:w-[180px]" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
       <option value="">Todos os responsáveis</option>
+      <option value="__empty__">— sem responsável</option>
       <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
   </div>
@@ -7451,14 +7463,21 @@ function app() {
       const base = this.showArchivedTasks ? this.tasks : this._visibleTasks;
       let arr = base.filter(t => {
         if (q && !(t.titulo + ' ' + (t.descricao||'')).toLowerCase().includes(q)) return false;
-        if (f.cliente && t.clienteId !== f.cliente) return false;
-        if (f.projeto && t.projetoId !== f.projeto) return false;
-        if (f.pessoa  && t.pessoaId  !== f.pessoa)  return false;
+        // Sentinel '__empty__' = filtrar onde o campo está vazio/null.
+        if (f.cliente === '__empty__') { if (t.clienteId) return false; }
+        else if (f.cliente && t.clienteId !== f.cliente) return false;
+        if (f.projeto === '__empty__') { if (t.projetoId) return false; }
+        else if (f.projeto && t.projetoId !== f.projeto) return false;
+        if (f.pessoa === '__empty__') { if (t.pessoaId) return false; }
+        else if (f.pessoa && t.pessoaId !== f.pessoa) return false;
         if (f.status === 'abertas') { if (t.status === STATUS.CONCLUIDO) return false; }
         else if (f.status && t.status !== f.status) return false;
-        if (f.pri          && t.prioridade !== f.pri)            return false;
-        if (f.complexidade && (t.complexidade||'media') !== f.complexidade) return false;
-        if (f.tag          && !(t.tags || []).includes(f.tag))   return false;
+        if (f.pri === '__empty__') { if (t.prioridade) return false; }
+        else if (f.pri && t.prioridade !== f.pri) return false;
+        if (f.complexidade === '__empty__') { if (t.complexidade) return false; }
+        else if (f.complexidade && (t.complexidade||'media') !== f.complexidade) return false;
+        if (f.tag === '__empty__') { if ((t.tags || []).length) return false; }
+        else if (f.tag && !(t.tags || []).includes(f.tag)) return false;
         return true;
       });
       if (this.sortKey === 'manual') {
