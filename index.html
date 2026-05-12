@@ -590,6 +590,137 @@
   }
   .portal-timeline-evt { color: var(--ink-soft); }
 
+  /* === Portal v2 · análises quantitativas + storytelling ===
+     Componentes voltados ao cliente externo. Mantém paleta navy/âmbar
+     existente, adiciona KPI cards refinados, gráficos lightweight (sem
+     dependência de Chart.js) e alertas amigáveis. */
+
+  /* Alertas amigáveis no portal (heurísticas voltadas ao cliente) */
+  .portal-alert {
+    display: flex; align-items: flex-start; gap: var(--sp-4);
+    padding: var(--sp-4) var(--sp-5);
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface-1);
+  }
+  .portal-alert-icon {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--bg-elev); color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700; flex-shrink: 0;
+  }
+  .portal-alert-title {
+    font-family: var(--font-sans); font-weight: 600;
+    font-size: 14px; color: var(--ink); line-height: 1.3;
+  }
+  .portal-alert-sub { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; line-height: 1.4; }
+  .portal-alert-alta {
+    background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+    border-color: #fde68a;
+  }
+  .portal-alert-alta .portal-alert-icon { background: #fef3c7; color: #b45309; }
+  .portal-alert-alta .portal-alert-title { color: #b45309; }
+  .portal-alert-alta .portal-alert-sub { color: #92400e; }
+  .portal-alert-media {
+    background: var(--surface-1);
+    border-color: color-mix(in srgb, var(--sig-amber) 30%, var(--line));
+  }
+  .portal-alert-media .portal-alert-icon {
+    background: color-mix(in srgb, var(--sig-amber) 15%, var(--bg));
+    color: #b45309;
+  }
+  .portal-alert-positivo {
+    background: color-mix(in srgb, var(--sig-green) 6%, var(--surface-1));
+    border-color: color-mix(in srgb, var(--sig-green) 35%, var(--line));
+  }
+  .portal-alert-positivo .portal-alert-icon {
+    background: var(--sig-green-soft); color: var(--sig-green-strong);
+  }
+  .portal-alert-positivo .portal-alert-title { color: var(--sig-green-strong); }
+
+  /* KPI cards do portal (mais refinados que os anteriores) */
+  .portal-kpi {
+    background: var(--surface-1); border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: var(--sp-4);
+    display: flex; flex-direction: column; gap: 4px;
+    min-height: 110px;
+  }
+  .portal-kpi-label {
+    font-family: var(--font-mono); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+  }
+  .portal-kpi-value {
+    font-family: var(--font-sans); font-weight: 700;
+    font-size: 28px; line-height: 1.05; color: var(--ink);
+    font-feature-settings: "tnum";
+    margin-top: 2px;
+  }
+  .portal-kpi-delta {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--ink-soft); margin-top: auto; padding-top: 6px;
+    line-height: 1.3;
+  }
+  .portal-kpi-danger { border-color: color-mix(in srgb, var(--p0) 35%, var(--line)); }
+  .portal-kpi-danger .portal-kpi-value { color: var(--p0); }
+  @media (min-width: 768px) {
+    .portal-kpi { padding: var(--sp-5); min-height: 128px; }
+    .portal-kpi-value { font-size: 34px; }
+  }
+
+  /* Bar chart (entregas 6 meses) feito com divs - sem Chart.js */
+  .portal-bars {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
+    align-items: end;
+    height: 130px;
+  }
+  .portal-bar-col {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    height: 100%; min-width: 0;
+  }
+  .portal-bar-value {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--muted); font-feature-settings: "tnum";
+    height: 14px;
+  }
+  .portal-bar-track {
+    width: 100%; flex: 1;
+    background: var(--bg-elev);
+    border-radius: 3px 3px 0 0;
+    overflow: hidden;
+    display: flex; align-items: flex-end;
+    min-height: 4px;
+  }
+  .portal-bar-fill {
+    width: 100%;
+    background: linear-gradient(180deg, var(--brand) 0%, color-mix(in srgb, var(--brand) 75%, var(--navy)) 100%);
+    border-radius: 3px 3px 0 0;
+    min-height: 3px;
+    transition: height 220ms ease-out;
+  }
+  .portal-bar-fill-current {
+    background: linear-gradient(180deg, var(--navy) 0%, var(--brand-dark) 100%);
+  }
+  .portal-bar-label {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--muted); text-transform: lowercase;
+    line-height: 1.1;
+  }
+
+  /* Barras horizontais da distribuição por projeto */
+  .portal-dist-track {
+    width: 100%; height: 6px;
+    background: var(--bg-elev);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .portal-dist-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--brand) 0%, var(--brand-dark) 100%);
+    border-radius: 999px;
+    transition: width 220ms ease-out;
+  }
+
   /* ============ KPI ============
      Número em Plex Mono 500 com tnum — mono pra números fixa larguras e dá peso executivo. */
   .kpi {
@@ -2810,58 +2941,146 @@
     </div>
   </div>
 
-  <!-- Conteúdo do portal -->
-  <div x-show="effectivePortalClienteId" class="space-y-5">
-    <!-- Header do cliente · skin navy institucional -->
+  <!-- Conteúdo do portal · v2 com storytelling + análises quantitativas -->
+  <div x-show="effectivePortalClienteId" class="space-y-5 md:space-y-6">
+
+    <!-- 1. HEADER · skin navy institucional com headline narrativa -->
     <div class="portal-header">
       <div class="portal-header-eyebrow">Portal · Kliente 360</div>
       <div class="portal-header-name" x-text="portalCliente && portalCliente.nome"></div>
-      <div class="portal-header-sub">acompanhamento das suas demandas com a Kliente 360</div>
+      <div class="portal-header-sub" x-text="portalHeadline"></div>
     </div>
 
-    <!-- Hero "Aguardando você" · só aparece quando há pendência do cliente -->
-    <div x-show="portalCards.aguardando.length > 0" class="portal-hero-aguardando">
-      <div class="portal-hero-icon">⚠</div>
-      <div class="min-w-0 flex-1">
-        <div class="portal-hero-title">
-          <span x-text="portalCards.aguardando.length"></span>
-          <span x-show="portalCards.aguardando.length === 1">item aguardando sua resposta</span>
-          <span x-show="portalCards.aguardando.length !== 1">itens aguardando sua resposta</span>
+    <!-- 2. ALERTAS amigáveis (heurísticas pro cliente) -->
+    <div x-show="portalAlerts.length > 0" class="space-y-2">
+      <template x-for="a in portalAlerts" :key="a.titulo">
+        <div class="portal-alert" :class="'portal-alert-' + a.severity">
+          <div class="portal-alert-icon" x-text="a.icon"></div>
+          <div class="min-w-0 flex-1">
+            <div class="portal-alert-title" x-text="a.titulo"></div>
+            <div class="portal-alert-sub" x-show="a.detalhe" x-text="a.detalhe"></div>
+          </div>
         </div>
-        <div class="portal-hero-sub">o time tá pausado nessas tarefas até você responder · clique abaixo pra ver</div>
-      </div>
+      </template>
     </div>
 
-    <!-- KPIs -->
+    <!-- 3. KPIs com delta vs mês anterior. Grid responsivo. -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <div class="card p-3 md:p-4">
-        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Em andamento</div>
-        <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" x-text="portalCards.emAndamento.length"></div>
+      <div class="portal-kpi">
+        <div class="portal-kpi-label">Entregues este mês</div>
+        <div class="portal-kpi-value" x-text="portalMetrics.mesAtual"></div>
+        <div class="portal-kpi-delta" x-show="portalMetrics.mesAnterior > 0">
+          <span :class="portalMetrics.mesAtual >= portalMetrics.mesAnterior ? 'text-emerald-700' : 'text-ink-soft'"
+                x-text="(portalMetrics.mesAtual >= portalMetrics.mesAnterior ? '↑' : '↓') + ' vs ' + portalMetrics.mesAnterior + ' no mês anterior'"></span>
+        </div>
+        <div class="portal-kpi-delta text-muted" x-show="portalMetrics.mesAnterior === 0 && portalMetrics.mesAtual === 0">Sem histórico recente.</div>
       </div>
-      <div class="card p-3 md:p-4">
-        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Próximas 14d</div>
-        <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" x-text="portalCards.proximas.length"></div>
+      <div class="portal-kpi">
+        <div class="portal-kpi-label">Em andamento</div>
+        <div class="portal-kpi-value" x-text="portalCards.emAndamento.length"></div>
+        <div class="portal-kpi-delta text-muted" x-text="portalMetrics.totalAtivas + ' ativa(s) no total'"></div>
       </div>
-      <div class="card p-3 md:p-4">
-        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Aguardando você</div>
-        <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" :class="portalCards.aguardando.length > 0 && 'text-[color:var(--p0)]'" x-text="portalCards.aguardando.length"></div>
+      <div class="portal-kpi" :class="portalCards.aguardando.length > 0 && 'portal-kpi-danger'">
+        <div class="portal-kpi-label">Aguardando você</div>
+        <div class="portal-kpi-value" x-text="portalCards.aguardando.length"></div>
+        <div class="portal-kpi-delta" x-show="portalCards.aguardando.length === 0">Nada pendente.</div>
+        <div class="portal-kpi-delta" x-show="portalCards.aguardando.length > 0 && portalMetrics.aguardandoAgingMax > 0"
+             x-text="'+' + portalMetrics.aguardandoAgingMax + 'd na mais antiga'"></div>
       </div>
-      <div class="card p-3 md:p-4">
-        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Entregues 30d</div>
-        <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" x-text="portalCards.recentes.length"></div>
+      <div class="portal-kpi">
+        <div class="portal-kpi-label">Próxima entrega</div>
+        <div class="portal-kpi-value" x-show="portalMetrics.diasAteProxima != null">
+          <span x-text="portalMetrics.diasAteProxima === 0 ? 'hoje' : (portalMetrics.diasAteProxima === 1 ? 'amanhã' : (portalMetrics.diasAteProxima + 'd'))"></span>
+        </div>
+        <div class="portal-kpi-value text-muted" x-show="portalMetrics.diasAteProxima == null">—</div>
+        <div class="portal-kpi-delta truncate" x-show="portalMetrics.proximaEntrega" x-text="portalMetrics.proximaEntrega ? portalMetrics.proximaEntrega.titulo : ''"></div>
       </div>
     </div>
 
-    <!-- 4 cards listas -->
+    <!-- 4. STORYTELLING · evolução 6 meses + lead time + distribuição.
+         Mobile: stack vertical. Desktop: 12 col grid (5+4+3 ou similar). -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4">
+
+      <!-- Sparkline entregas 6 meses (5 cols desktop) -->
+      <div class="card p-4 md:p-5 md:col-span-5">
+        <div class="flex items-baseline justify-between mb-1">
+          <div class="font-brand font-semibold text-sm">Ritmo de entregas</div>
+          <span class="text-[10px] uppercase tracking-wider text-muted font-mono">últimos 6 meses</span>
+        </div>
+        <div class="text-xs text-muted mb-3" x-show="portalMetrics.mediaSemestre > 0"
+             x-text="'média de ' + portalMetrics.mediaSemestre.toFixed(1) + ' entregas/mês'"></div>
+        <div class="text-xs text-muted mb-3 italic" x-show="portalMetrics.mediaSemestre === 0">
+          Ainda construindo histórico de entregas.
+        </div>
+        <!-- Bar chart simples com divs -->
+        <div class="portal-bars">
+          <template x-for="(count, i) in portalMetrics.mesesCounts" :key="i">
+            <div class="portal-bar-col">
+              <div class="portal-bar-value" x-text="count"></div>
+              <div class="portal-bar-track">
+                <div class="portal-bar-fill"
+                     :class="i === portalMetrics.mesesCounts.length - 1 && 'portal-bar-fill-current'"
+                     :style="'height:' + (count / portalMetrics.entregasMaxMes * 100) + '%'"></div>
+              </div>
+              <div class="portal-bar-label" x-text="portalMetrics.mesesLabels[i]"></div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Distribuição por projeto (4 cols desktop) -->
+      <div class="card p-4 md:p-5 md:col-span-4" x-show="portalMetrics.distribuicao.length > 0">
+        <div class="flex items-baseline justify-between mb-3">
+          <div class="font-brand font-semibold text-sm">Onde a energia está</div>
+          <span class="text-[10px] uppercase tracking-wider text-muted font-mono">ativas por projeto</span>
+        </div>
+        <div class="space-y-2.5">
+          <template x-for="d in portalMetrics.distribuicao" :key="d.projetoId">
+            <div>
+              <div class="flex items-baseline justify-between gap-2 mb-1">
+                <span class="text-sm text-ink truncate" x-text="d.nome"></span>
+                <span class="text-xs font-mono text-muted shrink-0" x-text="d.count"></span>
+              </div>
+              <div class="portal-dist-track">
+                <div class="portal-dist-fill" :style="'width:' + (d.count / portalMetrics.distribuicaoTotal * 100) + '%'"></div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Lead time + total concluídas (3 cols desktop) -->
+      <div class="card p-4 md:p-5 md:col-span-3 flex flex-col">
+        <div class="flex items-baseline justify-between mb-1">
+          <div class="font-brand font-semibold text-sm">Tempo médio</div>
+          <span class="text-[10px] uppercase tracking-wider text-muted font-mono">90d</span>
+        </div>
+        <div class="text-xs text-muted mb-3">do início ao fim</div>
+        <div x-show="portalMetrics.leadTimeMedio != null">
+          <div class="font-brand text-3xl md:text-4xl font-bold text-ink"><span x-text="portalMetrics.leadTimeMedio"></span><span class="text-muted text-base font-normal ml-1">dias</span></div>
+          <div class="text-[11px] text-muted mt-1 font-mono" x-text="'amostra: ' + portalMetrics.leadTimeAmostra + ' tarefa(s)'"></div>
+        </div>
+        <div x-show="portalMetrics.leadTimeMedio == null" class="text-sm text-muted italic">
+          Sem entregas suficientes nos últimos 90 dias pra calcular.
+        </div>
+        <div class="mt-auto pt-3 border-t border-line text-xs text-muted">
+          Total entregue · <span class="font-mono text-ink-soft" x-text="portalMetrics.totalConcluidas"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. LISTAS · mesma estrutura anterior mas com header mais limpo -->
     <template x-for="card in [
-      { key: 'aguardando',  title: 'Aguardando você',           empty: 'Nada esperando sua resposta. Tudo certo!', danger: true },
-      { key: 'emAndamento', title: 'Em andamento agora',        empty: 'Nada em andamento no momento.', danger: false },
-      { key: 'proximas',    title: 'Próximas entregas (14d)',   empty: 'Sem datas marcadas pros próximos 14 dias.', danger: false },
-      { key: 'recentes',    title: 'Entregues recentemente',    empty: 'Sem entregas recentes.', danger: false },
+      { key: 'aguardando',  title: 'Aguardando você',          empty: 'Nada esperando sua resposta. Tudo certo!', tone: 'danger' },
+      { key: 'emAndamento', title: 'Em andamento agora',       empty: 'Nada em andamento no momento.',           tone: 'neutral' },
+      { key: 'proximas',    title: 'Próximas entregas (14d)',  empty: 'Sem datas marcadas pros próximos 14 dias.', tone: 'neutral' },
+      { key: 'recentes',    title: 'Entregues recentemente',   empty: 'Sem entregas recentes.',                   tone: 'success' },
     ]" :key="card.key">
       <div class="card overflow-hidden">
         <div class="px-4 md:px-5 py-3 border-b border-line flex items-center justify-between">
-          <div class="font-brand font-semibold text-sm" :class="card.danger && portalCards[card.key].length > 0 && 'text-[color:var(--p0)]'" x-text="card.title"></div>
+          <div class="font-brand font-semibold text-sm"
+               :class="(card.tone === 'danger' && portalCards[card.key].length > 0) ? 'text-[color:var(--p0)]' : ''"
+               x-text="card.title"></div>
           <span class="font-mono text-xs text-muted" x-text="portalCards[card.key].length + ' item(s)'"></span>
         </div>
         <template x-for="t in portalCards[card.key]" :key="t.id">
@@ -2881,8 +3100,8 @@
       </div>
     </template>
 
-    <div class="text-[10px] text-muted font-mono mt-2">
-      este portal mostra apenas tarefas marcadas como visíveis ao cliente. comentários públicos e histórico simplificado.
+    <div class="text-[10px] text-muted font-mono pt-2 text-center">
+      este portal mostra apenas tarefas marcadas como visíveis ao cliente · comentários públicos e histórico simplificado
     </div>
   </div>
 </section>
@@ -8042,6 +8261,162 @@ function app() {
       ).sort((a,b) => (b.statusEm||0) - (a.statusEm||0));
       return { emAndamento, proximas, aguardando, recentes };
     },
+
+    // ============ Portal · análises quantitativas ============
+    // Métricas agregadas pro cliente externo. Filtra rigorosamente
+    // só o que é visível ao cliente (visivelCliente !== false).
+    // NUNCA expõe: capacidade interna, sobrecarga, orçamento contratado,
+    // skills/senioridade do time, tipo_trabalho técnico, reopen_count,
+    // tempo_real_horas, esforço estimado.
+    get portalMetrics() {
+      const arr = this.portalTasks;
+      const now = Date.now();
+      const monthMs = 30 * 86400000;
+
+      // Entregas por mês (últimos 6 meses, do mais antigo pro mais recente)
+      const today = new Date();
+      const mesesLabels = [];
+      const mesesCounts = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const next = new Date(today.getFullYear(), today.getMonth() - i + 1, 1);
+        const ini = d.getTime(), fim = next.getTime();
+        const count = arr.filter(t =>
+          t.status === STATUS.CONCLUIDO && t.statusEm && t.statusEm >= ini && t.statusEm < fim
+        ).length;
+        mesesLabels.push(d.toLocaleString('pt-BR', { month: 'short' }).replace('.', ''));
+        mesesCounts.push(count);
+      }
+      const entregasMaxMes = Math.max(1, ...mesesCounts);
+      const mesAtual = mesesCounts[mesesCounts.length - 1];
+      const mesAnterior = mesesCounts[mesesCounts.length - 2];
+      const mediaTrimestre = mesesCounts.slice(-3).reduce((a,b)=>a+b,0) / 3;
+      const mediaSemestre = mesesCounts.reduce((a,b)=>a+b,0) / mesesCounts.length;
+
+      // Lead time médio (concluídas com criadoEm + statusEm, últimos 90d)
+      const cutoff90 = now - 90 * 86400000;
+      const concluidasRecentes = arr.filter(t =>
+        t.status === STATUS.CONCLUIDO && t.statusEm && t.statusEm >= cutoff90 && t.criadoEm
+      );
+      const leadTimes = concluidasRecentes.map(t => (t.statusEm - t.criadoEm) / 86400000);
+      const leadTimeMedio = leadTimes.length
+        ? Math.round(leadTimes.reduce((a,b)=>a+b,0) / leadTimes.length)
+        : null;
+
+      // Distribuição por projeto (ativas, top 5)
+      const porProjeto = new Map();
+      for (const t of arr) {
+        if (t.status === STATUS.CONCLUIDO) continue;
+        const pid = t.projetoId || '__sem__';
+        porProjeto.set(pid, (porProjeto.get(pid) || 0) + 1);
+      }
+      const distribuicao = Array.from(porProjeto.entries())
+        .map(([pid, count]) => ({
+          projetoId: pid,
+          nome: pid === '__sem__' ? 'sem projeto' : this.nomeProjeto(pid),
+          count,
+        }))
+        .sort((a,b) => b.count - a.count)
+        .slice(0, 5);
+      const distribuicaoTotal = distribuicao.reduce((a,b)=>a+b.count, 0) || 1;
+
+      // Próxima entrega (em ativas, com prazo)
+      const todayIso = new Date().toISOString().slice(0,10);
+      const proximaEntrega = arr
+        .filter(t => t.status !== STATUS.CONCLUIDO && t.prazo && t.prazo >= todayIso)
+        .sort((a,b) => a.prazo.localeCompare(b.prazo))[0] || null;
+      const diasAteProxima = proximaEntrega
+        ? Math.max(0, Math.ceil((new Date(proximaEntrega.prazo + 'T00:00:00').getTime() - new Date(todayIso + 'T00:00:00').getTime()) / 86400000))
+        : null;
+
+      // Aguardando você: aging máximo (em dias)
+      const agdAging = this.portalCards.aguardando.map(t => {
+        const ts = t.subetapaEm || t.statusEm || t.criadoEm || now;
+        return Math.floor((now - ts) / 86400000);
+      });
+      const aguardandoAgingMax = agdAging.length ? Math.max(...agdAging) : 0;
+
+      // Total visível no portal
+      const totalAtivas = arr.filter(t => t.status !== STATUS.CONCLUIDO).length;
+      const totalConcluidas = arr.filter(t => t.status === STATUS.CONCLUIDO).length;
+
+      return {
+        mesesLabels, mesesCounts, entregasMaxMes,
+        mesAtual, mesAnterior, mediaTrimestre, mediaSemestre,
+        leadTimeMedio, leadTimeAmostra: leadTimes.length,
+        distribuicao, distribuicaoTotal,
+        proximaEntrega, diasAteProxima,
+        aguardandoAgingMax,
+        totalAtivas, totalConcluidas,
+      };
+    },
+
+    // Alertas amigáveis pro cliente (público, sem jargão interno).
+    // Apenas o que faz sentido o cliente saber/agir.
+    get portalAlerts() {
+      const m = this.portalMetrics;
+      const c = this.portalCards;
+      const out = [];
+      // 1. Aguardando você há tempo
+      if (m.aguardandoAgingMax >= 5) {
+        out.push({
+          severity: 'alta',
+          icon: '⏳',
+          titulo: c.aguardando.length === 1
+            ? 'Tem um item aguardando sua resposta há ' + m.aguardandoAgingMax + ' dias'
+            : c.aguardando.length + ' itens aguardando sua resposta, o mais antigo há ' + m.aguardandoAgingMax + ' dias',
+          detalhe: 'Responder destrava o time pra seguir.',
+        });
+      }
+      // 2. Prazo próximo (≤3 dias) em alguma ativa com prazo
+      if (m.diasAteProxima != null && m.diasAteProxima <= 3 && m.proximaEntrega) {
+        out.push({
+          severity: 'media',
+          icon: '📅',
+          titulo: m.diasAteProxima === 0
+            ? 'Entrega prevista pra hoje'
+            : (m.diasAteProxima === 1 ? 'Entrega prevista pra amanhã' : 'Entrega prevista em ' + m.diasAteProxima + ' dias'),
+          detalhe: m.proximaEntrega.titulo,
+        });
+      }
+      // 3. Mês corrente com pico positivo (acima da média semestre + 30%)
+      if (m.mesAtual > 0 && m.mediaSemestre > 0 && m.mesAtual >= m.mediaSemestre * 1.3) {
+        out.push({
+          severity: 'positivo',
+          icon: '↑',
+          titulo: 'Mês forte: ' + m.mesAtual + ' entregas até agora',
+          detalhe: 'Acima da média dos últimos 6 meses (' + m.mediaSemestre.toFixed(1) + ').',
+        });
+      }
+      // 4. Streak de queda (mes atual = 0 e mes anterior > 0 e ainda tem ativas) — alerta amigável
+      if (m.mesAtual === 0 && m.mesAnterior > 0 && m.totalAtivas > 0 && new Date().getDate() >= 15) {
+        out.push({
+          severity: 'media',
+          icon: '·',
+          titulo: 'Sem entregas neste mês ainda',
+          detalhe: 'Mas há ' + m.totalAtivas + ' tarefa(s) em andamento. Acompanhe as próximas entregas abaixo.',
+        });
+      }
+      return out;
+    },
+
+    // Headline narrativa pro topo do portal (1 frase)
+    get portalHeadline() {
+      const m = this.portalMetrics;
+      const c = this.portalCards;
+      const partes = [];
+      if (m.totalAtivas > 0) {
+        partes.push(m.totalAtivas + ' ' + (m.totalAtivas === 1 ? 'tarefa em andamento' : 'tarefas em andamento'));
+      }
+      if (c.aguardando.length > 0) {
+        partes.push(c.aguardando.length + ' aguardando você');
+      }
+      if (m.mesAtual > 0) {
+        partes.push(m.mesAtual + ' ' + (m.mesAtual === 1 ? 'entrega' : 'entregas') + ' este mês');
+      }
+      return partes.join(' · ') || 'Nenhuma demanda ativa no momento.';
+    },
+
     async openPortalTask(t) {
       this.portalTask = t;
       this.portalTaskOpen = true;
