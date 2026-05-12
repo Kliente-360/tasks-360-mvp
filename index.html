@@ -5550,7 +5550,33 @@ function app() {
         }
       }
 
-      // 3) lista fechada — nega acesso
+      // 3) RPC fallback — cliente recém-convidado não consegue ler pessoas
+      //    via select direto (RLS exige user_id já vinculado). A função
+      //    `app_link_current_user_to_pessoa` roda security definer, faz o
+      //    match por email do JWT e popula user_id atomicamente.
+      const rpc = await sb.rpc('app_link_current_user_to_pessoa');
+      console.log('[auth] rpc link →', rpc.data, rpc.error);
+      if (rpc.error) {
+        console.error('[auth] rpc link failed:', rpc.error);
+        this.toast('error', 'Erro ao vincular pessoa: ' + rpc.error.message, 20000);
+        return;
+      }
+      const linked = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+      if (linked) {
+        if (!linked.invited_at) {
+          this.authBlock = `Email '${email}' está cadastrado mas não tem convite ativo. Peça pro admin clicar em "convidar" pra você no cadastro de Pessoas.`;
+          this.toast('error', this.authBlock, 20000);
+          await sb.auth.signOut();
+          this.currentPessoa = null; this.session = null;
+          return;
+        }
+        this.currentPessoa = linked; this.authBlock = '';
+        try { localStorage.setItem('kliente360-current-pessoa', JSON.stringify(linked)); } catch(_) {}
+        this._redirectByRole();
+        return;
+      }
+
+      // 4) lista fechada — nega acesso
       console.warn('[auth] no pessoa found for email', email, '→ signing out');
       this.authBlock = `Email '${email}' não está cadastrado em Pessoas. Peça pro admin te cadastrar antes (Cadastros → Pessoas → + Nova pessoa).`;
       this.toast('error', this.authBlock, 20000);
