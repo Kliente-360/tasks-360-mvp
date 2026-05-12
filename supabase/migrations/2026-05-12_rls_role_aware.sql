@@ -335,7 +335,7 @@ create policy notifications_staff_all on notifications
 
 create policy notifications_self_select on notifications
   for select
-  using (pessoa_id = app_pessoa_id());
+  using (recipient_pessoa_id = app_pessoa_id());
 
 -- ============================================================
 -- 12. STORAGE · bucket task-attachments
