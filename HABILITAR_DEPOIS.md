@@ -12,10 +12,9 @@
 | 2 | **Tipo de trabalho** select | Modal task · seção Esforço · prazo | `tasks.tipo_trabalho text` (`bug/feature/discovery/manutencao/admin`) | Quando aparecer demanda de classificação por tipo (relatório, distribuição, IA classificar) |
 | 3 | **ID externo** (Salesforce) input manual | Modal task · seção Metadata | `tasks.external_id text` + ingest-task lê/escreve | Manter escondido — ingest cria/atualiza automaticamente. Reativar só se precisar editar manual |
 | 4 | **Dependências** UI (chips + picker) | Modal task · entre Esforço e Metadata | `task_dependencies(task_id, depende_de_id)` + `addDependencia/removeDependencia/_candidatesDependencia` + heurística "bloqueio-dependencia" | Quando equipe começar a sinalizar "task X parada esperando Y" mais de 2x/semana |
-| 5 | **Visível ao cliente (comment)** checkbox | Modal task · composer de comentário | `task_comments.visivel_cliente bool` | Quando abrir Portal real e treinar curadoria de comentários. Hoje todo comentário fica interno |
-
 ## Reativados
 
+- v1.01.161 · **Visível ao cliente (comment)** checkbox — voltou ao composer (`só interno` / `visível ao cliente`) com `task_comments.visivel_cliente`
 - v1.01.148 · **Visível ao cliente (task)** checkbox em Metadata — voltou ao lado de Etapa
 
 ## Princípio

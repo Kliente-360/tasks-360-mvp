@@ -4004,7 +4004,10 @@
                   <span x-show="c.external_source==='salesforce'" class="cmsg-badge" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
                   <span x-show="c.from_cliente" class="cmsg-badge">cliente</span>
                   <span class="cmsg-when" x-text="fmtPostedEm(c.posted_em || c.criado_em) + (c.from_cliente ? '' : ' · interno')"></span>
-                  <button x-show="replyingToId !== c.id" class="text-[11px] text-muted hover:text-ink ml-auto" @click="startReply(c.id)">↳ responder</button>
+                  <div class="ml-auto flex items-center gap-2">
+                    <button x-show="replyingToId !== c.id" class="text-[11px] text-muted hover:text-ink" @click="startReply(c.id)">↳ responder</button>
+                    <button x-show="_canDeleteComment(c)" class="text-[11px] text-muted hover:text-danger" title="Excluir comentário" @click="deleteComment(c)">✕</button>
+                  </div>
                 </div>
                 <div class="cmsg-body" x-html="renderCommentBody(c.body)"></div>
               </div>
@@ -4015,6 +4018,7 @@
                     <span class="cmsg-who" x-text="r.author || '—'"></span>
                     <span x-show="r.external_source==='salesforce'" class="cmsg-badge" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
                     <span class="cmsg-when" x-text="fmtPostedEm(r.posted_em || r.criado_em)"></span>
+                    <button x-show="_canDeleteComment(r)" class="text-[11px] text-muted hover:text-danger ml-auto" title="Excluir resposta" @click="deleteComment(r)">✕</button>
                   </div>
                   <div class="cmsg-body" x-html="renderCommentBody(r.body)"></div>
                 </div>
@@ -4064,10 +4068,10 @@
                     @keydown.tab="if (mentionPickerFor==='newComment') { $event.preventDefault(); _mentionPickActive('newComment'); }"
                     @keydown.meta.enter.prevent="postComment()" @keydown.ctrl.enter.prevent="postComment()"></textarea>
           <div class="tmodal-composer-row">
-            <!-- HIDDEN_DESDE_v1.01.147 · "visível ao cliente" no comentário
-                 Schema mantido (task_comments.visivel_cliente). Habilitar quando
-                 abrir Portal real + treinar curadoria de comentários.
-            -->
+            <label class="toggle text-[11px] text-muted hover:text-ink select-none" title="Se marcado, o comentário aparece pro cliente no Portal">
+              <input type="checkbox" x-model="newCommentPublico">
+              <span x-text="newCommentPublico ? 'visível ao cliente' : 'só interno'"></span>
+            </label>
             <div class="relative">
               <button type="button" class="btn btn-ghost text-[11px] py-0.5 px-2"
                       @click="mentionPickerFor = mentionPickerFor === 'newComment' ? '' : 'newComment'; mentionPickerQuery=''; _mentionAnchor=null">@ mencionar</button>
@@ -5280,6 +5284,43 @@ function app() {
       if (!list.length) return;
       const len = list.length;
       this._mentionActiveIdx = ((this._mentionActiveIdx || 0) + delta + len) % len;
+    },
+    // Permissão: autor (mesma pessoa logada) ou admin pode excluir.
+    // Comentários do Salesforce (external_source) ficam não-deletáveis pra
+    // não criar dessync com a fonte externa.
+    _canDeleteComment(c) {
+      if (!c || !c.id || c.external_source) return false;
+      if (this.viewerRole === ROLE.ADMIN) return true;
+      return !!(this.currentPessoa && c.author_pessoa_id === this.currentPessoa.id);
+    },
+    deleteComment(c) {
+      if (!c || !c.id) return;
+      const isReply = !!c.parent_id;
+      const msg = isReply ? 'Excluir esta resposta?' : 'Excluir este comentário (e suas respostas)?';
+      this.askConfirm(msg, async () => {
+        const id = c.id;
+        const idsToRemove = new Set([id]);
+        if (!isReply) {
+          // top-level: remove cascade dos replies otimisticamente
+          this.editingComments.filter(x => x.parent_id === id).forEach(x => idsToRemove.add(x.id));
+        }
+        const prev = this.editingComments;
+        this.editingComments = prev.filter(x => !idsToRemove.has(x.id));
+        // Top-level: apaga replies antes (defensivo caso schema não tenha
+        // ON DELETE CASCADE no parent_id).
+        if (!isReply) {
+          const replyIds = [...idsToRemove].filter(x => x !== id);
+          if (replyIds.length) await sb.from('task_comments').delete().in('id', replyIds);
+        }
+        const { error } = await sb.from('task_comments').delete().eq('id', id);
+        if (error) {
+          this.editingComments = prev;
+          this.toast('error', 'Erro ao excluir: ' + error.message);
+          return;
+        }
+        this.track('comment_delete', { is_reply: isReply });
+        this.toast('success', isReply ? 'Resposta excluída.' : 'Comentário excluído.');
+      });
     },
     _mentionPickActive(field) {
       const list = this.mentionablePessoas(this.mentionPickerQuery);
