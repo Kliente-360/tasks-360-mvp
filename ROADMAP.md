@@ -437,10 +437,11 @@ Lista levantada via comparação com Linear, Asana, ClickUp, Height, Motion, Jir
 - Auth definitivo: Google OAuth interno + magic link cliente externo, cache de pessoa em localStorage, guard contra realtime duplicado.
 - 3 roles (admin/interno/cliente), `viewerRole` reativo, "Meu foco" e Portal automáticos.
 - Notifications in-app (sino + badge), mentions com picker + highlight.
-- **9 heurísticas pré-IA** ativas no banner do Dashboard:
-  - Onda A (5): grande sem início, sobrecarga, tier estratégico atrasado, bloqueio cliente +5d, SLA iminente.
+- **14 heurísticas pré-IA** ativas — agregadas no Briefing executivo, top 3 resumidas no banner do Dashboard, e em seção própria no PDF:
+  - Onda A (4 hoje, era 5 antes da Onda D aposentar H2): grande sem início, tier estratégico atrasado, bloqueio cliente +5d, SLA iminente.
   - Onda B (2): júnior + complexidade alta, reaberturas crônicas (≥2 reopens).
   - Onda C (2): bloqueio por dependência aberta com prazo ≤14d, estimativa furada (tempo real >1.5x estimado).
+  - **Onda D · capacidade semanal (5)**: sustentação estourando contrato, sustentação ociosa, projeto fechado estourando escopo, projeto fechado em risco, pessoa sobrecarga semana W. Bucketing por prazo em 4 semanas.
 - Pessoas: ativar/inativar interno; senioridade, skills, capacidade horas/semana, cliente principal/secundário.
 - Tamanho de task automático via `effEsforco` (default 4h); fora do form, só analytics.
 - Dashboard: `chartTheme()` central + 8/8 visões do §10 (capacidade por pessoa, saúde por projeto, aging do backlog, aguardando cliente, tendência lead time).
@@ -739,14 +740,14 @@ Decisão tomada em maio/2026, piloto Pão e Talho.
 
 ### Heurísticas avançadas (pré-IA)
 
-Camada de atributos + regras determinísticas que aumentam capacidade de análise antes de entrar com IA. **Estado atual: 10 heurísticas ativas no banner do Dashboard.** Esta seção rastreia o que foi entregue, o que está pendente e o que foi descartado.
+Camada de atributos + regras determinísticas que aumentam capacidade de análise antes de entrar com IA. **Estado atual: 14 heurísticas ativas (Onda D aposentou H2 e adicionou H11-H15 com bucketing semanal).** Esta seção rastreia o que foi entregue, o que está pendente e o que foi descartado.
 
-#### Heurísticas ativas hoje · 10
+#### Heurísticas ativas hoje · 14
 
 | # | Heurística | Severidade | Onda |
 |---|---|---|---|
 | 1 | Tarefa grande/mini-projeto sem início, prazo a ≤10d | alta | A |
-| 2 | Sobrecarga real (horas alocadas > capacidade semanal) | alta | A |
+| ~~2~~ | ~~Sobrecarga real (horas alocadas > capacidade semanal)~~ — **aposentada na Onda D**, substituída por H15 granular semanal | — | A |
 | 3 | Cliente estratégico com atrasadas | alta | A |
 | 4 | Bloqueio aguardando cliente há +5 dias | média | A |
 | 5 | SLA contratado quase vencido (80-120% do prazo) | média | A |
@@ -755,6 +756,13 @@ Camada de atributos + regras determinísticas que aumentam capacidade de anális
 | 8 | Bloqueio por dependência aberta, prazo ≤14d | alta | C |
 | 9 | Estimativa furada (`tempo_real > 1.5x esforco`) | média | C |
 | 10 | Triagem represada (sem responsável/cliente/prazo/esforço conforme etapa) | alta se ≥10, média | Operacional |
+| 11 | Sustentação estourando contrato em alguma semana (>100% de `orcamento/4`) | alta se W=0, média futuro | D |
+| 12 | Sustentação ociosa (<50% em 2+ semanas consecutivas) | média | D |
+| 13 | Projeto fechado estourando escopo (`comprometido > 110% de orcamento`) | alta | D |
+| 14 | Projeto fechado em risco (`90-110% de orcamento`) | média | D |
+| 15 | Pessoa sobrecarga semana W (uma entrada por semana com pico) | alta se W=0, média futuro | D |
+
+> **Onda D · paradigma novo**: capacidade agora é avaliada por **bucketing semanal por prazo** (4 semanas: atual + 3 próximas), não mais "tudo aberto somado". Atrasadas puxam pra W0. Defaults só pra análise: prazo vazio = semana atual, esforço 0/vazio = 4h. **Não toca campo real.** Resultado consolidado: Briefing (heatmap pessoa × semana + listas sustentação/projeto), Dashboard banner (resumo top 3 + CTA), PDF executivo (3 tabelas).
 
 #### Pendente · vale perseguir
 
@@ -762,7 +770,7 @@ Camada de atributos + regras determinísticas que aumentam capacidade de anális
 |---|---|---|
 | **Skill mismatch** | nenhum (já temos `tasks.tipo_trabalho` + `pessoas.skills`) | Modelagem do match (heurística vs lookup) ainda em aberto |
 | **Senioridade malalocada** (sr com mini, jr com grande) | nenhum | Útil mas eficiência de alocação não virou dor explícita |
-| **Margem em risco** (>80% orçamento + escopo restante) | nenhum (já temos `projetos.orcamento_horas`) | Já aparece no PDF executivo como `% Orç.`; falta promover a alerta |
+| ~~**Margem em risco**~~ | — | ✅ **Entregue na Onda D** via H13 (estouro de escopo) + H14 (risco) pra projetos fechados; H11+H12 cobrem sustentação. |
 
 #### Descartado / parked
 
@@ -771,6 +779,7 @@ Camada de atributos + regras determinísticas que aumentam capacidade de anális
 | **Relacionamento frio** | Requer `clientes.cadencia_reuniao` + `ultima_reuniao_em` + processo de registrar reuniões. Custo alto, valor marginal vs já termos heurística "atraso em estratégico". |
 | **Cliente em fricção** (5+ bloq cliente +7d) | Já capturada implicitamente por "bloqueio aguardando cliente +5d". Redundância. |
 | **Jr sem revisor** | Substituída por "júnior + complexidade alta" (#6) — mesmo sinal, sem precisar de campo `mentor`. |
+| **Sobrecarga acumulada (H2 antiga)** | Aposentada na Onda D. Somar todo backlog aberto mascarava sazonalidade e não respondia "quando essa pessoa estoura?". H15 granular semanal cobre. |
 
 #### Atributos · status
 
@@ -823,11 +832,32 @@ Camada de atributos + regras determinísticas que aumentam capacidade de anális
 
 Em ordem de retorno provável:
 
-1. **Margem em risco** (`% Orç. ≥ 80% AND ativas > 0`) — 30min, dado já existe
-2. **Skill mismatch** (task com tag `X` em pessoa sem skill `X`) — 1h, requer definir matching exato
-3. **Senioridade malalocada** (sr com >3 tasks `mini`) — 30min
+1. **Skill mismatch** (task com tag `X` em pessoa sem skill `X`) — 1h, requer definir matching exato
+2. **Senioridade malalocada** (sr com >3 tasks `mini`) — 30min
+3. **Capacidade prevista vs contratada** — semana W2/W3 mostra previsão de overflow N dias antes; alimentaria decisão de contratar com antecedência. Requer registro semanal histórico (snapshot por semana) — não temos hoje.
+4. **Churn risk** (cliente estratégico com tendência negativa em 30d: +atrasadas, +bloqueio cliente, -throughput) — requer comparação com período anterior por cliente, similar à narrativa do Briefing.
 
 Outras heurísticas aguardam aparecer dor explícita antes de promover.
+
+#### Ajustes de calibração (parâmetros codados que podem virar settings)
+
+Hoje todos os thresholds estão hardcoded em `index.html` / `lib/helpers.js`. Eventualmente migram pra tabela de configuração se virar pedido recorrente de ajuste:
+
+| Heurística | Threshold atual |
+|---|---|
+| H1 grande sem início | prazo ≤10d, `effTamanho ∈ {grande, mini_projeto}` |
+| H4 bloqueio cliente | aging ≥5d |
+| H5 SLA iminente | 80–120% do prazo contratado |
+| H8 dependência | prazo ≤14d, dep aberta |
+| H9 estimativa furada | `tempo_real > 1.5 × esforco` |
+| H10 triagem represada | ≥10 = alta |
+| H11 sustentação estourando | >100% num bucket semanal |
+| H12 sustentação ociosa | <50% em 2+ semanas consecutivas |
+| H13 projeto estourando | >110% do orçamento total |
+| H14 projeto risco | 90–110% do orçamento |
+| H15 pessoa sobrecarga | reusa `cargaNivelFromPctCap`: >130 sobrecarga, >100 pressão, <60 folga |
+| Janela de análise | 4 semanas (atual + 3 próximas) |
+| Default análise | prazo vazio = semana atual; esforço 0/vazio = 4h |
 
 ### Onda 5+ — Diferenciação com IA
 
