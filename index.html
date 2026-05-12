@@ -4023,12 +4023,22 @@
                    @click.outside="mentionPickerFor==='newReply' && (mentionPickerFor='')">
                 <textarea class="inp resize-y min-h-[50px] text-sm" x-model="newReply" :data-reply-input="c.id" placeholder="responder… (digite @ pra mencionar)"
                           @input="onMentionInput('newReply', $event)"
+                          @keydown.arrow-down="mentionPickerFor==='newReply' && ($event.preventDefault(), _mentionMove(1))"
+                          @keydown.arrow-up="mentionPickerFor==='newReply' && ($event.preventDefault(), _mentionMove(-1))"
+                          @keydown.enter="if (mentionPickerFor==='newReply') { $event.preventDefault(); _mentionPickActive('newReply'); }"
+                          @keydown.tab="if (mentionPickerFor==='newReply') { $event.preventDefault(); _mentionPickActive('newReply'); }"
                           @keydown.meta.enter.prevent="postReply(c.id)" @keydown.ctrl.enter.prevent="postReply(c.id)" @keydown.escape.stop="cancelReply()"></textarea>
                 <!-- Picker @ inline (newReply) -->
                 <div x-show="mentionPickerFor === 'newReply'" x-transition.opacity
                      class="absolute left-0 top-full mt-1 bg-elev border border-line rounded-md shadow-xl z-50 w-[220px] py-1 max-h-[200px] overflow-y-auto">
-                  <template x-for="p in mentionablePessoas(mentionPickerQuery)" :key="p.id">
-                    <button type="button" class="w-full text-left px-3 py-1.5 text-xs hover:bg-brand-tint" @click="appendMention('newReply', (p.nome||'').split(' ')[0])" x-text="p.nome"></button>
+                  <template x-for="(p, idx) in mentionablePessoas(mentionPickerQuery)" :key="p.id">
+                    <button type="button"
+                            class="w-full text-left px-3 py-1.5 text-xs"
+                            :class="idx === _mentionActiveIdx ? 'bg-brand-tint text-ink' : 'hover:bg-surface-3'"
+                            @mouseenter="_mentionActiveIdx = idx"
+                            @mousedown.prevent
+                            @click="appendMention('newReply', (p.nome||'').split(' ')[0])"
+                            x-text="p.nome"></button>
                   </template>
                   <div x-show="mentionablePessoas(mentionPickerQuery).length === 0" class="px-3 py-1.5 text-xs text-muted italic">sem pessoa correspondente</div>
                 </div>
@@ -4048,6 +4058,10 @@
           <textarea x-model="newComment" placeholder="Escrever comentário… (⌘↵ envia · digite @ pra mencionar)"
                     x-ref="newCommentTa"
                     @input="onMentionInput('newComment', $event)"
+                    @keydown.arrow-down="mentionPickerFor==='newComment' && ($event.preventDefault(), _mentionMove(1))"
+                    @keydown.arrow-up="mentionPickerFor==='newComment' && ($event.preventDefault(), _mentionMove(-1))"
+                    @keydown.enter="if (mentionPickerFor==='newComment') { $event.preventDefault(); _mentionPickActive('newComment'); }"
+                    @keydown.tab="if (mentionPickerFor==='newComment') { $event.preventDefault(); _mentionPickActive('newComment'); }"
                     @keydown.meta.enter.prevent="postComment()" @keydown.ctrl.enter.prevent="postComment()"></textarea>
           <div class="tmodal-composer-row">
             <!-- HIDDEN_DESDE_v1.01.147 · "visível ao cliente" no comentário
@@ -4059,8 +4073,14 @@
                       @click="mentionPickerFor = mentionPickerFor === 'newComment' ? '' : 'newComment'; mentionPickerQuery=''; _mentionAnchor=null">@ mencionar</button>
               <div x-show="mentionPickerFor === 'newComment'" x-transition.opacity
                    class="absolute left-0 bottom-full mb-1 bg-elev border border-line rounded-md shadow-xl z-50 w-[220px] py-1 max-h-[200px] overflow-y-auto">
-                <template x-for="p in mentionablePessoas(mentionPickerQuery)" :key="p.id">
-                  <button type="button" class="w-full text-left px-3 py-1.5 text-xs hover:bg-brand-tint" @click="appendMention('newComment', (p.nome||'').split(' ')[0])" x-text="p.nome"></button>
+                <template x-for="(p, idx) in mentionablePessoas(mentionPickerQuery)" :key="p.id">
+                  <button type="button"
+                          class="w-full text-left px-3 py-1.5 text-xs"
+                          :class="idx === _mentionActiveIdx ? 'bg-brand-tint text-ink' : 'hover:bg-surface-3'"
+                          @mouseenter="_mentionActiveIdx = idx"
+                          @mousedown.prevent
+                          @click="appendMention('newComment', (p.nome||'').split(' ')[0])"
+                          x-text="p.nome"></button>
                 </template>
                 <div x-show="mentionablePessoas(mentionPickerQuery).length === 0" class="px-3 py-1.5 text-xs text-muted italic">sem pessoa correspondente</div>
               </div>
@@ -4619,6 +4639,7 @@ function app() {
     // partial '@xxx' por '@FirstName' no lugar certo ao escolher.
     _mentionAnchor: null,
     _mentionField: null,
+    _mentionActiveIdx: 0,
     notifications: [],
     notifPanelOpen: false,
     _notifsSubscribed: false,
@@ -5209,6 +5230,7 @@ function app() {
         this._mentionField = field;
         this.mentionPickerQuery = m[1];
         this.mentionPickerFor = field;
+        this._mentionActiveIdx = 0;
       } else if (this.mentionPickerFor === field) {
         this.mentionPickerFor = '';
         this._mentionAnchor = null;
@@ -5216,20 +5238,54 @@ function app() {
     },
     appendMention(field, firstName) {
       const txt = this[field] || '';
+      const insert = '@' + firstName + ' ';
+      let newCaret;
       // Fluxo inline: substitui '@partial' no anchor por '@FirstName '.
       if (this._mentionAnchor != null && this._mentionField === field) {
         const anchor = this._mentionAnchor;
-        const rest = txt.slice(anchor).replace(/^@[A-Za-zÀ-ÿ0-9-]*/, '@' + firstName + ' ');
+        const rest = txt.slice(anchor).replace(/^@[A-Za-zÀ-ÿ0-9-]*/, insert);
         this[field] = txt.slice(0, anchor) + rest;
+        newCaret = anchor + insert.length;
       } else {
         // Fluxo botão: concatena no fim.
         const sep = txt && !txt.endsWith(' ') && !txt.endsWith('\n') ? ' ' : '';
-        this[field] = txt + sep + '@' + firstName + ' ';
+        this[field] = txt + sep + insert;
+        newCaret = (this[field] || '').length;
       }
       this.mentionPickerFor = '';
       this.mentionPickerQuery = '';
       this._mentionAnchor = null;
       this._mentionField = null;
+      this._mentionActiveIdx = 0;
+      this._focusComposer(field, newCaret);
+    },
+    // Devolve foco pro textarea após pick e posiciona o caret depois do nome.
+    _focusComposer(field, caret) {
+      this.$nextTick(() => {
+        let el = null;
+        if (field === 'newComment') el = this.$refs.newCommentTa;
+        else if (field === 'newReply' && this.replyingToId) {
+          el = document.querySelector('[data-reply-input="' + this.replyingToId + '"]');
+        }
+        if (!el) return;
+        el.focus();
+        if (typeof caret === 'number') {
+          try { el.setSelectionRange(caret, caret); } catch (_) {}
+        }
+      });
+    },
+    // Navegação por teclado no picker (chamado pelas textareas).
+    _mentionMove(delta) {
+      const list = this.mentionablePessoas(this.mentionPickerQuery);
+      if (!list.length) return;
+      const len = list.length;
+      this._mentionActiveIdx = ((this._mentionActiveIdx || 0) + delta + len) % len;
+    },
+    _mentionPickActive(field) {
+      const list = this.mentionablePessoas(this.mentionPickerQuery);
+      const p = list[this._mentionActiveIdx || 0];
+      if (!p) return;
+      this.appendMention(field, (p.nome || '').split(' ')[0]);
     },
     mentionablePessoas(query) {
       const q = (query || '').toLowerCase();
