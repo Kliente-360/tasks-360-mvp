@@ -856,8 +856,65 @@ Hoje todos os thresholds estão hardcoded em `index.html` / `lib/helpers.js`. Ev
 | H13 projeto estourando | >110% do orçamento total |
 | H14 projeto risco | 90–110% do orçamento |
 | H15 pessoa sobrecarga | reusa `cargaNivelFromPctCap`: >130 sobrecarga, >100 pressão, <60 folga |
+| Sugestões redistribuição (correlação P×Q) | concentração ≥40%, candidato folga <80%, pós-movimento ≤100%, top 5, P0 nunca |
 | Janela de análise | 4 semanas (atual + 3 próximas) |
 | Default análise | prazo vazio = semana atual; esforço 0/vazio = 4h |
+
+#### Parking lot · refinamentos e variantes adiadas
+
+Decisões conscientes de adiar, agrupadas por categoria. Cada item registra **por quê não fizemos agora** pra não reabrir discussão antiga.
+
+##### Sugestões de redistribuição (PR #176)
+
+| Item | Estado | Por quê adia |
+|---|---|---|
+| **Mover prazo** como segunda estratégia (deslocar task de W pra W' com folga da mesma pessoa) | parked | Decisão consciente: começar conservador com 1 estratégia. Reabrir se aparecer caso onde "realocar pra match" não cobre. |
+| **Realocar pra qualquer pessoa com folga** (sem exigir match de cliente) | rejeitado | Quebra contexto/conhecimento do cliente. Marginal sobre o ganho de carga. |
+| **Auto-apply 1-clique** (aceitar/dispensar com reassign automático) | parked | Risco grande sem mais validação humana. Reabrir quando confiança nas sugestões aumentar. |
+| **Match por skill** (`tasks.tipo_trabalho` × `pessoas.skills`) | bloqueado | Modelagem do match em aberto: regex? lookup exato? fuzzy? Decidir antes de codar. |
+| **Considerar disponibilidade** (férias, bloqueios) | bloqueado | Sem schema/processo de registrar férias. Custo alto. |
+| **Promover sugestões pro PDF executivo** | candidato | Útil pra reunião semanal. Não feito pra evitar página extra sem validação de uso. |
+| **Atalho contextual no Backlog/Kanban** (ícone na task que aparece em sugestão) | candidato | Mais touchpoints. Custo médio. Esperar dor de "esqueci de aplicar". |
+| **Banner Dashboard com contador** ("3 sugestões de redistribuição → Briefing") | candidato | Trivial. Adicionar quando Briefing virar destino frequente. |
+| **Otimização global** (linear programming, simulated annealing) | rejeitado | Overkill no estágio atual. Greedy + validação pós-movimento já cobre 80%. |
+
+##### Capacidade semanal (Onda D)
+
+| Item | Estado | Por quê adia |
+|---|---|---|
+| **Snapshot histórico semanal** (registrar agregados por semana pra olhar trend) | bloqueado | Habilita "capacidade prevista vs contratada" + análise retrospectiva. Requer tabela nova `weekly_capacity_snapshots` + job de snapshot semanal. Não temos schema. |
+| **Disponibilidade pessoa** (férias, licenças) | parked | Schema novo + fluxo de cadastro. Reduziria falso positivo de sobrecarga durante férias. |
+| **Capacidade prevista** (alerta de overflow N dias antes baseado em trend) | bloqueado | Precisa snapshot histórico acima. |
+| **Janela configurável** (atual + 4 ou + 6 semanas) | parked | Hoje fixo em 4. Calibrar quando aparecer pedido. |
+| **Default esforço 4h ajustável por tipo de trabalho** (bug=2h, feature=8h, etc.) | parked | Hoje fixo 4h universal. Pode mascarar realidade. Reabrir se distorção for visível. |
+
+##### Heurísticas pendentes (sem dor explícita)
+
+| Heurística | Custo | Bloqueio |
+|---|---|---|
+| **Skill mismatch** | 1h | Modelagem de match em aberto |
+| **Senioridade malalocada** (sr com >3 mini, jr com grande sem revisor) | 30min | Sem dor reportada |
+| **Churn risk** (cliente estratégico com tendência neg. em 30d) | 2-3h | Comparação retrospectiva por cliente — adapta narrativa do Briefing |
+| **Margem por hora vs ticket** | bloqueado | Produto evita expor receita (`mrr`/`ticket_medio` parked) |
+| **Cliente em fricção** (frequência de comentários de tensão) | 2h | Requer NLP simples ou regex de palavras-chave nos comentários — escopo IA |
+
+##### Calibragem aguardando dado real (2-3 semanas de uso)
+
+Thresholds que provavelmente vão precisar ajuste quando rodar com dado real:
+
+| Parâmetro | Valor atual | Como saber se está errado |
+|---|---|---|
+| Concentração mín. para hit de redistribuição | 40% | Muitos hits sem ação possível = frouxo. Zero hits = apertado. |
+| Pct cap candidato pra absorver task | <80% | Se ninguém serve, frouxar pra <90%. Se quase todo mundo serve, apertar. |
+| Sustentação estourando | >100% | Pode precisar buffer (ex.: >110%) se ruído alto. |
+| Sustentação ociosa | <50% por 2 semanas | Se virar ruído por sazonalidade, subir pra 3 semanas ou <40%. |
+| Projeto estouro/risco | 110% / 90% | Calibrar pelo histórico de quantos projetos realmente quebraram. |
+| Default esforço análise | 4h | Olhar dist. real de tasks sem esforço; tipo de trabalho médio. |
+| Top N sugestões redistribuição | 5 | Se Briefing fica muito longo, baixar pra 3. Se sempre cabe, subir pra 8. |
+
+##### Onde podem virar settings (eventualmente)
+
+Quando 3+ thresholds virarem pedido recorrente de ajuste, criar tabela `heuristic_settings` (key, value, scope=global|workspace). Por agora todos hardcoded — preferível.
 
 ### Onda 5+ — Diferenciação com IA
 
