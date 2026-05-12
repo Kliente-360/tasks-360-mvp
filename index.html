@@ -4011,11 +4011,11 @@
                           :style="c.visivel_cliente ? 'color:#0066AD' : ''"
                           :title="c.visivel_cliente ? 'Clique pra tornar só interno' : 'Clique pra publicar no Portal do cliente'"
                           @click="toggleCommentVisivel(c)"
-                          x-text="c.visivel_cliente ? 'visível ao cliente' : 'interno'"></button>
+                          x-text="c.visivel_cliente ? 'externo' : 'interno'"></button>
                   <!-- read-only badge pra quem não pode editar (SF, ou usuário sem permissão) -->
                   <span x-show="!c.from_cliente && !_canEditCommentVisivel(c)"
                         class="text-[10px] uppercase tracking-wider text-muted font-mono"
-                        x-text="c.visivel_cliente ? '· visível ao cliente' : '· interno'"></span>
+                        x-text="c.visivel_cliente ? '· externo' : '· interno'"></span>
                   <div class="ml-auto flex items-center gap-2">
                     <button x-show="replyingToId !== c.id" class="text-[11px] text-muted hover:text-ink" @click="startReply(c.id)">↳ responder</button>
                     <button x-show="_canDeleteComment(c)" class="text-[11px] text-muted hover:text-danger" title="Excluir comentário" @click="deleteComment(c)">✕</button>
@@ -4036,7 +4036,7 @@
                             :style="r.visivel_cliente ? 'color:#0066AD' : ''"
                             :title="r.visivel_cliente ? 'Clique pra tornar só interno' : 'Clique pra publicar no Portal do cliente'"
                             @click="toggleCommentVisivel(r)"
-                            x-text="r.visivel_cliente ? 'visível ao cliente' : 'interno'"></button>
+                            x-text="r.visivel_cliente ? 'externo' : 'interno'"></button>
                     <button x-show="_canDeleteComment(r)" class="text-[11px] text-muted hover:text-danger ml-auto" title="Excluir resposta" @click="deleteComment(r)">✕</button>
                   </div>
                   <div class="cmsg-body" x-html="renderCommentBody(r.body)"></div>
