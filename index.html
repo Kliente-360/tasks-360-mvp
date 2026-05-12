@@ -4003,7 +4003,19 @@
                   <span class="cmsg-who" x-text="c.author || '—'"></span>
                   <span x-show="c.external_source==='salesforce'" class="cmsg-badge" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
                   <span x-show="c.from_cliente" class="cmsg-badge">cliente</span>
-                  <span class="cmsg-when" x-text="fmtPostedEm(c.posted_em || c.criado_em) + (c.from_cliente ? '' : (c.visivel_cliente ? ' · visível ao cliente' : ' · interno'))"></span>
+                  <span class="cmsg-when" x-text="fmtPostedEm(c.posted_em || c.criado_em)"></span>
+                  <!-- toggle visibilidade · só comments internos (não cliente, não SF) e com permissão -->
+                  <button x-show="!c.from_cliente && _canEditCommentVisivel(c)"
+                          class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono cursor-pointer transition"
+                          :class="c.visivel_cliente ? 'bg-cyan-soft' : 'bg-surface-2 text-muted hover:text-ink'"
+                          :style="c.visivel_cliente ? 'color:#0066AD' : ''"
+                          :title="c.visivel_cliente ? 'Clique pra tornar só interno' : 'Clique pra publicar no Portal do cliente'"
+                          @click="toggleCommentVisivel(c)"
+                          x-text="c.visivel_cliente ? 'visível ao cliente' : 'interno'"></button>
+                  <!-- read-only badge pra quem não pode editar (SF, ou usuário sem permissão) -->
+                  <span x-show="!c.from_cliente && !_canEditCommentVisivel(c)"
+                        class="text-[10px] uppercase tracking-wider text-muted font-mono"
+                        x-text="c.visivel_cliente ? '· visível ao cliente' : '· interno'"></span>
                   <div class="ml-auto flex items-center gap-2">
                     <button x-show="replyingToId !== c.id" class="text-[11px] text-muted hover:text-ink" @click="startReply(c.id)">↳ responder</button>
                     <button x-show="_canDeleteComment(c)" class="text-[11px] text-muted hover:text-danger" title="Excluir comentário" @click="deleteComment(c)">✕</button>
@@ -4018,6 +4030,13 @@
                     <span class="cmsg-who" x-text="r.author || '—'"></span>
                     <span x-show="r.external_source==='salesforce'" class="cmsg-badge" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
                     <span class="cmsg-when" x-text="fmtPostedEm(r.posted_em || r.criado_em)"></span>
+                    <button x-show="!r.from_cliente && _canEditCommentVisivel(r)"
+                            class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono cursor-pointer transition"
+                            :class="r.visivel_cliente ? 'bg-cyan-soft' : 'bg-surface-2 text-muted hover:text-ink'"
+                            :style="r.visivel_cliente ? 'color:#0066AD' : ''"
+                            :title="r.visivel_cliente ? 'Clique pra tornar só interno' : 'Clique pra publicar no Portal do cliente'"
+                            @click="toggleCommentVisivel(r)"
+                            x-text="r.visivel_cliente ? 'visível ao cliente' : 'interno'"></button>
                     <button x-show="_canDeleteComment(r)" class="text-[11px] text-muted hover:text-danger ml-auto" title="Excluir resposta" @click="deleteComment(r)">✕</button>
                   </div>
                   <div class="cmsg-body" x-html="renderCommentBody(r.body)"></div>
@@ -5292,6 +5311,28 @@ function app() {
       if (!c || !c.id || c.external_source) return false;
       if (this.viewerRole === ROLE.ADMIN) return true;
       return !!(this.currentPessoa && c.author_pessoa_id === this.currentPessoa.id);
+    },
+    // Mesma regra do delete: autor ou admin. SF/cliente fica imutável.
+    _canEditCommentVisivel(c) {
+      if (!c || !c.id || c.external_source || c.from_cliente) return false;
+      if (this.viewerRole === ROLE.ADMIN) return true;
+      return !!(this.currentPessoa && c.author_pessoa_id === this.currentPessoa.id);
+    },
+    async toggleCommentVisivel(c) {
+      if (!this._canEditCommentVisivel(c)) return;
+      const prev = !!c.visivel_cliente;
+      const next = !prev;
+      // Optimistic: atualiza o objeto local (Alpine reativo) antes do DB.
+      const i = this.editingComments.findIndex(x => x.id === c.id);
+      if (i < 0) return;
+      this.editingComments[i] = { ...this.editingComments[i], visivel_cliente: next };
+      const { error } = await sb.from('task_comments').update({ visivel_cliente: next }).eq('id', c.id);
+      if (error) {
+        this.editingComments[i] = { ...this.editingComments[i], visivel_cliente: prev };
+        this.toast('error', 'Erro ao alterar visibilidade: ' + error.message);
+        return;
+      }
+      this.track('comment_visivel_toggle', { to: next });
     },
     deleteComment(c) {
       if (!c || !c.id) return;
