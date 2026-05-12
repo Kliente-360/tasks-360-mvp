@@ -6327,6 +6327,16 @@ function app() {
       return q;
     },
     async load() {
+      // Bifurca: cliente externo carrega apenas dados próprios (menos
+      // queries, menos campos sensíveis no payload). Staff (admin/interno)
+      // continua com loadFull. RLS no banco bloqueia tentativas cross-tenant,
+      // este split é defesa em profundidade + redução de payload.
+      if (this.currentPessoa && this.currentPessoa.role === ROLE.CLIENTE) {
+        return this._loadPortal();
+      }
+      return this._loadFull();
+    },
+    async _loadFull() {
       try {
         const [c, p, ps, t, h, td] = await Promise.all([
           sb.from('clientes').select('id,nome,tier,arquivado_em').order('nome'),
@@ -6350,6 +6360,46 @@ function app() {
         this.historicoCompletoCarregado = false;
       } catch (e) {
         console.error('Falha ao carregar do Supabase', e);
+        this.toast('error', 'Falha ao carregar: ' + (e.message || e));
+      }
+    },
+    async _loadPortal() {
+      // Cliente externo: payload mínimo, sem campos sensíveis.
+      // - pessoas: somente a própria linha (a RLS já bloqueia o resto;
+      //   selecionamos só os campos que o Portal usa pra nomes de contato)
+      // - clientes: só o cliente vinculado
+      // - projetos: só do cliente vinculado, sem orçamento/SLA contratados
+      // - tasks: visíveis do cliente; query e taskFromDb compat
+      // - history e deps: não usados no Portal — não carrega
+      const cid = this.currentPessoa && this.currentPessoa.cliente_id;
+      if (!cid) {
+        this.clientes = []; this.projetos = []; this.pessoas = [];
+        this.tasks = []; this.historyAll = []; this.taskDeps = [];
+        return;
+      }
+      try {
+        const [c, p, ps, t] = await Promise.all([
+          sb.from('clientes').select('id,nome,tier,arquivado_em').eq('id', cid),
+          sb.from('projetos').select('id,nome,cliente_id,tipo,arquivado_em').eq('cliente_id', cid).order('nome'),
+          // RLS limita a própria linha. Não pedimos skills/senioridade/
+          // capacidade/cliente_principal/secundario.
+          sb.from('pessoas').select('id,nome,email,user_id,invited_at,role,cliente_id').order('nome'),
+          sb.from('tasks').select(this._TASK_LIGHT_COLS)
+            .eq('cliente_id', cid)
+            .eq('visivel_cliente', true)
+            .order('criado_em', { ascending: false }),
+        ]);
+        const err = c.error || p.error || ps.error || t.error;
+        if (err) throw err;
+        this.clientes = (c.data || []).map(clienteFromDb);
+        this.projetos = (p.data || []).map(projetoFromDb);
+        this.pessoas  = ps.data || [];
+        this.tasks    = (t.data || []).map(taskFromDb);
+        this.historyAll = [];
+        this.taskDeps = [];
+        this.historicoCompletoCarregado = true;  // não há janela de "mais antigo" no portal
+      } catch (e) {
+        console.error('Falha ao carregar portal do cliente', e);
         this.toast('error', 'Falha ao carregar: ' + (e.message || e));
       }
     },
@@ -8429,6 +8479,13 @@ function app() {
     },
 
     async openPortalTask(t) {
+      // Defesa em profundidade: garante que a task pertence ao cliente
+      // do portal atual E é marcada como visível. RLS já bloqueia no
+      // banco, este guard evita race conditions (ex: task chegando
+      // via realtime antes de filtragem).
+      if (!t || t.clienteId !== this.effectivePortalClienteId || t.visivelCliente === false || t.arquivadoEm) {
+        return;
+      }
       this.portalTask = t;
       this.portalTaskOpen = true;
       this.portalNewComment = '';
