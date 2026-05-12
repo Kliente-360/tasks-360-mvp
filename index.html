@@ -1150,6 +1150,16 @@
     text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
     margin-bottom: var(--sp-3);
   }
+  /* checklist · linha sem contorno (parece texto inline, não input field).
+     Foco/hover só revelam barra fina embaixo pra dar affordance de edição. */
+  .checklist-line {
+    border: 0; background: transparent; padding: 2px 0; width: 100%;
+    color: var(--ink); font-family: var(--font-sans); outline: none;
+    border-bottom: 1px solid transparent; transition: border-color 120ms ease-out;
+  }
+  .checklist-line::placeholder { color: var(--muted); font-style: italic; }
+  .checklist-line:hover { border-bottom-color: var(--line); }
+  .checklist-line:focus { border-bottom-color: var(--line-strong); }
   .tmodal-fields {
     display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--sp-3) var(--sp-4);
@@ -3894,7 +3904,7 @@
             <template x-for="(item, idx) in (editing.checklist || [])" :key="item.id">
               <div class="flex items-start gap-2 group">
                 <input type="checkbox" class="mt-1.5 cursor-pointer flex-shrink-0" :checked="item.done" @change="toggleChecklistItem(idx)">
-                <input type="text" class="inp text-sm flex-1" :class="item.done && 'opacity-60 line-through'" :value="item.body" @input="updateChecklistBody(idx, $event.target.value)" @keydown.enter.prevent="addChecklistItem(idx + 1)" @keydown.backspace="(!item.body) && (removeChecklistItem(idx), $event.preventDefault())" @keydown.escape.stop="$event.target.blur()" placeholder="mini-task…">
+                <input type="text" class="checklist-line text-sm flex-1" :class="item.done && 'opacity-60 line-through'" :value="item.body" @input="updateChecklistBody(idx, $event.target.value)" @keydown.enter.prevent="addChecklistItem(idx + 1)" @keydown.backspace="(!item.body) && (removeChecklistItem(idx), $event.preventDefault())" @keydown.escape.stop="(!item.body) ? removeChecklistItem(idx) : $event.target.blur()" placeholder="mini-task…">
                 <button class="text-muted hover:text-danger text-xs px-1 opacity-0 group-hover:opacity-100 transition" @click="removeChecklistItem(idx)" title="Remover" tabindex="-1">✕</button>
               </div>
             </template>
