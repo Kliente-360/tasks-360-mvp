@@ -5002,7 +5002,7 @@ function app() {
       const recipients = this.pessoas
         .filter(p => p.role !== ROLE.CLIENTE)
         .filter(p => found.has((p.nome || '').split(/\s+/)[0]))
-        .filter(p => p.id !== this.currentPessoa.id) // não notifica a si mesmo
+        // self-mention é permitido (uso pra lembrete/auto-controle)
         .map(p => p.id);
       if (!recipients.length) return;
       const rows = recipients.map(rid => ({
