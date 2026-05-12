@@ -47,15 +47,13 @@ create policy prototipo_task_attachments_all on storage.objects
 
 -- ============ Cron de limpeza ============
 -- Apaga anexos de tasks concluídas há mais de 30 dias.
--- Depende de: pg_cron + pg_net (Supabase já tem ambos disponíveis).
+-- Depende de: pg_cron + pg_net (habilitar em Database > Extensions no Dashboard).
 -- Edge function `cleanup-attachments` apaga storage + rows.
 --
--- ⚠️ Antes de habilitar, criar 2 GUCs no banco com as credenciais
---    (Supabase Dashboard > Database > Custom config OU via SQL Editor):
---      alter database postgres set app.cleanup_attachments_url = '<edge-function-url>';
---      alter database postgres set app.cleanup_attachments_key = '<INGEST_API_KEY>';
---
--- Depois rodar este bloco pra agendar:
+-- ⚠️ Substituir <project-ref> e <INGEST_API_KEY> pelos valores reais antes de rodar.
+-- A API key fica visível na tabela cron.job (mesma key já vive nas secrets das
+-- outras edge functions — blast radius equivalente). Pra esconder, ver bloco
+-- alternativo com vault.secrets abaixo.
 
 -- create extension if not exists pg_cron;
 -- create extension if not exists pg_net;
@@ -65,12 +63,38 @@ create policy prototipo_task_attachments_all on storage.objects
 --   '17 3 * * *',                                  -- 03:17 UTC todo dia
 --   $$
 --   select net.http_post(
---     url     := current_setting('app.cleanup_attachments_url'),
+--     url     := 'https://<project-ref>.supabase.co/functions/v1/cleanup-attachments',
 --     headers := jsonb_build_object(
 --                  'content-type', 'application/json',
---                  'x-api-key',    current_setting('app.cleanup_attachments_key')
+--                  'x-api-key',    '<INGEST_API_KEY>'
 --                ),
 --     body    := jsonb_build_object('older_than_days', 30)
 --   );
 --   $$
 -- );
+
+-- ============ Alternativa com vault.secrets ============
+-- Esconde URL/key da tabela cron.job (criptografado em repouso).
+--
+-- 1x: guardar os segredos
+-- select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/cleanup-attachments', 'cleanup_attachments_url');
+-- select vault.create_secret('<INGEST_API_KEY>', 'cleanup_attachments_key');
+--
+-- depois agenda lendo de vault.decrypted_secrets:
+-- select cron.schedule(
+--   'cleanup-task-attachments-daily',
+--   '17 3 * * *',
+--   $$
+--   select net.http_post(
+--     url     := (select decrypted_secret from vault.decrypted_secrets where name='cleanup_attachments_url'),
+--     headers := jsonb_build_object(
+--                  'content-type', 'application/json',
+--                  'x-api-key',    (select decrypted_secret from vault.decrypted_secrets where name='cleanup_attachments_key')
+--                ),
+--     body    := jsonb_build_object('older_than_days', 30)
+--   );
+--   $$
+-- );
+--
+-- ⚠️ NÃO usar `alter database postgres set app.xxx = ...` no Supabase:
+-- bloqueado por permissão (superuser-only) — falha com 42501.
