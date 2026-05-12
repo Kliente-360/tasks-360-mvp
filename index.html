@@ -3779,7 +3779,8 @@
 
 <!-- ============ MODAL TAREFA · two-pane ============ -->
 <div x-show="modal" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modal=false"
-     @keydown.escape.window="if (mentionPickerFor) { mentionPickerFor=''; _mentionAnchor=null; } else if (modal && !replyingToId) modal=false"
+     @keydown.escape.window="if (mentionPickerFor) { mentionPickerFor=''; _mentionAnchor=null; } else if (lightboxAttachment) { lightboxAttachment=null; } else if (modal && !replyingToId) modal=false"
+     @paste="onModalPaste($event)"
      x-transition.opacity>
   <div class="tmodal" role="dialog" aria-label="Editar tarefa" x-transition>
 
@@ -3822,6 +3823,9 @@
       </div>
       <div class="tmtab" :class="modalTab === 'conversa' && 'active'" @click="modalTab = 'conversa'">
         Conversa <span class="count" x-text="editingComments.length"></span>
+      </div>
+      <div class="tmtab" :class="modalTab === 'anexos' && 'active'" @click="modalTab = 'anexos'">
+        Anexos <span class="count" x-text="editingAttachments.length"></span>
       </div>
       <div class="tmtab" :class="modalTab === 'historico' && 'active'" @click="modalTab = 'historico'">
         Histórico <span class="count" x-text="editingHistory.length"></span>
@@ -3979,6 +3983,9 @@
           <div class="tmodal-tab" :class="modalTab === 'conversa' && 'active'" @click="modalTab = 'conversa'">
             Conversa <span class="count" x-text="editingComments.length"></span>
           </div>
+          <div class="tmodal-tab" :class="modalTab === 'anexos' && 'active'" @click="modalTab = 'anexos'">
+            Anexos <span class="count" x-text="editingAttachments.length"></span>
+          </div>
           <div class="tmodal-tab" :class="modalTab === 'historico' && 'active'" @click="modalTab = 'historico'">
             Histórico <span class="count" x-text="editingHistory.length"></span>
           </div>
@@ -4004,8 +4011,34 @@
           <div x-show="editing.id && editingHistory.length === 0" class="text-xs text-muted italic py-3">Sem histórico ainda.</div>
         </div>
 
-        <!-- TAB · conversa (desktop: default quando não é histórico) -->
-        <div x-show="modalTab !== 'historico'" class="tmodal-thread">
+        <!-- TAB · anexos -->
+        <div x-show="modalTab === 'anexos'" class="tmodal-thread">
+          <div x-show="!editing.id" class="text-xs text-muted italic py-3">Anexos aparecem após salvar a tarefa.</div>
+          <div x-show="editing.id" class="flex flex-col gap-3 py-1">
+            <div class="text-[11px] text-muted leading-snug">
+              Cole imagens com <span class="font-mono">⌘V / Ctrl+V</span> em qualquer lugar do modal · PNG / JPG / WebP até 2MB · redimensionadas pra 1600px.
+            </div>
+            <div x-show="attachmentUploading" class="text-xs text-muted flex items-center gap-2">
+              <span class="inline-block w-3 h-3 rounded-full bg-brand animate-pulse"></span>
+              <span x-text="attachmentUploadLabel || 'enviando…'"></span>
+            </div>
+            <div x-show="editingAttachments.length === 0 && !attachmentUploading" class="text-xs text-muted italic">Nenhum anexo ainda. Tire um print e cole aqui.</div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <template x-for="a in editingAttachments" :key="a.id">
+                <div class="relative group border border-line rounded-md overflow-hidden bg-surface-2 aspect-square flex items-center justify-center">
+                  <img :src="attachmentUrls[a.id]" :alt="a.storage_path" class="w-full h-full object-cover cursor-zoom-in" @click="openLightbox(a)" loading="lazy">
+                  <div class="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] px-1.5 py-1 flex items-center justify-between opacity-0 group-hover:opacity-100 transition">
+                    <span class="font-mono truncate" x-text="(a.width && a.height ? a.width + '×' + a.height + ' · ' : '') + fmtBytes(a.size_bytes)"></span>
+                    <button x-show="_canDeleteAttachment(a)" @click.stop="deleteAttachment(a)" class="hover:text-danger ml-1" title="Excluir anexo">✕</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB · conversa (desktop: default quando não é histórico/anexos) -->
+        <div x-show="modalTab !== 'historico' && modalTab !== 'anexos'" class="tmodal-thread">
           <template x-for="c in topLevelComments" :key="c.id">
             <div>
               <div class="cmsg" :class="c.from_cliente && 'from-cliente'">
@@ -4087,7 +4120,7 @@
           <div x-show="editing.id && editingComments.length === 0" class="text-xs text-muted italic py-3">Sem comentários ainda.</div>
         </div>
 
-        <div x-show="editing.id && modalTab !== 'historico'" class="tmodal-composer"
+        <div x-show="editing.id && modalTab !== 'historico' && modalTab !== 'anexos'" class="tmodal-composer"
              @click.outside="mentionPickerFor==='newComment' && (mentionPickerFor='')">
           <textarea x-model="newComment" placeholder="Escrever comentário… (⌘↵ envia · digite @ pra mencionar)"
                     x-ref="newCommentTa"
@@ -4146,6 +4179,12 @@
       <button class="btn btn-primary" @click="saveTask()" x-text="editing.id ? 'salvar' : 'criar'"></button>
     </div>
   </div>
+</div>
+
+<!-- ============ LIGHTBOX ANEXO ============ -->
+<div x-show="lightboxAttachment" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4 cursor-zoom-out" @click.self="lightboxAttachment=null" x-transition.opacity>
+  <img x-show="lightboxAttachment" :src="lightboxAttachment && attachmentUrls[lightboxAttachment.id]" class="max-w-full max-h-full object-contain rounded shadow-2xl" alt="">
+  <button class="absolute top-3 right-4 text-white/80 hover:text-white text-3xl" @click="lightboxAttachment=null" aria-label="Fechar">×</button>
 </div>
 
 <!-- ============ MODAL EDITAR PESSOA ============ -->
@@ -4665,6 +4704,11 @@ function app() {
     SUBS_FLAT: ['backlog','priorizado','em_definicao','escopo_definido','em_desenvolvimento','em_homologacao','em_revisao','pronto_producao','em_implantacao','bloqueado','concluido'],
     editingComments: [],
     editingHistory: [], // unificada: status + campos. Cada item tem `kind`
+    editingAttachments: [],
+    attachmentUrls: {},                  // { [attachment_id]: signedUrl } — TTL 1h
+    attachmentUploading: false,
+    attachmentUploadLabel: '',
+    lightboxAttachment: null,
     newComment: '',
     newCommentPublico: false,
     mentionPickerFor: '',  // '' | 'newComment' | 'newReply' | 'portalNewComment' | 'portalReplyText'
@@ -5131,6 +5175,10 @@ function app() {
           const tid = (payload.new && payload.new.task_id) || (payload.old && payload.old.task_id);
           if (this.modal && this.editing.id && this.editing.id === tid) this.loadHistory(this.editing.id);
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'task_attachments' }, (payload) => {
+          const tid = (payload.new && payload.new.task_id) || (payload.old && payload.old.task_id);
+          if (this.modal && this.editing.id && this.editing.id === tid) this.loadAttachments(this.editing.id);
+        })
         .subscribe();
     },
     async loadComments(taskId) {
@@ -5141,6 +5189,146 @@ function app() {
         .order('posted_em', { ascending: true, nullsFirst: true })
         .order('criado_em', { ascending: true });
       if (!error) this.editingComments = data || [];
+    },
+
+    // ===================== ANEXOS =====================
+    async loadAttachments(taskId) {
+      if (!taskId) { this.editingAttachments = []; this.attachmentUrls = {}; return; }
+      const { data, error } = await sb.from('task_attachments')
+        .select('id, task_id, storage_path, mime, size_bytes, width, height, author_pessoa_id, criado_em')
+        .eq('task_id', taskId)
+        .order('criado_em', { ascending: false });
+      if (error) return;
+      this.editingAttachments = data || [];
+      this._refreshAttachmentUrls();
+    },
+    async _refreshAttachmentUrls() {
+      const paths = this.editingAttachments.map(a => a.storage_path);
+      if (!paths.length) { this.attachmentUrls = {}; return; }
+      const { data, error } = await sb.storage.from('task-attachments').createSignedUrls(paths, 3600);
+      if (error || !data) return;
+      const map = {};
+      data.forEach((row, idx) => {
+        const a = this.editingAttachments[idx];
+        if (a && row && row.signedUrl) map[a.id] = row.signedUrl;
+      });
+      this.attachmentUrls = map;
+    },
+    _canDeleteAttachment(a) {
+      if (!a || !a.id) return false;
+      if (this.viewerRole === ROLE.ADMIN) return true;
+      return !!(this.currentPessoa && a.author_pessoa_id === this.currentPessoa.id);
+    },
+    fmtBytes(n) {
+      const b = Number(n) || 0;
+      if (b < 1024) return b + ' B';
+      if (b < 1024 * 1024) return (b / 1024).toFixed(0) + ' KB';
+      return (b / (1024 * 1024)).toFixed(1) + ' MB';
+    },
+    openLightbox(a) { this.lightboxAttachment = a; },
+    onModalPaste(ev) {
+      if (!this.modal || !this.editing.id) return;
+      const items = ev && ev.clipboardData && ev.clipboardData.files;
+      if (!items || !items.length) return;
+      const imgs = Array.from(items).filter(f => f && /^image\/(png|jpe?g|webp)$/i.test(f.type));
+      if (!imgs.length) return;
+      ev.preventDefault();
+      // Upload sequencial (1 imagem por vez é o caso normal de paste).
+      (async () => {
+        for (const f of imgs) {
+          await this._uploadAttachment(f);
+        }
+        if (this.modalTab !== 'anexos') {
+          this.toast('success', imgs.length === 1 ? 'Anexo adicionado.' : imgs.length + ' anexos adicionados.');
+        }
+      })();
+    },
+    async _uploadAttachment(file) {
+      const taskId = this.editing && this.editing.id;
+      if (!taskId) return;
+      this.attachmentUploading = true;
+      this.attachmentUploadLabel = 'processando…';
+      try {
+        const processed = await this._downscaleImage(file, 1600, 0.85);
+        if (!processed) { this.toast('error', 'Falha ao processar imagem.'); return; }
+        if (processed.blob.size > 2 * 1024 * 1024) {
+          this.toast('error', 'Imagem ainda acima de 2MB após compressão. Tente um print menor.');
+          return;
+        }
+        this.attachmentUploadLabel = 'enviando…';
+        const ext = processed.blob.type === 'image/png' ? 'png' : (processed.blob.type === 'image/webp' ? 'webp' : 'jpg');
+        const objId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+        const path = `${taskId}/${objId}.${ext}`;
+        const { error: upErr } = await sb.storage.from('task-attachments').upload(path, processed.blob, {
+          contentType: processed.blob.type,
+          upsert: false,
+        });
+        if (upErr) { this.toast('error', 'Erro no upload: ' + upErr.message); return; }
+        const authorPessoaId = (this.currentPessoa && this.currentPessoa.id) || null;
+        const { data, error: insErr } = await sb.from('task_attachments').insert({
+          task_id: taskId,
+          storage_path: path,
+          mime: processed.blob.type,
+          size_bytes: processed.blob.size,
+          width: processed.width,
+          height: processed.height,
+          author_pessoa_id: authorPessoaId,
+        }).select('id, task_id, storage_path, mime, size_bytes, width, height, author_pessoa_id, criado_em').single();
+        if (insErr) {
+          await sb.storage.from('task-attachments').remove([path]);
+          this.toast('error', 'Erro ao registrar anexo: ' + insErr.message);
+          return;
+        }
+        this.editingAttachments = [data, ...this.editingAttachments];
+        this._refreshAttachmentUrls();
+        this.track('attachment_upload', { size: processed.blob.size, mime: processed.blob.type });
+      } finally {
+        this.attachmentUploading = false;
+        this.attachmentUploadLabel = '';
+      }
+    },
+    _downscaleImage(file, maxDim, quality) {
+      // Lê o file, desenha em canvas redimensionado, exporta JPEG (ou PNG se input PNG c/ transparência).
+      return new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const ratio = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const w = Math.round(img.width * ratio);
+          const h = Math.round(img.height * ratio);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          // PNG só preserva se o input era PNG e pequeno (transparência preservada); senão JPEG.
+          const outType = (file.type === 'image/png' && file.size < 800 * 1024) ? 'image/png' : 'image/jpeg';
+          canvas.toBlob((blob) => {
+            if (!blob) { resolve(null); return; }
+            resolve({ blob, width: w, height: h });
+          }, outType, quality);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+        img.src = url;
+      });
+    },
+    deleteAttachment(a) {
+      if (!this._canDeleteAttachment(a)) return;
+      this.askConfirm('Excluir este anexo?', async () => {
+        const i = this.editingAttachments.findIndex(x => x.id === a.id);
+        const prev = i >= 0 ? this.editingAttachments[i] : null;
+        if (i >= 0) this.editingAttachments.splice(i, 1);
+        if (this.lightboxAttachment && this.lightboxAttachment.id === a.id) this.lightboxAttachment = null;
+        const { error: delErr } = await sb.from('task_attachments').delete().eq('id', a.id);
+        if (delErr) {
+          if (prev) this.editingAttachments.splice(i, 0, prev);
+          this.toast('error', 'Erro ao excluir: ' + delErr.message);
+          return;
+        }
+        // Tenta limpar o storage object (best-effort; órfão é OK pois cron pega).
+        sb.storage.from('task-attachments').remove([a.storage_path]).catch(() => {});
+        this.track('attachment_delete', {});
+      });
     },
     repliesOf(parentId) {
       return this.editingComments.filter(c => c.parent_id === parentId);
@@ -7313,6 +7501,12 @@ function app() {
       this.askConfirm('Excluir ' + n + ' tarefa(s)? Esta ação não pode ser desfeita.', async () => {
         const ids = [...this.selectedIds];
         this.track('bulk_action', { kind: 'delete', count: ids.length });
+        // Best-effort: limpa storage dos anexos antes do cascade DB.
+        try {
+          const { data: atts } = await sb.from('task_attachments').select('storage_path').in('task_id', ids);
+          const paths = (atts || []).map(a => a.storage_path).filter(Boolean);
+          if (paths.length) await sb.storage.from('task-attachments').remove(paths);
+        } catch (_) {}
         const { error } = await sb.from('tasks').delete().in('id', ids);
         if (error) { this.toast('error', 'Erro: ' + error.message); return; }
         this.tasks = this.tasks.filter(t => !ids.includes(t.id));
@@ -8489,6 +8683,8 @@ function app() {
       this.editing = this.blankTask();
       this.editingComments = [];
       this.editingHistory = [];
+      this.editingAttachments = [];
+      this.attachmentUrls = {};
       this.newComment = '';
       this.replyingToId = '';
       this.newReply = '';
@@ -8503,6 +8699,8 @@ function app() {
       this.newDepId = '';
       this.editingComments = [];
       this.editingHistory = [];
+      this.editingAttachments = [];
+      this.attachmentUrls = {};
       this.newComment = '';
       this.replyingToId = '';
       this.newReply = '';
@@ -8516,6 +8714,7 @@ function app() {
       this.modal = true;
       this.loadComments(t.id);
       this.loadHistory(t.id);
+      this.loadAttachments(t.id);
       // Lazy: descricao não vem no boot (column projection). Puxa só agora.
       if (this.editing.descricao === undefined) this.loadDescricao(t.id);
     },
@@ -8791,6 +8990,15 @@ function app() {
         (!e.clienteId || t.clienteId === e.clienteId)
       );
     },
+    async _purgeTaskStorage(id) {
+      // Best-effort: lista anexos e tenta apagar do storage antes do DB cascade limpar as rows.
+      // Se falhar, o cron cleanup-attachments pega os órfãos depois.
+      try {
+        const { data } = await sb.from('task_attachments').select('storage_path').eq('task_id', id);
+        const paths = (data || []).map(a => a.storage_path).filter(Boolean);
+        if (paths.length) await sb.storage.from('task-attachments').remove(paths);
+      } catch (_) {}
+    },
     deleteTask() {
       this.askConfirm('Excluir esta tarefa? Esta ação não pode ser desfeita.', async () => {
         const id = this.editing.id;
@@ -8798,6 +9006,7 @@ function app() {
         const prev = i >= 0 ? this.tasks[i] : null;
         if (i >= 0) this.tasks.splice(i, 1);
         this.modal = false;
+        await this._purgeTaskStorage(id);
         const { error } = await sb.from('tasks').delete().eq('id', id);
         if (error) {
           if (prev) this.tasks.splice(i, 0, prev);
@@ -8812,6 +9021,7 @@ function app() {
         const i = this.tasks.findIndex(x => x.id === id);
         const prev = this.tasks[i];
         this.tasks.splice(i, 1);
+        await this._purgeTaskStorage(id);
         const { error } = await sb.from('tasks').delete().eq('id', id);
         if (error) {
           this.tasks.splice(i, 0, prev);
