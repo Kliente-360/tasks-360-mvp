@@ -4046,6 +4046,7 @@
                   <span x-show="c.external_source==='salesforce'" class="cmsg-badge" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
                   <span x-show="c.from_cliente" class="cmsg-badge">cliente</span>
                   <span class="cmsg-when" x-text="fmtPostedEm(c.posted_em || c.criado_em)"></span>
+                  <span x-show="c.edited_em" class="text-[10px] text-muted italic" title="editado">(editado)</span>
                   <!-- toggle visibilidade · só comments internos (não cliente, não SF) e com permissão -->
                   <button x-show="!c.from_cliente && _canEditCommentVisivel(c)"
                           class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono cursor-pointer transition"
@@ -4059,11 +4060,21 @@
                         class="text-[10px] uppercase tracking-wider text-muted font-mono"
                         x-text="c.visivel_cliente ? '· externo' : '· interno'"></span>
                   <div class="ml-auto flex items-center gap-2">
-                    <button x-show="replyingToId !== c.id" class="text-[11px] text-muted hover:text-ink" @click="startReply(c.id)">↳ responder</button>
-                    <button x-show="_canDeleteComment(c)" class="text-[11px] text-muted hover:text-danger" title="Excluir comentário" @click="deleteComment(c)">✕</button>
+                    <button x-show="replyingToId !== c.id && editingCommentId !== c.id" class="text-[11px] text-muted hover:text-ink" @click="startReply(c.id)">↳ responder</button>
+                    <button x-show="_canEditCommentBody(c) && editingCommentId !== c.id" class="text-[11px] text-muted hover:text-ink" title="Editar" @click="startEditComment(c)">✎</button>
+                    <button x-show="_canDeleteComment(c) && editingCommentId !== c.id" class="text-[11px] text-muted hover:text-danger" title="Excluir comentário" @click="deleteComment(c)">✕</button>
                   </div>
                 </div>
-                <div class="cmsg-body" x-html="renderCommentBody(c.body)"></div>
+                <div x-show="editingCommentId !== c.id" class="cmsg-body" x-html="renderCommentBody(c.body)"></div>
+                <div x-show="editingCommentId === c.id" class="flex flex-col gap-1.5 mt-1">
+                  <textarea class="inp resize-y min-h-[60px] text-sm" :data-edit-comment="c.id" x-model="editingCommentDraft"
+                            @keydown.meta.enter.prevent="saveEditComment(c)" @keydown.ctrl.enter.prevent="saveEditComment(c)"
+                            @keydown.escape.stop="cancelEditComment()"></textarea>
+                  <div class="flex gap-2">
+                    <button class="btn btn-primary text-xs" @click="saveEditComment(c)" :disabled="!editingCommentDraft.trim()">salvar</button>
+                    <button class="btn btn-ghost text-xs" @click="cancelEditComment()">cancelar</button>
+                  </div>
+                </div>
               </div>
               <template x-for="r in repliesOf(c.id)" :key="r.id">
                 <div class="cmsg" style="margin-left:24px;border-left:2px solid var(--line-strong)">
@@ -4072,6 +4083,7 @@
                     <span class="cmsg-who" x-text="r.author || '—'"></span>
                     <span x-show="r.external_source==='salesforce'" class="cmsg-badge" style="background:var(--brand-soft);color:var(--brand-dark)">SF</span>
                     <span class="cmsg-when" x-text="fmtPostedEm(r.posted_em || r.criado_em)"></span>
+                    <span x-show="r.edited_em" class="text-[10px] text-muted italic" title="editado">(editado)</span>
                     <button x-show="!r.from_cliente && _canEditCommentVisivel(r)"
                             class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono cursor-pointer transition"
                             :class="r.visivel_cliente ? 'bg-cyan-soft' : 'bg-surface-2 text-muted hover:text-ink'"
@@ -4079,9 +4091,21 @@
                             :title="r.visivel_cliente ? 'Clique pra tornar só interno' : 'Clique pra publicar no Portal do cliente'"
                             @click="toggleCommentVisivel(r)"
                             x-text="r.visivel_cliente ? 'externo' : 'interno'"></button>
-                    <button x-show="_canDeleteComment(r)" class="text-[11px] text-muted hover:text-danger ml-auto" title="Excluir resposta" @click="deleteComment(r)">✕</button>
+                    <div class="ml-auto flex items-center gap-2">
+                      <button x-show="_canEditCommentBody(r) && editingCommentId !== r.id" class="text-[11px] text-muted hover:text-ink" title="Editar" @click="startEditComment(r)">✎</button>
+                      <button x-show="_canDeleteComment(r) && editingCommentId !== r.id" class="text-[11px] text-muted hover:text-danger" title="Excluir resposta" @click="deleteComment(r)">✕</button>
+                    </div>
                   </div>
-                  <div class="cmsg-body" x-html="renderCommentBody(r.body)"></div>
+                  <div x-show="editingCommentId !== r.id" class="cmsg-body" x-html="renderCommentBody(r.body)"></div>
+                  <div x-show="editingCommentId === r.id" class="flex flex-col gap-1.5 mt-1">
+                    <textarea class="inp resize-y min-h-[50px] text-sm" :data-edit-comment="r.id" x-model="editingCommentDraft"
+                              @keydown.meta.enter.prevent="saveEditComment(r)" @keydown.ctrl.enter.prevent="saveEditComment(r)"
+                              @keydown.escape.stop="cancelEditComment()"></textarea>
+                    <div class="flex gap-2">
+                      <button class="btn btn-primary text-xs" @click="saveEditComment(r)" :disabled="!editingCommentDraft.trim()">salvar</button>
+                      <button class="btn btn-ghost text-xs" @click="cancelEditComment()">cancelar</button>
+                    </div>
+                  </div>
                 </div>
               </template>
               <div x-show="replyingToId === c.id" class="relative flex flex-col gap-1.5" style="margin-left:24px;margin-top:8px"
@@ -4722,6 +4746,8 @@ function app() {
     notifPanelOpen: false,
     _notifsSubscribed: false,
     replyingToId: '',
+    editingCommentId: '',
+    editingCommentDraft: '',
     newReply: '',
     newCli: '',
     newProj: { nome: '', clienteId: '' },
@@ -5184,7 +5210,7 @@ function app() {
     async loadComments(taskId) {
       if (!taskId) { this.editingComments = []; return; }
       const { data, error } = await sb.from('task_comments')
-        .select('id, parent_id, author, author_external_id, author_pessoa_id, body, posted_em, criado_em, external_source, external_id, visivel_cliente, from_cliente')
+        .select('id, parent_id, author, author_external_id, author_pessoa_id, body, posted_em, criado_em, edited_em, external_source, external_id, visivel_cliente, from_cliente')
         .eq('task_id', taskId)
         .order('posted_em', { ascending: true, nullsFirst: true })
         .order('criado_em', { ascending: true });
@@ -5550,6 +5576,43 @@ function app() {
       if (!c || !c.id || c.external_source) return false;
       if (this.viewerRole === ROLE.ADMIN) return true;
       return !!(this.currentPessoa && c.author_pessoa_id === this.currentPessoa.id);
+    },
+    // Edit é mais restrito que delete: só o próprio autor (admin não edita texto alheio).
+    _canEditCommentBody(c) {
+      if (!c || !c.id || c.external_source || c.from_cliente) return false;
+      return !!(this.currentPessoa && c.author_pessoa_id === this.currentPessoa.id);
+    },
+    startEditComment(c) {
+      if (!this._canEditCommentBody(c)) return;
+      this.editingCommentId = c.id;
+      this.editingCommentDraft = c.body || '';
+      this.$nextTick(() => {
+        const el = document.querySelector('[data-edit-comment="' + c.id + '"]');
+        if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+      });
+    },
+    cancelEditComment() {
+      this.editingCommentId = '';
+      this.editingCommentDraft = '';
+    },
+    async saveEditComment(c) {
+      if (!c || !this._canEditCommentBody(c)) return;
+      const body = (this.editingCommentDraft || '').trim();
+      if (!body) { this.toast('error', 'Comentário não pode ficar vazio.'); return; }
+      if (body === (c.body || '').trim()) { this.cancelEditComment(); return; }
+      const i = this.editingComments.findIndex(x => x.id === c.id);
+      if (i < 0) return;
+      const prev = this.editingComments[i];
+      const nowIso = new Date().toISOString();
+      this.editingComments[i] = { ...prev, body, edited_em: nowIso };
+      this.cancelEditComment();
+      const { error } = await sb.from('task_comments').update({ body, edited_em: nowIso }).eq('id', c.id);
+      if (error) {
+        this.editingComments[i] = prev;
+        this.toast('error', 'Erro ao salvar: ' + error.message);
+        return;
+      }
+      this.track('comment_edit', { is_reply: !!prev.parent_id });
     },
     // Mesma regra do delete: autor ou admin. SF/cliente fica imutável.
     _canEditCommentVisivel(c) {
@@ -8712,6 +8775,8 @@ function app() {
       this.editing = this.blankTask();
       this.editing.checklist = [];
       this.checklistOpen = false;
+      this.editingCommentId = '';
+      this.editingCommentDraft = '';
       this.editingComments = [];
       this.editingHistory = [];
       this.editingAttachments = [];
@@ -8729,6 +8794,8 @@ function app() {
       this.editing.dependencias = [...this.getDependencias(t.id)];
       if (!Array.isArray(this.editing.checklist)) this.editing.checklist = [];
       this.checklistOpen = this.editing.checklist.length > 0;
+      this.editingCommentId = '';
+      this.editingCommentDraft = '';
       this.newDepId = '';
       this.editingComments = [];
       this.editingHistory = [];
