@@ -3838,21 +3838,6 @@
       <!-- ESQUERDA · dados -->
       <div class="tmodal-left" :class="isMobileViewport && modalTab !== 'detalhes' && 'mob-hidden'">
 
-        <!-- Descrição -->
-        <div class="tmodal-section">
-          <div class="tmodal-section-title">Descrição</div>
-          <textarea class="inp" rows="3" x-model="editing.descricao" placeholder="Contexto, links, critérios de aceite…"></textarea>
-        </div>
-
-        <!-- HIDDEN_DESDE_v1.01.147 · Tags
-             Mantido no schema/lógica; campo escondido até definirmos vocabulário
-             padronizado de tags na operação.
-        <div class="tmodal-section">
-          <div class="tmodal-section-title">Tags</div>
-          ... (form de tags com autocomplete)
-        </div>
-        -->
-
         <!-- Atribuição -->
         <div class="tmodal-section">
           <div class="tmodal-section-title">Atribuição</div>
@@ -3890,18 +3875,37 @@
           </div>
         </div>
 
-        <!-- Esforço · prazo -->
+        <!-- Descrição -->
         <div class="tmodal-section">
-          <div class="tmodal-section-title">Esforço · prazo</div>
+          <div class="tmodal-section-title">Descrição</div>
+          <textarea class="inp" rows="3" x-model="editing.descricao" placeholder="Contexto, links, critérios de aceite…"></textarea>
+        </div>
+
+        <!-- Checklist (colapsável, default colapsado) -->
+        <div class="tmodal-section">
+          <div class="tmodal-section-title flex items-center gap-2 cursor-pointer select-none" @click="checklistOpen = !checklistOpen">
+            <span class="text-muted text-xs font-mono" x-text="checklistOpen ? '▾' : '▸'"></span>
+            <span>Checklist</span>
+            <span class="text-[10px] text-muted font-mono" x-show="(editing.checklist || []).length">
+              <span x-text="(editing.checklist || []).filter(i => i.done).length"></span>/<span x-text="(editing.checklist || []).length"></span>
+            </span>
+          </div>
+          <div x-show="checklistOpen" x-transition.opacity class="flex flex-col gap-1.5 mt-1">
+            <template x-for="(item, idx) in (editing.checklist || [])" :key="item.id">
+              <div class="flex items-start gap-2 group">
+                <input type="checkbox" class="mt-1.5 cursor-pointer flex-shrink-0" :checked="item.done" @change="toggleChecklistItem(idx)">
+                <input type="text" class="inp text-sm flex-1" :class="item.done && 'opacity-60 line-through'" :value="item.body" @input="updateChecklistBody(idx, $event.target.value)" @keydown.enter.prevent="addChecklistItem(idx + 1)" @keydown.backspace="(!item.body) && (removeChecklistItem(idx), $event.preventDefault())" placeholder="mini-task…">
+                <button class="text-muted hover:text-danger text-xs px-1 opacity-0 group-hover:opacity-100 transition" @click="removeChecklistItem(idx)" title="Remover" tabindex="-1">✕</button>
+              </div>
+            </template>
+            <button class="text-xs text-muted hover:text-ink self-start py-1" @click="addChecklistItem()">+ adicionar item</button>
+          </div>
+        </div>
+
+        <!-- Esforço -->
+        <div class="tmodal-section">
+          <div class="tmodal-section-title">Esforço</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="lbl">Estimado (h)</label>
-              <input type="number" min="0" step="0.5" class="inp" x-model.number="editing.esforco">
-            </div>
-            <div>
-              <label class="lbl">Realizado (h)</label>
-              <input type="number" min="0" step="0.5" class="inp" x-model="editing.tempoRealHoras" placeholder="—">
-            </div>
             <div>
               <label class="lbl">Complexidade</label>
               <select class="inp" x-model="editing.complexidade">
@@ -3914,27 +3918,21 @@
               <label class="lbl">Prazo</label>
               <input type="date" class="inp" x-model="editing.prazo">
             </div>
+            <div>
+              <label class="lbl">Estimado (h)</label>
+              <input type="number" min="0" step="0.5" class="inp" x-model.number="editing.esforco">
+            </div>
+            <div>
+              <label class="lbl">Realizado (h)</label>
+              <input type="number" min="0" step="0.5" class="inp" x-model="editing.tempoRealHoras" placeholder="—">
+            </div>
           </div>
         </div>
 
-        <!-- HIDDEN_DESDE_v1.01.147 · Tipo de trabalho
-             Schema mantido (tasks.tipo_trabalho); selector escondido até
-             aparecer demanda real de classificação.
-        -->
+        <!-- HIDDEN_DESDE_v1.01.147 · Tipo de trabalho / Dependências / ID externo SF -->
 
-        <!-- HIDDEN_DESDE_v1.01.147 · Dependências
-             Schema mantido (task_dependencies + getter _candidatesDependencia +
-             addDependencia/removeDependencia); UI escondida até a equipe pedir.
-        -->
-
-        <!-- HIDDEN_DESDE_v1.01.147 · ID externo (Salesforce)
-             Schema mantido (tasks.external_id + ingest-task lê/escreve);
-             campo manual escondido — ingest cria/atualiza automaticamente.
-        -->
-
-        <!-- Metadata -->
+        <!-- Metadata (sem título, só os campos) -->
         <div class="tmodal-section">
-          <div class="tmodal-section-title">Metadata</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="lbl">Etapa</label>
@@ -4518,6 +4516,7 @@ const TASK_FIELDS = [
   ['subetapaEm',      'subetapa_em',       F.date],
   ['ordem',           'ordem',             F.numNull, { to: null /* nunca persiste via toDb; só via update direto */ }],
   ['tags',            'tags',              F.arr],
+  ['checklist',       'checklist',         F.arr],
   ['reopenCount',     'reopen_count',      F.num,    { to: null /* gerado pelo trigger */ }],
   ['tipoTrabalho',    'tipo_trabalho',     F.fkNull],
   ['tempoRealHoras',  'tempo_real_horas',  F.numNull, { blank: '' }],
@@ -4704,6 +4703,7 @@ function app() {
     SUBS_FLAT: ['backlog','priorizado','em_definicao','escopo_definido','em_desenvolvimento','em_homologacao','em_revisao','pronto_producao','em_implantacao','bloqueado','concluido'],
     editingComments: [],
     editingHistory: [], // unificada: status + campos. Cada item tem `kind`
+    checklistOpen: false,                // colapsado por padrão; reabre se já tiver itens (openEdit decide)
     editingAttachments: [],
     attachmentUrls: {},                  // { [attachment_id]: signedUrl } — TTL 1h
     attachmentUploading: false,
@@ -5189,6 +5189,35 @@ function app() {
         .order('posted_em', { ascending: true, nullsFirst: true })
         .order('criado_em', { ascending: true });
       if (!error) this.editingComments = data || [];
+    },
+
+    // ===================== CHECKLIST =====================
+    addChecklistItem(at) {
+      if (!Array.isArray(this.editing.checklist)) this.editing.checklist = [];
+      const item = { id: 'cli-' + Math.random().toString(36).slice(2, 9), body: '', done: false };
+      const idx = (typeof at === 'number') ? at : this.editing.checklist.length;
+      this.editing.checklist.splice(idx, 0, item);
+      this.$nextTick(() => {
+        const inputs = document.querySelectorAll('.tmodal input[placeholder="mini-task…"]');
+        const el = inputs[idx];
+        if (el) el.focus();
+      });
+    },
+    removeChecklistItem(idx) {
+      if (!Array.isArray(this.editing.checklist)) return;
+      this.editing.checklist.splice(idx, 1);
+    },
+    toggleChecklistItem(idx) {
+      if (!Array.isArray(this.editing.checklist)) return;
+      const item = this.editing.checklist[idx];
+      if (!item) return;
+      this.editing.checklist[idx] = { ...item, done: !item.done };
+    },
+    updateChecklistBody(idx, value) {
+      if (!Array.isArray(this.editing.checklist)) return;
+      const item = this.editing.checklist[idx];
+      if (!item) return;
+      this.editing.checklist[idx] = { ...item, body: value };
     },
 
     // ===================== ANEXOS =====================
@@ -8681,6 +8710,8 @@ function app() {
     // ===================== MODAL TAREFA =====================
     openNew() {
       this.editing = this.blankTask();
+      this.editing.checklist = [];
+      this.checklistOpen = false;
       this.editingComments = [];
       this.editingHistory = [];
       this.editingAttachments = [];
@@ -8696,6 +8727,8 @@ function app() {
       this.editing = JSON.parse(JSON.stringify(t));
       this.editing.tempoRealHoras = this.editing.tempoRealHoras == null ? '' : this.editing.tempoRealHoras;
       this.editing.dependencias = [...this.getDependencias(t.id)];
+      if (!Array.isArray(this.editing.checklist)) this.editing.checklist = [];
+      this.checklistOpen = this.editing.checklist.length > 0;
       this.newDepId = '';
       this.editingComments = [];
       this.editingHistory = [];
