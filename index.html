@@ -4068,9 +4068,9 @@
                     @keydown.tab="if (mentionPickerFor==='newComment') { $event.preventDefault(); _mentionPickActive('newComment'); }"
                     @keydown.meta.enter.prevent="postComment()" @keydown.ctrl.enter.prevent="postComment()"></textarea>
           <div class="tmodal-composer-row">
-            <label class="toggle text-[11px] text-muted hover:text-ink select-none" title="Se marcado, o comentário aparece pro cliente no Portal">
+            <label class="toggle text-[11px] select-none" :class="newCommentPublico ? 'text-brand-dark font-medium' : 'text-muted hover:text-ink'" title="Marque pra publicar este comentário no Portal do cliente. Sem marcar fica apenas interno.">
               <input type="checkbox" x-model="newCommentPublico">
-              <span x-text="newCommentPublico ? 'visível ao cliente' : 'só interno'"></span>
+              <span>Visível ao cliente no Portal</span>
             </label>
             <div class="relative">
               <button type="button" class="btn btn-ghost text-[11px] py-0.5 px-2"
