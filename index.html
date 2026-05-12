@@ -3894,7 +3894,7 @@
             <template x-for="(item, idx) in (editing.checklist || [])" :key="item.id">
               <div class="flex items-start gap-2 group">
                 <input type="checkbox" class="mt-1.5 cursor-pointer flex-shrink-0" :checked="item.done" @change="toggleChecklistItem(idx)">
-                <input type="text" class="inp text-sm flex-1" :class="item.done && 'opacity-60 line-through'" :value="item.body" @input="updateChecklistBody(idx, $event.target.value)" @keydown.enter.prevent="addChecklistItem(idx + 1)" @keydown.backspace="(!item.body) && (removeChecklistItem(idx), $event.preventDefault())" placeholder="mini-task…">
+                <input type="text" class="inp text-sm flex-1" :class="item.done && 'opacity-60 line-through'" :value="item.body" @input="updateChecklistBody(idx, $event.target.value)" @keydown.enter.prevent="addChecklistItem(idx + 1)" @keydown.backspace="(!item.body) && (removeChecklistItem(idx), $event.preventDefault())" @keydown.escape.stop="$event.target.blur()" placeholder="mini-task…">
                 <button class="text-muted hover:text-danger text-xs px-1 opacity-0 group-hover:opacity-100 transition" @click="removeChecklistItem(idx)" title="Remover" tabindex="-1">✕</button>
               </div>
             </template>
@@ -5638,7 +5638,7 @@ function app() {
     },
     // Colunas leves carregadas no boot. `descricao` (pode ser markdown
     // longo) fica off-list e é puxada lazy quando o modal abre.
-    _TASK_LIGHT_COLS: 'id,titulo,cliente_id,projeto_id,pessoa_id,prioridade,esforco,complexidade,prazo,status,subetapa,bloqueado_por,visivel_cliente,criado_em,status_em,subetapa_em,ordem,tags,reopen_count,tipo_trabalho,tempo_real_horas,external_source,external_id,arquivado_em',
+    _TASK_LIGHT_COLS: 'id,titulo,cliente_id,projeto_id,pessoa_id,prioridade,esforco,complexidade,prazo,status,subetapa,bloqueado_por,visivel_cliente,criado_em,status_em,subetapa_em,ordem,tags,checklist,reopen_count,tipo_trabalho,tempo_real_horas,external_source,external_id,arquivado_em',
     _buildTasksQuery(extra) {
       // Default: todas não-concluídas + concluídas dos últimos N dias.
       // status_em é setado pelo banco quando muda status; concluídas sem
@@ -8883,6 +8883,7 @@ function app() {
             bloqueadoPor: e.subetapa === 'bloqueado' ? (e.bloqueadoPor || '') : '',
             visivelCliente: e.visivelCliente !== false,
             tags: Array.isArray(e.tags) ? [...e.tags] : [],
+            checklist: Array.isArray(e.checklist) ? JSON.parse(JSON.stringify(e.checklist)) : [],
             tipoTrabalho: e.tipoTrabalho || '',
             tempoRealHoras: e.tempoRealHoras === '' || e.tempoRealHoras == null ? null : +e.tempoRealHoras,
             statusEm:   statusChanged ? nowMs : prev.statusEm,
