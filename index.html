@@ -936,6 +936,22 @@
   .cap-cell-pressao    { background: color-mix(in srgb, var(--sig-amber) 18%, var(--bg)); color: #92400e; }
   .cap-cell-sobrecarga { background: var(--sig-red); color: #fff; }
 
+  /* Sugestões de redistribuição (Briefing · card 6) */
+  .redist-card {
+    border: 1px solid var(--line); border-radius: 6px;
+    padding: 10px 12px; background: color-mix(in srgb, var(--bg) 60%, transparent);
+  }
+  .redist-header { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .redist-rec {
+    margin-top: 8px; padding: 8px 10px; border-radius: 4px;
+    background: var(--sig-green-soft);
+    border-left: 3px solid var(--sig-green-strong);
+  }
+  .redist-rec-warn {
+    background: color-mix(in srgb, var(--sig-amber) 12%, var(--bg));
+    border-left-color: var(--sig-amber);
+  }
+
   @media (min-width: 768px) {
     .cap-row {
       display: grid; grid-template-columns: minmax(160px, 1fr) minmax(280px, 2fr);
@@ -1995,6 +2011,57 @@
 
       <div x-show="weeklyCapacityAnalysis.sustentacoes.length === 0 && weeklyCapacityAnalysis.projetosFechados.length === 0" class="mt-4 text-xs text-muted italic">
         Nenhum projeto com tipo + orçamento cadastrado. Em Cadastros · Projetos, marque tipo (sustentação/projeto) e preencha as horas pra ativar análise contratual.
+      </div>
+    </div>
+
+    <!-- Card 6 · Sugestões de redistribuição (correlação pessoa × projeto) -->
+    <div class="card p-5 md:p-7" x-show="weeklyRedistSuggestions.length > 0">
+      <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
+        <h2 class="font-brand text-lg font-semibold">Sugestões de redistribuição</h2>
+        <span class="text-xs text-muted font-mono">correlação pessoa × projeto</span>
+      </div>
+      <p class="text-xs text-muted mb-3 leading-relaxed">
+        Pessoa e projeto sobrecarregados na mesma semana, com a pessoa concentrando ≥40% do esforço naquele projeto. Sugere realocar pra quem tem o cliente como principal/secundário e folga na semana.
+      </p>
+      <div class="space-y-2">
+        <template x-for="(s, i) in weeklyRedistSuggestions" :key="i">
+          <div class="redist-card">
+            <div class="redist-header">
+              <span class="brief-tag shrink-0" :class="s.hit.pessoaNivel === 'sobrecarga' ? 'brief-tag-sobrecarga' : 'brief-tag-pressao'"
+                    x-text="'sem ' + (s.hit.weekIdx === 0 ? '.' : ('+' + s.hit.weekIdx))"></span>
+              <span class="text-sm font-medium text-ink truncate" x-text="s.hit.pessoaNome + ' · ' + s.hit.projetoNome"></span>
+            </div>
+            <div class="text-[11px] text-muted font-mono mt-1">
+              <span x-text="s.hit.pessoaNome + ' ' + s.hit.pessoaPct + '% · ' + s.hit.projetoNome + ' ' + s.hit.projetoPct + '% · ' + Math.round(s.hit.horasPessoaNoProjeto) + 'h dela em ' + s.hit.projetoNome + ' (' + s.hit.concentracao + '% do total dela)'"></span>
+            </div>
+
+            <!-- Recomendação -->
+            <div class="redist-rec" x-show="s.reason === 'ok' && s.candidate">
+              <div class="text-xs text-ink leading-relaxed">
+                <span class="text-muted">→ Passar </span>
+                <span class="font-medium" x-text="'‘' + s.task.titulo + '’'"></span>
+                <span class="text-muted" x-text="' (' + (s.task.prioridade || 'sem prio') + ' · ' + effEsforco(s.task) + 'h) para '"></span>
+                <span class="font-medium" x-text="s.candidate?.pessoa?.nome"></span>
+                <span class="text-muted" x-text="' (' + (s.candidate?.matchScore === 2 ? 'principal' : 'secundário') + ' ' + nomeCliente(s.hit.clienteId) + ' · ' + s.candidate?.week?.pctCap + '% → ' + s.newPctCandidate + '% na semana)'"></span>
+              </div>
+            </div>
+            <div class="redist-rec redist-rec-warn" x-show="s.reason === 'no-match'">
+              <div class="text-xs text-ink-soft leading-relaxed">
+                Sem pessoa com <span x-text="nomeCliente(s.hit.clienteId)"></span> como principal/secundário. Analisar manualmente: cogitar mover prazo da task abaixo ou ajustar escopo da semana.
+              </div>
+            </div>
+            <div class="redist-rec redist-rec-warn" x-show="s.reason === 'no-fit'">
+              <div class="text-xs text-ink-soft leading-relaxed">
+                Há candidatos com match de cliente mas nenhum tem folga suficiente pra absorver. Analisar manualmente.
+              </div>
+            </div>
+
+            <div class="mt-2 flex items-center gap-2">
+              <button type="button" class="btn btn-ghost text-xs px-2 py-1" @click="openEdit(s.task)">abrir task →</button>
+              <span class="text-[10px] text-muted font-mono truncate" x-text="s.task.titulo"></span>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -6834,6 +6901,152 @@ function app() {
       projetosFechadosResult.sort((a,b) => b.pctEsgotamento - a.pctEsgotamento);
 
       return { pessoas: pessoasResult, sustentacoes: sustentacoesResult, projetosFechados: projetosFechadosResult };
+    },
+
+    // Sugestões de redistribuição baseadas em capacidade semanal (Onda D+).
+    // Detecção ESTRITA: emite hit somente quando, numa semana W:
+    //   1. pessoa P está em pressão/sobrecarga (>100% cap)
+    //   2. projeto sustentação Q está em pressão/sobrecarga (>100% cap mensal/4)
+    //   3. P concentra ≥40% do esforço dela em W naquele Q (correlação forte)
+    // Estratégia única: realocar pra match de `cliente_principal_id`
+    // (preferido) ou `cliente_secundario_id` do projeto.
+    // Apresentação: só listar + abrir task (sem auto-apply).
+    get weeklyRedistSuggestions() {
+      const sig = this._tasksSig + ':' + this.pessoas.length + ':' + this.projetos.length + ':' + this._dataRev;
+      return this._memo('weeklyRedistSuggestions', sig, () => this._computeWeeklyRedistSuggestions());
+    },
+    _computeWeeklyRedistSuggestions() {
+      const today = new Date().toISOString().slice(0, 10);
+      const wca = this.weeklyCapacityAnalysis;
+      if (!wca.pessoas.length || !wca.sustentacoes.length) return [];
+
+      const ativas = this._visibleTasks.filter(t => t.status !== STATUS.CONCLUIDO && !t.arquivadoEm);
+
+      // Index tasks por (pessoa, semana). Atrasadas vão pra W0 (mesma regra da agregação).
+      const tasksByPessoaWeek = new Map();
+      for (const p of this.pessoas) {
+        if (p.role === ROLE.CLIENTE) continue;
+        tasksByPessoaWeek.set(p.id, [[],[],[],[]]);
+      }
+      for (const t of ativas) {
+        if (!t.pessoaId) continue;
+        const arr = tasksByPessoaWeek.get(t.pessoaId);
+        if (!arr) continue;
+        const idx = taskWeekIndex(t, today);
+        const bucket = (idx === -1) ? 0 : idx;
+        if (bucket >= 0 && bucket <= 3) arr[bucket].push(t);
+      }
+
+      const sustById = new Map(wca.sustentacoes.map(s => [s.projetoId, s]));
+      const wcaPessoaById = new Map(wca.pessoas.map(p => [p.pessoaId, p]));
+      const PRIO_RANK = { P0: 0, P1: 1, P2: 2, P3: 3 };
+      const SEV_RANK = { sobrecarga: 2, pressao: 1, ok: 0, folga: 0, sem_cap: 0 };
+
+      // 1) Detectar hits
+      const hits = [];
+      for (const pInfo of wca.pessoas) {
+        if (!pInfo.anyOverload) continue;
+        for (let w = 0; w <= 3; w++) {
+          const wk = pInfo.weeks[w];
+          if (wk.nivel !== 'sobrecarga' && wk.nivel !== 'pressao') continue;
+          if (wk.hours <= 0) continue;
+
+          const tasksW = (tasksByPessoaWeek.get(pInfo.pessoaId) || [[],[],[],[]])[w];
+          if (!tasksW.length) continue;
+
+          // agrupa esforço por projeto
+          const horasPorProjeto = new Map();
+          for (const t of tasksW) {
+            if (!t.projetoId) continue;
+            horasPorProjeto.set(t.projetoId, (horasPorProjeto.get(t.projetoId) || 0) + effEsforco(t));
+          }
+
+          for (const [projId, horas] of horasPorProjeto) {
+            const concentracao = horas / wk.hours;
+            if (concentracao < 0.40) continue;
+            const sust = sustById.get(projId);
+            if (!sust) continue;                                  // só sustentação tem ciclo semanal
+            const projWk = sust.weeks[w];
+            if (projWk.nivel !== 'sobrecarga' && projWk.nivel !== 'pressao') continue;
+
+            // tasks redistribuíveis: dessa pessoa, nesse projeto, nessa semana, sem P0
+            const redistribuiveis = tasksW
+              .filter(t => t.projetoId === projId && t.prioridade !== 'P0')
+              .sort((a, b) => (PRIO_RANK[b.prioridade] ?? 4) - (PRIO_RANK[a.prioridade] ?? 4));
+            if (!redistribuiveis.length) continue;
+
+            hits.push({
+              pessoaId: pInfo.pessoaId,
+              pessoaNome: pInfo.nome,
+              pessoaPct: wk.pctCap,
+              pessoaNivel: wk.nivel,
+              weekIdx: w,
+              projetoId: projId,
+              projetoNome: sust.nome,
+              clienteId: sust.clienteId,
+              horasPessoaNoProjeto: horas,
+              concentracao: Math.round(concentracao * 100),
+              projetoPct: projWk.pctCap,
+              tasksCandidatas: redistribuiveis,
+            });
+          }
+        }
+      }
+
+      // 2) Gerar sugestão por hit (1 task realocada por hit)
+      const result = [];
+      for (const hit of hits) {
+        // candidatos: outras pessoas internas com cliente principal/sec = clienteId do projeto, com folga em W
+        const candidatos = [];
+        for (const cand of this.pessoas) {
+          if (cand.id === hit.pessoaId) continue;
+          if (cand.role === ROLE.CLIENTE) continue;
+          const matchPri = cand.cliente_principal_id === hit.clienteId;
+          const matchSec = cand.cliente_secundario_id === hit.clienteId;
+          if (!matchPri && !matchSec) continue;
+          const candWca = wcaPessoaById.get(cand.id);
+          if (!candWca) continue;
+          const candWk = candWca.weeks[hit.weekIdx];
+          if (candWk.pctCap == null) continue;                    // sem cap declarada — pula
+          if (candWk.pctCap >= 80) continue;                      // não tem folga
+          candidatos.push({ pessoa: cand, wca: candWca, week: candWk, matchScore: matchPri ? 2 : 1 });
+        }
+        candidatos.sort((a, b) => {
+          if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
+          return a.week.pctCap - b.week.pctCap;
+        });
+
+        // tenta cada task em ordem (menor prioridade primeiro), achar candidato que não estoura
+        let suggestion = null;
+        for (const t of hit.tasksCandidatas) {
+          const esf = effEsforco(t);
+          for (const c of candidatos) {
+            const cap = c.wca.capacidade;
+            if (!(cap > 0)) continue;
+            const newPct = Math.round(((c.week.hours + esf) / cap) * 100);
+            if (newPct > 100) continue;                           // anti-otimização míope
+            suggestion = { hit, task: t, candidate: c, newPctCandidate: newPct, reason: 'ok' };
+            break;
+          }
+          if (suggestion) break;
+        }
+        if (!suggestion) {
+          // sem candidato viável — emite hit como "analisar manualmente"
+          suggestion = { hit, task: hit.tasksCandidatas[0], candidate: null, newPctCandidate: null,
+                         reason: candidatos.length === 0 ? 'no-match' : 'no-fit' };
+        }
+        result.push(suggestion);
+      }
+
+      // 3) Ordena: weekIdx ASC (mais urgente primeiro), severidade DESC, depois pct DESC
+      result.sort((a, b) => {
+        if (a.hit.weekIdx !== b.hit.weekIdx) return a.hit.weekIdx - b.hit.weekIdx;
+        const sevDiff = SEV_RANK[b.hit.pessoaNivel] - SEV_RANK[a.hit.pessoaNivel];
+        if (sevDiff !== 0) return sevDiff;
+        return b.hit.pessoaPct - a.hit.pessoaPct;
+      });
+
+      return result.slice(0, 5);
     },
 
     // Sugestões de redistribuição (página 2). Heurística simples:
