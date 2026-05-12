@@ -2647,6 +2647,11 @@
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
+      <select class="inp w-full md:w-[200px]" x-model="f.projeto">
+        <option value="">Todos os projetos</option>
+        <option value="__empty__">— sem projeto</option>
+        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+      </select>
       <select class="inp w-full md:w-[180px]" x-model="f.pessoa">
         <option value="">Todos os responsáveis</option>
         <option value="__empty__">— sem responsável</option>
@@ -2798,6 +2803,11 @@
       <option value="">Todos os clientes</option>
       <option value="__empty__">— sem cliente</option>
       <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+    </select>
+    <select class="inp w-full md:w-[200px]" x-model="f.projeto">
+      <option value="">Todos os projetos</option>
+      <option value="__empty__">— sem projeto</option>
+      <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
     <select class="inp w-full md:w-[180px]" x-model="f.pessoa">
       <option value="">Todos os responsáveis</option>
@@ -3236,6 +3246,11 @@
       <option value="">Todos os clientes</option>
       <option value="__empty__">— sem cliente</option>
       <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+    </select>
+    <select class="inp w-full md:w-[200px]" x-model="f.projeto" @change="$nextTick(()=>renderCharts())">
+      <option value="">Todos os projetos</option>
+      <option value="__empty__">— sem projeto</option>
+      <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
     <select class="inp w-full md:w-[180px]" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
       <option value="">Todos os responsáveis</option>
