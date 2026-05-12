@@ -4,7 +4,7 @@
 >
 > **Dentro do app**: clique no botão **?** no topo (ou ⌘K → "Manual") pra abrir esse documento renderizado bonito, com índice navegável.
 >
-> Última atualização: 11/05/2026 · após onda de Triagem, Briefing executivo, telemetria de uso, pagination no backlog e revisões técnicas perf/escala.
+> Última atualização: 12/05/2026 · v1.01.171 · onda de modal task (anexos paste-only, checklist colapsável, edit/delete de comentário, reply herdando visibilidade, ESC encadeado).
 
 ---
 
@@ -13,15 +13,18 @@
 1. [Visão geral](#visão-geral)
 2. [Abas do app](#abas-do-app) — Notificações · Meu foco · Briefing · Triagem · Backlog · Kanban · Calendário · Dashboard · Cadastros · Adoption · Portal
 3. [Modelo de uma tarefa](#modelo-de-uma-tarefa)
-4. [Criando, editando e movendo tarefas](#criando-editando-e-movendo-tarefas)
-5. [Filtros e busca](#filtros-e-busca)
-6. [Atalhos de teclado e command palette](#atalhos-de-teclado-e-command-palette)
-7. [Bulk actions na tabela](#bulk-actions-na-tabela)
-8. [Comentários](#comentários)
-9. [Exportar (PDF / CSV)](#exportar-pdf--csv)
-10. [Login (quando ativado)](#login-quando-ativado)
-11. [Tema, mobile, PWA](#tema-mobile-pwa)
-12. [Glossário](#glossário)
+4. [Modal de uma tarefa (4 abas)](#modal-de-uma-tarefa-4-abas)
+5. [Criando, editando e movendo tarefas](#criando-editando-e-movendo-tarefas)
+6. [Filtros e busca](#filtros-e-busca)
+7. [Atalhos de teclado e command palette](#atalhos-de-teclado-e-command-palette)
+8. [Bulk actions na tabela](#bulk-actions-na-tabela)
+9. [Comentários](#comentários)
+10. [Checklist da tarefa](#checklist-da-tarefa)
+11. [Anexos (imagens via paste)](#anexos-imagens-via-paste)
+12. [Exportar (PDF / CSV)](#exportar-pdf--csv)
+13. [Login (quando ativado)](#login-quando-ativado)
+14. [Tema, mobile, PWA](#tema-mobile-pwa)
+15. [Glossário](#glossário)
 
 ---
 
@@ -260,7 +263,55 @@ Campos:
 |   | • Em andamento → em desenvolvimento · em homologação · em revisão · pronto p/ produção · em implantação |
 |   | • Bloqueado → bloqueado |
 |   | • Concluído → concluído |
-| **Tags** | Lista livre, lowercase, hífens. Filtráveis e clicáveis. |
+| **Tags** | Lista livre, lowercase, hífens. Filtráveis e clicáveis. (UI escondida atualmente — ver `HABILITAR_DEPOIS.md`.) |
+| **Checklist** | Lista de mini-tasks (`{ id, body, done }[]`). Colapsável no modal, contador done/total no header. Detalhes em [Checklist](#checklist-da-tarefa). |
+| **Visível ao cliente** | Boolean. Se `true`, task aparece no Portal cliente. Default `true` — exclua selecionando "—" não. |
+| **Anexos** | Imagens coladas via ⌘V/Ctrl+V (PNG/JPG/WebP até 2MB). Persistidas em Storage. Detalhes em [Anexos](#anexos-imagens-via-paste). |
+| **Reaberturas** | Contador automático (`reopen_count`) incrementado por trigger SQL quando task volta de `concluido`. Badge "reaberta Nx" no header do modal. |
+
+---
+
+## Modal de uma tarefa (4 abas)
+
+Quando você clica numa task, abre o **modal de detalhe** — header slate `#1f2937` + corpo em dois painéis (no desktop) ou 3 abas (no mobile + 4ª de anexos).
+
+### Header
+Da esquerda pra direita: **título** (editável inline) · **prioridade** (chip colorido) · **prazo** (chip âmbar com data) · **cliente** (chip cinza). À direita: indicador de **autosave** (debounce 800ms) e botão de fechar.
+
+### Painel esquerdo (mobile: aba "Detalhes")
+
+Ordem das seções, top→down:
+1. **Atribuição** — cliente · projeto · responsável · prioridade (grid 2×2)
+2. **Descrição** — textarea (suporta markdown render leve)
+3. **Checklist** — colapsável; default fechado. Abre auto se a task já tem itens. Detalhes em [Checklist](#checklist-da-tarefa).
+4. **Esforço** — complexidade · prazo · estimado (h) · realizado (h)
+5. **Metadata (sem título)** — Etapa (sub) · Visível ao cliente. Campo "Bloqueado por" aparece quando etapa = `bloqueado`.
+
+> Macro é derivada da sub automaticamente. Subetapa "concluído" leva pra macro `concluido`, etc.
+
+### Painel direito (mobile: abas Conversa · Anexos · Histórico)
+
+Três abas com contador:
+- **Conversa** — comentários + composer. Detalhes em [Comentários](#comentários).
+- **Anexos** — grid de imagens coladas. Detalhes em [Anexos](#anexos-imagens-via-paste).
+- **Histórico** — timeline unificada de mudanças de status + campos.
+
+### Footer
+
+4 botões: arquivar · excluir (admin only) · fechar · salvar.
+
+> **Autosave**: enquanto você edita campos de uma task existente, ela salva sozinha após 800ms de inatividade — indicador no header mostra dirty / saving / saved. O botão "salvar" continua existindo como fallback e também fecha o modal.
+
+### ESC encadeado
+
+ESC vai fechando do mais interno pro mais externo:
+1. Picker de @mention aberto → fecha picker
+2. Linha de checklist vazia em foco → remove a linha
+3. Linha de checklist com conteúdo em foco → blura (cancela edição da linha)
+4. Editando comentário (textarea aberto) → cancela
+5. Reply em foco → cancela reply
+6. Lightbox de anexo aberto → fecha lightbox
+7. Nada acima → fecha o modal (autosave já garantiu a persistência)
 
 ---
 
@@ -349,9 +400,24 @@ Abre busca global por:
 | `g c` | Ir pra Cadastros |
 | `g a` | Ir pra Adoption |
 | `?` | Abrir/fechar overlay com lista completa |
-| `Esc` | Fecha modal/palette/ajuda |
+| `⌘↵` / `Ctrl↵` | No composer de comentário/reply: envia. No edit-comment: salva. |
+| `Esc` | Encadeado: picker → linha-checklist-vazia → linha-checklist-com-texto → edit-comment → reply → lightbox → modal |
 
 Atalhos **não disparam** quando você está digitando em campos.
+
+### ESC encadeado (modal task)
+
+ESC sempre fecha **o mais interno primeiro**. A sequência completa:
+
+1. Picker de @-mention aberto → fecha picker, mantém modal aberto
+2. Linha de checklist em foco, **vazia** → remove a linha
+3. Linha de checklist em foco, **com texto** → tira o foco (cancela edição, mantém o texto)
+4. Comentário em edição (✎) → cancela a edição
+5. Reply ativa (caixa de resposta aberta) → cancela reply
+6. Lightbox de anexo aberto → fecha lightbox
+7. Nada acima ativo → fecha o modal (autosave já gravou)
+
+Isso evita acidentes — você raramente precisa apertar ESC 3 vezes pra fechar. Cada nível tem affordance visual antes.
 
 ---
 
@@ -373,12 +439,104 @@ Mover etapa em massa registra histórico corretamente quando há cruzamento de m
 
 ## Comentários
 
-Disponíveis no modal de edição:
+Aba **Conversa** no modal da task. Composer no rodapé, lista cronológica em cima.
 
-- Texto livre, suporte a quebras de linha
-- **Reply 1-nível**: pode responder a um comentário, mas não responder a uma resposta (anti-thread infinito)
-- Comentários do **Salesforce Chatter** entram automaticamente com badge **SF**
-- Histórico imutável; não dá pra editar/excluir comentários
+### Escrevendo
+
+- Texto livre com markdown leve (negrito, link, line break).
+- **Enviar**: clique no botão "comentar" ou ⌘↵ / Ctrl↵.
+- **Toggle "Visível ao cliente no Portal"** logo abaixo do textarea — marcado = comentário sobe pro Portal cliente. Desmarcado = só interno. Default segue o último uso na sessão.
+- **@mention** com 2 opções:
+  - Digite `@` direto no texto → picker abre inline, filtrado pelo que vier depois do `@`. Navegue com ↑↓, confirma com Enter ou Tab, ESC cancela. Clique no nome também funciona — o cursor volta pro textarea já posicionado depois do nome.
+  - Botão "@ mencionar" no rodapé do composer abre o mesmo picker manualmente.
+  - Mention dispara notificação pra pessoa (mesmo se for você mesmo — útil pra lembrete).
+  - Cliente externo não aparece no picker.
+
+### Visualizando comentários publicados
+
+Cada comentário mostra: avatar + autor + data + badge `cliente`/`SF` quando aplicável + **toggle "interno" / "externo"** (clica pra mudar visibilidade depois de postado). À direita do header: **✎ editar** e **✕ excluir** (quando você tem permissão).
+
+- **Editar**: só o **próprio autor**. Inline textarea com Salvar/Cancelar. ⌘↵ salva, ESC cancela. Aparece tag itálica "(editado)" ao lado da data depois.
+- **Excluir**: **autor ou admin**. Confirmação antes; respostas vão junto.
+- **SF/Chatter**: comentários sincronizados do Salesforce têm badge SF e são imutáveis (sem editar, sem excluir, sem toggle).
+- **Cliente externo**: badge "cliente", imutável pelo time interno (não dá pra mudar visibilidade — sempre `from_cliente=true`).
+
+### Reply (1 nível)
+
+Botão "↳ responder" abre textarea encadeada abaixo do comentário. Pode responder qualquer top-level mas não pode responder uma resposta (anti-thread infinito).
+
+- **Herança de visibilidade**: se o parent é visível ao cliente (ou veio do cliente), a resposta automaticamente herda `visivel_cliente=true`. Senão, fica interna. Mantém coerência: nunca uma resposta vaza pro Portal um contexto interno.
+- @mentions e ⌘↵ funcionam igual ao composer principal.
+
+### Notificações disparadas
+
+- **Mention** → pessoa mencionada recebe notif (sino + toast se online).
+- **Assignment**: quando um responsável muda, o novo recebe notif. (Não é via comentário, é via mudança de campo.)
+- **Comentário em task sua**: dono da task recebe notif quando alguém comenta.
+- **Cliente respondeu**: cliente externo posta no Portal ou marca "Já respondi" → responsável recebe notif `cliente_respondeu`.
+
+---
+
+## Checklist da tarefa
+
+Seção colapsável no painel esquerdo do modal (entre Descrição e Esforço). Cada item é uma mini-task com checkbox + texto.
+
+- **Default colapsado** quando a task ainda não tem itens. Quando já tem, abre automaticamente ao abrir o modal.
+- **Triângulo no título** (`▸` / `▾`) clica pra abrir/fechar. Contador `done/total` ao lado.
+- **Adicionar item**: botão "+ adicionar item" no rodapé da seção. O input recebe foco imediato.
+- **Checkbox done**: marca/desmarca. Linha riscada + opacity 60% quando done.
+- **Editar texto**: input inline sem borda — parece texto inline, hover/foco revela underline discreto. Sem necessidade de "salvar" — autosave da task pega.
+- **Atalhos dentro do checklist**:
+  - **Enter** numa linha → cria nova linha abaixo (e foca nela)
+  - **Backspace** em linha vazia → remove a linha
+  - **ESC** em linha vazia → remove a linha
+  - **ESC** em linha com conteúdo → blura (cancela foco, mantém texto)
+- **Persistência**: gravado em `tasks.checklist` (JSONB). Salva via autosave da task ou clique em "salvar" do footer.
+- **Realtime**: refresh em outra sessão pega as atualizações.
+
+> Sem realtime multi-user collaborative dentro do checklist — duas pessoas editando ao mesmo tempo pode dar conflito de last-write-wins. Caso real: combine antes ou edite em momentos diferentes.
+
+---
+
+## Anexos (imagens via paste)
+
+Aba **Anexos** no painel direito do modal. Pasta visual de prints, screenshots, mock-ups.
+
+### Como anexar
+
+- Tire o print (⌘⇧4 no Mac, Win+Shift+S no Windows).
+- Volte ao modal da task (qualquer aba).
+- Cole com **⌘V** / **Ctrl+V** em qualquer lugar do modal.
+- O app **redimensiona automaticamente** pra 1600px no maior lado, recomprime pra JPEG q=0.85 (ou mantém PNG se a fonte era PNG e <800KB).
+- Aparece um spinner "processando..." → "enviando..." → o thumb aparece no grid.
+
+### Limites
+
+- **Formato**: PNG, JPG, WebP. Outros formatos são ignorados ao colar (não dá erro, só passa direto).
+- **Tamanho**: 2MB final (depois do downscale). Maior que isso → toast de erro, peça um print menor.
+- **Storage**: bucket privado `task-attachments`. URLs assinadas com TTL 1h são geradas client-side toda vez que o modal abre.
+
+### Visualizando
+
+- Grid 2/3 colunas com thumbs quadrados.
+- **Hover** revela dimensões (W×H) + tamanho do arquivo + botão de excluir.
+- **Click no thumb** abre lightbox em tela cheia. Click no fundo escuro fecha; ESC também fecha (encadeado).
+
+### Excluindo
+
+- **Autor ou admin** podem excluir. Outros usuários não veem o `✕`.
+- Confirmação antes de excluir.
+- Storage object é removido junto (best-effort no client; órfãos eventuais são limpos pelo cron diário).
+
+### Cleanup automático
+
+Cron `cleanup-task-attachments-daily` roda **todo dia às 03:17 UTC** e apaga anexos (storage + rows) de tasks com status `concluido` há mais de **30 dias**. Mantém o bucket enxuto sem ação manual.
+
+### Cascade quando task é excluída
+
+- Excluir uma task pelo modal → anexos vão junto (cascade SQL + storage cleanup best-effort)
+- Bulk-delete múltiplas tasks → idem
+- Cliente/projeto não cascateia até a task (existing `ON DELETE RESTRICT` continua valendo — você precisa arquivar/excluir os filhos antes).
 
 ---
 
@@ -427,8 +585,9 @@ Se o login validar mas a pessoa não estiver cadastrada/convidada, banner vermel
 
 - **Tema**: ☾/☀ no topo. Respeita preferência do sistema na primeira visita.
 - **Mobile**: layout adapta. Barra de abas vira **dropdown** (botão com aba atual + ▾ abre lista completa). **Kanban some** (executiva pouco prática em tela pequena; usa Backlog). **Backlog vira lista de cards**. Filtros viram drawer. **Header compacto**: visível só logo, +Nova, sino e avatar — exportar, tema e manual ficam dentro do menu do avatar.
-- **PWA**: no iPhone, "Adicionar à tela de início" instala como app com ícone próprio.
-- **Realtime**: qualquer mudança feita por outra pessoa aparece pra você em segundos sem refresh.
+- **Modal de task no mobile**: vira sheet card com margem de 12px (respeita safe-area do iPhone pro home indicator). 4 abas no painel: **Detalhes** · **Conversa** · **Anexos** · **Histórico**. Altura é fixa (não pula entre abas).
+- **PWA**: no iPhone, "Adicionar à tela de início" instala como app com ícone próprio. Title da aba do navegador é "tasks 360".
+- **Realtime**: qualquer mudança feita por outra pessoa aparece pra você em segundos sem refresh — inclusive comentários novos, checklist, anexos e mudanças de etapa.
 - **Recarregar dados**: toca na **logo "tasks 360"** no canto superior esquerdo (a marca de 4 quadradinhos vai pulsar enquanto carrega). Útil no PWA onde refresh do navegador é difícil. Alternativas: F5 no navegador ou ⌘K → "Recarregar dados".
 
 ---
@@ -444,3 +603,10 @@ Se o login validar mas a pessoa não estiver cadastrada/convidada, banner vermel
 - **Sub-etapa / Nível 2** — granularidade real da etapa. Onde você opera no kanban operacional.
 - **Throughput** — número de tarefas concluídas em um período (7d, 30d, semanal).
 - **Visão executiva** vs **operacional** — toggle no kanban: macro 4 colunas read-only ou granular 11 colunas editável.
+- **Autosave** — após 800ms sem mexer na task aberta, salva sozinho. Indicador no header mostra `dirty` → `saving` → `saved` (ou `error`).
+- **Visível ao cliente** — flag em `tasks.visivel_cliente` (entra no Portal) e em `task_comments.visivel_cliente` (comentário sobe pro Portal).
+- **Reply herdando visibilidade** — se você responde uma pergunta do cliente, sua resposta automaticamente herda `visivel_cliente=true`. Inverso também: responder num thread interno mantém interno.
+- **Checklist** — `tasks.checklist` (JSONB). Array de `{ id, body, done }`. Inline na task, sem tabela separada.
+- **Anexos** — `task_attachments` (storage + linha). Cleanup automático 30d após task concluída. Cascade quando task é excluída.
+- **Edited timestamp** — `task_comments.edited_em` populated quando o autor edita. Mostra "(editado)" inline no header do comentário.
+- **ESC encadeado** — comportamento do ESC dentro do modal task. Documentado em [Atalhos](#atalhos-de-teclado-e-command-palette).

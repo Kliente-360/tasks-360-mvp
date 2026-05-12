@@ -37,7 +37,9 @@
 
 ### 1.3 Estado atual
 
-Em uso real. Time interno usa diariamente. Piloto cliente externo agendado pro Pão e Talho. ~100 tasks ativas distribuídas em 8 clientes. Auth (magic link) está temporariamente desligado por bugs — todo usuário é admin por default, gating já implementado mas inerte.
+Em uso real. v1.01.171 (maio/2026). Time interno usa diariamente. Piloto cliente externo iniciado. ~100 tasks ativas distribuídas em ~10 clientes. Auth (magic link) ligado e funcional desde a Onda 4 de polimento; magic link por email + Google SSO.
+
+**Recém-entregue (v1.01.167–171)**: modal de task com 4 abas (Detalhes/Conversa/Anexos/Histórico), checklist colapsável, anexos paste-only (imagens 2MB com downscale), edit/delete de comentários, Portal cliente com replies aninhados e herança de visibilidade, header reorganizado em charcoal (#1f2937) com ordem título/prio/prazo/cliente, ESC encadeado.
 
 ---
 
@@ -74,6 +76,12 @@ Quicksand        — usado em alguns lugares (kpi, font-brand) — INCONSISTENTE
 --muted: #7C8A82;        --line: #E8ECE8;
 --line-strong: #D4DAD4;
 
+/* charcoal · header do modal task (slate neutro pra não competir com o verde da marca) */
+--navy: #1f2937;         --navy-soft: #374151;
+
+/* cyan · "visível ao cliente" (badges externos, toggle no comment) */
+--cyan: #0084E1;         --cyan-soft: #E0F0FA;
+
 /* status semânticos (NÃO mexer em hue, são parte da linguagem) */
 --p0: #C8392B;  /* urgente, vermelho */
 --p1: #C77A1A;  /* alta, âmbar */
@@ -82,6 +90,8 @@ Quicksand        — usado em alguns lugares (kpi, font-brand) — INCONSISTENTE
 ```
 
 Variantes dark já configuradas — manter coerência ao revisar.
+
+**Decisão histórica (v1.01.152)**: header do modal task usa `--navy` charcoal em vez do verde da marca. Razão: muito verde simultâneo (logo + chips de status + brand-soft em vários elementos) competia com o conteúdo. Charcoal neutro = o título da task vira foco visual.
 
 ### 2.4 Espaçamento atual (a ser revisado)
 
@@ -102,6 +112,13 @@ Ad hoc. Mistura de `gap-2`, `gap-3`, `gap-4`, padding `p-3 md:p-5`, `py-3 md:py-
 - **`.tag-chip`**: chip de tag livre
 - **`.kcard`**: card do kanban
 - **`.kpi`**: bloco grande de KPI (no Dashboard)
+- **`.tmodal`** family: modal de task com sub-classes `.tmodal-head` (charcoal), `.tmodal-body`, `.tmodal-left`, `.tmodal-right`, `.tmodal-foot`, `.tmodal-section`, `.tmodal-section-title`, `.tmodal-thread` (lista de comments/history), `.tmodal-composer`, `.tmodal-tabs` (desktop)/`.tmodal-mobile-tabs` (mobile)
+- **`.cmsg`** family: comment card com `.cmsg-head`, `.cmsg-avatar`, `.cmsg-who`, `.cmsg-badge`, `.cmsg-when`, `.cmsg-body` — modifier `.from-cliente` muda accent
+- **`.checklist-line`**: input sem borda; hover/foco revelam underline discreto (transição border-color 120ms). Usa cor `--ink` + placeholder italic muted.
+- **`.head-chip`**: chip secundário do header do modal task (prio chip, prazo chip, cliente chip)
+- **`.autosave`**: badge "salvo/salvando/dirty/error" no header do modal, com dot pulsante
+- **`.btn-foot`**: variante de botão pro footer do modal (mobile: flex 1 1 0, min-height 44px)
+- **`.btn-txt`**: span dentro de botão com text-transform normal (em contraponto a `.lbl` que tem uppercase)
 
 ---
 
@@ -144,8 +161,8 @@ Ad hoc. Mistura de `gap-2`, `gap-3`, `gap-4`, padding `p-3 md:p-5`, `py-3 md:py-
 
 ### 4.1 Header (sticky top)
 
-- Logo "tasks 360" + tagline
-- Botões: ↓ exportar · ? manual · ☾ tema · | · + Nova tarefa · avatar (auth on)
+- Logo "tasks 360" + tagline + APP_VERSION discreto
+- Botões: ↓ exportar · ? manual · ☾ tema · | · + Nova tarefa · sino notificações · avatar
 - Tabs row (desktop) ou dropdown (mobile)
 
 **JTBD**: navegar rápido, não distrair.
@@ -224,14 +241,24 @@ Ad hoc. Mistura de `gap-2`, `gap-3`, `gap-4`, padding `p-3 md:p-5`, `py-3 md:py-
 
 ### 4.10 Componentes flutuantes
 
-- **Modal task**: título + 11 campos + comentários + histórico
+- **Modal task** (two-pane desktop, 3-tab mobile + 4ª aba anexos):
+  - **Header charcoal `#1f2937`** com ordem: título · prio · prazo · cliente · autosave indicator · ✕ fechar
+  - **Painel esquerdo** (mobile aba "Detalhes"): Atribuição → Descrição → Checklist (colapsável) → Esforço → Metadata
+  - **Painel direito** (mobile abas Conversa · Anexos · Histórico): tabs com contadores
+  - **Composer de comentário** (rodapé do painel direito quando Conversa/Anexos): textarea + toggle visível ao cliente + @mencionar + ⌘↵ envia
+  - **Lightbox de anexo** (z-index 60): full-screen com fundo `bg-black/85`
+  - **Footer**: arquivar · excluir · fechar · salvar (mobile: 4 botões distribuídos full-width com safe-area)
 - **Modal pessoa**: nome + email + perfil + cliente vinculado
+- **Modal cliente**: nome + tier (estratégico/recorrente/transacional) + tipo (implantação/sustentação/discovery)
+- **Modal projeto**: nome + cliente + tipo + sla_resposta_horas + sla_entrega_dias + orcamento_horas
 - **Modal renomear / confirm** (genéricos)
-- **Command palette (⌘K)**: input + resultados (tarefa/cliente/projeto/pessoa/ação) + footer
+- **Command palette (⌘K)**: input + resultados (tarefa/cliente/projeto/pessoa/ação) + footer com hint
 - **Atalhos overlay (?)**: tabela de atalhos
 - **Manual overlay**: TOC + markdown renderizado
-- **Bulk actions bar**: fixed bottom no Backlog
-- **Toasts**: bottom-right
+- **Bulk actions bar**: fixed bottom no Backlog (mover etapa · atribuir · prioridade · excluir)
+- **Toasts**: bottom-right (success/error/info, autodismiss 4s)
+- **Picker de @-mention**: dropdown absoluto com keyboard nav (↑↓ Enter Tab Esc), filtragem por substring, hover/active hover styling
+- **Sino de notificações**: dropdown abrindo painel à direita com últimas 50, agrupado por kind (mention/assignment/cliente_respondeu)
 - **PDF executivo**: layout dedicado em A4 (print-only)
 
 ---

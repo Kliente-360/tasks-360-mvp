@@ -1,6 +1,8 @@
 # tasks 360 — guia de onboarding
 
 > Três perspectivas da mesma ferramenta. Leia a sua, dê uma passada de olho nas outras.
+>
+> **Versão atual**: v1.01.171 · maio/2026. Para o manual técnico de cada feature, ver [`HOWTO.md`](./HOWTO.md). Para conceito geral, ver [`README.md`](./README.md).
 
 ---
 
@@ -71,6 +73,13 @@ O tasks 360 é a fonte de verdade do que está rolando na operação. Você não
 - Não abrir 50 abas de "ideias" no app. Use Notion/Drive pra exploração; tasks 360 é só o que está em execução.
 - Não usar pra micro-gestão ("cliquei na task do Fulano de manhã pra ver se ele já mexeu"). O Dashboard responde isso sem precisar abrir task.
 - Não trocar os critérios de heurística sem alinhar. São determinísticos por design.
+
+## Novidades recentes (v1.01.167–171)
+
+- **Anexos por task**: ⌘V cola prints direto no modal. Você não precisa anexar nada — mas vai ver no Anexos das tasks que o time documentou visualmente. Cleanup automático de 30d após `concluido`.
+- **Checklist por task**: mini-tasks dentro da task (colapsável). Útil pra ver granularidade sem inflar o backlog. Contador done/total no header da seção.
+- **Editar/excluir comentário**: agora o autor edita (✎) e admin/autor exclui (✕). Útil pra corrigir typo sem fantasma de "x respondeu duas vezes".
+- **Portal cliente com replies aninhados**: ao responder o cliente no Portal, sua resposta herda a visibilidade do thread automaticamente. Sem risco de vazar contexto interno.
 
 ---
 
@@ -159,6 +168,18 @@ Você é a pessoa que mais usa o app no dia-a-dia depois dos analistas.
 - **Não fechar task que não foi entregue** — analista preenche `tempo_real_horas` antes de marcar done. Sem isso, você não consegue medir nada.
 - **Não usar P0 pra tudo**. Se tudo é P0, nada é. P0 é raro.
 
+## Novidades recentes (v1.01.167–171)
+
+- **Modal de task reorganizado**: ordem agora é **Atribuição → Descrição → Checklist → Esforço → Metadata**. Esforço perdeu o título "Esforço · prazo"; Metadata virou sem título. Hábito vai aderir rápido.
+- **Checklist colapsável**: pra quando uma task precisa quebrar em 3-5 mini-passos sem virar 3-5 tasks. Default fechado; abre auto se já tem itens. Enter cria próximo, ESC em linha vazia remove. **Não substitui** sub-tarefas reais — se vai dar +4h ou se outra pessoa pega o item, crie task de verdade.
+- **Comentários ricos**:
+  - Edit (autor) e delete (autor + admin) — "(editado)" inline pra rastrear.
+  - Toggle interno/externo direto no header do comentário publicado — repensou se quer mostrar pro cliente, clica.
+  - Reply herda visibilidade do parent automaticamente. Se o cliente perguntou (público), sua resposta vai pro Portal. Se o thread é interno, sua resposta fica interna. Sem clicar checkbox toda vez.
+- **Anexos paste-only**: ⌘V em qualquer aba do modal anexa o print. Útil pra documentar bug, registrar entrega, mostrar evolução.
+- **Mobile dedicado**: modal de task vira sheet card com safe-area do home indicator. 4 abas mobile: Detalhes · Conversa · Anexos · Histórico (com contador em cada).
+- **ESC encadeado**: dentro do modal task, ESC fecha o mais interno primeiro (picker @mention → linha checklist vazia → reply → lightbox → modal). Quase nunca apertar 3x.
+
 ---
 
 # Analista · execução
@@ -243,10 +264,23 @@ A regra de ouro: **se mexeu, atualiza**. Status desatualizado prejudica todo mun
 
 - **Não fechar task sem `tempo_real_horas`**. Mata o aprendizado coletivo.
 - **Não deixar tudo em `fazendo`**. Use `aguardando cliente` / `bloqueado` / `revisão` quando for o caso.
-- **Não comentar em público sem checar** — `visivel_cliente` vai pro Portal. Em dúvida, interno.
+- **Não comentar em público sem checar** — `visivel_cliente` vai pro Portal. Em dúvida, interno (e depois você pode trocar no header se mudar de ideia).
 - **Não criar tag nova com nome quase igual** ("Frontend" vs "frontend" vs "front"). Use a sugerida.
 - **Não usar comentário pra discussão longa de design**. Discussão vai em call ou Notion; comentário é registro.
 - **Não trocar prazo sem comentário**. Histórico mostra a mudança, mas o "por quê" some se você não escrever.
+
+## Novidades recentes (v1.01.167–171)
+
+- **Checklist na task**: ao invés de criar 5 tasks pequenas pra um trabalho que cabe numa só, abre a seção Checklist no modal e lista os passos. Marca conforme avança — linha riscada visualmente. Útil pra documentar "como fiz" e pra deixar pro próximo: "faltou o passo 4".
+- **Anexa print colando**: ⌘V (Mac) ou Ctrl+V (Win) em qualquer lugar do modal cola a imagem da clipboard. App redimensiona pra 1600px e comprime. Excelente pra:
+  - Bug que o cliente mandou — cola o print junto da descrição.
+  - Antes/depois — anexa dois prints lado a lado.
+  - Evidência de entrega — print final no Anexos antes de marcar `done`.
+- **Editar comentário próprio**: errou typo? Clica no ✎ no header do comentário. Edita inline, ⌘↵ salva, ESC cancela. "(editado)" inline indica que foi mexido.
+- **Excluir comentário**: você (autor) ou admin podem. Útil pra apagar comentário duplicado ou postado na task errada.
+- **Comentar pro cliente ficou mais claro**: o toggle "Visível ao cliente no Portal" troca em tempo real e aparece no header (`interno` / `externo`). Pode clicar pra alternar mesmo depois de publicar.
+- **Resposta ao cliente herda visibilidade**: respondeu no thread público → vira público automático. Respondeu num thread interno → fica interno. Menos chance de vazar contexto.
+- **@-self serve de lembrete**: a partir da v1.01.159, mencionar-se a si próprio também dispara notificação (sino). Use pra deixar um "me lembra" amanhã.
 
 ---
 
