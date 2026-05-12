@@ -2691,13 +2691,24 @@
           <div class="border-t border-line pt-4">
             <div class="text-[10px] uppercase tracking-wider text-muted font-mono mb-2">Conversa</div>
             <div class="space-y-3 mb-4">
-              <template x-for="c in portalTaskComments" :key="c.id">
-                <div class="pl-3 py-1 border-l-2" :style="c.from_cliente ? 'border-color: #b45309' : 'border-color: var(--brand)'">
-                  <div class="flex items-center justify-between gap-2 text-xs">
-                    <span class="font-medium text-ink" x-text="c.author || '—'"></span>
-                    <span class="text-muted font-mono" x-text="fmtPostedEm(c.posted_em || c.criado_em)"></span>
+              <template x-for="c in portalTopLevelComments" :key="c.id">
+                <div>
+                  <div class="pl-3 py-1 border-l-2" :style="c.from_cliente ? 'border-color: #b45309' : 'border-color: var(--brand)'">
+                    <div class="flex items-center justify-between gap-2 text-xs">
+                      <span class="font-medium text-ink" x-text="c.author || '—'"></span>
+                      <span class="text-muted font-mono" x-text="fmtPostedEm(c.posted_em || c.criado_em)"></span>
+                    </div>
+                    <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-html="renderCommentBody(c.body)"></div>
                   </div>
-                  <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-html="renderCommentBody(c.body)"></div>
+                  <template x-for="r in portalRepliesOf(c.id)" :key="r.id">
+                    <div class="pl-3 py-1 border-l-2 mt-2 ml-5" :style="r.from_cliente ? 'border-color: #b45309' : 'border-color: var(--brand)'">
+                      <div class="flex items-center justify-between gap-2 text-xs">
+                        <span class="font-medium text-ink" x-text="r.author || '—'"></span>
+                        <span class="text-muted font-mono" x-text="fmtPostedEm(r.posted_em || r.criado_em)"></span>
+                      </div>
+                      <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-html="renderCommentBody(r.body)"></div>
+                    </div>
+                  </template>
                 </div>
               </template>
               <div x-show="portalTaskComments.length === 0" class="text-xs text-muted italic">Nenhum comentário ainda.</div>
@@ -5134,6 +5145,12 @@ function app() {
     repliesOf(parentId) {
       return this.editingComments.filter(c => c.parent_id === parentId);
     },
+    portalRepliesOf(parentId) {
+      return this.portalTaskComments.filter(c => c.parent_id === parentId);
+    },
+    get portalTopLevelComments() {
+      return this.portalTaskComments.filter(c => !c.parent_id);
+    },
     get topLevelComments() {
       // top-level: parent_id null. Mais recente primeiro.
       return this.editingComments
@@ -5162,19 +5179,24 @@ function app() {
       if (!body || !this.editing.id || !parentId) return;
       const author = (this.currentPessoa && this.currentPessoa.nome) || 'app';
       const authorPessoaId = (this.currentPessoa && this.currentPessoa.id) || null;
+      // Herda visibilidade do parent: se o cliente perguntou (visivel_cliente=true),
+      // a resposta também precisa aparecer pro cliente. Senão fica interna.
+      const parent = this.editingComments.find(x => x.id === parentId);
+      const visivel = !!(parent && parent.visivel_cliente);
       const tempId = 'tmp-' + Math.random().toString(36).slice(2, 8);
       const optimistic = {
         id: tempId, parent_id: parentId, author, body,
         author_pessoa_id: authorPessoaId,
         external_source: null, posted_em: null,
         criado_em: new Date().toISOString(),
+        visivel_cliente: visivel, from_cliente: false,
       };
       this.editingComments = [...this.editingComments, optimistic];
       this.newReply = '';
       this.replyingToId = '';
       const { data, error } = await sb.from('task_comments')
-        .insert({ task_id: this.editing.id, parent_id: parentId, author, body, author_pessoa_id: authorPessoaId })
-        .select('id, parent_id, author, body, author_pessoa_id, external_source, posted_em, criado_em')
+        .insert({ task_id: this.editing.id, parent_id: parentId, author, body, author_pessoa_id: authorPessoaId, visivel_cliente: visivel, from_cliente: false })
+        .select('id, parent_id, author, body, author_pessoa_id, external_source, posted_em, criado_em, visivel_cliente, from_cliente')
         .single();
       if (error) {
         this.editingComments = this.editingComments.filter(c => c.id !== tempId);
