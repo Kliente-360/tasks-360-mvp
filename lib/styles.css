@@ -1533,6 +1533,19 @@
     color: var(--ink); background: var(--surface-1);
   }
   .tmodal-composer textarea:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
+  /* Hint discreto de atalhos (antes inline no placeholder, longo demais).
+     Aparece só quando textarea vazio — some quando começa a digitar. */
+  .tmodal-composer-hint {
+    margin-top: 4px; font-size: 11px; color: var(--muted);
+    font-family: var(--font-sans);
+  }
+  .tmodal-composer-hint kbd {
+    display: inline-block; padding: 1px 5px; margin: 0 1px;
+    font-family: var(--font-mono); font-size: 10px;
+    background: var(--surface-3); color: var(--ink-soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    line-height: 1.4;
+  }
   .tmodal-composer-row {
     display: flex; align-items: center; gap: var(--sp-3);
     margin-top: var(--sp-2);

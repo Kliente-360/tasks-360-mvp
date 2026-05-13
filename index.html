@@ -3350,12 +3350,12 @@
             </div>
           </template>
           <div x-show="!editing.id" class="text-xs text-muted italic py-3">Comentários aparecem após salvar a tarefa.</div>
-          <div x-show="editing.id && editingComments.length === 0" class="text-xs text-muted italic py-3">Sem comentários ainda.</div>
+          <div x-show="editing.id && editingComments.length === 0" class="text-xs text-muted italic py-3">Sem comentários ainda. Escreva o primeiro abaixo ↓</div>
         </div>
 
         <div x-show="editing.id && modalTab !== 'historico' && modalTab !== 'anexos'" class="tmodal-composer"
              @click.outside="mentionPickerFor==='newComment' && (mentionPickerFor='')">
-          <textarea x-model="newComment" placeholder="Escrever comentário… (⌘↵ envia · digite @ pra mencionar)"
+          <textarea x-model="newComment" placeholder="Escrever comentário…"
                     x-ref="newCommentTa"
                     @input="onMentionInput('newComment', $event)"
                     @keydown.arrow-down="mentionPickerFor==='newComment' && ($event.preventDefault(), _mentionMove(1))"
@@ -3363,6 +3363,9 @@
                     @keydown.enter="if (mentionPickerFor==='newComment') { $event.preventDefault(); _mentionPickActive('newComment'); }"
                     @keydown.tab="if (mentionPickerFor==='newComment') { $event.preventDefault(); _mentionPickActive('newComment'); }"
                     @keydown.meta.enter.prevent="postComment()" @keydown.ctrl.enter.prevent="postComment()"></textarea>
+          <div class="tmodal-composer-hint" x-show="!newComment">
+            <kbd>⌘</kbd><kbd>↵</kbd> envia · <kbd>@</kbd> menciona
+          </div>
           <div class="tmodal-composer-row">
             <label class="toggle text-[11px] select-none" :class="newCommentPublico ? 'text-brand-dark font-medium' : 'text-muted hover:text-ink'" title="Marque pra publicar este comentário no Portal do cliente. Sem marcar fica apenas interno.">
               <input type="checkbox" x-model="newCommentPublico">
