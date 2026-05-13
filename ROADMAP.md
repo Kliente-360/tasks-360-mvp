@@ -916,6 +916,75 @@ Thresholds que provavelmente vão precisar ajuste quando rodar com dado real:
 
 Quando 3+ thresholds virarem pedido recorrente de ajuste, criar tabela `heuristic_settings` (key, value, scope=global|workspace). Por agora todos hardcoded — preferível.
 
+### WhatsApp digest (parking lot · pra avaliar quando o single-file estiver modularizado)
+
+Engajamento push pra gestor de agência brasileira via WhatsApp. **Plano discutido em mai/2026, sem ação imediata.** Reabrir quando: (a) modularização estiver concluída, (b) primeira feature de IA validada, (c) ≥3 gestores externos pedirem.
+
+**Por que WhatsApp e não Slack/Email**
+
+- Gestor BR abre WhatsApp 30x/dia, email 3x. Push real.
+- Diferenciação: nenhum PSA (Productive, Scoro, Asana) faz WhatsApp nativo BR.
+- Trade-off: custo por mensagem + compliance Meta.
+
+**Conteúdo proposto (domingo 18h America/Sao_Paulo)**
+
+```
+🟢 Kliente 360 · semana 19/mai
+
+✅ 7 entregas esta semana
+⚠️ 2 itens aguardando você
+📅 Próxima entrega: amanhã (Refazer onboarding)
+
+🔴 alerta: Drieli em 130% W0
+🟡 sustentação VB estourando esta semana
+
+→ Ver no portal: kliente360.app/portal
+```
+
+Curto, scaneable em 5s no celular.
+
+**Stack técnica**
+
+| Camada | Escolha | Por quê |
+|---|---|---|
+| API | Twilio WhatsApp Business (Meta direto se quiser -30% custo) | Mais fácil que Meta direto. ~$0.005-0.05/msg (template iniciado). |
+| Trigger | `pg_cron` (domingo 18h) | Já habilitado no projeto |
+| Compute | Edge Function `send-whatsapp-digest` | Mesmo padrão de `ingest-task` |
+| Formato msg | Template approved no Meta | Obrigatório fora de janela de 24h. 3-5 dias pra aprovar |
+| Storage | `pessoas.whatsapp_number` (E.164 BR) + `pessoas.whatsapp_digest_enabled` boolean | 2 colunas novas |
+| Opt-in | Toggle em Configs (LGPD) | Self-serve, não admin-forçado |
+| Audit | `notifications` row com `kind='whatsapp_digest_sent'` | Idempotência + reprocessamento |
+
+**3 momentos pra mandar (não só digest)**
+
+1. **Digest semanal** (domingo 18h) — opted-in. Resumo do Briefing.
+2. **Alerta cliente** (real-time) — quando cliente externo bloqueia uma task ("aguardando você há X dias"). Só pra pessoa marcada como responsável.
+3. **Mention** (real-time) — quando alguém te @-mencionou numa task. Mesmo trigger das notificações in-app, mais um destino.
+
+**Pegadinhas / compliance**
+
+- **Template approval Meta**: 3-5 dias úteis. Não dá pra texto livre — só variáveis dentro do template aprovado.
+- **Janela de 24h**: usuário precisa interagir com o número pra abrir janela de mensagens livres. Templates iniciam janela.
+- **LGPD**: opt-in explícito, não inferido. Tela de configurações com toggle e link pra política.
+- **Rate limit Twilio**: ~1 msg/s no sandbox, mais no plano pago. Pra digest semanal cabe folgado.
+
+**Custo estimado**
+
+Cenário: 10 agências × 5 gestores × 1 digest/semana = 50 msgs/semana.
+- Digest semanal: 200 msgs/mês × $0.05 = **~$10/mês**
+- Alertas real-time (~100 msgs/mês): **~$5/mês**
+- **Total: ~$15/mês** com 10 agências ativas. Repassável no plano premium ou absorvido.
+
+**Decisões em aberto (resolver antes de implementar)**
+
+1. **Twilio vs Meta direto?** Twilio +simples / Meta -30% custo.
+2. **Template fixo vs personalizado?** Fixo mais barato, personalizado pede mais aprovações.
+3. **Quem decide quem recebe?** Self-serve via Configs (Recomendado) vs admin-pushed.
+4. **Que momentos? Só digest, ou também alertas real-time?** Real-time tem mais valor, custa mais.
+5. **Plano free tem ou só pago?** Diferenciação comercial.
+
+**Estimativa de esforço**: 3 dias quando rodar. 1d Twilio + template approval, 1d edge function + cron, 1d UI opt-in + telemetria.
+
 ### Onda 5+ — Diferenciação com IA
 
 **Objetivo**: usar a história acumulada do app para virar diferencial competitivo.
