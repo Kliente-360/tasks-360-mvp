@@ -247,7 +247,7 @@
         <button class="btn btn-ghost btn-icon text-xs" @click="userMenuOpen=!userMenuOpen" :title="currentPessoa && currentPessoa.nome" aria-label="Conta">
           <span class="w-6 h-6 rounded-full bg-brand-soft text-brand font-brand font-semibold text-xs flex items-center justify-center" x-text="currentPessoa ? currentPessoa.nome.charAt(0).toUpperCase() : '?'"></span>
         </button>
-        <div x-show="userMenuOpen" x-transition.opacity class="fixed md:absolute top-14 md:top-full right-3 md:right-0 mt-0 md:mt-1 bg-elev border border-line rounded-md shadow-xl py-2 w-[260px] max-w-[calc(100vw-24px)] md:w-[220px] z-50">
+        <div x-show="userMenuOpen" x-transition.opacity class="fixed md:absolute top-14 md:top-full right-3 md:right-0 mt-0 md:mt-1 bg-elev border border-line rounded-md shadow-xl py-2 w-[260px] max-w-[calc(100vw-24px)] md:w-[260px] z-50">
           <div class="px-3 py-1 text-xs text-muted">logado como</div>
           <div class="px-3 pb-2 text-sm font-medium text-ink" x-text="currentPessoa && currentPessoa.nome"></div>
           <div class="px-3 pb-2 text-[11px] text-muted font-mono truncate" x-text="session && session.user && session.user.email"></div>
@@ -267,21 +267,26 @@
               </div>
             </template>
             <div class="border-t border-line my-1"></div>
-            <button class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-brand-tint" @click="toggleTheme(); userMenuOpen=false">
+            <button class="flex w-full items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-brand-tint" @click="toggleTheme(); userMenuOpen=false">
               <span>Tema</span>
-              <span class="text-muted text-xs" x-text="theme==='dark' ? 'escuro · trocar' : 'claro · trocar'"></span>
+              <span class="text-muted text-xs whitespace-nowrap" x-text="theme==='dark' ? 'escuro · trocar' : 'claro · trocar'"></span>
             </button>
-            <button class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-brand-tint" @click="openHelp(); userMenuOpen=false">
-              <span x-text="viewerRole === ROLE.CLIENTE ? 'Ajuda' : 'Manual da ferramenta'"></span>
-              <span class="text-muted text-xs">?</span>
+            <button class="flex w-full items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-brand-tint" @click="openHelp(); userMenuOpen=false">
+              <span class="whitespace-nowrap" x-text="viewerRole === ROLE.CLIENTE ? 'Ajuda' : 'Manual da ferramenta'"></span>
+              <span class="text-muted text-xs whitespace-nowrap">?</span>
             </button>
           </div>
           <template x-if="viewerRole !== ROLE.CLIENTE">
             <div>
               <div class="border-t border-line my-1"></div>
-              <button class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-brand-tint" @click="openOnboarding(); userMenuOpen=false">
-                <span>Guia de onboarding</span>
-                <span class="text-muted text-xs">3 perspectivas</span>
+              <!-- Cadastros saiu da tab bar; vive aqui pra liberar espaço horizontal -->
+              <button x-show="viewerRole === ROLE.ADMIN" class="flex w-full items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-brand-tint" @click="goToTab('cad'); userMenuOpen=false">
+                <span>Cadastros</span>
+                <span class="text-muted text-xs whitespace-nowrap">clientes · projetos · pessoas</span>
+              </button>
+              <button class="flex w-full items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-brand-tint" @click="openOnboarding(); userMenuOpen=false">
+                <span class="whitespace-nowrap">Guia de onboarding</span>
+                <span class="text-muted text-xs whitespace-nowrap">3 perfis</span>
               </button>
             </div>
           </template>
