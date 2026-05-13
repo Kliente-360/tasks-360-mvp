@@ -325,10 +325,39 @@
 
 <!-- ============ MEU FOCO ============ -->
 <section x-show="tab==='foco'" class="fade-up">
-  <!-- Selector "atuando como" só pra admin (interno usa próprio currentPessoa) -->
-  <div x-show="viewerRole === ROLE.ADMIN" class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 mb-5 md:mb-6">
-    <select class="inp w-full md:w-[240px]" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
-      <option value="">— atuando como (admin pode simular) —</option>
+  <!-- Page bar: narrativa (counts) + selector "atuando como" (só admin) -->
+  <div class="page-bar hidden md:flex">
+    <div class="page-bar-info">
+      <span class="page-bar-narrative" x-show="effectiveFocusPessoaId">
+        Foco de <strong x-text="nomePessoa(effectiveFocusPessoaId)"></strong>
+        <span class="page-bar-metrics" style="margin-left:8px"
+              x-show="focusGroups.atrasadas.length + focusGroups.hoje.length + focusGroups.bloqueadas.length > 0">
+          <strong x-show="focusGroups.atrasadas.length" x-text="focusGroups.atrasadas.length"></strong><span x-show="focusGroups.atrasadas.length">&nbsp;atrasadas</span>
+          <span x-show="focusGroups.atrasadas.length && focusGroups.hoje.length">&nbsp;·&nbsp;</span>
+          <strong x-show="focusGroups.hoje.length" x-text="focusGroups.hoje.length"></strong><span x-show="focusGroups.hoje.length">&nbsp;para hoje</span>
+          <span x-show="(focusGroups.atrasadas.length || focusGroups.hoje.length) && focusGroups.bloqueadas.length">&nbsp;·&nbsp;</span>
+          <strong x-show="focusGroups.bloqueadas.length" x-text="focusGroups.bloqueadas.length"></strong><span x-show="focusGroups.bloqueadas.length">&nbsp;bloqueadas</span>
+        </span>
+      </span>
+      <span class="page-bar-narrative text-muted font-normal" x-show="!effectiveFocusPessoaId && viewerRole === ROLE.ADMIN">
+        Selecione uma pessoa →
+      </span>
+      <span class="page-bar-narrative text-muted font-normal" x-show="!effectiveFocusPessoaId && viewerRole !== ROLE.ADMIN">
+        Foco indisponível
+      </span>
+    </div>
+    <div class="page-bar-controls" x-show="viewerRole === ROLE.ADMIN">
+      <select class="inp w-[200px]" :class="focusPessoaId && 'is-active'" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
+        <option value="">atuando como…</option>
+        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+      </select>
+    </div>
+  </div>
+
+  <!-- Mobile: selector empilhado -->
+  <div x-show="viewerRole === ROLE.ADMIN" class="md:hidden mb-4">
+    <select class="inp w-full" :class="focusPessoaId && 'is-active'" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
+      <option value="">— atuando como —</option>
       <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
   </div>
@@ -1493,9 +1522,27 @@
 
 <!-- ============ PORTAL DO CLIENTE ============ -->
 <section x-show="tab==='portal'" class="fade-up">
-  <!-- Selector cliente (visível pra admin/interno; cliente real veria seu próprio cliente automaticamente) -->
-  <div x-show="viewerRole !== 'cliente'" class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 mb-5 md:mb-6">
-    <select class="inp w-full md:w-[260px]" x-model="portalClienteId" @change="setPortalCliente($event.target.value)">
+  <!-- Page bar: narrativa (cliente atual) + selector "visualizar como" (admin/interno) -->
+  <div class="page-bar hidden md:flex" x-show="viewerRole !== 'cliente'">
+    <div class="page-bar-info">
+      <span class="page-bar-narrative" x-show="effectivePortalClienteId">
+        Portal de <strong x-text="portalCliente && portalCliente.nome"></strong>
+      </span>
+      <span class="page-bar-narrative text-muted font-normal" x-show="!effectivePortalClienteId">
+        Selecione um cliente →
+      </span>
+    </div>
+    <div class="page-bar-controls">
+      <select class="inp w-[220px]" :class="portalClienteId && 'is-active'" x-model="portalClienteId" @change="setPortalCliente($event.target.value)">
+        <option value="">visualizar como cliente…</option>
+        <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+      </select>
+    </div>
+  </div>
+
+  <!-- Mobile: selector empilhado (cliente real não vê este selector) -->
+  <div x-show="viewerRole !== 'cliente'" class="md:hidden mb-4">
+    <select class="inp w-full" :class="portalClienteId && 'is-active'" x-model="portalClienteId" @change="setPortalCliente($event.target.value)">
       <option value="">— visualizar como cliente —</option>
       <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
     </select>
