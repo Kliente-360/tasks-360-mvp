@@ -821,14 +821,14 @@
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" :class="f.cliente && 'is-active'" x-model="f.cliente">
-        <option value="">Todos os clientes</option>
+        <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto">
-        <option value="">Todos os projetos</option>
+        <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <!-- Contextual: opção não-selecionada mostra "Cliente · Projeto"; selecionada mostra só Projeto.
              Resultado: select fechado lê curto, dropdown aberto lê contexto completo. -->
@@ -839,7 +839,7 @@
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
-        <option value="">Todas as pessoas</option>
+        <option value="">Pessoas</option>
         <option value="__empty__">— sem responsável</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
@@ -866,7 +866,7 @@
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" :class="(f.status && f.status !== 'abertas') && 'is-active'" x-model="f.status">
         <option value="abertas">Abertas (sem concluídas)</option>
-        <option value="">Todos os status</option>
+        <option value="">Status</option>
         <option value="backlog">Backlog</option>
         <option value="andamento">Em andamento</option>
         <option value="bloqueado">Bloqueado</option>
@@ -875,7 +875,7 @@
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'" x-show="allTags.length>0">
       <select class="inp" :class="f.tag && 'is-active'" x-model="f.tag">
-        <option value="">Todas as tags</option>
+        <option value="">Tags</option>
         <option value="__empty__">— sem tags</option>
         <template x-for="t in allTags" :key="t"><option :value="t" x-text="'#' + t"></option></template>
       </select>
@@ -1134,17 +1134,17 @@
   <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 md:gap-3 mb-5 md:mb-6">
     <div class="flex flex-col md:flex-row gap-2 md:gap-3">
       <select class="inp w-full md:w-[200px]" :class="f.cliente && 'is-active'" x-model="f.cliente">
-        <option value="">Todos os clientes</option>
+        <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
       <select class="inp w-full md:w-[200px]" :class="f.projeto && 'is-active'" x-model="f.projeto">
-        <option value="">Todos os projetos</option>
+        <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
       </select>
       <select class="inp w-full md:w-[180px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
-        <option value="">Todos os responsáveis</option>
+        <option value="">Responsáveis</option>
         <option value="__empty__">— sem responsável</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
@@ -1277,17 +1277,17 @@
     </div>
     <div class="page-actions">
       <select class="inp text-xs py-1.5 w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente">
-        <option value="">Todos os clientes</option>
+        <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
       <select class="inp text-xs py-1.5 w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto">
-        <option value="">Todos os projetos</option>
+        <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
       </select>
       <select class="inp text-xs py-1.5 w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
-        <option value="">Todos os responsáveis</option>
+        <option value="">Responsáveis</option>
         <option value="__empty__">— sem responsável</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
@@ -1297,17 +1297,17 @@
   <!-- Mobile: filtros stack -->
   <div class="flex flex-col gap-2 mb-5 md:hidden">
     <select class="inp" :class="f.cliente && 'is-active'" x-model="f.cliente">
-      <option value="">Todos os clientes</option>
+      <option value="">Clientes</option>
       <option value="__empty__">— sem cliente</option>
       <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
     </select>
     <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto">
-      <option value="">Todos os projetos</option>
+      <option value="">Projetos</option>
       <option value="__empty__">— sem projeto</option>
       <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
     </select>
     <select class="inp" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
-      <option value="">Todos os responsáveis</option>
+      <option value="">Responsáveis</option>
       <option value="__empty__">— sem responsável</option>
       <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
@@ -1719,17 +1719,17 @@
     </div>
     <div class="page-actions">
       <select class="inp text-xs py-1.5 w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
-        <option value="">Todos os clientes</option>
+        <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
       <select class="inp text-xs py-1.5 w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto" @change="$nextTick(()=>renderCharts())">
-        <option value="">Todos os projetos</option>
+        <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
       </select>
       <select class="inp text-xs py-1.5 w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
-        <option value="">Todos os responsáveis</option>
+        <option value="">Responsáveis</option>
         <option value="__empty__">— sem responsável</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
@@ -1771,17 +1771,17 @@
        Mobile mantém a row aqui pra não amontoar com o título compacto. -->
   <div class="flex flex-col gap-2 mb-5 md:hidden">
     <select class="inp" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
-      <option value="">Todos os clientes</option>
+      <option value="">Clientes</option>
       <option value="__empty__">— sem cliente</option>
       <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
     </select>
     <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto" @change="$nextTick(()=>renderCharts())">
-      <option value="">Todos os projetos</option>
+      <option value="">Projetos</option>
       <option value="__empty__">— sem projeto</option>
       <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
     </select>
     <select class="inp" :class="f.pessoa && 'is-active'" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
-      <option value="">Todos os responsáveis</option>
+      <option value="">Responsáveis</option>
       <option value="__empty__">— sem responsável</option>
       <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
@@ -2220,19 +2220,19 @@
       <template x-if="!adoptionViewPortal">
         <div class="flex items-center gap-2">
           <select class="inp w-[130px]" :class="adoptionFilter.role && 'is-active'" x-model="adoptionFilter.role">
-            <option value="">qualquer role</option>
+            <option value="">Role</option>
             <option value="admin">admin</option>
             <option value="interno">interno</option>
           </select>
           <select class="inp w-[150px]" :class="adoptionFilter.senioridade && 'is-active'" x-model="adoptionFilter.senioridade">
-            <option value="">qualquer senioridade</option>
+            <option value="">Senioridade</option>
             <option value="junior">junior</option>
             <option value="pleno">pleno</option>
             <option value="senior">senior</option>
             <option value="lead">lead</option>
           </select>
           <select class="inp w-[170px]" :class="adoptionFilter.clientePrincipalId && 'is-active'" x-model="adoptionFilter.clientePrincipalId">
-            <option value="">qualquer cliente</option>
+            <option value="">Cliente principal</option>
             <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
           </select>
         </div>
@@ -2257,19 +2257,19 @@
   <div class="flex flex-wrap items-center gap-2 mb-4 md:mb-5 md:hidden" x-show="!adoptionViewPortal">
     <span class="text-[10px] uppercase tracking-wider text-muted font-mono">filtrar:</span>
     <select class="inp text-xs py-1 w-auto" x-model="adoptionFilter.role">
-      <option value="">qualquer role</option>
+      <option value="">Role</option>
       <option value="admin">admin</option>
       <option value="interno">interno</option>
     </select>
     <select class="inp text-xs py-1 w-auto" x-model="adoptionFilter.senioridade">
-      <option value="">qualquer senioridade</option>
+      <option value="">Senioridade</option>
       <option value="junior">junior</option>
       <option value="pleno">pleno</option>
       <option value="senior">senior</option>
       <option value="lead">lead</option>
     </select>
     <select class="inp text-xs py-1 w-auto" x-model="adoptionFilter.clientePrincipalId">
-      <option value="">qualquer cliente principal</option>
+      <option value="">Cliente principal</option>
       <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
     </select>
     <button x-show="adoptionAnyFilter()" class="btn btn-ghost text-xs" @click="adoptionFilter = { role: '', senioridade: '', clientePrincipalId: '' }">
