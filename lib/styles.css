@@ -472,7 +472,7 @@
   .palette-row.is-active { background: var(--brand-tint); }
   .palette-row.is-active .palette-label { color: var(--brand-dark); }
   .palette-kind {
-    display: inline-block; font-family: var(--font-mono); font-size: 9.5px;
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
     font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
     color: var(--muted); border: 1px solid var(--line);
     padding: 1px 6px; border-radius: 3px; line-height: 1.4;
@@ -515,7 +515,7 @@
   .palette-footer kbd {
     display: inline-block; padding: 0 4px; margin: 0 2px;
     background: var(--surface-1); border: 1px solid var(--line);
-    border-radius: 3px; font-family: var(--font-mono); font-size: 9.5px;
+    border-radius: 3px; font-family: var(--font-mono); font-size: 11px;
     color: var(--ink-soft); line-height: 1.5;
   }
 
@@ -1091,7 +1091,7 @@
   .brief-signal-amarelo   { background: var(--sig-amber); }
   .brief-signal-vermelho  { background: var(--sig-red); }
   .brief-tag {
-    display: inline-block; font-size: 9.5px; font-weight: 700;
+    display: inline-block; font-size: 11px; font-weight: 700;
     padding: 3px 8px; border-radius: 4px; text-transform: uppercase;
     letter-spacing: 0.05em; font-family: var(--font-mono);
     flex-shrink: 0; min-width: 64px; text-align: center;
@@ -1189,7 +1189,7 @@
     font-weight: 700; color: #009900; line-height: 1.1;
   }
   .print-only .memo-meta {
-    display: flex; justify-content: space-between; font-size: 9.5px;
+    display: flex; justify-content: space-between; font-size: 11px;
     color: #666; margin-top: 6px; font-family: var(--font-mono);
   }
   .print-only .memo-meta strong { color: #111; }
@@ -1688,5 +1688,26 @@
     }
     .tmodal-foot .spacer { display: none; }
     .tmodal-foot .btn-txt { display: inline; }
+  }
+
+  /* ============ A11Y FINISH ============ */
+
+  /* Respeita preferência do SO por reduzir movimento (vestibular sensitivity, foco, etc).
+     Suprime transitions e animations sem mexer nos efeitos finais (cores, layout). */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Touch target mínimo 44px em mobile pros botões clicáveis (WCAG 2.5.5).
+     Aplica em viewports <768px — desktop continua compacto. */
+  @media (max-width: 767px) {
+    .btn { min-height: 44px; }
+    .btn-icon { min-height: 44px; min-width: 44px; }
+    .tab { min-height: 44px; padding-top: var(--sp-3); padding-bottom: var(--sp-3); }
   }
 
