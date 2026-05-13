@@ -911,7 +911,7 @@
           <th class="sortable text-right" style="width:48px" @click="sortBy('esforco')" title="Horas previstas">h <span x-text="sortIcon('esforco')" class="text-[10px] ml-1 text-ink"></span></th>
           <th class="sortable" style="width:96px" @click="sortBy('complexidade')" title="Complexidade">Cmplx <span x-text="sortIcon('complexidade')" class="text-[10px] ml-1 text-ink"></span></th>
           <th class="sortable" style="width:76px" @click="sortBy('prazo')">Prazo <span x-text="sortIcon('prazo')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" style="width:200px" @click="sortBy('subetapa')">Status <span x-text="sortIcon('subetapa')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" style="width:140px" @click="sortBy('subetapa')">Status <span x-text="sortIcon('subetapa')" class="text-[10px] ml-1 text-ink"></span></th>
           <th style="width:36px"></th>
         </tr>
       </thead>
@@ -975,13 +975,13 @@
                 <span :class="atrasada(t) && 'late'" x-text="t.prazo ? fmtDate(t.prazo) : '—'"></span>
               </td>
               <td>
+                <!-- Triar removido daqui: a aba Triagem já cataloga tasks que precisam. Status fica enxuto. -->
                 <div class="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
                   <span class="status" :data-s="t.status" :title="tempoNaEtapa(t)">
                     <span class="status-dot"></span>
                     <span x-text="lblStatus(t.status)"></span>
                   </span>
                   <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias neste status'" x-text="agingDays(t)+'d'"></span>
-                  <span x-show="needsTriage(t)" class="triage-badge" :title="triageFailures(t).join(' · ')">triar</span>
                 </div>
               </td>
               <td class="text-right">
