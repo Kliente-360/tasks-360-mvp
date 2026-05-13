@@ -2177,6 +2177,25 @@
     </div>
   </div>
 
+  <!-- Volume semanal · 12 semanas (bar chart div-based) -->
+  <div class="card p-4 md:p-6 mb-4">
+    <div class="font-brand text-xl font-semibold mb-1">Volume semanal · 12 semanas</div>
+    <div class="text-xs text-muted mb-4">eventos do app por semana. Lê tendência macro de 3 meses em 1 olhada.</div>
+    <div class="grid grid-cols-12 gap-1 md:gap-2" style="height:140px;align-items:end">
+      <template x-for="(w, i) in usageVolume12Sem.weeks" :key="i">
+        <div class="flex flex-col items-center gap-1 h-full min-w-0">
+          <div class="text-[9px] font-mono text-muted" x-text="w.count"></div>
+          <div class="w-full bg-bg-elev rounded-t-sm flex-1 overflow-hidden flex items-end">
+            <div class="w-full rounded-t-sm transition-all"
+                 :class="i === usageVolume12Sem.weeks.length - 1 ? 'bg-brand-dark' : 'bg-brand'"
+                 :style="'height:' + Math.max(2, (w.count / usageVolume12Sem.max) * 100) + '%'"></div>
+          </div>
+          <div class="text-[9px] font-mono text-muted truncate" x-text="w.label"></div>
+        </div>
+      </template>
+    </div>
+  </div>
+
   <div class="card p-4 md:p-6 mb-4">
     <div class="font-brand text-xl font-semibold mb-1">Volume diário (30d)</div>
     <div class="text-xs text-muted mb-4">eventos do app por dia: mudanças de status, comentários e replies. Salesforce excluído.</div>
@@ -2292,6 +2311,86 @@
         </li>
       </template>
     </ul>
+  </div>
+
+  <!-- ============ HEATMAP pessoa × dia (28d) ============ -->
+  <div class="card p-4 md:p-6 mb-5" x-show="usageHeatmap28d.pessoas.length > 0">
+    <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
+      <div class="font-brand text-xl font-semibold">Heatmap pessoa × dia · 28 dias</div>
+      <span class="text-xs text-muted font-mono">cor mais escura = mais eventos</span>
+    </div>
+    <div class="text-xs text-muted mb-3">Padrão visual instantâneo: regularidade, picos, vazios. Cada coluna = 1 dia (mais recente à direita).</div>
+    <div class="overflow-x-auto">
+      <table class="text-xs">
+        <thead>
+          <tr>
+            <th class="pr-2 text-right text-muted font-mono text-[9px]"></th>
+            <template x-for="(d, i) in usageHeatmap28d.dias" :key="d">
+              <th class="text-center text-muted font-mono text-[9px] px-px" :class="i % 7 === 0 ? 'border-l border-line' : ''" x-text="d.slice(8,10)"></th>
+            </template>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="p in usageHeatmap28d.pessoas" :key="p.pessoaId">
+            <tr>
+              <td class="pr-2 text-right text-ink-soft font-medium whitespace-nowrap text-xs" x-text="p.nome.split(' ')[0]"></td>
+              <template x-for="(n, i) in p.daily" :key="i">
+                <td class="px-px py-px">
+                  <div class="w-4 h-4 md:w-5 md:h-5 rounded-sm"
+                       :title="usageHeatmap28d.dias[i] + ': ' + n + ' evento(s)'"
+                       :style="n === 0 ? 'background:var(--bg-elev);opacity:0.4' :
+                                n <= 3 ? 'background:color-mix(in srgb, var(--brand) 25%, var(--surface-1))' :
+                                n <= 10 ? 'background:color-mix(in srgb, var(--brand) 55%, var(--surface-1))' :
+                                'background:var(--brand-dark)'"></div>
+                </td>
+              </template>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ Sparklines por feature (top 10) ============ -->
+  <div class="card p-4 md:p-6 mb-5" x-show="usageFeatureSparklines.length > 0">
+    <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
+      <div class="font-brand text-xl font-semibold">Tendência por feature · 28 dias</div>
+      <span class="text-xs text-muted font-mono">linha = uso diário · top 10 por volume</span>
+    </div>
+    <div class="text-xs text-muted mb-3">Crescimento linear? Pico e abandono? Lê tendência por feature em 1 olhada.</div>
+    <div class="space-y-1.5">
+      <template x-for="f in usageFeatureSparklines" :key="f.event">
+        <div class="flex items-center gap-3 py-1 border-b border-line last:border-0">
+          <span class="font-mono text-xs flex-1 min-w-0 truncate" x-text="f.event"></span>
+          <!-- Sparkline SVG -->
+          <svg class="w-32 md:w-48 h-8 shrink-0" :viewBox="'0 0 ' + (f.daily.length * 4) + ' 32'" preserveAspectRatio="none">
+            <polyline fill="none" stroke="var(--brand)" stroke-width="1.5"
+                      :points="f.daily.map((n, i) => (i * 4) + ',' + (32 - (n / f.max) * 28)).join(' ')"></polyline>
+          </svg>
+          <span class="font-mono text-xs text-muted w-16 text-right shrink-0" x-text="f.total + ' tot.'"></span>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- ============ Breakdown tab_open (qual tab é mais usada) ============ -->
+  <div class="card p-4 md:p-6 mb-5" x-show="usageTabBreakdown.length > 0">
+    <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
+      <div class="font-brand text-xl font-semibold">Quais tabs são usadas · 30d</div>
+      <span class="text-xs text-muted font-mono">breakdown de tab_open</span>
+    </div>
+    <div class="text-xs text-muted mb-3">Quantos clicks em cada tab. Indica onde o time passa mais tempo.</div>
+    <div class="space-y-1.5">
+      <template x-for="r in usageTabBreakdown" :key="r.tab">
+        <div class="flex items-center gap-3 py-1 border-b border-line last:border-0">
+          <span class="font-mono text-xs flex-1 min-w-0 truncate" x-text="r.tab"></span>
+          <div class="w-24 md:w-40 h-2 bg-bg rounded overflow-hidden shrink-0">
+            <div class="h-full bg-brand" :style="'width:' + Math.min(100, (r.count / usageTabBreakdown[0].count) * 100) + '%'"></div>
+          </div>
+          <span class="font-mono text-xs text-muted w-12 text-right shrink-0" x-text="r.count"></span>
+        </div>
+      </template>
+    </div>
   </div>
 
   <!-- ============ ADOÇÃO POR PESSOA · classificada ============ -->
