@@ -2992,8 +2992,8 @@
 </footer>
 
 <!-- ============ MODAL TAREFA · two-pane ============ -->
-<div x-show="modal" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modal=false"
-     @keydown.escape.window="if (mentionPickerFor) { mentionPickerFor=''; _mentionAnchor=null; } else if (lightboxAttachment) { lightboxAttachment=null; } else if (modal && !replyingToId) modal=false"
+<div x-show="modal" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="closeModal()"
+     @keydown.escape.window="if (mentionPickerFor) { mentionPickerFor=''; _mentionAnchor=null; } else if (lightboxAttachment) { lightboxAttachment=null; } else if (modal && !replyingToId) closeModal()"
      @paste="onModalPaste($event)"
      x-transition.opacity>
   <div class="tmodal" role="dialog" aria-label="Editar tarefa" x-transition>
@@ -3023,7 +3023,7 @@
           <span class="as-dot"></span>
           <span x-text="autosaveLabel()"></span>
         </span>
-        <button class="icon-btn" aria-label="Fechar" @click="modal=false">×</button>
+        <button class="icon-btn" aria-label="Fechar" @click="closeModal()">×</button>
       </div>
     </div>
 
@@ -3411,7 +3411,7 @@
       <button x-show="editing.id && viewerRole === ROLE.ADMIN" class="btn btn-danger text-xs btn-foot" @click="deleteTask()" title="Excluir tarefa">
         <span class="btn-txt">excluir</span>
       </button>
-      <button class="btn" @click="modal=false">fechar</button>
+      <button class="btn" @click="closeModal()">fechar</button>
       <button class="btn btn-primary" @click="saveTask()" x-text="editing.id ? 'salvar' : 'criar'"></button>
     </div>
   </div>
