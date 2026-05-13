@@ -971,15 +971,14 @@
                 <span :class="atrasada(t) && 'late'" x-text="t.prazo ? fmtDate(t.prazo) : '—'"></span>
               </td>
               <td>
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="status" :data-s="t.status">
+                <div class="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
+                  <span class="status" :data-s="t.status" :title="tempoNaEtapa(t)">
                     <span class="status-dot"></span>
                     <span x-text="lblStatus(t.status)"></span>
                   </span>
                   <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias neste status'" x-text="agingDays(t)+'d'"></span>
-                <span x-show="needsTriage(t)" class="triage-badge" :title="triageFailures(t).join(' · ')">triar</span>
+                  <span x-show="needsTriage(t)" class="triage-badge" :title="triageFailures(t).join(' · ')">triar</span>
                 </div>
-                <div class="text-[10px] text-muted font-mono mt-1" x-text="tempoNaEtapa(t)"></div>
               </td>
               <td class="text-right">
                 <button x-show="viewerRole === ROLE.ADMIN" class="btn btn-ghost btn-icon text-muted hover:text-danger" title="Excluir tarefa" @click.stop="deleteTaskById(t.id)">✕</button>
