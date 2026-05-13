@@ -419,8 +419,8 @@
 <!-- ============ BRIEFING EXECUTIVO ============ -->
 <template x-if="tab==='brief'"><section class="fade-up">
   <div class="max-w-[1100px] mx-auto space-y-5 md:space-y-6">
-    <!-- Header padronizado (.page-header) -->
-    <div class="page-header">
+    <!-- Header subtitle-only: H1 escondido pra recuperar espaço; a tab ativa já identifica a aba. -->
+    <div class="page-header page-header-subtitle-only">
       <div class="page-titles">
         <h1 class="page-title">Briefing executivo</h1>
         <p class="page-subtitle" x-text="briefingHeadline"></p>
@@ -669,13 +669,13 @@
 <!-- ============ TRIAGEM ============ -->
 <template x-if="tab==='triagem'"><section class="fade-up">
   <div class="max-w-[1100px] mx-auto space-y-4 md:space-y-5">
-    <!-- Header padronizado (.page-header) + meta com breakdown sem resp/prazo/esforço à direita -->
-    <div class="page-header">
+    <!-- Header subtitle-only: H1 escondido pra recuperar espaço; breakdown sem resp/prazo/esforço à direita -->
+    <div class="page-header page-header-subtitle-only">
       <div class="page-titles">
         <h1 class="page-title">Triagem</h1>
         <p class="page-subtitle" x-show="triagemTasks.length > 0">
           <strong x-text="triagemTasksFiltered.length"></strong><span x-show="triagemAnyFilter()" class="text-muted" x-text="' / ' + triagemTasks.length"></span>
-          tarefa<span x-show="triagemTasksFiltered.length !== 1">s</span>
+          tarefa<span x-show="triagemTasksFiltered.length !== 1">s pra triar</span>
         </p>
       </div>
       <div class="page-actions" x-show="triagemTasks.length > 0">
@@ -755,14 +755,13 @@
 
 <!-- ============ BACKLOG ============ -->
 <section x-show="tab==='backlog'" class="fade-up">
-  <!-- Page header padrão: title + contador subtitle + actions à direita.
-       "Ordem manual" removida da UI (não usada). Agrupar/arquivadas no menu "⋯". -->
-  <div class="page-header hidden md:flex">
+  <!-- Page header INLINE (compacto, 1 linha): title + contagem inline + actions à direita.
+       Otimiza altura — tabela é o protagonista. -->
+  <div class="page-header page-header-inline hidden md:flex">
     <div class="page-titles">
       <h1 class="page-title">Backlog</h1>
       <p class="page-subtitle">
-        <strong x-text="filtered.length"></strong> de <strong x-text="tasks.length"></strong> tarefas
-        <span x-show="tasks.length - filtered.length > 0" class="text-muted" x-text="' · ' + (tasks.length - filtered.length) + ' ocultas'"></span>
+        <strong x-text="filtered.length"></strong> de <strong x-text="tasks.length"></strong> tarefas<span x-show="tasks.length - filtered.length > 0" class="text-muted" x-text="' · ' + (tasks.length - filtered.length) + ' ocultas'"></span>
       </p>
     </div>
     <div class="page-actions">
@@ -1106,8 +1105,8 @@
 
 <!-- ============ KANBAN ============ -->
 <section x-show="tab==='kanban'" class="fade-up">
-  <!-- Page header padrão: title + visão atual subtitle + toggle op/exec à direita -->
-  <div class="page-header hidden md:flex">
+  <!-- Page header INLINE: title + visão atual inline + toggle op/exec à direita -->
+  <div class="page-header page-header-inline hidden md:flex">
     <div class="page-titles">
       <h1 class="page-title">Kanban</h1>
       <p class="page-subtitle">
@@ -2201,6 +2200,49 @@
 <!-- ============ DADOS MVP ============ -->
 <template x-if="tab==='mvp'"><section class="fade-up">
 
+  <!-- Page header padrão (mesmo Dashboard): title + contexto + filtros à direita -->
+  <div class="page-header hidden md:flex" x-show="!adoptionViewPortal">
+    <div class="page-titles">
+      <h1 class="page-title">Adoção</h1>
+      <p class="page-subtitle">métricas de uso · esta semana</p>
+    </div>
+    <div class="page-actions">
+      <select class="inp text-xs py-1.5 w-[140px]" :class="adoptionFilter.role && 'is-active'" x-model="adoptionFilter.role">
+        <option value="">qualquer role</option>
+        <option value="admin">admin</option>
+        <option value="interno">interno</option>
+      </select>
+      <select class="inp text-xs py-1.5 w-[160px]" :class="adoptionFilter.senioridade && 'is-active'" x-model="adoptionFilter.senioridade">
+        <option value="">qualquer senioridade</option>
+        <option value="junior">junior</option>
+        <option value="pleno">pleno</option>
+        <option value="senior">senior</option>
+        <option value="lead">lead</option>
+      </select>
+      <select class="inp text-xs py-1.5 w-[180px]" :class="adoptionFilter.clientePrincipalId && 'is-active'" x-model="adoptionFilter.clientePrincipalId">
+        <option value="">qualquer cliente</option>
+        <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+      </select>
+      <div class="view-toggle" role="tablist" aria-label="Visão de Adoção">
+        <button :class="!adoptionViewPortal && 'active'" @click="adoptionViewPortal = false">interna</button>
+        <button :class="adoptionViewPortal && 'active'" @click="adoptionViewPortal = true">portal cliente</button>
+      </div>
+    </div>
+  </div>
+  <!-- Header quando estiver na visão portal cliente: toggle direita pra voltar -->
+  <div class="page-header hidden md:flex" x-show="adoptionViewPortal">
+    <div class="page-titles">
+      <h1 class="page-title">Adoção</h1>
+      <p class="page-subtitle">portal cliente · esta semana</p>
+    </div>
+    <div class="page-actions">
+      <div class="view-toggle" role="tablist" aria-label="Visão de Adoção">
+        <button :class="!adoptionViewPortal && 'active'" @click="adoptionViewPortal = false">interna</button>
+        <button :class="adoptionViewPortal && 'active'" @click="adoptionViewPortal = true">portal cliente</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Banner narrativo (1 frase com o essencial) -->
   <div class="card p-4 md:p-5 mb-4 md:mb-5" style="background:var(--surface-3);border-left:3px solid var(--brand)">
     <div class="text-[10px] uppercase tracking-wider text-muted font-mono mb-1">Esta semana</div>
@@ -2210,8 +2252,8 @@
     </div>
   </div>
 
-  <!-- Segmentação · filtros de adoption (visão interna) -->
-  <div class="flex flex-wrap items-center gap-2 mb-4 md:mb-5" x-show="!adoptionViewPortal">
+  <!-- Segmentação · filtros de adoption (visão interna) — mobile only; desktop usa .page-header acima. -->
+  <div class="flex flex-wrap items-center gap-2 mb-4 md:mb-5 md:hidden" x-show="!adoptionViewPortal">
     <span class="text-[10px] uppercase tracking-wider text-muted font-mono">filtrar:</span>
     <select class="inp text-xs py-1 w-auto" x-model="adoptionFilter.role">
       <option value="">qualquer role</option>
@@ -2243,8 +2285,8 @@
     </div>
   </div>
 
-  <!-- Toggle visão (mobile/quando filtro escondido) -->
-  <div class="flex items-center gap-2 mb-4 md:mb-5" x-show="adoptionViewPortal">
+  <!-- Toggle visão (mobile/quando filtro escondido) — desktop usa .page-header acima. -->
+  <div class="flex items-center gap-2 mb-4 md:mb-5 md:hidden" x-show="adoptionViewPortal">
     <span class="text-[10px] uppercase tracking-wider text-muted font-mono">visão:</span>
     <button class="btn btn-ghost text-xs" @click="adoptionViewPortal = false">interna</button>
     <button class="btn btn-ghost text-xs !text-brand-dark !bg-brand-tint" @click="adoptionViewPortal = true">portal cliente</button>
