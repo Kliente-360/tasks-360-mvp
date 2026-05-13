@@ -770,8 +770,8 @@
       <span x-show="sortKey!=='manual'">≡ ordem manual</span>
       <span x-show="sortKey==='manual'">✓ ordem manual</span>
     </button>
-    <span class="text-muted text-[11px] uppercase tracking-wider font-semibold">mostrando</span>
-    <span class="font-mono text-sm" x-text="filtered.length + ' visíveis / ' + tasks.length + ' total'"></span>
+    <!-- Microcopy compacto: "117 de 135 · 18 ocultas" (era "MOSTRANDO 117 visíveis / 135 total · 18 ocultas") -->
+    <span class="font-mono text-sm text-muted" x-text="filtered.length + ' de ' + tasks.length"></span>
     <span class="font-mono text-xs text-muted" x-show="tasks.length - filtered.length > 0" x-text="'· ' + (tasks.length - filtered.length) + ' ocultas'"></span>
     <label class="flex items-center gap-1.5 text-xs text-muted cursor-pointer ml-2" title="Inclui tarefas arquivadas na listagem">
       <input type="checkbox" x-model="showArchivedTasks">
@@ -1177,7 +1177,7 @@
                  Drag-and-drop ou abrir o modal são os caminhos pra mover. -->
           </div>
         </template>
-        <div x-show="kanbanColSub(sub).length===0" class="text-center text-muted text-xs py-8 italic">vazio</div>
+        <div x-show="kanbanColSub(sub).length===0" class="text-center text-muted text-xs py-8">—</div>
       </div>
     </template>
   </div>
@@ -1219,7 +1219,7 @@
             </div>
           </div>
         </template>
-        <div x-show="kanbanCol(col).length===0" class="text-center text-muted text-xs py-8 italic">vazio</div>
+        <div x-show="kanbanCol(col).length===0" class="text-center text-muted text-xs py-8">—</div>
       </div>
     </template>
   </div>
