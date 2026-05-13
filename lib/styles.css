@@ -251,9 +251,26 @@
   /* Row vertical sp-3 (compromisso entre original sp-4 e o tentado sp-2 que ficou apertado).
      Horizontal sp-4 mantém respiro. Vertical-align middle pra chips alinharem com texto. */
   .tbl tbody td { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: middle; }
-  /* tbl-title: peso médio, sem truncate forçado — auto-layout dimensiona pela natural width.
-     Quando título é muito longo, quebra em 2 linhas (preferível a empurrar coluna pra fora). */
-  .tbl tbody td .tbl-title { font-weight: 500; color: var(--ink); }
+  /* Title da row: 1 linha sempre, ellipsis quando passa do max-width. Tooltip via title attr no x-bind.
+     Cliente·Projeto: idem, ligeiramente mais largo do que antes (subiu de 120→160) descontando do title. */
+  .tbl tbody td .tbl-title {
+    display: block; font-weight: 500; color: var(--ink);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 260px;
+  }
+  .tbl tbody td .tbl-cliproj {
+    display: block; color: var(--ink-soft);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 160px;
+  }
+  @media (min-width: 1280px) {
+    .tbl tbody td .tbl-title    { max-width: 340px; }
+    .tbl tbody td .tbl-cliproj  { max-width: 200px; }
+  }
+  @media (min-width: 1500px) {
+    .tbl tbody td .tbl-title    { max-width: 420px; }
+    .tbl tbody td .tbl-cliproj  { max-width: 240px; }
+  }
   .tbl tbody tr { transition: background 150ms ease; cursor: pointer; }
   .tbl tbody tr:hover { background: var(--surface-3); }
   .tbl thead th.sortable { cursor: pointer; }
@@ -566,6 +583,31 @@
     padding: var(--sp-5) var(--sp-6);
     border: 0;
   }
+  /* Switch discreto de cliente no canto sup direito do portal-header (admin/interno).
+     Select transparente, mistura com o bg verde, hover destaca sutil. */
+  .portal-header-switch {
+    position: absolute; top: var(--sp-4); right: var(--sp-4);
+  }
+  .portal-header-switch-sel {
+    background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.85);
+    border: 1px solid rgba(255,255,255,0.20); border-radius: var(--r-sm);
+    padding: 4px 8px; padding-right: 24px;
+    font-size: 11px; font-family: var(--font-mono);
+    cursor: pointer; max-width: 220px;
+    appearance: none; -webkit-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.6) 50%),
+                      linear-gradient(135deg, rgba(255,255,255,0.6) 50%, transparent 50%);
+    background-position: calc(100% - 12px) 50%, calc(100% - 8px) 50%;
+    background-size: 4px 4px, 4px 4px;
+    background-repeat: no-repeat;
+    transition: background-color 120ms ease, border-color 120ms ease;
+  }
+  .portal-header-switch-sel:hover {
+    background-color: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.35);
+  }
+  .portal-header-switch-sel:focus { outline: 2px solid rgba(255,255,255,0.4); outline-offset: 1px; }
+  .portal-header-switch-sel option { background: var(--header-portal); color: #fff; }
+
   .portal-header-eyebrow {
     font-family: var(--font-mono); font-size: 10px;
     letter-spacing: 0.18em; text-transform: uppercase;

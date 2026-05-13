@@ -1052,8 +1052,8 @@
                   </template>
                 </div>
               </td>
-              <td class="text-ink-soft" :title="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></td>
-              <td class="text-ink-soft" x-text="nomePessoa(t.pessoaId)"></td>
+              <td><span class="tbl-cliproj" :title="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></span></td>
+              <td class="text-ink-soft" :title="nomePessoa(t.pessoaId)" x-text="nomePessoa(t.pessoaId)"></td>
               <td>
                 <span class="pri" :class="'pri-'+t.prioridade">
                   <span class="pri-dot"></span>
@@ -1522,49 +1522,35 @@
 
 <!-- ============ PORTAL DO CLIENTE ============ -->
 <section x-show="tab==='portal'" class="fade-up">
-  <!-- Page bar: narrativa (cliente atual) + selector "visualizar como" (admin/interno) -->
-  <div class="page-bar hidden md:flex" x-show="viewerRole !== 'cliente'">
-    <div class="page-bar-info">
-      <span class="page-bar-narrative" x-show="effectivePortalClienteId">
-        Portal de <strong x-text="portalCliente && portalCliente.nome"></strong>
-      </span>
-      <span class="page-bar-narrative text-muted font-normal" x-show="!effectivePortalClienteId">
-        Selecione um cliente →
-      </span>
-    </div>
-    <div class="page-bar-controls">
-      <select class="inp w-[220px]" :class="portalClienteId && 'is-active'" x-model="portalClienteId" @change="setPortalCliente($event.target.value)">
-        <option value="">visualizar como cliente…</option>
-        <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
-      </select>
-    </div>
-  </div>
-
-  <!-- Mobile: selector empilhado (cliente real não vê este selector) -->
-  <div x-show="viewerRole !== 'cliente'" class="md:hidden mb-4">
-    <select class="inp w-full" :class="portalClienteId && 'is-active'" x-model="portalClienteId" @change="setPortalCliente($event.target.value)">
-      <option value="">— visualizar como cliente —</option>
-      <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
-    </select>
-  </div>
-
-  <!-- Setup banner (sem cliente disponível) -->
+  <!-- Setup banner (sem cliente disponível) — selector embutido no centro pra admin/interno -->
   <div x-show="!effectivePortalClienteId" class="card p-6 md:p-10 text-center">
     <div class="font-brand text-lg md:text-xl font-semibold mb-2">Portal do cliente</div>
-    <div class="text-ink-soft text-sm">
-      <span x-show="viewerRole !== 'cliente'">Selecione um cliente acima pra visualizar o portal como ele veria.</span>
+    <div class="text-ink-soft text-sm mb-4">
+      <span x-show="viewerRole !== 'cliente'">Escolha um cliente pra visualizar o portal como ele veria:</span>
       <span x-show="viewerRole === ROLE.CLIENTE">Sua sessão não está vinculada a um cliente. Peça pro admin verificar o cadastro.</span>
+    </div>
+    <div x-show="viewerRole !== 'cliente'" class="flex justify-center">
+      <select class="inp w-full md:w-[280px]" x-model="portalClienteId" @change="setPortalCliente($event.target.value)">
+        <option value="">— selecionar cliente —</option>
+        <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+      </select>
     </div>
   </div>
 
   <!-- Conteúdo do portal · v2 com storytelling + análises quantitativas -->
   <div x-show="effectivePortalClienteId" class="space-y-5 md:space-y-6">
 
-    <!-- 1. HEADER · skin navy institucional com headline narrativa -->
-    <div class="portal-header">
+    <!-- 1. HEADER · skin verde Kliente com headline narrativa + switch cliente (admin/interno) -->
+    <div class="portal-header relative">
       <div class="portal-header-eyebrow">Portal · Kliente 360</div>
       <div class="portal-header-name" x-text="portalCliente && portalCliente.nome"></div>
       <div class="portal-header-sub" x-text="portalHeadline"></div>
+      <!-- Switch discreto pra admin/interno trocar de cliente sem sair do portal -->
+      <div x-show="viewerRole !== 'cliente'" class="portal-header-switch hidden md:block">
+        <select class="portal-header-switch-sel" x-model="portalClienteId" @change="setPortalCliente($event.target.value)" title="Trocar cliente">
+          <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+        </select>
+      </div>
     </div>
 
     <!-- 2. ALERTAS amigáveis (heurísticas pro cliente) -->
