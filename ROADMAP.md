@@ -44,11 +44,11 @@ Não é um Jira, não é um Trello, não é um Asana. É **opinativo**, executiv
 
 ### Estado atual
 
-Protótipo single-file (`index.html`) com Alpine + Tailwind + Chart.js, hospedado no Netlify (`https://tasks-360-mvp.netlify.app`). Serve para validar fluxos, descobrir requisitos faltantes e materializar a UX antes da construção do app real.
+Protótipo **modular** (não mais single-file) com Alpine + Tailwind + Chart.js, hospedado no Netlify (`https://tasks-360-mvp.netlify.app`). Stack continua sem build step — agora dividida em `index.html` (3.5k linhas), `lib/styles.css`, `lib/helpers.js`, `lib/adapters.js`, `lib/supabase-client.js`, **13 views em `lib/views/*`** e `lib/app.js` (542 linhas, só shell + INIT).
 
-**Maio/2026 — protótipo MVP completo.** Todas as ondas de polimento (H1/H2/H3) e fechamentos de ciclo entregues. Detalhe em [§9.0](#90-onda-protótipo-pós-h1h2h3--ganhos-de-fechamento-maio2026).
+**Maio/2026 — protótipo MVP completo + RLS role-aware + modularização concluída.** Detalhe em [§9.0](#90-onda-protótipo-pós-h1h2h3--ganhos-de-fechamento-maio2026).
 
-**Próximo passo recomendado**: 2-3 semanas de uso real do time + 1 cliente piloto antes de iniciar a Onda 0 (rebuild). Não codar mais aqui antes disso.
+**Próximo passo recomendado**: primeira feature de IA ("resumir thread de task") + email digest semanal. A Onda 0 (rebuild Next/Drizzle) pode esperar — a modularização adiou significativamente a necessidade.
 
 ---
 
