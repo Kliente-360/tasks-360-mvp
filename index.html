@@ -2122,7 +2122,53 @@
   <div class="card p-4 md:p-5 mb-4 md:mb-5" style="background:var(--surface-3);border-left:3px solid var(--brand)">
     <div class="text-[10px] uppercase tracking-wider text-muted font-mono mb-1">Esta semana</div>
     <div class="text-sm md:text-base text-ink font-medium leading-relaxed" x-text="usageNarrativeHeadline"></div>
+    <div x-show="adoptionAnyFilter()" class="text-xs text-muted mt-2 font-mono">
+      filtro ativo · <span x-text="usageNarrativeFiltered"></span>
+    </div>
   </div>
+
+  <!-- Segmentação · filtros de adoption (visão interna) -->
+  <div class="flex flex-wrap items-center gap-2 mb-4 md:mb-5" x-show="!adoptionViewPortal">
+    <span class="text-[10px] uppercase tracking-wider text-muted font-mono">filtrar:</span>
+    <select class="inp text-xs py-1 w-auto" x-model="adoptionFilter.role">
+      <option value="">qualquer role</option>
+      <option value="admin">admin</option>
+      <option value="interno">interno</option>
+    </select>
+    <select class="inp text-xs py-1 w-auto" x-model="adoptionFilter.senioridade">
+      <option value="">qualquer senioridade</option>
+      <option value="junior">junior</option>
+      <option value="pleno">pleno</option>
+      <option value="senior">senior</option>
+      <option value="lead">lead</option>
+    </select>
+    <select class="inp text-xs py-1 w-auto" x-model="adoptionFilter.clientePrincipalId">
+      <option value="">qualquer cliente principal</option>
+      <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+    </select>
+    <button x-show="adoptionAnyFilter()" class="btn btn-ghost text-xs" @click="adoptionFilter = { role: '', senioridade: '', clientePrincipalId: '' }">
+      ✕ limpar filtros
+    </button>
+    <div class="ml-auto flex items-center gap-2">
+      <span class="text-[10px] uppercase tracking-wider text-muted font-mono">visão:</span>
+      <button class="btn btn-ghost text-xs"
+              :class="!adoptionViewPortal && '!text-brand-dark !bg-brand-tint'"
+              @click="adoptionViewPortal = false">interna</button>
+      <button class="btn btn-ghost text-xs"
+              :class="adoptionViewPortal && '!text-brand-dark !bg-brand-tint'"
+              @click="adoptionViewPortal = true">portal cliente</button>
+    </div>
+  </div>
+
+  <!-- Toggle visão (mobile/quando filtro escondido) -->
+  <div class="flex items-center gap-2 mb-4 md:mb-5" x-show="adoptionViewPortal">
+    <span class="text-[10px] uppercase tracking-wider text-muted font-mono">visão:</span>
+    <button class="btn btn-ghost text-xs" @click="adoptionViewPortal = false">interna</button>
+    <button class="btn btn-ghost text-xs !text-brand-dark !bg-brand-tint" @click="adoptionViewPortal = true">portal cliente</button>
+  </div>
+
+  <!-- ============ VISÃO INTERNA (toggle) ============ -->
+  <div x-show="!adoptionViewPortal">
 
   <!-- Alertas A1-A10 derivados (só aparecem se houver) -->
   <div x-show="usageAlertas.length > 0" class="space-y-2 mb-4 md:mb-5">
@@ -2507,6 +2553,90 @@
       </table>
     </div>
   </div>
+
+  </div>
+  <!-- ============ FIM VISÃO INTERNA ============ -->
+
+  <!-- ============ VISÃO PORTAL CLIENTE (toggle) ============ -->
+  <div x-show="adoptionViewPortal">
+    <div x-show="!portalClienteAdoption || portalClienteAdoption.length === 0" class="card p-6 md:p-8 text-center mb-5">
+      <div class="font-brand text-lg text-ink mb-2">Sem clientes externos cadastrados</div>
+      <div class="text-sm text-muted">Adicione pessoas com role=cliente em Cadastros pra ver adoption do Portal.</div>
+    </div>
+
+    <template x-if="portalClienteAdoption && portalClienteAdoption.length > 0">
+      <div>
+        <!-- KPIs cliente -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-6">
+          <div class="kpi">
+            <div class="kpi-lbl">Clientes cadastrados</div>
+            <div class="kpi-num" x-text="portalClienteTotals.total"></div>
+            <div class="kpi-trend">pessoas role=cliente</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-lbl">Ativos · 7d</div>
+            <div class="kpi-num brand" x-text="portalClienteTotals.ativos7d"></div>
+            <div class="kpi-trend">algum evento últimos 7d</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-lbl">Eventos · 30d</div>
+            <div class="kpi-num" x-text="portalClienteTotals.eventos30d"></div>
+            <div class="kpi-trend">total Portal</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-lbl">Nunca usou</div>
+            <div class="kpi-num" :class="portalClienteTotals.nunca > 0 && 'text-[color:var(--p0)]'" x-text="portalClienteTotals.nunca"></div>
+            <div class="kpi-trend">cadastrado sem evento</div>
+          </div>
+        </div>
+
+        <!-- Tabela Portal cliente adoption -->
+        <div class="card p-4 md:p-6 mb-5">
+          <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
+            <div class="font-brand text-xl font-semibold">Portal cliente · adoption 30d</div>
+            <span class="text-xs text-muted font-mono">silenciosa 7d em destaque</span>
+          </div>
+          <div class="text-xs text-muted mb-3">Quem do lado do cliente está usando o Portal. Identifica quem nunca entrou (precisa convidar/reenviar) e quem entrou mas parou.</div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="text-xs text-muted font-mono">
+                <tr class="text-left">
+                  <th class="py-1.5 pr-2">Pessoa (cliente)</th>
+                  <th class="py-1.5 px-2">Empresa</th>
+                  <th class="py-1.5 px-2 text-right">Eventos</th>
+                  <th class="py-1.5 px-2 text-right">Dias / 30</th>
+                  <th class="py-1.5 px-2 text-right">Sessões</th>
+                  <th class="py-1.5 px-2 text-right">Última atividade</th>
+                  <th class="py-1.5 pl-2">Top features</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="r in portalClienteAdoption" :key="r.pessoaId">
+                  <tr class="border-b border-line last:border-0"
+                      :class="r.total === 0 ? 'bg-[color-mix(in_srgb,var(--p0)_4%,transparent)]' :
+                              (r.silencioso7d ? 'bg-[color-mix(in_srgb,var(--sig-amber)_8%,transparent)]' : '')">
+                    <td class="py-1.5 pr-2">
+                      <div class="font-medium" x-text="r.nome"></div>
+                      <div class="text-[10px] text-muted font-mono" x-text="r.email"></div>
+                    </td>
+                    <td class="py-1.5 px-2 text-xs text-ink-soft" x-text="r.cliente_nome"></td>
+                    <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.total"></td>
+                    <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.dias_ativos"></td>
+                    <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.sessions"></td>
+                    <td class="py-1.5 px-2 text-right font-mono text-xs"
+                        :class="r.total === 0 ? 'text-[color:var(--p0)]' : (r.silencioso7d ? 'text-amber-700' : 'text-muted')"
+                        x-text="r.total === 0 ? 'nunca usou' : (r.ultimo_dias === 0 ? 'hoje' : 'há ' + r.ultimo_dias + 'd')"></td>
+                    <td class="py-1.5 pl-2 font-mono text-xs text-muted truncate max-w-[280px]" x-text="r.top3 || '—'"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+  <!-- ============ FIM VISÃO PORTAL ============ -->
 
   <div class="card p-4 md:p-6">
     <div class="font-brand text-xl font-semibold mb-1">Como ler estes números</div>
