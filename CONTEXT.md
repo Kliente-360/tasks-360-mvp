@@ -16,7 +16,7 @@ A **modularização foi concluída em mai/2026** (21 PRs, #191-#212): `index.htm
 
 **A RLS deixou de ser "aberta consciente" em mai/2026** — tenant isolation real via policies por role (`admin`/`interno`/`cliente`), com helpers `app_pessoa_role()`, `app_pessoa_cliente_id()`, `app_is_staff()` e RPC `app_link_current_user_to_pessoa()` pra first-login. A migração pra Next + Drizzle é a Onda 0, ainda parked — a modularização ganhou tempo significativo antes desse passo ser inevitável.
 
-**Convenção de versão**: `APP_VERSION` em `lib/helpers.js` segue o **número do PR que entrega a mudança**. Ex: PR #167 → `v1.01.167`. Bump em todo PR que muda comportamento (docs-only podem pular). Exposto no header como subtítulo do logo.
+**Convenção de versão**: `APP_VERSION` em `lib/helpers.js` é **sempre igual ao número do PR mergeado**. Ex: PR #218 → `v1.01.218`. Bump em **todo PR** (docs/teste/refactor/feat — sem exceção). Convenção alinhada em mai/2026 (PR #218); até então docs/test podiam pular, gerando gap de 5 entre PR# e versão. Hoje é espelho 1:1. Exposto no header como subtítulo do logo.
 
 **Convenção de fluxo git**: develop em branches `feat/...`, `fix/...`, `polish/...`, `docs/...`, `refactor/...`, `test/...`. PR squash-merge em `main`. Não pushar direto em main.
 
