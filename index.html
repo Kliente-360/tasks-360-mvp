@@ -2118,26 +2118,62 @@
 <!-- ============ DADOS MVP ============ -->
 <template x-if="tab==='mvp'"><section class="fade-up">
 
+  <!-- Banner narrativo (1 frase com o essencial) -->
+  <div class="card p-4 md:p-5 mb-4 md:mb-5" style="background:var(--surface-3);border-left:3px solid var(--brand)">
+    <div class="text-[10px] uppercase tracking-wider text-muted font-mono mb-1">Esta semana</div>
+    <div class="text-sm md:text-base text-ink font-medium leading-relaxed" x-text="usageNarrativeHeadline"></div>
+  </div>
+
+  <!-- Alertas A1-A10 derivados (só aparecem se houver) -->
+  <div x-show="usageAlertas.length > 0" class="space-y-2 mb-4 md:mb-5">
+    <template x-for="a in usageAlertas" :key="a.kind + a.titulo">
+      <div class="card p-3 md:p-4 flex items-start gap-3"
+           :style="a.severity === 'alta' ? 'border-left:3px solid var(--p0)' :
+                    a.severity === 'positivo' ? 'border-left:3px solid var(--sig-green-strong)' :
+                    a.severity === 'media' ? 'border-left:3px solid var(--sig-amber)' :
+                    'border-left:3px solid var(--muted)'">
+        <span class="text-[10px] uppercase tracking-wider font-mono font-semibold shrink-0 mt-0.5"
+              :style="a.severity === 'alta' ? 'color:var(--p0)' :
+                      a.severity === 'positivo' ? 'color:var(--sig-green-strong)' :
+                      a.severity === 'media' ? 'color:#b45309' : 'color:var(--muted)'"
+              x-text="a.severity"></span>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-ink" x-text="a.titulo"></div>
+          <div class="text-xs text-muted mt-0.5" x-text="a.detalhe"></div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- KPIs com Δ vs semana anterior -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-6">
     <div class="kpi">
-      <div class="kpi-lbl">Eventos 1d</div>
-      <div class="kpi-num brand" x-text="mvpTotals.eventos1d"></div>
-      <div class="kpi-trend">últimas 24h</div>
+      <div class="kpi-lbl">Eventos · 7d</div>
+      <div class="kpi-num brand" x-text="usageWeekDeltas.eventos.atual"></div>
+      <div class="kpi-trend"
+           :class="usageWeekDeltas.eventos.pct > 0 ? 'text-emerald-700' : (usageWeekDeltas.eventos.pct < 0 ? 'text-[color:var(--p0)]' : 'text-muted')"
+           x-text="(usageWeekDeltas.eventos.pct > 0 ? '↑ +' : (usageWeekDeltas.eventos.pct < 0 ? '↓ ' : '= ')) + Math.abs(usageWeekDeltas.eventos.pct) + '% vs sem ant'"></div>
     </div>
     <div class="kpi">
-      <div class="kpi-lbl">Eventos 7d</div>
-      <div class="kpi-num" x-text="mvpTotals.eventos7d"></div>
-      <div class="kpi-trend">última semana</div>
+      <div class="kpi-lbl">Pessoas ativas · 7d</div>
+      <div class="kpi-num" :class="usageWeekDeltas.pessoasAtivas.atual >= 2 && 'brand'" x-text="usageWeekDeltas.pessoasAtivas.atual"></div>
+      <div class="kpi-trend"
+           :class="usageWeekDeltas.pessoasAtivas.delta > 0 ? 'text-emerald-700' : (usageWeekDeltas.pessoasAtivas.delta < 0 ? 'text-[color:var(--p0)]' : 'text-muted')"
+           x-text="(usageWeekDeltas.pessoasAtivas.delta > 0 ? '↑ +' : (usageWeekDeltas.pessoasAtivas.delta < 0 ? '↓ ' : '= ')) + Math.abs(usageWeekDeltas.pessoasAtivas.delta) + ' vs sem ant'"></div>
     </div>
     <div class="kpi">
-      <div class="kpi-lbl">Pessoas ativas 14d</div>
-      <div class="kpi-num" :class="mvpTotals.pessoasAtivas14d>=2 && 'brand'" x-text="mvpTotals.pessoasAtivas14d"></div>
-      <div class="kpi-trend">distintas no período</div>
+      <div class="kpi-lbl">Sessions · 7d</div>
+      <div class="kpi-num" x-text="usageWeekDeltas.sessions.atual"></div>
+      <div class="kpi-trend"
+           :class="usageWeekDeltas.sessions.pct > 0 ? 'text-emerald-700' : (usageWeekDeltas.sessions.pct < 0 ? 'text-[color:var(--p0)]' : 'text-muted')"
+           x-text="(usageWeekDeltas.sessions.pct > 0 ? '↑ +' : (usageWeekDeltas.sessions.pct < 0 ? '↓ ' : '= ')) + Math.abs(usageWeekDeltas.sessions.pct) + '% vs sem ant'"></div>
     </div>
     <div class="kpi">
-      <div class="kpi-lbl">Atribuídos / Anônimos</div>
-      <div class="kpi-num font-mono text-xl" x-text="mvpTotals.atribuidos30d + ' / ' + mvpTotals.anonimos30d"></div>
-      <div class="kpi-trend">eventos 30d (login on/off)</div>
+      <div class="kpi-lbl">Mês corrente · eventos</div>
+      <div class="kpi-num" x-text="usageMonthDelta.atual"></div>
+      <div class="kpi-trend"
+           :class="usageMonthDelta.pct > 0 ? 'text-emerald-700' : (usageMonthDelta.pct < 0 ? 'text-[color:var(--p0)]' : 'text-muted')"
+           x-text="(usageMonthDelta.pct > 0 ? '↑ +' : (usageMonthDelta.pct < 0 ? '↓ ' : '= ')) + Math.abs(usageMonthDelta.pct) + '% vs mês ant'"></div>
     </div>
   </div>
 
@@ -2258,38 +2294,46 @@
     </ul>
   </div>
 
-  <!-- ============ ADOÇÃO POR PESSOA ============ -->
+  <!-- ============ ADOÇÃO POR PESSOA · classificada ============ -->
   <div class="card p-4 md:p-6 mb-5">
     <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
-      <div class="font-brand text-xl font-semibold">Adoção por pessoa (30d)</div>
-      <span class="text-xs text-muted font-mono">linha vermelha = silencioso há +7d</span>
+      <div class="font-brand text-xl font-semibold">Adoção por pessoa · 30d</div>
+      <span class="text-xs text-muted font-mono">power · regular · light · silenciosa · nunca</span>
     </div>
-    <div class="text-xs text-muted mb-3">Quem está usando, com que profundidade, em qual feature. Identifica quem precisa de conversa.</div>
-    <div x-show="usagePorPessoa.length === 0" class="text-sm text-muted py-4">Nenhum dado de telemetria ainda (precisa de algumas sessões de uso).</div>
-    <div x-show="usagePorPessoa.length > 0" class="overflow-x-auto">
+    <div class="text-xs text-muted mb-3">Classificação automática por intensidade. <strong>Power</strong> = top 25% volume + ≥12 dias ativos. <strong>Regular</strong> = 6-11 dias. <strong>Light</strong> = 1-5 dias. <strong>Silenciosa</strong> = >7d sem evento. <strong>Nunca</strong> = convidada há +14d sem nenhum evento.</div>
+    <div x-show="usagePessoaClassificada.length === 0" class="text-sm text-muted py-4">Nenhum dado de telemetria ainda (precisa de algumas sessões de uso).</div>
+    <div x-show="usagePessoaClassificada.length > 0" class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="text-xs text-muted font-mono">
           <tr class="text-left">
             <th class="py-1.5 pr-2">Pessoa</th>
+            <th class="py-1.5 px-2">Classe</th>
             <th class="py-1.5 px-2 text-right">Eventos</th>
-            <th class="py-1.5 px-2 text-right">Dias ativos</th>
+            <th class="py-1.5 px-2 text-right">Dias / 30</th>
             <th class="py-1.5 px-2 text-right">Sessões</th>
-            <th class="py-1.5 px-2 text-right">Logins</th>
             <th class="py-1.5 px-2 text-right">Última atividade</th>
-            <th class="py-1.5 pl-2">Top features (30d)</th>
+            <th class="py-1.5 pl-2">Top features</th>
           </tr>
         </thead>
         <tbody>
-          <template x-for="r in usagePorPessoa" :key="r.pessoaId">
-            <tr class="border-b border-line last:border-0" :class="r.silencioso7d ? 'bg-[color-mix(in_srgb,var(--p0)_5%,transparent)]' : ''">
-              <td class="py-1.5 pr-2">
-                <span class="font-medium" x-text="r.nome"></span>
+          <template x-for="r in usagePessoaClassificada" :key="r.pessoaId">
+            <tr class="border-b border-line last:border-0">
+              <td class="py-1.5 pr-2"><span class="font-medium" x-text="r.nome"></span></td>
+              <td class="py-1.5 px-2">
+                <span class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono"
+                      :style="r.kind === 'power' ? 'background:var(--brand-soft);color:var(--brand-dark)' :
+                              r.kind === 'regular' ? 'background:var(--cyan-soft);color:#0066AA' :
+                              r.kind === 'light' ? 'background:var(--surface-3);color:var(--muted)' :
+                              r.kind === 'silenciosa' ? 'background:#fef3c7;color:#b45309' :
+                              r.kind === 'nunca' ? 'background:#fef2f2;color:var(--p0)' :
+                              'background:var(--surface-3);color:var(--muted)'"
+                      x-text="r.kind"></span>
               </td>
               <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.total"></td>
-              <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.dias_ativos + ' / 30'"></td>
+              <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.dias_ativos"></td>
               <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.sessions"></td>
-              <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.logins"></td>
-              <td class="py-1.5 px-2 text-right font-mono text-xs" :class="r.silencioso7d ? 'text-[color:var(--p0)]' : 'text-muted'"
+              <td class="py-1.5 px-2 text-right font-mono text-xs"
+                  :class="r.kind === 'silenciosa' || r.kind === 'nunca' ? 'text-[color:var(--p0)]' : 'text-muted'"
                   x-text="r.ultimo_dias == null ? 'sem registro' : (r.ultimo_dias === 0 ? 'hoje' : 'há ' + r.ultimo_dias + 'd')"></td>
               <td class="py-1.5 pl-2 font-mono text-xs text-muted truncate max-w-[280px]" x-text="r.top3 || '—'"></td>
             </tr>
@@ -2318,22 +2362,50 @@
     </ul>
   </div>
 
-  <!-- ============ ADOÇÃO POR FEATURE (largura) ============ -->
+  <!-- ============ ADOÇÃO POR FEATURE · classificada ============ -->
   <div class="card p-4 md:p-6 mb-5">
-    <div class="font-brand text-xl font-semibold mb-1">Adoção por feature · largura (30d)</div>
-    <div class="text-xs text-muted mb-3">% de pessoas internas que usaram cada feature pelo menos 1 vez. Mede largura de adoção (complementa 'Top features' que mede volume).</div>
-    <div x-show="featureAdocao.length === 0" class="text-sm text-muted py-4">Sem dados ainda.</div>
-    <div x-show="featureAdocao.length > 0" class="space-y-1.5">
-      <template x-for="r in featureAdocao" :key="r.event">
-        <div class="flex items-center gap-3 py-1 border-b border-line last:border-0">
-          <span class="font-mono text-xs flex-1 min-w-0 truncate" x-text="r.event"></span>
-          <span class="font-mono text-xs text-muted shrink-0" x-text="r.pessoas + ' pessoa(s)'"></span>
-          <div class="w-24 md:w-40 h-2 bg-bg rounded overflow-hidden shrink-0">
-            <div class="h-full bg-brand" :style="'width:' + Math.min(100, r.pct) + '%'"></div>
-          </div>
-          <span class="font-mono text-xs w-10 text-right shrink-0" :class="r.pct >= 70 ? 'text-emerald-700' : (r.pct >= 30 ? '' : 'text-muted')" x-text="r.pct + '%'"></span>
-        </div>
-      </template>
+    <div class="font-brand text-xl font-semibold mb-1">Adoção por feature · 30d</div>
+    <div class="text-xs text-muted mb-3">Classificação por largura + tendência. <strong>Core</strong> = ≥70% pessoas. <strong>Healthy</strong> = 40-70%. <strong>Niche</strong> = 10-40% (ok pra features contextuais). <strong>Em-queda</strong> = Δ &lt; −30% vs sem ant. <strong>Órfã</strong> = &lt;10%.</div>
+    <div x-show="usageFeaturesClassificadas.length === 0" class="text-sm text-muted py-4">Sem dados ainda.</div>
+    <div x-show="usageFeaturesClassificadas.length > 0" class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-xs text-muted font-mono">
+          <tr class="text-left">
+            <th class="py-1.5 pr-2">Feature</th>
+            <th class="py-1.5 px-2">Classe</th>
+            <th class="py-1.5 px-2 text-right">% pessoas</th>
+            <th class="py-1.5 px-2 text-right">Volume 7d</th>
+            <th class="py-1.5 px-2 text-right">Δ vs sem ant</th>
+            <th class="py-1.5 pl-2">Largura</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="r in usageFeaturesClassificadas" :key="r.event">
+            <tr class="border-b border-line last:border-0">
+              <td class="py-1.5 pr-2 font-mono text-xs" x-text="r.event"></td>
+              <td class="py-1.5 px-2">
+                <span class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono"
+                      :style="r.kind === 'core' ? 'background:var(--brand-soft);color:var(--brand-dark)' :
+                              r.kind === 'healthy' ? 'background:var(--cyan-soft);color:#0066AA' :
+                              r.kind === 'niche' ? 'background:var(--surface-3);color:var(--ink-soft)' :
+                              r.kind === 'em-queda' ? 'background:#fef3c7;color:#b45309' :
+                              'background:#fef2f2;color:var(--p0)'"
+                      x-text="r.kind"></span>
+              </td>
+              <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.pct + '%'"></td>
+              <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.v7"></td>
+              <td class="py-1.5 px-2 text-right font-mono text-xs"
+                  :class="r.delta > 0 ? 'text-emerald-700' : (r.delta < 0 ? 'text-[color:var(--p0)]' : 'text-muted')"
+                  x-text="(r.delta > 0 ? '↑ +' : (r.delta < 0 ? '↓ ' : '= ')) + Math.abs(r.delta) + '%'"></td>
+              <td class="py-1.5 pl-2">
+                <div class="w-24 md:w-32 h-2 bg-bg rounded overflow-hidden">
+                  <div class="h-full bg-brand" :style="'width:' + Math.min(100, r.pct) + '%'"></div>
+                </div>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
     </div>
   </div>
 
