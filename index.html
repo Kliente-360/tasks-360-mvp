@@ -167,26 +167,26 @@
 
 <!-- ============ TOPO ============ -->
 <header class="bg-elev border-b border-line sticky top-0 z-40">
-  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-3 md:py-3 flex items-center gap-3 md:gap-6">
-    <button class="flex items-center gap-2.5 min-w-0 bg-transparent border-0 cursor-pointer hover:opacity-80 transition-opacity rounded-md -mx-1 px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand shrink-0"
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-3">
+    <button class="flex items-center gap-3 min-w-0 bg-transparent border-0 cursor-pointer hover:opacity-80 transition-opacity rounded-md -mx-1 px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             @click="refreshFromLogo(); $event.currentTarget.blur()" :disabled="loading || refreshing"
             aria-label="Atualizar dados">
       <div class="k360-mark" :class="(loading || refreshing) && 'loading-pulse'"><span></span><span></span><span></span><span></span></div>
-      <div class="flex items-baseline gap-2 leading-none min-w-0">
-        <div class="font-brand text-[18px] md:text-[20px] font-semibold text-brand">tasks 360</div>
-        <div class="hidden md:block text-[10px] uppercase tracking-[0.14em] text-muted font-mono truncate" x-text="(loading || refreshing) ? 'atualizando…' : APP_VERSION" :title="'versão visível pra todos sabidamente usarem a mesma. Refresh (Ctrl+R) se diferente da referência.'"></div>
+      <div class="leading-none min-w-0 text-left">
+        <div class="font-brand text-[18px] md:text-[22px] font-semibold text-brand">tasks 360</div>
+        <div class="text-[10px] uppercase tracking-[0.18em] text-muted mt-1 truncate font-mono" x-text="(loading || refreshing) ? 'atualizando…' : APP_VERSION" :title="'versão visível pra todos sabidamente usarem a mesma. Refresh (Ctrl+R) se diferente da referência.'"></div>
       </div>
     </button>
-    <!-- Desktop tabs inline (antes ficavam numa linha separada) -->
-    <nav class="hidden md:flex tabs-row flex-1 min-w-0" aria-label="Navegação principal">
-      <template x-for="t in visibleTabs" :key="t.key">
-        <div class="tab" :class="tab===t.key && 'active'" @click="goToTab(t.key)" x-text="t.label"></div>
-      </template>
-    </nav>
-    <div class="flex items-center gap-1 shrink-0 ml-auto md:ml-0">
+    <div class="flex items-center gap-1 shrink-0">
       <!-- Exportar / Manual / Tema: visíveis no desktop, escondidos no mobile (mover pro menu do avatar) -->
       <div class="relative hidden md:block" x-show="viewerRole !== ROLE.CLIENTE" @click.outside="exportOpen=false">
-        <button class="btn btn-ghost btn-icon text-xs" @click="exportOpen = !exportOpen" title="Exportar" aria-label="Exportar"><span class="md:hidden">↓</span><span class="hidden md:inline">Exportar</span></button>
+        <button class="btn btn-ghost btn-icon" @click="exportOpen = !exportOpen" title="Exportar" aria-label="Exportar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </button>
         <div x-show="exportOpen" x-transition.opacity
              class="fixed md:absolute top-14 md:top-full right-3 md:right-0 mt-0 md:mt-2 bg-elev border border-line rounded-lg shadow-xl z-50 text-left overflow-hidden w-[280px] max-w-[calc(100vw-24px)] md:w-[240px]">
           <div class="px-3 pt-2.5 pb-1 text-[10px] uppercase tracking-wider text-muted font-semibold font-mono border-b border-line">Exportar como</div>
@@ -208,8 +208,11 @@
 
       <!-- Notifications -->
       <div class="relative" x-show="authEnabled && currentPessoa" @click.outside="notifPanelOpen=false">
-        <button class="btn btn-ghost btn-icon text-xs relative" @click="notifPanelOpen=!notifPanelOpen; if(notifPanelOpen) loadNotifications()" aria-label="Notificações">
-          <span aria-hidden="true">🔔</span>
+        <button class="btn btn-ghost btn-icon relative" @click="notifPanelOpen=!notifPanelOpen; if(notifPanelOpen) loadNotifications()" aria-label="Notificações" title="Notificações">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
           <span x-show="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full text-[9px] font-bold text-white px-1 flex items-center justify-center" style="background:var(--p0)">
             <span x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
           </span>
@@ -304,6 +307,12 @@
         </button>
       </template>
     </div>
+  </div>
+  <!-- Desktop: abas tradicionais -->
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 tabs-row hidden md:flex">
+    <template x-for="t in visibleTabs" :key="t.key">
+      <div class="tab" :class="tab===t.key && 'active'" @click="goToTab(t.key)" x-text="t.label"></div>
+    </template>
   </div>
 </header>
 
