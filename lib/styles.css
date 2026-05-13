@@ -248,7 +248,14 @@
     text-transform: uppercase; color: var(--muted); padding: var(--sp-3) var(--sp-4);
     border-bottom: 1px solid var(--line-strong); user-select: none; background: var(--surface-3);
   }
-  .tbl tbody td { padding: var(--sp-4); border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: top; }
+  /* row compacta: vertical sp-2 (era sp-4) — 117 itens ocupam ~3x menos tela.
+     Horizontal mantém sp-4 pra respirar bem entre colunas. */
+  .tbl tbody td { padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: middle; }
+  .tbl tbody td .tbl-title {
+    font-weight: 500; color: var(--ink);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 360px;
+  }
   .tbl tbody tr { transition: background 150ms ease; cursor: pointer; }
   .tbl tbody tr:hover { background: var(--surface-3); }
   .tbl thead th.sortable { cursor: pointer; }
@@ -310,6 +317,7 @@
   .status[data-s="concluido"] .status-dot { background: var(--p3); }
   .status[data-s="concluido"] { color: var(--muted); }
   .status[data-s="backlog"] .status-dot { background: var(--muted); }
+  .status[data-s="backlog"] { color: var(--ink-soft); border-color: var(--line-strong); }
 
   /* ============ BOTÕES ============ transitions padronizadas 150ms */
   .btn {
@@ -348,6 +356,9 @@
     min-height: 38px;
   }
   .inp:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
+  /* Filter ativo: borda cyan discreta indica "esse filtro está alterando o resultado".
+     Aplicar via :class quando o valor não for o default. */
+  .inp.is-active { border-color: var(--cyan); background: var(--cyan-soft); }
   .lbl {
     display: block; font-size: var(--fs-xs); font-weight: 600;
     letter-spacing: 0.08em; text-transform: uppercase;

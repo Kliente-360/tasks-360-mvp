@@ -792,28 +792,28 @@
       </button>
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
-      <select class="inp" x-model="f.cliente">
+      <select class="inp" :class="f.cliente && 'is-active'" x-model="f.cliente">
         <option value="">Todos os clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
-      <select class="inp" x-model="f.projeto">
+      <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto">
         <option value="">Todos os projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
-      <select class="inp" x-model="f.pessoa">
+      <select class="inp" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
         <option value="">Todas as pessoas</option>
         <option value="__empty__">— sem responsável</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
     <div class="col-span-2 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
-      <select class="inp" x-model="f.pri">
+      <select class="inp" :class="f.pri && 'is-active'" x-model="f.pri">
         <option value="">Pri</option>
         <option value="__empty__">— vazio</option>
         <option value="P0">P0</option>
@@ -823,7 +823,7 @@
       </select>
     </div>
     <div class="col-span-2 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
-      <select class="inp" x-model="f.complexidade">
+      <select class="inp" :class="f.complexidade && 'is-active'" x-model="f.complexidade">
         <option value="">Cmplx</option>
         <option value="__empty__">— vazio</option>
         <option value="alta">Alta</option>
@@ -832,7 +832,7 @@
       </select>
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
-      <select class="inp" x-model="f.status">
+      <select class="inp" :class="(f.status && f.status !== 'abertas') && 'is-active'" x-model="f.status">
         <option value="abertas">Abertas (sem concluídas)</option>
         <option value="">Todos os status</option>
         <option value="backlog">Backlog</option>
@@ -842,7 +842,7 @@
       </select>
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'" x-show="allTags.length>0">
-      <select class="inp" x-model="f.tag">
+      <select class="inp" :class="f.tag && 'is-active'" x-model="f.tag">
         <option value="">Todas as tags</option>
         <option value="__empty__">— sem tags</option>
         <template x-for="t in allTags" :key="t"><option :value="t" x-text="'#' + t"></option></template>
@@ -899,15 +899,15 @@
                    @change="toggleSelectAll()"
                    title="Selecionar todas as visíveis">
           </th>
-          <th class="sortable" @click="sortBy('titulo')">Tarefa <span x-text="sortIcon('titulo')" class="text-[9px] ml-1"></span></th>
-          <th class="sortable" @click="sortBy('clienteId')">Cliente <span x-text="sortIcon('clienteId')" class="text-[9px] ml-1"></span></th>
-          <th class="sortable" @click="sortBy('projetoId')">Projeto <span x-text="sortIcon('projetoId')" class="text-[9px] ml-1"></span></th>
-          <th class="sortable" @click="sortBy('pessoaId')">Responsável <span x-text="sortIcon('pessoaId')" class="text-[9px] ml-1"></span></th>
-          <th class="sortable" @click="sortBy('prioridade')">Pri <span x-text="sortIcon('prioridade')" class="text-[9px] ml-1"></span></th>
-          <th class="sortable text-right" @click="sortBy('esforco')">Hrs <span x-text="sortIcon('esforco')" class="text-[9px] ml-1"></span></th>
-          <th class="sortable" @click="sortBy('complexidade')">Cmplx <span x-text="sortIcon('complexidade')" class="text-[9px] ml-1"></span></th>
-          <th class="sortable" @click="sortBy('prazo')">Prazo <span x-text="sortIcon('prazo')" class="text-[9px] ml-1"></span></th>
-          <th class="sortable" @click="sortBy('subetapa')">Status <span x-text="sortIcon('subetapa')" class="text-[9px] ml-1"></span></th>
+          <th class="sortable" @click="sortBy('titulo')">Tarefa <span x-text="sortIcon('titulo')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" @click="sortBy('clienteId')">Cliente <span x-text="sortIcon('clienteId')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" @click="sortBy('projetoId')">Projeto <span x-text="sortIcon('projetoId')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" @click="sortBy('pessoaId')">Responsável <span x-text="sortIcon('pessoaId')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" @click="sortBy('prioridade')" title="Prioridade">Pri <span x-text="sortIcon('prioridade')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable text-right" @click="sortBy('esforco')" title="Horas previstas">h <span x-text="sortIcon('esforco')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" @click="sortBy('complexidade')" title="Complexidade">Cmplx <span x-text="sortIcon('complexidade')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" @click="sortBy('prazo')">Prazo <span x-text="sortIcon('prazo')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" @click="sortBy('subetapa')">Status <span x-text="sortIcon('subetapa')" class="text-[10px] ml-1 text-ink"></span></th>
           <th class="w-8"></th>
         </tr>
       </thead>
@@ -940,13 +940,12 @@
                        @change="toggleSelect(t.id)">
               </td>
               <td>
-                <div class="font-medium text-ink" x-text="t.titulo"></div>
+                <div class="tbl-title" :title="t.titulo" x-text="t.titulo"></div>
                 <div x-show="(t.tags || []).length>0" class="flex flex-wrap gap-1 mt-1">
                   <template x-for="tag in (t.tags || [])" :key="tag">
                     <span class="tag-chip tag-chip-link" @click.stop="f.tag = tag" x-text="'#' + tag"></span>
                   </template>
                 </div>
-                <div class="text-xs text-muted mt-0.5 hidden md:block" x-text="t.descricao ? t.descricao.slice(0,80) + (t.descricao.length>80?'…':'') : ''"></div>
               </td>
               <td class="text-ink-soft" x-text="nomeCliente(t.clienteId)"></td>
               <td class="text-ink-soft" x-text="nomeProjeto(t.projetoId)"></td>
