@@ -674,22 +674,19 @@
 <!-- ============ TRIAGEM ============ -->
 <template x-if="tab==='triagem'"><section class="fade-up">
   <div class="max-w-[1100px] mx-auto space-y-4 md:space-y-5">
-    <!-- Header subtitle-only: H1 escondido pra recuperar espaço; breakdown sem resp/prazo/esforço à direita -->
-    <div class="page-header page-header-subtitle-only">
-      <div class="page-titles">
-        <h1 class="page-title">Triagem</h1>
-        <p class="page-subtitle" x-show="triagemTasks.length > 0">
-          <strong x-text="triagemTasksFiltered.length"></strong><span x-show="triagemAnyFilter()" class="text-muted" x-text="' / ' + triagemTasks.length"></span>
-          tarefa<span x-show="triagemTasksFiltered.length !== 1">s pra triar</span>
-        </p>
-      </div>
-      <div class="page-actions" x-show="triagemTasks.length > 0">
-        <span class="text-xs text-muted font-mono">
-          <strong class="text-ink-soft" x-text="triagemTasks.filter(t => !t.pessoaId).length"></strong> sem resp.
+    <!-- Page bar unificado (1 linha): narrativa + métricas. Sem filtros/toggle/extras nesta aba. -->
+    <div class="page-bar hidden md:flex" x-show="triagemTasks.length > 0">
+      <div class="page-bar-info">
+        <span class="page-bar-narrative">
+          <strong x-text="triagemTasksFiltered.length"></strong><span x-show="triagemAnyFilter()" class="text-muted font-normal" x-text="' / ' + triagemTasks.length"></span>
+          tarefa<span x-show="triagemTasksFiltered.length !== 1">s</span> pra triar
+        </span>
+        <span class="page-bar-metrics">
+          <strong x-text="triagemTasks.filter(t => !t.pessoaId).length"></strong> sem resp.
           ·
-          <strong class="text-ink-soft" x-text="triagemTasks.filter(t => !t.prazo).length"></strong> sem prazo
+          <strong x-text="triagemTasks.filter(t => !t.prazo).length"></strong> sem prazo
           ·
-          <strong class="text-ink-soft" x-text="triagemTasks.filter(t => !(+t.esforco)).length"></strong> sem esforço
+          <strong x-text="triagemTasks.filter(t => !(+t.esforco)).length"></strong> sem esforço
         </span>
       </div>
     </div>
@@ -760,25 +757,29 @@
 
 <!-- ============ BACKLOG ============ -->
 <section x-show="tab==='backlog'" class="fade-up">
-  <!-- Page header INLINE (compacto, 1 linha): title + contagem inline + actions à direita.
-       Otimiza altura — tabela é o protagonista. -->
-  <div class="page-header page-header-inline hidden md:flex">
-    <div class="page-titles">
-      <h1 class="page-title">Backlog</h1>
-      <p class="page-subtitle">
-        <strong x-text="filtered.length"></strong> de <strong x-text="tasks.length"></strong> tarefas<span x-show="tasks.length - filtered.length > 0" class="text-muted" x-text="' · ' + (tasks.length - filtered.length) + ' ocultas'"></span>
-      </p>
+  <!-- Page bar unificado (1 linha): narrativa + busca + filtros + extras(⋯).
+       Filtros pesados (cliente/projeto/responsável/pri/cmplx/status/tag) ficam abaixo numa linha de filtros densa,
+       acompanhando o padrão "controles inline + filtros estruturados embaixo". -->
+  <div class="page-bar hidden md:flex">
+    <div class="page-bar-info">
+      <span class="page-bar-narrative">
+        <strong x-text="filtered.length"></strong> de <strong x-text="tasks.length"></strong> tarefas
+      </span>
+      <span class="page-bar-metrics" x-show="tasks.length - filtered.length > 0">
+        <strong x-text="tasks.length - filtered.length"></strong> ocultas
+      </span>
     </div>
-    <div class="page-actions">
+    <div class="page-bar-controls">
+      <input type="text" class="inp w-[200px]" placeholder="Buscar título…" x-model.debounce.150ms="f.q" :class="f.q && 'is-active'">
       <button class="btn btn-ghost text-xs" x-show="activeFiltersCount > 0 || f.q || f.tag"
               @click="clearFilters()"
               title="Limpar todos os filtros aplicados">
-        ✕ limpar filtros<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
+        ✕ limpar<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
       </button>
       <div class="relative" @click.outside="backlogMoreOpen = false">
         <button class="more-menu-btn" @click="backlogMoreOpen = !backlogMoreOpen"
                 :aria-expanded="backlogMoreOpen.toString()"
-                aria-label="Mais opções" title="Mais opções">⋯</button>
+                aria-label="Mais opções" title="Agrupar · arquivadas">⋯</button>
         <div x-show="backlogMoreOpen" x-transition.opacity class="more-menu-panel">
           <div class="more-row">
             <span class="text-[10px] uppercase tracking-wider text-muted font-semibold shrink-0">Agrupar</span>
@@ -804,9 +805,11 @@
     </div>
   </div>
 
-  <!-- Filtros — ordem espelha colunas da tabela: Tarefa · Cliente · Projeto · Resp · Pri · Cmplx · Status · Tag -->
+  <!-- Filtros — ordem espelha colunas da tabela: Cliente · Projeto · Resp · Pri · Cmplx · Status · Tag.
+       Busca subiu pro page-bar acima. -->
   <div class="grid grid-cols-2 md:grid-cols-12 gap-2 md:gap-3 mb-4 md:mb-5">
-    <div class="col-span-1 md:col-span-2">
+    <!-- Busca mobile-only (no desktop o input vive no page-bar acima) -->
+    <div class="col-span-1 md:hidden">
       <input type="text" class="inp" placeholder="Buscar título…" x-model.debounce.150ms="f.q">
     </div>
     <div class="col-span-1 md:hidden">
@@ -2205,42 +2208,35 @@
 <!-- ============ DADOS MVP ============ -->
 <template x-if="tab==='mvp'"><section class="fade-up">
 
-  <!-- Page header padrão (mesmo Dashboard): title + contexto + filtros à direita -->
-  <div class="page-header hidden md:flex" x-show="!adoptionViewPortal">
-    <div class="page-titles">
-      <h1 class="page-title">Adoção</h1>
-      <p class="page-subtitle">métricas de uso · esta semana</p>
+  <!-- Page bar unificado: narrativa + filtros + toggle -->
+  <div class="page-bar hidden md:flex">
+    <div class="page-bar-info">
+      <span class="page-bar-narrative">
+        <span x-show="!adoptionViewPortal">Adoção interna · esta semana</span>
+        <span x-show="adoptionViewPortal">Adoção do portal cliente · esta semana</span>
+      </span>
     </div>
-    <div class="page-actions">
-      <select class="inp text-xs py-1.5 w-[140px]" :class="adoptionFilter.role && 'is-active'" x-model="adoptionFilter.role">
-        <option value="">qualquer role</option>
-        <option value="admin">admin</option>
-        <option value="interno">interno</option>
-      </select>
-      <select class="inp text-xs py-1.5 w-[160px]" :class="adoptionFilter.senioridade && 'is-active'" x-model="adoptionFilter.senioridade">
-        <option value="">qualquer senioridade</option>
-        <option value="junior">junior</option>
-        <option value="pleno">pleno</option>
-        <option value="senior">senior</option>
-        <option value="lead">lead</option>
-      </select>
-      <select class="inp text-xs py-1.5 w-[180px]" :class="adoptionFilter.clientePrincipalId && 'is-active'" x-model="adoptionFilter.clientePrincipalId">
-        <option value="">qualquer cliente</option>
-        <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
-      </select>
-      <div class="view-toggle" role="tablist" aria-label="Visão de Adoção">
-        <button :class="!adoptionViewPortal && 'active'" @click="adoptionViewPortal = false">interna</button>
-        <button :class="adoptionViewPortal && 'active'" @click="adoptionViewPortal = true">portal cliente</button>
-      </div>
-    </div>
-  </div>
-  <!-- Header quando estiver na visão portal cliente: toggle direita pra voltar -->
-  <div class="page-header hidden md:flex" x-show="adoptionViewPortal">
-    <div class="page-titles">
-      <h1 class="page-title">Adoção</h1>
-      <p class="page-subtitle">portal cliente · esta semana</p>
-    </div>
-    <div class="page-actions">
+    <div class="page-bar-controls">
+      <template x-if="!adoptionViewPortal">
+        <div class="flex items-center gap-2">
+          <select class="inp w-[130px]" :class="adoptionFilter.role && 'is-active'" x-model="adoptionFilter.role">
+            <option value="">qualquer role</option>
+            <option value="admin">admin</option>
+            <option value="interno">interno</option>
+          </select>
+          <select class="inp w-[150px]" :class="adoptionFilter.senioridade && 'is-active'" x-model="adoptionFilter.senioridade">
+            <option value="">qualquer senioridade</option>
+            <option value="junior">junior</option>
+            <option value="pleno">pleno</option>
+            <option value="senior">senior</option>
+            <option value="lead">lead</option>
+          </select>
+          <select class="inp w-[170px]" :class="adoptionFilter.clientePrincipalId && 'is-active'" x-model="adoptionFilter.clientePrincipalId">
+            <option value="">qualquer cliente</option>
+            <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+          </select>
+        </div>
+      </template>
       <div class="view-toggle" role="tablist" aria-label="Visão de Adoção">
         <button :class="!adoptionViewPortal && 'active'" @click="adoptionViewPortal = false">interna</button>
         <button :class="adoptionViewPortal && 'active'" @click="adoptionViewPortal = true">portal cliente</button>

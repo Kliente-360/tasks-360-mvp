@@ -1749,6 +1749,41 @@
   }
   .page-header-subtitle-only .page-subtitle strong { color: var(--ink); font-weight: 700; }
 
+  /* ============ PAGE BAR (1-linha unificado, novo padrão) ============
+     5 slots em ordem: narrativa · métricas · filtros · toggle · extras(⋯).
+     Tudo em 1 linha no desktop; mobile pensa-se depois.
+     Sem H1 (tab ativa no nav já identifica a aba). */
+  .page-bar {
+    display: flex; align-items: center; gap: var(--sp-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--sp-4);
+  }
+  .page-bar-info {
+    display: flex; align-items: baseline; gap: var(--sp-3);
+    min-width: 0; flex: 1 1 auto;
+    flex-wrap: wrap;
+  }
+  .page-bar-narrative {
+    font-size: var(--fs-md); font-weight: 600; color: var(--ink);
+    line-height: 1.3;
+  }
+  .page-bar-narrative strong { font-weight: 700; }
+  .page-bar-metrics {
+    font-size: var(--fs-sm); color: var(--muted);
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .page-bar-metrics strong { color: var(--ink-soft); font-weight: 600; }
+  .page-bar-controls {
+    display: flex; align-items: center; gap: var(--sp-2);
+    flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;
+  }
+  /* Inputs compactos dentro da page-bar pra encaixar bem na altura */
+  .page-bar-controls .inp { padding: 6px 10px; font-size: var(--fs-sm); height: 32px; }
+  .page-bar-controls .view-toggle { height: 32px; }
+  .page-bar-controls .view-toggle button { padding: 0 12px; height: 100%; }
+  .page-bar-controls .more-menu-btn { width: 32px; height: 32px; }
+
   /* Menu "⋯ mais" usado no Backlog pra esconder controles secundários (agrupar/ordem/arquivadas).
      Botão icon-only + dropdown card. */
   .more-menu-btn {
