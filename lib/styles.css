@@ -1017,13 +1017,20 @@
     text-transform: lowercase; letter-spacing: 0.02em;
     white-space: nowrap;
   }
+  /* TRIAR é meta-informação ("falta campo X"), NÃO status — chip outlined discreto.
+     Antes era sólido amber, competia visualmente com o status chip do lado. */
   .triage-badge {
     display: inline-flex; align-items: center; gap: 3px;
-    font-size: 9px; font-weight: 700;
+    font-size: 9px; font-weight: 600;
     padding: 1px 5px; border-radius: 3px;
-    background: var(--sig-amber); color: #fff;
+    background: transparent; color: var(--triage);
+    border: 1px solid color-mix(in srgb, var(--triage) 45%, transparent);
     font-family: var(--font-mono);
     text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .triage-badge:hover {
+    background: var(--triage-soft);
+    border-color: var(--triage);
   }
   /* Chip toggle pros filtros da Triagem (sem responsável/prazo/esforço) */
   .triage-filter-chip {
