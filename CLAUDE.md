@@ -15,7 +15,7 @@ Convenções do projeto que valem pra qualquer sessão.
 ## Versionamento
 
 - `APP_VERSION` em `lib/helpers.js` segue `v1.01.<N>` onde N = número do PR mergeado. **Bumpa antes de cada commit.**
-- Último PR mergeado: #223 → versão atual `v1.01.223`.
+- Último PR mergeado: #225 → versão atual `v1.01.225`.
 - Em mudança grande de UX/dados, bumpa MINOR e zera BUILD (decisão manual).
 - Após commit em main, arquivos de migration vão pra `supabase/migrations/applied/` (mover manualmente — não tem automação).
 
@@ -26,3 +26,4 @@ Convenções do projeto que valem pra qualquer sessão.
 - Branches `claude/*` criadas pelo harness são ignoradas — não usar, não deletar.
 - Antes de commitar: bumpar `APP_VERSION` em `lib/helpers.js` (BUILD += 1).
 - Versionamento: `APP_VERSION = v1.01.<N>` onde N = número do PR mergeado (1:1).
+- **Sempre `git pull origin main` antes de criar branch nova**, pra evitar divergência local.
