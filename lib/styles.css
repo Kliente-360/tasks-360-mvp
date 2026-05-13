@@ -1027,6 +1027,7 @@
     border: 1px solid color-mix(in srgb, var(--triage) 45%, transparent);
     font-family: var(--font-mono);
     text-transform: uppercase; letter-spacing: 0.05em;
+    transition: background-color 80ms ease, border-color 80ms ease;
   }
   .triage-badge:hover {
     background: var(--triage-soft);
