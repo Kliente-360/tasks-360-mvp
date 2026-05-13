@@ -24,6 +24,8 @@
 <script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js"></script>
 <!-- Helpers puros (testáveis em tests/index.html). Carregar ANTES do script inline. -->
 <script src="lib/helpers.js"></script>
+<!-- Adapters JS <-> DB (pure). Carregar antes de lib/app.js. -->
+<script src="lib/adapters.js"></script>
 <link rel="stylesheet" href="lib/styles.css">
 </head>
 <script>
