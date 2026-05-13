@@ -6,9 +6,25 @@
     --brand-soft:  #E6F5E6;
     --brand-tint:  #F2FAF2;
 
-    /* === NAVY === header institucional, bulk actions bar, portal cliente skin */
+    /* === NAVY === bulk actions bar + KPI gradient (uso institucional secundário) */
     --navy:        #1f2937;
     --navy-soft:   #374151;
+
+    /* === HEADERS SEMÂNTICOS === diferenciam contexto:
+       --header-task   = task modal (slate profundo, neutro pra não competir com chip de prioridade)
+       --header-portal = portal cliente (verde Kliente escuro, brand-aware pra sinalizar "isso é a Kliente 360 te mostrando o status") */
+    --header-task:        #0F172A;
+    --header-task-soft:   #1E293B;
+    --header-portal:      #0A3A1F;
+    --header-portal-soft: #14532D;
+
+    /* === TRIAGEM === badge "TRIAR" — meta-informação, não status. Outlined amber discreto. */
+    --triage:      #B45309;
+    --triage-soft: #FEF3C7;
+
+    /* === FONT FAMILIES === referenciadas como var(--font-*) em todo o CSS. */
+    --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
     /* === CYAN === info, P2, link, focus ring (substitui o azul saturado antigo) */
     --cyan:        #0084E1;
@@ -114,23 +130,38 @@
     --navy:        #1f2937;
     --navy-soft:   #374151;
 
+    /* Headers semânticos no dark: task vira slate ainda mais escuro pra fundir com bg navy;
+       portal mantém verde escuro mas dessaturado pra não vibrar no dark. */
+    --header-task:        #0A0F1F;
+    --header-task-soft:   #1E293B;
+    --header-portal:      #0E2E1A;
+    --header-portal-soft: #14532D;
+
+    /* Triagem no dark: amber mais saturado pra contraste com bg escuro */
+    --triage:      #F59E0B;
+    --triage-soft: rgba(245,158,11,0.14);
+
+    /* Font families (mesmos valores do light, declarados pra consistência) */
+    --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
     --cyan:        #2A9DEE;
     --cyan-soft:   #0E2942;
 
     --yellow:      #F8DF61;
     --yellow-soft: rgba(248,223,97,0.12);
 
-    --surface-1:   #0A0A1F;     /* paper sobre navy */
-    --surface-2:   #040427;     /* navy puro pro bg base */
-    --surface-3:   #0E0E33;
+    --surface-1:   #0F1117;     /* paper — slate quase-preto com leve tint, lê como "executivo" */
+    --surface-2:   #0A0C12;     /* bg base — mais escuro que paper, dessaturado (era #040427 blueberry) */
+    --surface-3:   #161922;     /* hover/zebra */
     --bg:          var(--surface-2);
     --bg-elev:     var(--surface-1);
 
     --ink:         #F0F0EE;
     --ink-soft:    #BFC0BE;
     --muted:       #7D8185;
-    --line:        #1F1F3D;
-    --line-strong: #2A2A4D;
+    --line:        #2A2D38;     /* separadores visíveis (era #1F1F3D, quase invisível contra bg) */
+    --line-strong: #3A3D48;
 
     --p0: #E55B4D;
     --p0-soft: rgba(229,91,77,0.14);
@@ -509,11 +540,12 @@
   .bulk-bar .btn-ghost:hover { background: rgba(255,255,255,0.08); color: #fff; }
 
   /* ============ PORTAL CLIENTE (skin separado) ============
-     Cliente NÃO é interno: header navy institucional + hero "Aguardando você"
-     com âmbar quando há ação pendente. Visualmente diferente pra cliente entender
-     "isso é a Kliente 360 te mostrando o status, não o app interno". */
+     Cliente NÃO é interno: header em verde Kliente escuro (--header-portal) — único lugar
+     onde o brand vira protagonista do header. Hero "Aguardando você" com âmbar quando
+     há ação pendente. Visualmente diferente do task modal (slate --header-task) pra
+     usuário interno não confundir contexto. */
   .portal-header {
-    background: var(--navy); color: #fff;
+    background: var(--header-portal); color: #fff;
     border-radius: var(--r-lg);
     padding: var(--sp-5) var(--sp-6);
     border: 0;
@@ -1215,7 +1247,7 @@
     .print-only table.memo-tbl tr { page-break-inside: avoid; break-inside: avoid; }
   }
     /* ============ MODAL TASK · two-pane (vencedor B) ============
-     Layout: header navy compacto · esq dados (60%) · dir conversa/histórico (40%) · footer ações.
+     Layout: header --header-task (slate) compacto · esq dados (60%) · dir conversa/histórico (40%) · footer ações.
      Autosave roda em paralelo ao botão Salvar; indicador mostra estado (saving/saved/dirty/idle).
      Botão Salvar continua como fallback explícito — ver comentário inline na seção do footer.        */
   .tmodal {
@@ -1228,7 +1260,7 @@
     max-height: 90vh;
   }
   .tmodal-head {
-    background: var(--navy); color: #fff;
+    background: var(--header-task); color: #fff;
     padding: var(--sp-3) var(--sp-5);
     display: flex; align-items: center; gap: var(--sp-3);
     border-bottom: 0;
