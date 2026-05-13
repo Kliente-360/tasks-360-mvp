@@ -1620,7 +1620,7 @@
                       <span class="font-medium text-ink" x-text="c.author || '—'"></span>
                       <span class="text-muted font-mono" x-text="fmtPostedEm(c.posted_em || c.criado_em)"></span>
                     </div>
-                    <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-html="renderCommentBody(c.body)"></div>
+                    <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-html="renderCommentBody(c.body, c.external_source)"></div>
                   </div>
                   <template x-for="r in portalRepliesOf(c.id)" :key="r.id">
                     <div class="pl-3 py-1 border-l-2 mt-2 ml-5" :style="r.from_cliente ? 'border-color: #b45309' : 'border-color: var(--brand)'">
@@ -1628,7 +1628,7 @@
                         <span class="font-medium text-ink" x-text="r.author || '—'"></span>
                         <span class="text-muted font-mono" x-text="fmtPostedEm(r.posted_em || r.criado_em)"></span>
                       </div>
-                      <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-html="renderCommentBody(r.body)"></div>
+                      <div class="text-sm text-ink-soft mt-1 whitespace-pre-wrap break-words" x-html="renderCommentBody(r.body, r.external_source)"></div>
                     </div>
                   </template>
                 </div>
@@ -3279,7 +3279,7 @@
                     <button x-show="_canDeleteComment(c) && editingCommentId !== c.id" class="text-[11px] text-muted hover:text-danger" title="Excluir comentário" @click="deleteComment(c)">✕</button>
                   </div>
                 </div>
-                <div x-show="editingCommentId !== c.id" class="cmsg-body" x-html="renderCommentBody(c.body)"></div>
+                <div x-show="editingCommentId !== c.id" class="cmsg-body" x-html="renderCommentBody(c.body, c.external_source)"></div>
                 <div x-show="editingCommentId === c.id" class="flex flex-col gap-1.5 mt-1">
                   <textarea class="inp resize-y min-h-[60px] text-sm" :data-edit-comment="c.id" x-model="editingCommentDraft"
                             @keydown.meta.enter.prevent="saveEditComment(c)" @keydown.ctrl.enter.prevent="saveEditComment(c)"
@@ -3310,7 +3310,7 @@
                       <button x-show="_canDeleteComment(r) && editingCommentId !== r.id" class="text-[11px] text-muted hover:text-danger" title="Excluir resposta" @click="deleteComment(r)">✕</button>
                     </div>
                   </div>
-                  <div x-show="editingCommentId !== r.id" class="cmsg-body" x-html="renderCommentBody(r.body)"></div>
+                  <div x-show="editingCommentId !== r.id" class="cmsg-body" x-html="renderCommentBody(r.body, r.external_source)"></div>
                   <div x-show="editingCommentId === r.id" class="flex flex-col gap-1.5 mt-1">
                     <textarea class="inp resize-y min-h-[50px] text-sm" :data-edit-comment="r.id" x-model="editingCommentDraft"
                               @keydown.meta.enter.prevent="saveEditComment(r)" @keydown.ctrl.enter.prevent="saveEditComment(r)"
