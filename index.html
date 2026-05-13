@@ -424,13 +424,12 @@
 <!-- ============ BRIEFING EXECUTIVO ============ -->
 <template x-if="tab==='brief'"><section class="fade-up">
   <div class="max-w-[1100px] mx-auto space-y-5 md:space-y-6">
-    <!-- Header subtitle-only: H1 escondido pra recuperar espaço; a tab ativa já identifica a aba. -->
-    <div class="page-header page-header-subtitle-only">
-      <div class="page-titles">
-        <h1 class="page-title">Briefing executivo</h1>
-        <p class="page-subtitle" x-text="briefingHeadline"></p>
+    <!-- Page bar unificado: narrativa (headline) + data direita -->
+    <div class="page-bar">
+      <div class="page-bar-info">
+        <span class="page-bar-narrative" x-text="briefingHeadline"></span>
       </div>
-      <div class="page-actions">
+      <div class="page-bar-controls">
         <span class="text-xs text-muted font-mono" x-text="briefingDate"></span>
       </div>
     </div>
@@ -778,33 +777,33 @@
       </span>
     </div>
     <div class="page-bar-controls">
-      <input type="text" class="inp w-[160px]" placeholder="Buscar…" x-model.debounce.150ms="f.q" :class="f.q && 'is-active'">
-      <select class="inp w-[120px]" :class="f.cliente && 'is-active'" x-model="f.cliente">
+      <input type="text" class="inp w-[200px]" placeholder="Buscar…" x-model.debounce.150ms="f.q" :class="f.q && 'is-active'">
+      <select class="inp w-[140px]" :class="f.cliente && 'is-active'" x-model="f.cliente">
         <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
-      <select class="inp w-[120px]" :class="f.projeto && 'is-active'" x-model="f.projeto">
+      <select class="inp w-[140px]" :class="f.projeto && 'is-active'" x-model="f.projeto">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
       </select>
-      <select class="inp w-[120px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
+      <select class="inp w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
         <option value="">Pessoas</option>
         <option value="__empty__">— sem responsável</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
-      <select class="inp w-[70px]" :class="f.pri && 'is-active'" x-model="f.pri">
+      <select class="inp w-[80px]" :class="f.pri && 'is-active'" x-model="f.pri">
         <option value="">Pri</option>
         <option value="__empty__">— vazio</option>
         <option value="P0">P0</option><option value="P1">P1</option><option value="P2">P2</option><option value="P3">P3</option>
       </select>
-      <select class="inp w-[80px]" :class="f.complexidade && 'is-active'" x-model="f.complexidade">
+      <select class="inp w-[100px]" :class="f.complexidade && 'is-active'" x-model="f.complexidade">
         <option value="">Cmplx</option>
         <option value="__empty__">— vazio</option>
         <option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option>
       </select>
-      <select class="inp w-[120px]" :class="(f.status && f.status !== 'abertas') && 'is-active'" x-model="f.status">
+      <select class="inp w-[140px]" :class="(f.status && f.status !== 'abertas') && 'is-active'" x-model="f.status">
         <option value="abertas">Abertas</option>
         <option value="">Status</option>
         <option value="backlog">Backlog</option>
@@ -812,7 +811,7 @@
         <option value="bloqueado">Bloqueado</option>
         <option value="concluido">Concluído</option>
       </select>
-      <select class="inp w-[100px]" :class="f.tag && 'is-active'" x-model="f.tag" x-show="allTags.length>0">
+      <select class="inp w-[120px]" :class="f.tag && 'is-active'" x-model="f.tag" x-show="allTags.length>0">
         <option value="">Tags</option>
         <option value="__empty__">— sem tags</option>
         <template x-for="t in allTags" :key="t"><option :value="t" x-text="'#' + t"></option></template>
@@ -1157,42 +1156,56 @@
 
 <!-- ============ KANBAN ============ -->
 <section x-show="tab==='kanban'" class="fade-up">
-  <!-- Page header INLINE: title + visão atual inline + toggle op/exec à direita -->
-  <div class="page-header page-header-inline hidden md:flex">
-    <div class="page-titles">
-      <h1 class="page-title">Kanban</h1>
-      <p class="page-subtitle">
+  <!-- Page bar unificado: narrativa + 3 filtros + toggle Op/Exec, tudo em 1 linha -->
+  <div class="page-bar hidden md:flex">
+    <div class="page-bar-info">
+      <span class="page-bar-narrative">
         <span x-show="effectiveKanbanView==='op'"><strong>Operacional</strong> · 11 colunas detalhadas</span>
         <span x-show="effectiveKanbanView==='exec'"><strong>Executiva</strong> · 4 colunas macro</span>
-      </p>
+      </span>
     </div>
-    <div class="page-actions">
-      <div class="view-toggle" role="tablist" aria-label="Visão do kanban">
-        <button :class="kanbanView==='op' && 'active'" @click="kanbanView='op'" title="Operacional — colunas detalhadas (nível 2)">Operacional</button>
-        <button :class="kanbanView==='exec' && 'active'" @click="kanbanView='exec'" title="Executiva — colunas macro (nível 1, somente leitura)">Executiva</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Linha de filtros (movida pra baixo do header, padronizada) -->
-  <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 md:gap-3 mb-5 md:mb-6">
-    <div class="flex flex-col md:flex-row gap-2 md:gap-3">
-      <select class="inp w-full md:w-[200px]" :class="f.cliente && 'is-active'" x-model="f.cliente">
+    <div class="page-bar-controls">
+      <select class="inp w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente">
         <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
-      <select class="inp w-full md:w-[200px]" :class="f.projeto && 'is-active'" x-model="f.projeto">
+      <select class="inp w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
       </select>
-      <select class="inp w-full md:w-[180px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
+      <select class="inp w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
         <option value="">Responsáveis</option>
         <option value="__empty__">— sem responsável</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
+      <div class="view-toggle" role="tablist" aria-label="Visão do kanban">
+        <button :class="kanbanView==='op' && 'active'" @click="kanbanView='op'" title="Operacional — colunas detalhadas">Operacional</button>
+        <button :class="kanbanView==='exec' && 'active'" @click="kanbanView='exec'" title="Executiva — colunas macro">Executiva</button>
+      </div>
     </div>
+  </div>
+
+  <!-- Mobile: filtros + toggle empilhados (desktop usa o .page-bar acima) -->
+  <div class="flex flex-col gap-2 mb-5 md:hidden">
+    <div class="flex gap-2">
+      <select class="inp flex-1" :class="f.cliente && 'is-active'" x-model="f.cliente">
+        <option value="">Clientes</option>
+        <option value="__empty__">— sem cliente</option>
+        <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+      </select>
+      <select class="inp flex-1" :class="f.projeto && 'is-active'" x-model="f.projeto">
+        <option value="">Projetos</option>
+        <option value="__empty__">— sem projeto</option>
+        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
+      </select>
+    </div>
+    <select class="inp" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
+      <option value="">Responsáveis</option>
+      <option value="__empty__">— sem responsável</option>
+      <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+    </select>
   </div>
 
   <!-- ============ VISÃO OPERACIONAL (nível 2) ============ -->
@@ -1313,24 +1326,28 @@
 
 <!-- ============ CALENDÁRIO ============ -->
 <section x-show="tab==='cal'" class="fade-up">
-  <!-- Page header padrão: title + mês atual subtitle + filtros à direita -->
-  <div class="page-header hidden md:flex">
-    <div class="page-titles">
-      <h1 class="page-title">Calendário</h1>
-      <p class="page-subtitle capitalize" x-text="calMonthLabel"></p>
+  <!-- Page bar unificado: narrativa (mês) + nav prev/today/next + 3 filtros -->
+  <div class="page-bar hidden md:flex">
+    <div class="page-bar-info">
+      <span class="page-bar-narrative capitalize" x-text="calMonthLabel"></span>
     </div>
-    <div class="page-actions">
-      <select class="inp text-xs py-1.5 w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente">
+    <div class="page-bar-controls">
+      <div class="flex items-center gap-1">
+        <button class="more-menu-btn" @click="calPrev()" title="Mês anterior" aria-label="Mês anterior">‹</button>
+        <button class="btn btn-ghost text-xs" @click="calToday()">hoje</button>
+        <button class="more-menu-btn" @click="calNext()" title="Próximo mês" aria-label="Próximo mês">›</button>
+      </div>
+      <select class="inp w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente">
         <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
-      <select class="inp text-xs py-1.5 w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto">
+      <select class="inp w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
       </select>
-      <select class="inp text-xs py-1.5 w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
+      <select class="inp w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
         <option value="">Responsáveis</option>
         <option value="__empty__">— sem responsável</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
@@ -1358,13 +1375,14 @@
   </div>
 
   <div class="card p-3 md:p-5">
-    <div class="flex items-center justify-between gap-2 mb-3">
+    <!-- Nav (mês prev/hoje/next + label) só no mobile; desktop usa o .page-bar acima -->
+    <div class="flex items-center justify-between gap-2 mb-3 md:hidden">
       <div class="flex items-center gap-1 shrink-0">
         <button class="btn btn-ghost btn-icon text-xs" @click="calPrev()" title="Mês anterior">‹</button>
         <button class="btn btn-ghost text-xs" @click="calToday()">hoje</button>
         <button class="btn btn-ghost btn-icon text-xs" @click="calNext()" title="Próximo mês">›</button>
       </div>
-      <div class="font-brand text-base md:text-xl font-semibold capitalize text-right truncate" x-text="calMonthLabel"></div>
+      <div class="font-brand text-base font-semibold capitalize text-right truncate" x-text="calMonthLabel"></div>
     </div>
 
     <div class="cal-grid mb-1">
@@ -1752,27 +1770,25 @@
 
 <!-- ============ DASHBOARD ============ -->
 <template x-if="tab==='dash'"><section class="fade-up">
-  <!-- Page header padrão: title + contexto + filtros absorvidos à direita -->
-  <div class="page-header hidden md:flex">
-    <div class="page-titles">
-      <h1 class="page-title">Dashboard</h1>
-      <p class="page-subtitle">
-        saúde da operação
-        <span x-show="heuristicAlerts.length > 0" class="text-[color:var(--p0)]" x-text="' · ' + heuristicAlerts.length + ' alerta(s)'"></span>
-      </p>
+  <!-- Page bar unificado: narrativa + filtros (todos na mesma linha) -->
+  <div class="page-bar hidden md:flex">
+    <div class="page-bar-info">
+      <span class="page-bar-narrative">
+        Saúde da operação<span x-show="heuristicAlerts.length > 0" class="text-[color:var(--p0)]" x-text="' · ' + heuristicAlerts.length + ' alerta(s)'"></span>
+      </span>
     </div>
-    <div class="page-actions">
-      <select class="inp text-xs py-1.5 w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
+    <div class="page-bar-controls">
+      <select class="inp w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
         <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
-      <select class="inp text-xs py-1.5 w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto" @change="$nextTick(()=>renderCharts())">
+      <select class="inp w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto" @change="$nextTick(()=>renderCharts())">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
       </select>
-      <select class="inp text-xs py-1.5 w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
+      <select class="inp w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
         <option value="">Responsáveis</option>
         <option value="__empty__">— sem responsável</option>
         <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
