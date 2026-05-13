@@ -1690,6 +1690,60 @@
     .tmodal-foot .btn-txt { display: inline; }
   }
 
+  /* ============ PAGE HEADER (padrão de todas as abas) ============
+     Title grande + subtitle muted à esquerda; ações/meta à direita.
+     Cria âncora visual no topo de cada aba (estilo Briefing/Triagem). */
+  .page-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: var(--sp-4); flex-wrap: wrap;
+    margin-bottom: var(--sp-5);
+  }
+  .page-header > .page-titles { min-width: 0; }
+  .page-title {
+    font-family: var(--font-sans);
+    font-size: var(--fs-2xl); font-weight: 700;
+    line-height: 1.1; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  @media (max-width: 767px) {
+    .page-title { font-size: var(--fs-xl); }
+  }
+  .page-subtitle {
+    color: var(--muted); font-size: var(--fs-sm);
+    margin-top: 4px;
+  }
+  .page-subtitle strong { color: var(--ink-soft); font-weight: 600; }
+  .page-actions {
+    display: flex; align-items: center; gap: var(--sp-2);
+    flex-wrap: wrap; flex-shrink: 0;
+  }
+
+  /* Menu "⋯ mais" usado no Backlog pra esconder controles secundários (agrupar/ordem/arquivadas).
+     Botão icon-only + dropdown card. */
+  .more-menu-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    border: 1px solid var(--line); border-radius: var(--r-sm);
+    background: var(--surface-1); color: var(--ink-soft); cursor: pointer;
+    font-size: 16px; line-height: 1;
+    transition: border-color 120ms ease, color 120ms ease;
+  }
+  .more-menu-btn:hover { border-color: var(--line-strong); color: var(--ink); }
+  .more-menu-btn[aria-expanded="true"] { border-color: var(--cyan); color: var(--ink); }
+  .more-menu-panel {
+    position: absolute; right: 0; top: calc(100% + 4px);
+    background: var(--bg-elev); border: 1px solid var(--line);
+    border-radius: var(--r-md); box-shadow: var(--shadow-card);
+    min-width: 240px; padding: var(--sp-2); z-index: 30;
+  }
+  .more-menu-panel .more-row {
+    display: flex; align-items: center; gap: var(--sp-2);
+    padding: var(--sp-2);
+    font-size: var(--fs-sm); color: var(--ink-soft);
+  }
+  .more-menu-panel .more-row + .more-row { border-top: 1px solid var(--line); }
+  .more-menu-panel label { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+
   /* ============ A11Y FINISH ============ */
 
   /* Respeita preferência do SO por reduzir movimento (vestibular sensitivity, foco, etc).
