@@ -674,36 +674,46 @@
 <!-- ============ TRIAGEM ============ -->
 <template x-if="tab==='triagem'"><section class="fade-up">
   <div class="max-w-[1100px] mx-auto space-y-4 md:space-y-5">
-    <!-- Page bar unificado (1 linha): narrativa + métricas. Sem filtros/toggle/extras nesta aba. -->
+    <!-- Page bar unificado: narrativa + filtros (chips click-toggle) na mesma linha. -->
     <div class="page-bar hidden md:flex" x-show="triagemTasks.length > 0">
       <div class="page-bar-info">
         <span class="page-bar-narrative">
           <strong x-text="triagemTasksFiltered.length"></strong><span x-show="triagemAnyFilter()" class="text-muted font-normal" x-text="' / ' + triagemTasks.length"></span>
           tarefa<span x-show="triagemTasksFiltered.length !== 1">s</span> pra triar
         </span>
-        <span class="page-bar-metrics">
-          <strong x-text="triagemTasks.filter(t => !t.pessoaId).length"></strong> sem resp.
-          ·
-          <strong x-text="triagemTasks.filter(t => !t.prazo).length"></strong> sem prazo
-          ·
-          <strong x-text="triagemTasks.filter(t => !(+t.esforco)).length"></strong> sem esforço
-        </span>
+      </div>
+      <div class="page-bar-controls">
+        <button type="button" class="triage-filter-chip"
+                :class="triagemFilter.semResp && 'is-on'"
+                @click="triagemFilter.semResp = !triagemFilter.semResp">
+          <strong x-text="triagemTasks.filter(t => !t.pessoaId).length"></strong>&nbsp;sem resp.
+        </button>
+        <button type="button" class="triage-filter-chip"
+                :class="triagemFilter.semPrazo && 'is-on'"
+                @click="triagemFilter.semPrazo = !triagemFilter.semPrazo">
+          <strong x-text="triagemTasks.filter(t => !t.prazo).length"></strong>&nbsp;sem prazo
+        </button>
+        <button type="button" class="triage-filter-chip"
+                :class="triagemFilter.semEsforco && 'is-on'"
+                @click="triagemFilter.semEsforco = !triagemFilter.semEsforco">
+          <strong x-text="triagemTasks.filter(t => !(+t.esforco)).length"></strong>&nbsp;sem esforço
+        </button>
       </div>
     </div>
 
-    <!-- Filtros (só aparecem se tem tarefa pra triar) -->
-    <div x-show="triagemTasks.length > 0" class="flex items-center gap-1.5 md:gap-2">
-      <button type="button" class="triage-filter-chip flex-1 md:flex-none justify-center"
+    <!-- Filtros mobile (chips em row própria, mesma estrutura) -->
+    <div x-show="triagemTasks.length > 0" class="flex items-center gap-1.5 md:hidden">
+      <button type="button" class="triage-filter-chip flex-1 justify-center"
               :class="triagemFilter.semResp && 'is-on'"
               @click="triagemFilter.semResp = !triagemFilter.semResp">
         sem resp.
       </button>
-      <button type="button" class="triage-filter-chip flex-1 md:flex-none justify-center"
+      <button type="button" class="triage-filter-chip flex-1 justify-center"
               :class="triagemFilter.semPrazo && 'is-on'"
               @click="triagemFilter.semPrazo = !triagemFilter.semPrazo">
         sem prazo
       </button>
-      <button type="button" class="triage-filter-chip flex-1 md:flex-none justify-center"
+      <button type="button" class="triage-filter-chip flex-1 justify-center"
               :class="triagemFilter.semEsforco && 'is-on'"
               @click="triagemFilter.semEsforco = !triagemFilter.semEsforco">
         sem esforço
@@ -725,8 +735,8 @@
            :class="selectedIds.includes(t.id) && 'bg-brand-tint'"
            @click="openEdit(t)">
         <div class="flex items-start justify-between gap-3 mb-2">
-          <div class="min-w-0 flex-1 flex items-start gap-3">
-            <input type="checkbox" class="mt-1 shrink-0"
+          <div class="min-w-0 flex-1 flex items-center gap-3">
+            <input type="checkbox" class="shrink-0"
                    :checked="selectedIds.includes(t.id)"
                    @click.stop="toggleSelected(t.id)">
             <div class="min-w-0 flex-1">
@@ -757,9 +767,7 @@
 
 <!-- ============ BACKLOG ============ -->
 <section x-show="tab==='backlog'" class="fade-up">
-  <!-- Page bar unificado (1 linha): narrativa + busca + filtros + extras(⋯).
-       Filtros pesados (cliente/projeto/responsável/pri/cmplx/status/tag) ficam abaixo numa linha de filtros densa,
-       acompanhando o padrão "controles inline + filtros estruturados embaixo". -->
+  <!-- Page bar unificado (1 linha): narrativa + busca + 7 filtros + limpar + ⋯ -->
   <div class="page-bar hidden md:flex">
     <div class="page-bar-info">
       <span class="page-bar-narrative">
@@ -770,11 +778,49 @@
       </span>
     </div>
     <div class="page-bar-controls">
-      <input type="text" class="inp w-[200px]" placeholder="Buscar título…" x-model.debounce.150ms="f.q" :class="f.q && 'is-active'">
+      <input type="text" class="inp w-[160px]" placeholder="Buscar…" x-model.debounce.150ms="f.q" :class="f.q && 'is-active'">
+      <select class="inp w-[120px]" :class="f.cliente && 'is-active'" x-model="f.cliente">
+        <option value="">Clientes</option>
+        <option value="__empty__">— sem cliente</option>
+        <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+      </select>
+      <select class="inp w-[120px]" :class="f.projeto && 'is-active'" x-model="f.projeto">
+        <option value="">Projetos</option>
+        <option value="__empty__">— sem projeto</option>
+        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
+      </select>
+      <select class="inp w-[120px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
+        <option value="">Pessoas</option>
+        <option value="__empty__">— sem responsável</option>
+        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+      </select>
+      <select class="inp w-[70px]" :class="f.pri && 'is-active'" x-model="f.pri">
+        <option value="">Pri</option>
+        <option value="__empty__">— vazio</option>
+        <option value="P0">P0</option><option value="P1">P1</option><option value="P2">P2</option><option value="P3">P3</option>
+      </select>
+      <select class="inp w-[80px]" :class="f.complexidade && 'is-active'" x-model="f.complexidade">
+        <option value="">Cmplx</option>
+        <option value="__empty__">— vazio</option>
+        <option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option>
+      </select>
+      <select class="inp w-[120px]" :class="(f.status && f.status !== 'abertas') && 'is-active'" x-model="f.status">
+        <option value="abertas">Abertas</option>
+        <option value="">Status</option>
+        <option value="backlog">Backlog</option>
+        <option value="andamento">Em andamento</option>
+        <option value="bloqueado">Bloqueado</option>
+        <option value="concluido">Concluído</option>
+      </select>
+      <select class="inp w-[100px]" :class="f.tag && 'is-active'" x-model="f.tag" x-show="allTags.length>0">
+        <option value="">Tags</option>
+        <option value="__empty__">— sem tags</option>
+        <template x-for="t in allTags" :key="t"><option :value="t" x-text="'#' + t"></option></template>
+      </select>
       <button class="btn btn-ghost text-xs" x-show="activeFiltersCount > 0 || f.q || f.tag"
               @click="clearFilters()"
               title="Limpar todos os filtros aplicados">
-        ✕ limpar<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
+        ✕<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
       </button>
       <div class="relative" @click.outside="backlogMoreOpen = false">
         <button class="more-menu-btn" @click="backlogMoreOpen = !backlogMoreOpen"
@@ -782,16 +828,15 @@
                 aria-label="Mais opções" title="Agrupar · arquivadas">⋯</button>
         <div x-show="backlogMoreOpen" x-transition.opacity class="more-menu-panel">
           <div class="more-row">
-            <span class="text-[10px] uppercase tracking-wider text-muted font-semibold shrink-0">Agrupar</span>
             <select class="inp text-xs py-1 flex-1" x-model="groupBy" @change="collapsedGroups = []">
-              <option value="">— sem agrupamento</option>
-              <option value="pessoa">Responsável</option>
-              <option value="cliente">Cliente</option>
-              <option value="projeto">Projeto</option>
-              <option value="status">Status (macro)</option>
-              <option value="subetapa">Etapa</option>
-              <option value="prioridade">Prioridade</option>
-              <option value="complexidade">Complexidade</option>
+              <option value="">Agrupar</option>
+              <option value="pessoa">Agrupar por: Responsável</option>
+              <option value="cliente">Agrupar por: Cliente</option>
+              <option value="projeto">Agrupar por: Projeto</option>
+              <option value="status">Agrupar por: Status (macro)</option>
+              <option value="subetapa">Agrupar por: Etapa</option>
+              <option value="prioridade">Agrupar por: Prioridade</option>
+              <option value="complexidade">Agrupar por: Complexidade</option>
             </select>
           </div>
           <div class="more-row">
@@ -805,9 +850,8 @@
     </div>
   </div>
 
-  <!-- Filtros — ordem espelha colunas da tabela: Cliente · Projeto · Resp · Pri · Cmplx · Status · Tag.
-       Busca subiu pro page-bar acima. -->
-  <div class="grid grid-cols-2 md:grid-cols-12 gap-2 md:gap-3 mb-4 md:mb-5">
+  <!-- Filtros mobile (desktop usa o .page-bar acima com tudo numa linha) -->
+  <div class="grid grid-cols-2 gap-2 mb-4 md:hidden">
     <!-- Busca mobile-only (no desktop o input vive no page-bar acima) -->
     <div class="col-span-1 md:hidden">
       <input type="text" class="inp" placeholder="Buscar título…" x-model.debounce.150ms="f.q">
