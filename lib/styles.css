@@ -354,12 +354,16 @@
     color: var(--muted); margin-bottom: var(--sp-1);
   }
 
-  /* ============ TABS ============ */
+  /* ============ TABS ============
+     Tabs ficam na MESMA linha do logo + utilities (header reclaim).
+     Padding vertical reduzido (sp-2 vs sp-3) e margin lateral menor (sp-6 vs sp-8)
+     pra caber 10 tabs num viewport ~1280px sem scroll. */
   .tab {
     font-size: var(--fs-sm); font-weight: 500;
-    padding: var(--sp-3) 0; margin-right: var(--sp-8);
+    padding: var(--sp-2) 0; margin-right: var(--sp-6);
     color: var(--muted); border-bottom: 2px solid transparent;
-    transition: all 150ms ease; cursor: pointer;
+    transition: color 150ms ease, border-color 150ms ease; cursor: pointer;
+    white-space: nowrap; flex-shrink: 0;
   }
   .tab:hover { color: var(--ink); }
   .tab.active { color: var(--ink); border-color: var(--brand); }
