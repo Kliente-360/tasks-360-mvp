@@ -242,40 +242,18 @@
      - tracking uppercase 0.08em (padrão do sistema)
      - row hover passa de brand-tint pra surface-3 (verde fica reservado pra ação)
      - tipografia Plex via var(--fs-*) */
-  /* table-layout: fixed — garante que colunas respeitem larguras explícitas dos <th>.
-     Sem isso o conteúdo (especialmente o status worst-case com chip+aging+triar)
-     empurrava a coluna pra fora do viewport e o X de excluir sumia à direita. */
-  .tbl { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
+  .tbl { border-collapse: separate; border-spacing: 0; width: 100%; }
   .tbl thead th {
     text-align: left; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--muted); padding: var(--sp-3) var(--sp-4);
     border-bottom: 1px solid var(--line-strong); user-select: none; background: var(--surface-3);
   }
-  /* row compacta: vertical sp-2 (era sp-4) — 117 itens ocupam ~3x menos tela.
-     Horizontal mantém sp-4 pra respirar bem entre colunas. */
-  .tbl tbody td { padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: middle; }
-  .tbl tbody td .tbl-title {
-    font-weight: 500; color: var(--ink);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    max-width: 180px;
-  }
-  /* truncate genérico pra cliente/projeto/responsável — evita quebra de linha em nomes longos.
-     Width fluida (responsive) com cap pra não dominar a row. Tooltip via title attr. */
-  .tbl tbody td .tbl-truncate {
-    display: block;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    max-width: 100px;
-  }
-  /* Em telas médias (≥1100px) pode esticar pouco mais */
-  @media (min-width: 1100px) {
-    .tbl tbody td .tbl-title { max-width: 240px; }
-    .tbl tbody td .tbl-truncate { max-width: 130px; }
-  }
-  /* Em telas grandes (≥1400px) esticar de vez */
-  @media (min-width: 1400px) {
-    .tbl tbody td .tbl-title { max-width: 320px; }
-    .tbl tbody td .tbl-truncate { max-width: 160px; }
-  }
+  /* Row vertical sp-3 (compromisso entre original sp-4 e o tentado sp-2 que ficou apertado).
+     Horizontal sp-4 mantém respiro. Vertical-align middle pra chips alinharem com texto. */
+  .tbl tbody td { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: middle; }
+  /* tbl-title: peso médio, sem truncate forçado — auto-layout dimensiona pela natural width.
+     Quando título é muito longo, quebra em 2 linhas (preferível a empurrar coluna pra fora). */
+  .tbl tbody td .tbl-title { font-weight: 500; color: var(--ink); }
   .tbl tbody tr { transition: background 150ms ease; cursor: pointer; }
   .tbl tbody tr:hover { background: var(--surface-3); }
   .tbl thead th.sortable { cursor: pointer; }

@@ -895,7 +895,7 @@
     <table class="tbl">
       <thead>
         <tr>
-          <th style="width:36px" @click.stop>
+          <th class="w-8" @click.stop>
             <input type="checkbox"
                    class="cursor-pointer"
                    :checked="filtered.length > 0 && selectedIds.length === filtered.length"
@@ -904,22 +904,23 @@
                    title="Selecionar todas as visíveis">
           </th>
           <th class="sortable" @click="sortBy('titulo')">Tarefa <span x-text="sortIcon('titulo')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" style="width:110px" @click="sortBy('clienteId')">Cliente <span x-text="sortIcon('clienteId')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" style="width:110px" @click="sortBy('projetoId')">Projeto <span x-text="sortIcon('projetoId')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" style="width:110px" @click="sortBy('pessoaId')">Responsável <span x-text="sortIcon('pessoaId')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" style="width:60px" @click="sortBy('prioridade')" title="Prioridade">Pri <span x-text="sortIcon('prioridade')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable text-right" style="width:48px" @click="sortBy('esforco')" title="Horas previstas">h <span x-text="sortIcon('esforco')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" style="width:96px" @click="sortBy('complexidade')" title="Complexidade">Cmplx <span x-text="sortIcon('complexidade')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" style="width:76px" @click="sortBy('prazo')">Prazo <span x-text="sortIcon('prazo')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" style="width:140px" @click="sortBy('subetapa')">Status <span x-text="sortIcon('subetapa')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th style="width:36px"></th>
+          <!-- Cliente + Projeto mergeados numa coluna só pra liberar largura no auto-layout.
+               Sort ordena por cliente (primário). Filtros separados continuam funcionando. -->
+          <th class="sortable" @click="sortBy('clienteId')">Cliente · Projeto <span x-text="sortIcon('clienteId')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" @click="sortBy('pessoaId')">Responsável <span x-text="sortIcon('pessoaId')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" @click="sortBy('prioridade')" title="Prioridade">Pri <span x-text="sortIcon('prioridade')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable text-right" @click="sortBy('esforco')" title="Horas previstas">h <span x-text="sortIcon('esforco')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" @click="sortBy('complexidade')" title="Complexidade">Cmplx <span x-text="sortIcon('complexidade')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" @click="sortBy('prazo')">Prazo <span x-text="sortIcon('prazo')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" @click="sortBy('subetapa')">Status <span x-text="sortIcon('subetapa')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="w-8"></th>
         </tr>
       </thead>
       <!-- 1 tbody por grupo. Quando groupBy='', existe um único grupo "todas" sem header. -->
       <template x-for="g in groupedFiltered" :key="g.key">
         <tbody>
           <tr x-show="!g.isAll" class="group-header cursor-pointer" @click="toggleGroup(g.key)">
-            <td colspan="11" class="bg-bg-elev hover:bg-brand-tint transition-colors py-2 px-3 border-y border-line">
+            <td colspan="10" class="bg-bg-elev hover:bg-brand-tint transition-colors py-2 px-3 border-y border-line">
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0">
                   <span class="text-muted font-mono text-xs w-3 inline-block" x-text="collapsedGroups.includes(g.key) ? '▸' : '▾'"></span>
@@ -951,9 +952,8 @@
                   </template>
                 </div>
               </td>
-              <td class="text-ink-soft"><span class="tbl-truncate" :title="nomeCliente(t.clienteId)" x-text="nomeCliente(t.clienteId)"></span></td>
-              <td class="text-ink-soft"><span class="tbl-truncate" :title="nomeProjeto(t.projetoId)" x-text="nomeProjeto(t.projetoId)"></span></td>
-              <td class="text-ink-soft"><span class="tbl-truncate" :title="nomePessoa(t.pessoaId)" x-text="nomePessoa(t.pessoaId)"></span></td>
+              <td class="text-ink-soft" :title="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></td>
+              <td class="text-ink-soft" x-text="nomePessoa(t.pessoaId)"></td>
               <td>
                 <span class="pri" :class="'pri-'+t.prioridade">
                   <span class="pri-dot"></span>
@@ -990,7 +990,7 @@
             </tr>
           </template>
           <tr x-show="g.hasMore && (g.isAll || !collapsedGroups.includes(g.key))">
-            <td colspan="11" class="py-3 px-4 bg-bg">
+            <td colspan="10" class="py-3 px-4 bg-bg">
               <button class="btn btn-ghost text-xs w-full justify-center" @click="loadMoreBacklog()">
                 mostrando <span x-text="g.tasks.length"></span> de <span x-text="g.tasksTotal"></span> · carregar mais <span x-text="Math.min(_LIST_LIMIT_STEP, g.tasksTotal - g.tasks.length)"></span>
               </button>
@@ -1000,7 +1000,7 @@
       </template>
       <tbody x-show="filtered.length===0">
         <tr>
-          <td colspan="11" class="text-center py-12 md:py-16">
+          <td colspan="10" class="text-center py-12 md:py-16">
             <div class="font-brand text-xl mb-2 text-ink">Nada por aqui.</div>
             <div class="text-sm text-muted mb-4">
               <span x-show="tasks.length>0">Tente ajustar os filtros…</span>
