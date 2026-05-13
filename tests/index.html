@@ -332,6 +332,34 @@
     });
   });
 
+  describe('projetoCapacidadeSemana', () => {
+    it('null → null', () => eq(projetoCapacidadeSemana(null), null));
+    it('projeto sem orcamentoHoras → null', () => {
+      eq(projetoCapacidadeSemana({ tipo: 'sustentacao' }), null);
+    });
+    it('projeto com orçamento 0 → null', () => {
+      eq(projetoCapacidadeSemana({ tipo: 'sustentacao', orcamentoHoras: 0 }), null);
+    });
+    it('sustentação 100h/mês → 25h/semana (mensal/4)', () => {
+      eq(projetoCapacidadeSemana({ tipo: 'sustentacao', orcamentoHoras: 100 }), 25);
+    });
+    it('sustentação 40h/mês → 10h/semana', () => {
+      eq(projetoCapacidadeSemana({ tipo: 'sustentacao', orcamentoHoras: 40 }), 10);
+    });
+    it('projeto fechado (tipo=projeto) → null (escopo total, não semanal)', () => {
+      eq(projetoCapacidadeSemana({ tipo: 'projeto', orcamentoHoras: 200 }), null);
+    });
+    it('discovery → null', () => {
+      eq(projetoCapacidadeSemana({ tipo: 'discovery', orcamentoHoras: 50 }), null);
+    });
+    it('sem tipo → null', () => {
+      eq(projetoCapacidadeSemana({ orcamentoHoras: 100 }), null);
+    });
+    it('string numérica em orçamento → Number conversion funciona', () => {
+      eq(projetoCapacidadeSemana({ tipo: 'sustentacao', orcamentoHoras: '80' }), 20);
+    });
+  });
+
   // =================== RENDER ===================
   const results = document.getElementById('results');
   let pass = 0, fail = 0;
