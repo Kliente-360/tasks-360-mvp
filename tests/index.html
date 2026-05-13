@@ -271,6 +271,67 @@
     });
   });
 
+  describe('bucketTasksByWeek', () => {
+    const today = '2026-05-13';
+    it('vazio → buckets vazios', () => {
+      eq(bucketTasksByWeek([], today), { past: [], w0: [], w1: [], w2: [], w3: [], far: [] });
+    });
+    it('null/undefined → buckets vazios', () => {
+      eq(bucketTasksByWeek(null, today), { past: [], w0: [], w1: [], w2: [], w3: [], far: [] });
+    });
+    it('1 task em cada bucket', () => {
+      const out = bucketTasksByWeek([
+        { id: 'a', status: 'andamento', prazo: '2026-05-04' },
+        { id: 'b', status: 'andamento', prazo: '2026-05-15' },
+        { id: 'c', status: 'andamento', prazo: '2026-05-18' },
+        { id: 'd', status: 'andamento', prazo: '2026-05-25' },
+        { id: 'e', status: 'andamento', prazo: '2026-06-01' },
+        { id: 'f', status: 'andamento', prazo: '2026-07-01' },
+      ], today);
+      eq(out.past.map(t=>t.id), ['a']);
+      eq(out.w0.map(t=>t.id),   ['b']);
+      eq(out.w1.map(t=>t.id),   ['c']);
+      eq(out.w2.map(t=>t.id),   ['d']);
+      eq(out.w3.map(t=>t.id),   ['e']);
+      eq(out.far.map(t=>t.id),  ['f']);
+    });
+    it('concluída fica fora (vai pro far via null index)', () => {
+      const out = bucketTasksByWeek([
+        { id: 'a', status: 'concluido', prazo: '2026-05-15' },
+      ], today);
+      eq(out.w0, []);
+      eq(out.far.map(t=>t.id), ['a']);
+    });
+    it('múltiplas tasks no mesmo bucket', () => {
+      const out = bucketTasksByWeek([
+        { id: 'a', status: 'andamento', prazo: '2026-05-13' },
+        { id: 'b', status: 'andamento', prazo: '2026-05-15' },
+        { id: 'c', status: 'andamento', prazo: '2026-05-17' },
+      ], today);
+      eq(out.w0.length, 3);
+    });
+    it('sem prazo → default semana atual (w0)', () => {
+      const out = bucketTasksByWeek([
+        { id: 'a', status: 'andamento', prazo: '' },
+      ], today);
+      eq(out.w0.map(t=>t.id), ['a']);
+    });
+  });
+
+  describe('sumEffEsforco', () => {
+    it('vazio → 0', () => eq(sumEffEsforco([]), 0));
+    it('null → 0', () => eq(sumEffEsforco(null), 0));
+    it('soma esforços declarados', () => {
+      eq(sumEffEsforco([{ esforco: 4 }, { esforco: 8 }, { esforco: 2 }]), 14);
+    });
+    it('tasks sem esforço usam default 4h (effEsforco)', () => {
+      eq(sumEffEsforco([{ esforco: 0 }, { esforco: '' }]), 8);
+    });
+    it('mistura zerados e declarados (default 4h pra zerados)', () => {
+      eq(sumEffEsforco([{ esforco: 10 }, { esforco: 0 }]), 14);
+    });
+  });
+
   // =================== RENDER ===================
   const results = document.getElementById('results');
   let pass = 0, fail = 0;
