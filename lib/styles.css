@@ -354,15 +354,21 @@
     color: var(--muted); margin-bottom: var(--sp-1);
   }
 
-  /* ============ TABS ============ */
+  /* ============ TABS ============
+     Gap apertado (sp-6 vs sp-8) pra grupo ficar mais coeso.
+     Underline 3px (vs 2px) pra ler de mais longe na barra. */
   .tab {
     font-size: var(--fs-sm); font-weight: 500;
-    padding: var(--sp-3) 0; margin-right: var(--sp-8);
-    color: var(--muted); border-bottom: 2px solid transparent;
-    transition: all 150ms ease; cursor: pointer;
+    padding: var(--sp-3) 2px;
+    margin-right: var(--sp-6);
+    color: var(--muted);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px; /* compensa o border-bottom 3px pra não empurrar o conteúdo abaixo */
+    transition: color 150ms ease, border-color 150ms ease; cursor: pointer;
   }
-  .tab:hover { color: var(--ink); }
+  .tab:hover { color: var(--ink-soft); border-bottom-color: var(--line-strong); }
   .tab.active { color: var(--ink); border-color: var(--brand); }
+  .tab.active:hover { border-bottom-color: var(--brand); }
 
   /* ============ KANBAN ============ */
   .kcard {
