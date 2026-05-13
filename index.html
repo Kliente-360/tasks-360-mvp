@@ -1653,14 +1653,15 @@
     </div>
     <ul class="divide-y divide-line">
       <template x-for="a in heuristicAlerts.slice(0, 3)" :key="a.kind + a.titulo">
-        <li class="px-4 py-2.5 flex items-start gap-3">
-          <span class="text-xs uppercase tracking-wider font-mono font-semibold shrink-0 mt-0.5"
-                :style="a.severity === 'alta' ? 'color:var(--p0)' : (a.severity === 'media' ? 'color:#b45309' : 'color:var(--muted)')"
-                x-text="a.severity"></span>
+        <!-- Severity virou borda esquerda (era texto caps "ALTA" disputando espaço com o título).
+             A cor da borda comunica severity sem ocupar coluna inline. -->
+        <li class="px-4 py-2.5 flex items-start gap-3"
+            :style="'border-left: 3px solid ' + (a.severity === 'alta' ? 'var(--p0)' : (a.severity === 'media' ? '#f59e0b' : 'var(--line-strong)'))">
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-ink" x-text="a.titulo"></div>
             <div x-show="a.detalhe" class="text-xs text-muted mt-0.5" x-text="a.detalhe"></div>
           </div>
+          <span x-show="a.severity === 'alta'" class="text-[10px] uppercase tracking-wider font-mono font-semibold text-[color:var(--p0)] shrink-0 mt-1" x-text="a.severity" :title="'Severidade: ' + a.severity"></span>
         </li>
       </template>
     </ul>
@@ -1670,18 +1671,20 @@
     </div>
   </div>
 
-  <div class="flex flex-col md:flex-row md:items-center md:justify-end gap-2 md:gap-3 mb-5 md:mb-6">
-    <select class="inp w-full md:w-[200px]" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
+  <!-- Filtros agrupados num bloco sutil (antes flutuavam no canvas). Label "filtrar por" ancora visualmente. -->
+  <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-5 md:mb-6 px-3 md:px-4 py-2.5 md:py-3 rounded-md border border-line bg-surface-3">
+    <span class="text-[10px] uppercase tracking-wider text-muted font-mono font-semibold shrink-0 hidden md:inline">filtrar por</span>
+    <select class="inp w-full md:w-[200px]" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
       <option value="">Todos os clientes</option>
       <option value="__empty__">— sem cliente</option>
       <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
     </select>
-    <select class="inp w-full md:w-[200px]" x-model="f.projeto" @change="$nextTick(()=>renderCharts())">
+    <select class="inp w-full md:w-[200px]" :class="f.projeto && 'is-active'" x-model="f.projeto" @change="$nextTick(()=>renderCharts())">
       <option value="">Todos os projetos</option>
       <option value="__empty__">— sem projeto</option>
       <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
     </select>
-    <select class="inp w-full md:w-[180px]" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
+    <select class="inp w-full md:w-[180px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
       <option value="">Todos os responsáveis</option>
       <option value="__empty__">— sem responsável</option>
       <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
@@ -3004,7 +3007,7 @@
         <span class="head-chip-ico" aria-hidden="true">⏱</span>
         <span x-text="fmtDateShort(editing.prazo)"></span>
       </span>
-      <span x-show="editing.clienteId" class="head-chip head-chip-cliente" :title="nomeCliente(editing.clienteId)" x-text="(nomeCliente(editing.clienteId) || '').toUpperCase()"></span>
+      <span x-show="editing.clienteId" class="head-chip head-chip-cliente" :title="nomeCliente(editing.clienteId)" x-text="nomeCliente(editing.clienteId) || ''"></span>
       <span x-show="!editing.id && !editing.clienteId" class="head-chip head-chip-muted">Nova tarefa</span>
       <span x-show="editing.id && (editing.reopenCount || 0) > 0" class="reopen-chip text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:var(--p1-soft);color:var(--p1)" :title="'Reaberta ' + editing.reopenCount + ' vez(es)'" x-text="'reaberta ' + editing.reopenCount + 'x'"></span>
       <span x-show="editing.id && editing.arquivadoEm" class="arquivada-chip text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7)" title="Tarefa arquivada">arquivada</span>

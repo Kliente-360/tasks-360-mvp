@@ -1346,9 +1346,11 @@
     overflow: hidden; text-overflow: ellipsis;
   }
   .tmodal-head .head-chip-ico { opacity: 0.7; font-size: 10px; }
+  /* Cliente chip: title case (era CAPS — parecia label de sistema, não nome de cliente).
+     Cor um pouco mais clara pra ler como nome. */
   .tmodal-head .head-chip-cliente {
-    text-transform: uppercase; letter-spacing: 0.08em;
-    color: rgba(255,255,255,0.7); font-size: 10px;
+    text-transform: none; letter-spacing: 0;
+    color: rgba(255,255,255,0.85); font-size: 11px; font-weight: 500;
   }
   .tmodal-head .head-chip-muted { color: rgba(255,255,255,0.5); font-style: italic; }
 
@@ -1400,9 +1402,12 @@
   .tmodal-section { padding: var(--sp-4) 0; border-bottom: 1px solid var(--line); }
   .tmodal-section:first-child { padding-top: 0; }
   .tmodal-section:last-child  { border-bottom: 0; padding-bottom: 0; }
+  /* Section title (Atribuição, Descrição, Esforço…): pesa MAIS que field labels (.lbl).
+     Antes ambos eram fs-xs muted — hierarquia plana. Agora section sobe pra fs-sm + ink-soft,
+     ficando visualmente acima dos labels de campo. */
   .tmodal-section-title {
-    font-family: var(--font-sans); font-size: var(--fs-xs); font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+    font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft);
     margin-bottom: var(--sp-3);
   }
   /* checklist · linha sem contorno (parece texto inline, não input field).
@@ -1449,11 +1454,12 @@
   .tmodal-history-item .what { color: var(--ink-soft); }
   .tmodal-history-item .what b { color: var(--ink); font-weight: 600; }
 
-  /* direita: conversa */
+  /* direita: conversa — divider mais visível entre tabs e content (era --line, lia mal).
+     Usa --line-strong pra separar claramente o "menu" do "conteúdo da aba". */
   .tmodal-tabs {
     display: flex; gap: var(--sp-4);
     padding: var(--sp-3) var(--sp-5) 0;
-    border-bottom: 1px solid var(--line); background: var(--surface-1);
+    border-bottom: 1px solid var(--line-strong); background: var(--surface-1);
   }
   .tmodal-tab {
     font-size: var(--fs-sm); font-weight: 500; color: var(--muted);
