@@ -242,7 +242,10 @@
      - tracking uppercase 0.08em (padrão do sistema)
      - row hover passa de brand-tint pra surface-3 (verde fica reservado pra ação)
      - tipografia Plex via var(--fs-*) */
-  .tbl { border-collapse: separate; border-spacing: 0; width: 100%; }
+  /* table-layout: fixed — garante que colunas respeitem larguras explícitas dos <th>.
+     Sem isso o conteúdo (especialmente o status worst-case com chip+aging+triar)
+     empurrava a coluna pra fora do viewport e o X de excluir sumia à direita. */
+  .tbl { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
   .tbl thead th {
     text-align: left; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--muted); padding: var(--sp-3) var(--sp-4);

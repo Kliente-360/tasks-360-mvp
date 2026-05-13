@@ -802,8 +802,10 @@
       <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto">
         <option value="">Todos os projetos</option>
         <option value="__empty__">— sem projeto</option>
+        <!-- Contextual: opção não-selecionada mostra "Cliente · Projeto"; selecionada mostra só Projeto.
+             Resultado: select fechado lê curto, dropdown aberto lê contexto completo. -->
         <template x-for="p in projetosFiltrados" :key="p.id">
-          <option :value="p.id" x-text="nomeCliente(p.clienteId) + ' · ' + p.nome"></option>
+          <option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option>
         </template>
       </select>
     </div>
@@ -893,7 +895,7 @@
     <table class="tbl">
       <thead>
         <tr>
-          <th class="w-8" @click.stop>
+          <th style="width:36px" @click.stop>
             <input type="checkbox"
                    class="cursor-pointer"
                    :checked="filtered.length > 0 && selectedIds.length === filtered.length"
@@ -902,15 +904,15 @@
                    title="Selecionar todas as visíveis">
           </th>
           <th class="sortable" @click="sortBy('titulo')">Tarefa <span x-text="sortIcon('titulo')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" @click="sortBy('clienteId')">Cliente <span x-text="sortIcon('clienteId')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" @click="sortBy('projetoId')">Projeto <span x-text="sortIcon('projetoId')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" @click="sortBy('pessoaId')">Responsável <span x-text="sortIcon('pessoaId')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" @click="sortBy('prioridade')" title="Prioridade">Pri <span x-text="sortIcon('prioridade')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable text-right" @click="sortBy('esforco')" title="Horas previstas">h <span x-text="sortIcon('esforco')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" @click="sortBy('complexidade')" title="Complexidade">Cmplx <span x-text="sortIcon('complexidade')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" @click="sortBy('prazo')">Prazo <span x-text="sortIcon('prazo')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="sortable" @click="sortBy('subetapa')">Status <span x-text="sortIcon('subetapa')" class="text-[10px] ml-1 text-ink"></span></th>
-          <th class="w-8"></th>
+          <th class="sortable" style="width:110px" @click="sortBy('clienteId')">Cliente <span x-text="sortIcon('clienteId')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" style="width:110px" @click="sortBy('projetoId')">Projeto <span x-text="sortIcon('projetoId')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" style="width:110px" @click="sortBy('pessoaId')">Responsável <span x-text="sortIcon('pessoaId')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" style="width:60px" @click="sortBy('prioridade')" title="Prioridade">Pri <span x-text="sortIcon('prioridade')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable text-right" style="width:48px" @click="sortBy('esforco')" title="Horas previstas">h <span x-text="sortIcon('esforco')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" style="width:96px" @click="sortBy('complexidade')" title="Complexidade">Cmplx <span x-text="sortIcon('complexidade')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" style="width:76px" @click="sortBy('prazo')">Prazo <span x-text="sortIcon('prazo')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th class="sortable" style="width:200px" @click="sortBy('subetapa')">Status <span x-text="sortIcon('subetapa')" class="text-[10px] ml-1 text-ink"></span></th>
+          <th style="width:36px"></th>
         </tr>
       </thead>
       <!-- 1 tbody por grupo. Quando groupBy='', existe um único grupo "todas" sem header. -->
@@ -1097,7 +1099,7 @@
       <select class="inp w-full md:w-[200px]" x-model="f.projeto">
         <option value="">Todos os projetos</option>
         <option value="__empty__">— sem projeto</option>
-        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="nomeCliente(p.clienteId) + ' · ' + p.nome"></option></template>
+        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
       </select>
       <select class="inp w-full md:w-[180px]" x-model="f.pessoa">
         <option value="">Todos os responsáveis</option>
@@ -1254,7 +1256,7 @@
     <select class="inp w-full md:w-[200px]" x-model="f.projeto">
       <option value="">Todos os projetos</option>
       <option value="__empty__">— sem projeto</option>
-      <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="nomeCliente(p.clienteId) + ' · ' + p.nome"></option></template>
+      <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
     </select>
     <select class="inp w-full md:w-[180px]" x-model="f.pessoa">
       <option value="">Todos os responsáveis</option>
@@ -1697,7 +1699,7 @@
     <select class="inp w-full md:w-[200px]" x-model="f.projeto" @change="$nextTick(()=>renderCharts())">
       <option value="">Todos os projetos</option>
       <option value="__empty__">— sem projeto</option>
-      <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="nomeCliente(p.clienteId) + ' · ' + p.nome"></option></template>
+      <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
     </select>
     <select class="inp w-full md:w-[180px]" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
       <option value="">Todos os responsáveis</option>
@@ -3079,7 +3081,7 @@
               <label class="lbl">Projeto</label>
               <select class="inp" x-model="editing.projetoId">
                 <option value="">—</option>
-                <template x-for="p in projetosDoCliente(editing.clienteId)" :key="p.id"><option :value="p.id" x-text="nomeCliente(p.clienteId) + ' · ' + p.nome"></option></template>
+                <template x-for="p in projetosDoCliente(editing.clienteId)" :key="p.id"><option :value="p.id" x-text="editing.projetoId === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
               </select>
             </div>
             <div>
