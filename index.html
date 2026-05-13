@@ -3205,15 +3205,15 @@
 
         <!-- TAB · histórico -->
         <div x-show="modalTab === 'historico'" class="tmodal-thread">
-          <template x-for="h in editingHistory" :key="(h.kind || 'status') + ':' + h.id">
+          <template x-for="h in editingHistory" :key="h.id">
             <div class="flex items-start gap-2 text-xs py-1.5 border-b border-line last:border-0">
               <span class="font-mono text-muted shrink-0" x-text="fmtPostedEm(h.occurred_at)"></span>
               <div class="flex-1 min-w-0">
                 <span class="font-medium text-ink" x-text="h.actor_pessoa_id ? (nomePessoa(h.actor_pessoa_id)) : (h.actor_source === 'salesforce' ? 'Salesforce' : '—')"></span>
-                <template x-if="h.kind !== 'field'">
-                  <span><span class="text-muted"> moveu </span><span class="font-medium" x-text="h.from_status ? lblStatus(h.from_status) : '∅'"></span><span class="text-muted"> → </span><span class="font-medium" x-text="lblStatus(h.to_status)"></span></span>
+                <template x-if="h.field === 'status'">
+                  <span><span class="text-muted"> moveu </span><span class="font-medium" x-text="h.from_value ? lblStatus(h.from_value) : '∅'"></span><span class="text-muted"> → </span><span class="font-medium" x-text="lblStatus(h.to_value)"></span></span>
                 </template>
-                <template x-if="h.kind === 'field'">
+                <template x-if="h.field !== 'status'">
                   <span><span class="text-muted"> mudou </span><span class="font-medium" x-text="lblField(h.field)"></span><span class="text-muted"> de </span><span class="font-medium" x-text="fmtFieldValue(h.field, h.from_value)"></span><span class="text-muted"> → </span><span class="font-medium" x-text="fmtFieldValue(h.field, h.to_value)"></span></span>
                 </template>
               </div>

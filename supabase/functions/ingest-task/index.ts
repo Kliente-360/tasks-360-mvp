@@ -237,10 +237,9 @@ Deno.serve(async (req) => {
     if (subetapa) {
       const newMacro = macroFromSub(subetapa);
       if (existing.status !== newMacro) {
-        await sb.from('task_status_history').insert({
-          task_id: existing.id,
-          from_status: existing.status,
-          to_status: newMacro,
+        await sb.from('task_field_history').insert({
+          task_id: existing.id, field: 'status',
+          from_value: existing.status, to_value: newMacro,
           actor_source: SOURCE,
         });
       }
@@ -254,10 +253,9 @@ Deno.serve(async (req) => {
     payload.status_em       = new Date().toISOString();
     const { data, error } = await sb.from('tasks').insert(payload).select('id, status').single();
     if (error) return err(500, 'db_error', error.message);
-    await sb.from('task_status_history').insert({
-      task_id: data.id,
-      from_status: null,
-      to_status: data.status,
+    await sb.from('task_field_history').insert({
+      task_id: data.id, field: 'status',
+      from_value: null, to_value: data.status,
       actor_source: SOURCE,
     });
     return json(201, { id: data.id, action: 'created' });
