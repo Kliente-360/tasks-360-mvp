@@ -14,15 +14,15 @@ Convenções do projeto que valem pra qualquer sessão.
 
 ## Versionamento
 
-- `APP_VERSION` em `lib/helpers.js` segue `v1.01.<N>`. **Bumpa +1 a cada commit em main.**
-- Sequência herda do esquema antigo (último PR mergeado foi #221 → próximo build é 222).
-- Em mudança grande de UX/dados, bumpa MINOR e zera/reseta BUILD (decisão manual).
+- `APP_VERSION` em `lib/helpers.js` segue `v1.01.<N>` onde N = número do PR mergeado. **Bumpa antes de cada commit.**
+- Último PR mergeado: #223 → versão atual `v1.01.223`.
+- Em mudança grande de UX/dados, bumpa MINOR e zera BUILD (decisão manual).
 - Após commit em main, arquivos de migration vão pra `supabase/migrations/applied/` (mover manualmente — não tem automação).
 
 ## Git workflow
 
-- **Efetivamente push direto em `main`**, via PR descartável.
-- Mecânica (limitação do harness): criar branch temporária `chore/*`/`feat/*`/`fix/*` → push → abrir PR via `mcp__github__create_pull_request` → squash-merge via `mcp__github__merge_pull_request` com `delete_branch=true`. Head branch é auto-deletada pelo GitHub (config do repo). Resultado: 1 commit em `main`, zero branches sobreviventes.
+- Branch temporária `feat/*`/`fix/*`/`refactor/*`/`chore/*` → push → PR via `mcp__github__create_pull_request` → squash-merge via `mcp__github__merge_pull_request`. GitHub deleta a head branch automaticamente ("Automatically delete head branches" ativo). Resultado: 1 commit em `main`, zero branches sobreviventes.
 - Nada de manter branches paralelas. Cada PR é uma sessão de trabalho fechada.
-- Branches `claude/*` do harness são ignoradas.
+- Branches `claude/*` criadas pelo harness são ignoradas — não usar, não deletar.
 - Antes de commitar: bumpar `APP_VERSION` em `lib/helpers.js` (BUILD += 1).
+- Versionamento: `APP_VERSION = v1.01.<N>` onde N = número do PR mergeado (1:1).
