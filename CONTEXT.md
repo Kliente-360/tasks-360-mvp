@@ -10,13 +10,15 @@ Aplicativo de gestão de backlog interno para a **Kliente 360** (consultoria ofi
 
 ## 2. Estado atual
 
-**v1.01.187 · em uso real, com cliente externo logando.** Single-file `index.html` (Alpine.js + Tailwind CDN + Chart.js + marked.js) conectado a backend Supabase de verdade — Postgres com **RLS fechada role-aware** (PR #185 + #188), Auth (magic link), Realtime, Edge Functions, Storage e pg_cron.
+**v1.01.207 · em uso real, com cliente externo logando.** Multi-file (não mais single-file) — `index.html` reduzido pra HTML puro + 1 entry point Alpine modular. Stack: Alpine.js + Tailwind CDN + Chart.js + marked.js, conectado a backend Supabase de verdade — Postgres com **RLS fechada role-aware**, Auth (magic link), Realtime, Edge Functions, Storage e pg_cron.
 
-A fase "single-file" continua sendo deliberada: foco em descobrir requisitos com uso real antes de pagar custo de framework + design system. **A RLS deixou de ser "aberta consciente" em mai/2026** — tenant isolation real via policies por role (`admin`/`interno`/`cliente`), com helpers `app_pessoa_role()`, `app_pessoa_cliente_id()`, `app_is_staff()` e RPC `app_link_current_user_to_pessoa()` pra first-login. A migração pra Next + Drizzle é a Onda 0, ainda parked até o single-file pesar concretamente.
+A **modularização foi concluída em mai/2026** (21 PRs, #191-#212): `index.html` saiu de 10.807 → 3.492 linhas; o script Alpine que vivia inline foi extraído pra `lib/app.js` (542 linhas, agora só state + INIT/PERSISTÊNCIA) e fatiado em **13 views** sob `lib/views/*` (portal, briefing, calendar-foco, utilities, anexos, notifications-checklist, cadastros, task-modal, adoption, charts, backlog-kanban, core-data, telemetria-export). CSS extraído pra `lib/styles.css` (1.587 linhas). Adapters e cliente Supabase em arquivos próprios. Padrão técnico de composição: `Object.defineProperties(base, getOwnPropertyDescriptors(makeXxxView()))` em `app()` — preserva getters reativos do Alpine que `Object.assign` achataria.
+
+**A RLS deixou de ser "aberta consciente" em mai/2026** — tenant isolation real via policies por role (`admin`/`interno`/`cliente`), com helpers `app_pessoa_role()`, `app_pessoa_cliente_id()`, `app_is_staff()` e RPC `app_link_current_user_to_pessoa()` pra first-login. A migração pra Next + Drizzle é a Onda 0, ainda parked — a modularização ganhou tempo significativo antes desse passo ser inevitável.
 
 **Convenção de versão**: `APP_VERSION` em `lib/helpers.js` segue o **número do PR que entrega a mudança**. Ex: PR #167 → `v1.01.167`. Bump em todo PR que muda comportamento (docs-only podem pular). Exposto no header como subtítulo do logo.
 
-**Convenção de fluxo git**: develop em branches `feat/...`, `fix/...`, `polish/...`, `docs/...`. PR squash-merge em `main`. Não pushar direto em main.
+**Convenção de fluxo git**: develop em branches `feat/...`, `fix/...`, `polish/...`, `docs/...`, `refactor/...`, `test/...`. PR squash-merge em `main`. Não pushar direto em main.
 
 **Convenção Supabase**: tudo via Dashboard (SQL Editor, Edge Functions UI, Database > Extensions). **Nunca CLI** — detalhes em [`CLAUDE.md`](./CLAUDE.md).
 
@@ -47,25 +49,31 @@ A fase "single-file" continua sendo deliberada: foco em descobrir requisitos com
 
 Logos oficiais (PNG) em `/assets/`.
 
-## 5. Stack atual (single-file em uso real)
+## 5. Stack atual (modular, sem build)
 
-- **HTML único** `index.html` (~9k linhas, single-source)
-- **`lib/helpers.js`**: constantes do domínio (STATUS, ROLE, PRIORIDADE, …) e funções puras (`atrasada`, `effEsforco`, `triageFailures`, `cargaNivelFromPctCap`, `effTamanho`). Carregado **antes** do script inline pra mesmas funções serem testáveis e usáveis no Alpine.
+- **`index.html`** (3.5k linhas): só HTML + templates Alpine + sequência de `<script>` e `<link>` na ordem correta de carregamento.
+- **`lib/styles.css`** (~1.6k linhas): todo o CSS, tokens em `:root`.
+- **`lib/helpers.js`** (~225 linhas): constantes do domínio (STATUS, ROLE, PRIORIDADE, …) e funções puras (`atrasada`, `effEsforco`, `triageFailures`, `cargaNivelFromPctCap`, `effTamanho`, `weekStartMonday`, `taskWeekIndex`, `bucketTasksByWeek`, `projetoCapacidadeSemana`, …). IIFE expõe em `window`. Carregado primeiro. Testável em `tests/index.html`.
+- **`lib/adapters.js`** (~140 linhas): mapeamento JS ↔ DB declarativo (`TASK_FIELDS`, `PROJETO_FIELDS`, `CLIENTE_FIELDS`, `makeFromDb`, `makeToDb`, `makeBlank`). Adicionar campo novo na task = 1 linha no array.
+- **`lib/supabase-client.js`** (~25 linhas): `sb = window.supabase.createClient(URL, KEY)` + `AUTH_ENABLED` toggle.
+- **`lib/views/*.js`** (13 arquivos, ~5.4k linhas): cada arquivo expõe uma factory `makeXxxView()` que retorna objeto com getters/métodos. Em `app()` (em `lib/app.js`), todos são merged via `Object.defineProperties(base, getOwnPropertyDescriptors(factory()))` — preserva getters Alpine.
+  - `portal.js`, `briefing.js`, `calendar-foco.js`, `utilities.js`, `anexos.js`, `notifications-checklist.js`, `cadastros.js`, `task-modal.js`, `adoption.js`, `charts.js`, `backlog-kanban.js`, `core-data.js`, `telemetria-export.js`
+- **`lib/app.js`** (~540 linhas): `function app()` que monta o objeto Alpine. Contém só state + `INIT/PERSISTÊNCIA` (auth, load, refresh) + loop de composição dos mixins.
 - **Tailwind via CDN** (`cdn.tailwindcss.com`)
 - **Alpine.js 3.x via CDN**
 - **Chart.js 4.x via CDN**
 - **marked.js via CDN** (parser de markdown para body de comment)
 - **Google Fonts**: Quicksand, Manrope, JetBrains Mono
 - **Backend**: [Supabase](https://supabase.com)
-  - **Postgres** com 20+ migrations aplicadas (em `supabase/migrations/applied/`)
-  - **RLS aberta** com policy `prototipo_all` em toda tabela — decisão consciente; trocada por policies reais na Onda 0
+  - **Postgres** com 25+ migrations aplicadas (em `supabase/migrations/applied/`)
+  - **RLS fechada role-aware** (admin/interno/cliente) via helpers stable security definer
   - **Auth** com magic link (lista fechada de pessoas pré-cadastradas; sem signup público)
   - **Realtime** em `tasks`, `clientes`, `projetos`, `pessoas`, `task_comments`, `task_status_history`, `task_field_history`, `task_attachments`
   - **Edge Functions** (`ingest-task`, `ingest-comment`, `delete-task`, `cleanup-attachments`)
-  - **Storage** bucket privado `task-attachments` (anexos de imagem, signed URLs 1h)
+  - **Storage** bucket privado `task-attachments` (anexos de imagem, signed URLs 1h) com policy tenant-aware
   - **pg_cron + pg_net** rodando cleanup diário de anexos de tasks concluídas há mais de 30d
 - **Deploy**: Netlify (auto deploy no push em `main`)
-- **Sem build step**: editar `index.html` e refrescar
+- **Sem build step**: editar arquivos em `lib/` e refrescar; ordem de carregamento controlada por `<script src>` em sequência no `<head>` do `index.html`
 
 ## 6. Stack do app "de verdade" (Onda 0, ainda não iniciada)
 
@@ -143,6 +151,7 @@ Detalhes críticos:
 - **Onda D — Capacidade semanal** (PRs #173–#175): bucketing semanal por prazo (4 semanas: atual + 3 próximas, atrasadas puxam pra W0). 5 heurísticas novas (H11 sustentação estourando, H12 sustentação ociosa, H13 projeto estouro, H14 projeto risco, H15 pessoa sobrecarga W), agregadas em **Briefing executivo** (heatmap pessoa × semana + listas sustentação/projeto), banner Dashboard e PDF executivo. Aposentou H2 antiga ("sobrecarga acumulada"), que mascarava sazonalidade. **15 heurísticas ativas hoje.**
 - **Onda D+ — Sugestões de redistribuição** (PR #176): correlação pessoa × projeto na mesma semana ≥40% concentração → sugestão de realocar pra quem tem o cliente como principal/secundário e tem folga. Sem auto-apply. Top 5 ordenadas por semana e severidade.
 - **Onda E — RLS role-aware** (PRs #185–#188): tenant isolation real. Drop de `prototipo_all` em todas as tabelas sensíveis + policies por role + helpers stable. Frontend `_loadPortal` separado. RPC `app_link_current_user_to_pessoa` resolve chicken-and-egg de first login. **Cliente externo seguro.**
+- **Onda F — Modularização do single-file** (PRs #191–#212): 21 PRs sequenciais transformando `index.html` de single-file de 10.807 linhas em estrutura modular: `lib/styles.css` (CSS extraído), `lib/adapters.js` (mapeamento JS↔DB), `lib/supabase-client.js`, **13 views** em `lib/views/*` (portal, briefing, calendar-foco, utilities, anexos, notifications-checklist, cadastros, task-modal, adoption, charts, backlog-kanban, core-data, telemetria-export), `lib/app.js` reduzido a 542 linhas (state + INIT/PERSISTÊNCIA + composição de mixins). Padrão técnico: `Object.defineProperties(base, getOwnPropertyDescriptors(makeXxxView()))` preserva getters Alpine. **Adia significativamente a necessidade da Onda 0.**
 
 ## 9. As 8 visões de analytics (definitivas)
 
@@ -184,14 +193,18 @@ ESC encadeado: picker @-mention → linha checklist vazia (remove) → linha che
 
 ## 11. Convenções de código
 
-- CSS variables em `:root` para todos os tokens — **nunca cores hardcoded**.
-- Estado em função `app()` retornando objeto Alpine; constantes do domínio em `lib/helpers.js`.
-- **Adapter pattern** `TASK_FIELDS` + `makeFromDb` / `makeToDb` traduz entre snake_case do Postgres e camelCase do front. Adicionar campo novo na task: 1 linha em `TASK_FIELDS`.
+- CSS variables em `:root` para todos os tokens — **nunca cores hardcoded**. CSS vive em `lib/styles.css`.
+- Estado em função `app()` (em `lib/app.js`) retornando objeto Alpine; constantes do domínio em `lib/helpers.js` (em `window`).
+- **Mixin pattern** para views: cada `lib/views/xxx.js` expõe `window.makeXxxView()` que retorna objeto com getters/métodos. Em `app()`: `for (const factory of [makePortalView, ...]) Object.defineProperties(base, Object.getOwnPropertyDescriptors(factory()))`. Usar `Object.defineProperties` + `getOwnPropertyDescriptors` em vez de `Object.assign` é **obrigatório** — `Object.assign` resolve getters em valores estáticos no momento da composição, quebrando reatividade do Alpine.
+- Métodos extraídos referenciam estado via `this.*` — Alpine binda `this` ao proxy do objeto Alpine, funciona em qualquer mixin.
+- Adicionar **view nova**: criar `lib/views/xxx.js` seguindo padrão IIFE + `window.makeXxxView`, registrar `<script src>` em `index.html`, adicionar `window.makeXxxView` no array de factories em `app()`.
+- **Adapter pattern** `TASK_FIELDS` + `makeFromDb` / `makeToDb` (em `lib/adapters.js`) traduz entre snake_case do Postgres e camelCase do front. Adicionar campo novo na task: 1 linha em `TASK_FIELDS`.
 - IDs no Postgres são `uuid` gerados via `gen_random_uuid()`.
 - Datas em formato ISO no banco, formatadas para `DD/MM/YYYY` (longo) ou `DD/MM` (curto) na UI.
 - Idioma: PT-BR em todo texto visível ao usuário.
 - Optimistic UI em quase tudo: atualiza local antes do round-trip e rollback se Supabase errar.
 - Realtime double-binding: insert/update/delete na DB dispara refetch ou patch local na sessão aberta.
+- Ordem de carregamento dos scripts no `index.html` importa: `helpers.js` → `adapters.js` → `supabase-client.js` (depende de `window.supabase` da CDN) → `lib/views/*.js` → `lib/app.js` (no fim do `<body>`).
 
 ## 12. O que NÃO fazer
 
@@ -238,45 +251,54 @@ Recursos que **não existem combinados em nenhum competidor brasileiro** acessí
 2. **Capacity weekly bucketing (Onda D)**. Bucketing por prazo em 4 semanas, atrasadas puxam pra W0, defaults só pra análise (não toca dado real). Combinado com sugestões de redistribuição correlacionando pessoa × projeto. Float/Runn fazem capacity, mas em silo.
 3. **Portal cliente embedded com storytelling**. Header narrativo, alertas amigáveis, KPIs com delta, sparkline 6m, distribuição por projeto, lead time 90d. RLS tenant isolation real (Onda E). Não é "view filtrada" — é produto público.
 
-### 14.3 Pontos cegos honestos
+### 14.3 Pontos cegos honestos (estado em mai/2026 pós-Onda F)
 
-1. **`index.html` ~10.800 linhas**. Já no limite operacional. Vai picar em 3 cenários: (a) bug regression difícil de isolar, (b) onboarding de novo dev impossível, (c) refactor de UI grande vira semana. **Onda 0 não é luxo — é prevenção de paralisia.** Horizonte 3-4 meses, não 12.
-2. **Zero testes automatizados**. Regressão sempre detectada em produção. Aceitável hoje, é o segundo limite. Mínimo viável: Vitest + jsdom em getters puros críticos (`weeklyCapacityAnalysis`, `weeklyRedistSuggestions`, `portalMetrics`, `filtered`, `triageFailures`). ~1h de trabalho.
-3. **Ausência de IA visível**. Janeiro 2026 e zero features. Linear/Notion já entregam resumo de threads, geração de PRD, agrupamento. **Lacuna competitiva.** Primeira feature deveria ser baixo risco e alto valor: "resumir conversa da task em 2 linhas" ou "gerar narrativa do briefing dada amostra". Anthropic Claude Sonnet 4.6 ou Haiku 4.5 com prompt caching pra controlar custo.
-4. **Migrations rodadas no Dashboard manualmente**. CLAUDE.md formaliza, mas é frágil. O incidente do `recipient_pessoa_id` em PR #186 e o rollback inteiro mostrou na prática. Não precisa Drizzle/Prisma agora — útil ter ao menos um lint local que valida sintaxe antes de colar.
-5. **Telemetria caseira (`usage_events`)**. Ok pra MVP. Quando precisar entender adoption real (qual feature retém, qual abandona, funil cliente), vai pesar. PostHog free tier.
-6. **Anon key embedded + JWT exp 2036**. Risco aceito conscientemente. Mas a primeira hora que aparecer incidente, volta à mesa. Encurtar exp pra 1h com refresh é trabalho de ~2h.
-7. **Aba Foco sub-utilizada**. Não recebeu atenção recente. Pode virar a tela mais usada se receber: agenda do dia + 3 alertas top + 3 tasks priorizadas pela IA. Hoje parece desconectada do Briefing semanal.
+1. ~~**`index.html` ~10.800 linhas**~~ → ✅ **resolvido na Onda F** (PRs #191-#212). 90% reduzido pra 3.5k linhas de HTML puro; 13 views modulares + adapters + supabase-client extraídos. Adia significativamente a necessidade da Onda 0 (Next/Drizzle).
+2. **Testes automatizados** — parcial. Helpers puros cobertos (`weekStartMonday`, `taskWeekIndex`, `bucketTasksByWeek`, `projetoCapacidadeSemana`, `triageFailures`, etc.) via PRs #192-#195. **Falta cobrir getters complexos extraídos** (`portalMetrics`, `weeklyCapacityAnalysis`, `weeklyRedistSuggestions`, `briefingTendencia`, `reportClientesExec`) — agora muito mais fácil porque vivem em arquivos isolados. ~4h.
+3. **Ausência de IA visível**. Continua o maior gap competitivo. Linear/Notion já comoditizam IA. Primeira feature low-risk/high-value: "resumir conversa da task" — Anthropic Sonnet 4.6 + prompt caching, fallback gracioso. ~1 dia.
+4. **Migrations rodadas no Dashboard manualmente**. CLAUDE.md formaliza, mas é frágil. Incidente do `recipient_pessoa_id` em PR #186 mostrou. Útil ter ao menos um lint local que valida sintaxe antes de colar.
+5. **Telemetria caseira (`usage_events`)**. Ok pra MVP. PostHog free tier quando precisar funil real.
+6. **Anon key embedded + JWT exp 2036**. Risco aceito. Encurtar exp pra 1h com refresh é ~2h.
+7. **Aba Foco sub-utilizada**. Não recebeu atenção recente. Pode virar a tela mais usada se receber: agenda do dia + 3 alertas top + 3 tasks priorizadas pela IA.
 
-### 14.4 Visão escalonada de futuro
+### 14.4 Visão escalonada de futuro (atualizada mai/2026)
 
-#### Curto prazo · 4-8 semanas
-- **Modularização do `index.html`**: dividir em `components/`, `views/`, `stores/` (ainda Alpine, sem framework). Isolar Portal num bundle separado. Reduz risco de regressão, abre porta pra dev externo contribuir.
-- **Testes em getters puros**: Vitest + jsdom, ~20 testes, cobre 80% da lógica perigosa. CI gate.
-- **Primeira feature IA**: "resumir thread" no modal de task. Anthropic API, prompt caching, fallback elegante se API down. 1 dia de trabalho, valor altíssimo.
-- **Email digest semanal**: o Briefing executivo enviado por email todo domingo às 18h. Habilita lock-in real — gestor passa a esperar.
+#### P0 · agora
+- **Smoke test do app modularizado em produção** — após 17 refactors mergeados em sequência, validar tab por tab: foco, backlog, kanban, calendar, dashboard, briefing, portal, cadastros, triagem, modal task, comments, anexos. Granularidade dos PRs facilita isolar regressão.
 
-#### Médio prazo · 3-6 meses
-- **Onda 0 modesta**: Next 15 + Drizzle + Vercel. **Não tudo de uma vez** — começar pelo Portal cliente isolado (tela limitada e crítica). Aprender o padrão.
-- **Slack/Teams integration**: notificação push pra mention/respondi, link direto pra task. Adoption viral em agência.
-- **Time tracking real**: hoje só esforço estimado + `tempo_real_horas` manual. Botão start/stop simples. Habilita faturamento.
-- **Webhooks externos**: incoming pra criar task de email/form externo. Outgoing pra Slack/email/Zapier.
-- **Capacidade prevista** (com snapshot histórico semanal): registrar agregados por semana pra alimentar previsão "em 3 semanas X estoura". Listado no parking lot do ROADMAP.
+#### P1 · próximas 2-4 semanas (alto retorno, baixo-médio risco)
+- **Primeira feature IA · "resumir thread da task"**: Anthropic Sonnet 4.6 + prompt caching + fallback gracioso. ~1 dia. **Fecha a maior lacuna competitiva.**
+- **Email digest semanal**: Briefing executivo enviado domingo 18h via Edge Function + pg_cron. ~4h. Lock-in real.
+- **JWT exp curto** (1h + refresh automático): defesa em profundidade. ~2h.
+- **Testes em getters extraídos**: Vitest ou seguir runner caseiro `tests/index.html` pra `portalMetrics`, `weeklyCapacityAnalysis`, `weeklyRedistSuggestions`, `portalAlerts`, `reportClientesExec`. ~4h.
 
-#### Longo prazo · 6-12 meses
-- **Multi-workspace real**: hoje os 3 roles convivem num único espaço. Quando 5 agências usarem, precisa workspace boundary.
-- **API pública**: REST + webhooks. Embedded use cases.
-- **Mobile**: PWA bem-feita primeiro, nativo só se métrica indicar.
-- **Faturamento integrado**: horas trabalhadas × hourly rate × cliente. NF-e via gateway brasileiro.
+#### P2 · próximo trimestre
+- **Capacidade prevista** com snapshot histórico semanal — heurística "estoura em N semanas". 1-2 dias.
+- **WhatsApp digest** — promover do parking lot pra implementação se email digest validar a tese de push. Plano completo em `ROADMAP.md`.
+- **Aba Foco repensada** — resumo IA do dia + 3 alertas top + 3 tasks priorizadas.
+- **Heurísticas pendentes** (skill mismatch, senioridade malalocada) do parking lot do ROADMAP. ~30-60min cada.
 
-### 14.5 Riscos ranqueados
+#### P3 · 3-6 meses
+- **Onda 0 modesta**: Next 15 + Drizzle só pro Portal cliente (escopo limitado, aprender padrão).
+- **Slack/Teams integration** — em paralelo ao WhatsApp.
+- **Time tracking real** — start/stop, habilita faturamento.
+- **Webhooks externos** (incoming + outgoing).
 
-1. **Single-file vira parede**. Médio-alto, 3-4 meses. Mitigável com modularização cedo.
-2. **IA gap**. Médio, 6 meses. Linear/Notion vão comoditizar IA — quem não tem fica datado.
-3. **Anon key embedded**. Baixo agora (RLS fechada), crônico. JWT curto + auth proxy resolve.
-4. **Brand confusion · "Kliente 360" CRM vs tasks 360**. O nome do produto não está claro pra quem chega de fora. Decisão de naming antes de virar comercial.
+#### P4 · 6-12 meses
+- **Multi-workspace boundary** quando >2 agências usarem.
+- **API pública** (REST + webhooks documentada).
+- **PWA bem-feita** primeiro, nativo só se métrica indicar.
+- **Faturamento integrado** (horas × hourly_rate × cliente, NF-e via gateway BR).
+
+### 14.5 Riscos ranqueados (atualizado mai/2026 pós-Onda F)
+
+1. ~~**Single-file vira parede**~~ → ✅ **mitigado pela Onda F**. Modularização entregue, 13 views isoladas. Onda 0 pode ser planejada com calma.
+2. **IA gap**. **Subiu pra #1 ranking**. Médio-alto, 6 meses. Linear/Notion comoditizam IA. Próxima feature de impacto.
+3. **Anon key embedded + JWT 2036**. Baixo agora (RLS fechada), crônico. JWT curto + auth proxy resolve em ~2h.
+4. **Brand confusion · "Kliente 360" CRM vs tasks 360**. Nome do produto não está claro pra quem chega de fora. Decisão de naming antes de virar comercial.
 5. **CDN do Tailwind**. Anunciado fim do CDN. Trocar por instalação local em ~1h, anotado.
+6. **Testes parciais**. Helpers cobertos; getters extraídos ainda não. Risco de regressão silenciosa em heurística complexa.
 
 ### 14.6 Em uma frase
 
-**É um produto técnico-criativo bem pensado, com 3 diferenciais reais (Briefing narrado, Capacity semanal, Portal cliente embedded), preso num único arquivo HTML que está chegando no limite, sem IA, mas com tenant isolation feito direito. Está a ~6 meses de virar SaaS comercializável se a Onda 0 modesta e a primeira feature de IA forem priorizadas.**
+**É um produto técnico-criativo bem pensado, com 3 diferenciais reais (Briefing narrado, Capacity semanal, Portal cliente embedded). Modularização concluída (mai/2026) reduziu o `index.html` em 90% e adia significativamente a necessidade da Onda 0 (Next/Drizzle). Próximo movimento decisivo: primeira feature de IA — única lacuna competitiva crítica restante.**

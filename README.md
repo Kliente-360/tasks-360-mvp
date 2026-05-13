@@ -103,7 +103,7 @@ Single-file deliberadamente enxuto, focado em validar fluxo e UX antes de constr
 - **Helpers puros**: `lib/helpers.js` expõe constantes do domínio (STATUS, ROLE, PRIORIDADE, …) e funções puras (`atrasada`, `effEsforco`, `triageFailures`, `cargaNivelFromPctCap`). Carregado **antes** do script inline pra Alpine consumir os mesmos símbolos que os testes.
 - **Sem build step**: editar `index.html` e refrescar. Versão atual em `lib/helpers.js` segue `v1.01.<PR_number>`.
 
-A justificativa do "single-file": é uma fase, não a arquitetura final. O foco é descobrir requisitos com uso real antes de pagar o custo de framework, design system e RLS apertada. A migração pra stack profissional (Next + Drizzle + RLS apertada + design system extraído) é a próxima onda. **RLS aberta agora é decisão consciente** — todas as tabelas têm policy `prototipo_all (using true with check true)`.
+A justificativa do "sem build step": é uma fase, não a arquitetura final. O foco é descobrir requisitos com uso real antes de pagar o custo de framework e bundler. Em mai/2026, a fase single-file deu lugar a fase modular: vários arquivos JS/CSS carregados em sequência via `<script>`/`<link>`, sem bundler. A migração pra stack profissional (Next + Drizzle + design system extraído) continua sendo a próxima onda quando o multi-file pesar. **RLS hoje é role-aware e tenant-scoped** — `prototipo_all` foi removida em mai/2026 (PRs #185-#188).
 
 ---
 
@@ -124,7 +124,7 @@ Para integrar com Salesforce, deploy das Edge Functions em `supabase/functions/`
 
 ## Estado atual
 
-**Maio 2026 — single-file MVP em uso real.** Versão atual: `v1.01.171` (bumpa a cada PR mergeado em main).
+**Maio 2026 — MVP modular em uso real, com cliente externo logando.** Versão atual: `v1.01.207` (bumpa a cada PR mergeado em main). Saiu de single-file de 10.8k linhas pra estrutura modular (`index.html` + `lib/helpers.js` + `lib/adapters.js` + `lib/supabase-client.js` + 13 views em `lib/views/*` + `lib/app.js`). RLS fechada role-aware (admin/interno/cliente).
 
 Camadas entregues:
 - Ondas de polimento H1/H2/H3 completas
