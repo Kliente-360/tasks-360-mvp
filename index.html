@@ -2248,115 +2248,10 @@
     <div style="height:200px"><canvas id="chartMvpVolume"></canvas></div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 mb-4">
-    <div class="card p-4 md:p-6">
-      <div class="font-brand text-xl font-semibold mb-1">DAU (14d)</div>
-      <div class="text-xs text-muted mb-4">pessoas distintas com algum evento no dia. Conta só quando o login está on.</div>
-      <div style="height:200px"><canvas id="chartMvpDau"></canvas></div>
-    </div>
-    <div class="card p-4 md:p-6">
-      <div class="font-brand text-xl font-semibold mb-1">Stickiness por pessoa (14d)</div>
-      <div class="text-xs text-muted mb-4">dias com pelo menos um evento. Critério 1 do roadmap: ≥2 pessoas com ≥10 dias.</div>
-      <template x-if="mvpStickiness14d.length === 0">
-        <div class="text-sm text-muted italic py-6">
-          Nenhuma atividade atribuída no período. Login precisa estar ativo pra contar por pessoa.
-        </div>
-      </template>
-      <template x-if="mvpStickiness14d.length > 0">
-        <div class="overflow-x-auto">
-          <table class="min-w-full text-sm">
-            <thead>
-              <tr class="text-[10px] uppercase tracking-wider font-semibold text-muted">
-                <th class="text-left pb-2">Pessoa</th>
-                <th class="text-right pb-2">Dias ativos</th>
-                <th class="text-left pb-2 pl-3">Critério</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="row in mvpStickiness14d" :key="row.pid">
-                <tr class="border-t border-line">
-                  <td class="py-2">
-                    <div class="font-medium" x-text="row.nome"></div>
-                    <div class="text-[10px] text-muted font-mono" x-text="row.email"></div>
-                  </td>
-                  <td class="py-2 text-right font-mono" x-text="row.dias_ativos + ' / 14'"></td>
-                  <td class="py-2 pl-3">
-                    <span x-show="row.dias_ativos>=10" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--brand-soft);color:var(--brand-dark)">bate critério</span>
-                    <span x-show="row.dias_ativos<10 && row.dias_ativos>=5" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:#fef3c7;color:#b45309">parcial</span>
-                    <span x-show="row.dias_ativos<5" class="text-[10px] text-muted">—</span>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-      </template>
-    </div>
-  </div>
-
-  <!-- ============ TELEMETRIA · features (usage_events) ============ -->
-  <div class="grid grid-cols-2 gap-3 md:gap-4 mb-5 mt-5">
-    <div class="kpi">
-      <div class="kpi-lbl">Usuários únicos · 7d</div>
-      <div class="kpi-num brand" x-text="usageDauWau.dau7"></div>
-      <div class="kpi-trend">qualquer evento</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-lbl">Usuários únicos · 30d</div>
-      <div class="kpi-num" x-text="usageDauWau.wau30"></div>
-      <div class="kpi-trend">qualquer evento</div>
-    </div>
-  </div>
-
-  <div class="grid md:grid-cols-2 gap-3 md:gap-4 mb-5">
-    <div class="card p-4 md:p-5">
-      <div class="font-brand text-lg font-semibold mb-1">Top features (30d)</div>
-      <div class="text-xs text-muted mb-3">Ranking por contagem de eventos. Use pra investir nos mais usados.</div>
-      <div x-show="usageTopFeatures.length === 0" class="text-sm text-muted py-4">Nenhum evento registrado ainda. Telemetria começa quando alguém usa o app logado.</div>
-      <table x-show="usageTopFeatures.length > 0" class="w-full text-sm">
-        <tbody>
-          <template x-for="r in usageTopFeatures" :key="r.event">
-            <tr class="border-b border-line last:border-0">
-              <td class="py-1.5 font-mono text-xs" x-text="r.event"></td>
-              <td class="py-1.5 text-right font-mono text-xs" x-text="r.count"></td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="card p-4 md:p-5">
-      <div class="font-brand text-lg font-semibold mb-1">Tendência · ±15d</div>
-      <div class="text-xs text-muted mb-3">Crescimento ou declínio vs 15 dias anteriores. Δ% maior = mais relevante.</div>
-      <div x-show="usageTendencia.length === 0" class="text-sm text-muted py-4">Dados insuficientes pra calcular tendência (precisa &gt;30d).</div>
-      <table x-show="usageTendencia.length > 0" class="w-full text-sm">
-        <tbody>
-          <template x-for="r in usageTendencia" :key="r.event">
-            <tr class="border-b border-line last:border-0">
-              <td class="py-1.5 font-mono text-xs" x-text="r.event"></td>
-              <td class="py-1.5 text-right font-mono text-xs text-muted" x-text="r.prev + ' → ' + r.recent"></td>
-              <td class="py-1.5 text-right font-mono text-xs"
-                  :class="r.delta > 0 ? 'text-emerald-700' : (r.delta < 0 ? 'text-[color:var(--p0)]' : 'text-muted')"
-                  x-text="(r.delta > 0 ? '↑ +' : (r.delta < 0 ? '↓ ' : '→ ')) + Math.abs(r.delta) + '%'"></td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card p-4 md:p-6 mb-5">
-    <div class="font-brand text-xl font-semibold mb-1">Features órfãs</div>
-    <div class="text-xs text-muted mb-3">Eventos com uso abaixo do limite saudável (<span class="font-mono">&lt; pessoas ativas × 4 / 30d</span>). Candidatas a deprecação ou melhor descoberta.</div>
-    <div x-show="usageOrfas.length === 0" class="text-sm text-emerald-700 py-2">Nenhuma feature monitorada está órfã. Todas têm uso saudável.</div>
-    <ul x-show="usageOrfas.length > 0" class="space-y-1.5">
-      <template x-for="r in usageOrfas" :key="r.event">
-        <li class="flex items-baseline justify-between text-sm py-1 border-b border-line last:border-0">
-          <span class="font-mono text-xs" x-text="r.event"></span>
-          <span class="font-mono text-xs text-muted" x-text="r.count + ' uso(s) · esperado &gt;' + r.limite"></span>
-        </li>
-      </template>
-    </ul>
+  <div class="card p-4 md:p-6 mb-4">
+    <div class="font-brand text-xl font-semibold mb-1">DAU · 14 dias</div>
+    <div class="text-xs text-muted mb-4">Pessoas distintas com algum evento no dia. Indica regularidade do time.</div>
+    <div style="height:200px"><canvas id="chartMvpDau"></canvas></div>
   </div>
 
   <!-- ============ HEATMAP pessoa × dia (28d) ============ -->
@@ -2397,49 +2292,7 @@
     </div>
   </div>
 
-  <!-- ============ Sparklines por feature (top 10) ============ -->
-  <div class="card p-4 md:p-6 mb-5" x-show="usageFeatureSparklines.length > 0">
-    <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
-      <div class="font-brand text-xl font-semibold">Tendência por feature · 28 dias</div>
-      <span class="text-xs text-muted font-mono">linha = uso diário · top 10 por volume</span>
-    </div>
-    <div class="text-xs text-muted mb-3">Crescimento linear? Pico e abandono? Lê tendência por feature em 1 olhada.</div>
-    <div class="space-y-1.5">
-      <template x-for="f in usageFeatureSparklines" :key="f.event">
-        <div class="flex items-center gap-3 py-1 border-b border-line last:border-0">
-          <span class="font-mono text-xs flex-1 min-w-0 truncate" x-text="f.event"></span>
-          <!-- Sparkline SVG -->
-          <svg class="w-32 md:w-48 h-8 shrink-0" :viewBox="'0 0 ' + (f.daily.length * 4) + ' 32'" preserveAspectRatio="none">
-            <polyline fill="none" stroke="var(--brand)" stroke-width="1.5"
-                      :points="f.daily.map((n, i) => (i * 4) + ',' + (32 - (n / f.max) * 28)).join(' ')"></polyline>
-          </svg>
-          <span class="font-mono text-xs text-muted w-16 text-right shrink-0" x-text="f.total + ' tot.'"></span>
-        </div>
-      </template>
-    </div>
-  </div>
-
-  <!-- ============ Breakdown tab_open (qual tab é mais usada) ============ -->
-  <div class="card p-4 md:p-6 mb-5" x-show="usageTabBreakdown.length > 0">
-    <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
-      <div class="font-brand text-xl font-semibold">Quais tabs são usadas · 30d</div>
-      <span class="text-xs text-muted font-mono">breakdown de tab_open</span>
-    </div>
-    <div class="text-xs text-muted mb-3">Quantos clicks em cada tab. Indica onde o time passa mais tempo.</div>
-    <div class="space-y-1.5">
-      <template x-for="r in usageTabBreakdown" :key="r.tab">
-        <div class="flex items-center gap-3 py-1 border-b border-line last:border-0">
-          <span class="font-mono text-xs flex-1 min-w-0 truncate" x-text="r.tab"></span>
-          <div class="w-24 md:w-40 h-2 bg-bg rounded overflow-hidden shrink-0">
-            <div class="h-full bg-brand" :style="'width:' + Math.min(100, (r.count / usageTabBreakdown[0].count) * 100) + '%'"></div>
-          </div>
-          <span class="font-mono text-xs text-muted w-12 text-right shrink-0" x-text="r.count"></span>
-        </div>
-      </template>
-    </div>
-  </div>
-
-  <!-- ============ ADOÇÃO POR PESSOA · classificada ============ -->
+  <!-- ============ BLOCO 4 · QUEM · Adoção por pessoa classificada ============ -->
   <div class="card p-4 md:p-6 mb-5">
     <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
       <div class="font-brand text-xl font-semibold">Adoção por pessoa · 30d</div>
@@ -2488,26 +2341,28 @@
     </div>
   </div>
 
-  <!-- ============ SILENCIOSOS ============ -->
-  <div class="card p-4 md:p-6 mb-5" :class="usuariosSilenciosos.length > 0 && 'border-[color:var(--p0)]'">
-    <div class="font-brand text-xl font-semibold mb-1">Silenciosos (7d sem evento)</div>
-    <div class="text-xs text-muted mb-3">Pessoas internas cadastradas que não geraram nenhum evento na última semana. Motivo direto pra puxar conversa de adoção.</div>
-    <div x-show="usuariosSilenciosos.length === 0" class="text-sm text-emerald-700 py-2">Todo mundo ativo nos últimos 7 dias. 👌</div>
-    <ul x-show="usuariosSilenciosos.length > 0" class="space-y-1.5">
-      <template x-for="r in usuariosSilenciosos" :key="r.pessoaId">
-        <li class="flex items-baseline justify-between py-1.5 border-b border-line last:border-0">
-          <div>
-            <span class="font-medium text-sm" x-text="r.nome"></span>
-          </div>
-          <span class="text-xs font-mono"
-                :class="r.ultimo_dias == null ? 'text-[color:var(--p0)]' : 'text-amber-700'"
-                x-text="r.ultimo_dias == null ? 'nunca usou' : 'última: há ' + r.ultimo_dias + 'd'"></span>
-        </li>
+  <!-- ============ BLOCO 5 · O QUÊ · Sparklines por feature (tendência visual) ============ -->
+  <div class="card p-4 md:p-6 mb-5" x-show="usageFeatureSparklines.length > 0">
+    <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
+      <div class="font-brand text-xl font-semibold">Tendência por feature · 28 dias</div>
+      <span class="text-xs text-muted font-mono">linha = uso diário · top 10 por volume</span>
+    </div>
+    <div class="text-xs text-muted mb-3">Crescimento linear? Pico e abandono? Lê tendência por feature em 1 olhada.</div>
+    <div class="space-y-1.5">
+      <template x-for="f in usageFeatureSparklines" :key="f.event">
+        <div class="flex items-center gap-3 py-1 border-b border-line last:border-0">
+          <span class="font-mono text-xs flex-1 min-w-0 truncate" x-text="f.event"></span>
+          <svg class="w-32 md:w-48 h-8 shrink-0" :viewBox="'0 0 ' + (f.daily.length * 4) + ' 32'" preserveAspectRatio="none">
+            <polyline fill="none" stroke="var(--brand)" stroke-width="1.5"
+                      :points="f.daily.map((n, i) => (i * 4) + ',' + (32 - (n / f.max) * 28)).join(' ')"></polyline>
+          </svg>
+          <span class="font-mono text-xs text-muted w-16 text-right shrink-0" x-text="f.total + ' tot.'"></span>
+        </div>
       </template>
-    </ul>
+    </div>
   </div>
 
-  <!-- ============ ADOÇÃO POR FEATURE · classificada ============ -->
+  <!-- ============ BLOCO 5 · Adoção por feature classificada (classe + Δ) ============ -->
   <div class="card p-4 md:p-6 mb-5">
     <div class="font-brand text-xl font-semibold mb-1">Adoção por feature · 30d</div>
     <div class="text-xs text-muted mb-3">Classificação por largura + tendência. <strong>Core</strong> = ≥70% pessoas. <strong>Healthy</strong> = 40-70%. <strong>Niche</strong> = 10-40% (ok pra features contextuais). <strong>Em-queda</strong> = Δ &lt; −30% vs sem ant. <strong>Órfã</strong> = &lt;10%.</div>
@@ -2551,6 +2406,26 @@
           </template>
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- ============ BLOCO 5 · Drilldown · Breakdown tab_open ============ -->
+  <div class="card p-4 md:p-6 mb-5" x-show="usageTabBreakdown.length > 0">
+    <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
+      <div class="font-brand text-xl font-semibold">Quais tabs são usadas · 30d</div>
+      <span class="text-xs text-muted font-mono">drilldown de tab_open</span>
+    </div>
+    <div class="text-xs text-muted mb-3">Quantos clicks em cada tab. Indica onde o time passa mais tempo (subset da feature <span class="font-mono">tab_open</span> na tabela acima).</div>
+    <div class="space-y-1.5">
+      <template x-for="r in usageTabBreakdown" :key="r.tab">
+        <div class="flex items-center gap-3 py-1 border-b border-line last:border-0">
+          <span class="font-mono text-xs flex-1 min-w-0 truncate" x-text="r.tab"></span>
+          <div class="w-24 md:w-40 h-2 bg-bg rounded overflow-hidden shrink-0">
+            <div class="h-full bg-brand" :style="'width:' + Math.min(100, (r.count / usageTabBreakdown[0].count) * 100) + '%'"></div>
+          </div>
+          <span class="font-mono text-xs text-muted w-12 text-right shrink-0" x-text="r.count"></span>
+        </div>
+      </template>
     </div>
   </div>
 
@@ -2641,13 +2516,12 @@
   <div class="card p-4 md:p-6">
     <div class="font-brand text-xl font-semibold mb-1">Como ler estes números</div>
     <ul class="text-sm text-ink-soft space-y-1 list-disc pl-5">
-      <li><strong>Eventos do app</strong> = mudança de status (criar, editar, mover) + comentário + reply, originados pelo browser. Salesforce e seeds são ignorados.</li>
-      <li>Enquanto o login estiver desligado, eventos não conseguem ser atribuídos a pessoas (campo <span class="font-mono">actor_pessoa_id</span> fica null). O KPI "Pessoas ativas" e o gráfico de DAU só ganham significado depois de religar o login.</li>
-      <li>O critério 1 do roadmap é satisfeito quando: <strong>2+ pessoas distintas com 10+ dias ativos no período de 14 dias</strong>. Margem pra fim de semana e feriados embutida.</li>
-      <li>Esta aba não exige login pra ser vista — ficou propositalmente aberta.</li>
-      <li><strong>Telemetria (usage_events)</strong>: fire-and-forget de ações específicas. Retenção 90d. Eventos: <span class="font-mono">login</span>, <span class="font-mono">session_start</span> (automático, 1x/sessão), tab_open, palette_*, export, help_open, onboarding_open, task_create/edit, comment_post, bulk_action. Opt-out via <span class="font-mono">localStorage['kliente360-telemetry'] = 'false'</span>.</li>
-      <li><strong>Adoção por pessoa</strong>: agrega últimos 30d. <em>Silencioso há +7d</em> = nenhum evento na última semana — sinal forte de baixa adoção. <em>Pessoa sem registro</em> = cadastrada mas que nunca abriu o app logada.</li>
-      <li><strong>Adoção por feature · largura</strong>: % de pessoas internas únicas que tocaram a feature. Complementa "Top features" (volume): se 1 pessoa usa muito uma feature, top features sobe mas largura fica baixa = só 1 power user.</li>
+      <li><strong>Storytelling</strong>: banner → alertas → filtros → momentum (KPIs + volumes) → quem (heatmap + tabela pessoa) → o quê (sparkline + tabela feature + drilldown tab_open). Cada bloco responde 1 pergunta.</li>
+      <li><strong>Eventos do app</strong> = mudança de status + comentário + reply + clicks rastreados (tab_open, palette_*, export, help_open, task_view, dashboard_chart_render, etc). Salesforce/seeds excluídos.</li>
+      <li><strong>Classes de pessoa</strong>: <em>Power</em> = top 25% volume + ≥12 dias ativos · <em>Regular</em> = 6-11 dias · <em>Light</em> = 1-5 dias · <em>Silenciosa</em> = >7d sem evento · <em>Nunca</em> = convite +14d sem evento.</li>
+      <li><strong>Classes de feature</strong>: <em>Core</em> = ≥70% pessoas · <em>Healthy</em> = 40-70% · <em>Niche</em> = 10-40% · <em>Em-queda</em> = Δ &lt; −30% · <em>Órfã</em> = &lt;10%.</li>
+      <li><strong>Telemetria</strong>: fire-and-forget pra <span class="font-mono">usage_events</span>. Retenção 90d. Opt-out via <span class="font-mono">localStorage['kliente360-telemetry'] = 'false'</span>.</li>
+      <li><strong>Segmentação</strong>: filtros role/senioridade/cliente principal propagam em cascade pras tabelas e alertas. Toggle <em>portal cliente</em> mostra adoption do cliente externo separadamente.</li>
     </ul>
   </div>
 </section></template>
