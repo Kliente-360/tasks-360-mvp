@@ -211,6 +211,66 @@
     });
   });
 
+  // =================== ONDA D · bucketing semanal ===================
+  // Datas-âncora: segunda 11/mai/2026 é início da W0 nestes testes.
+  describe('weekStartMonday', () => {
+    it('segunda → mesmo dia', () => eq(weekStartMonday('2026-05-11'), '2026-05-11'));
+    it('terça → segunda anterior', () => eq(weekStartMonday('2026-05-12'), '2026-05-11'));
+    it('domingo → segunda da semana anterior (não da seguinte)', () => eq(weekStartMonday('2026-05-17'), '2026-05-11'));
+    it('sábado → segunda 5 dias antes', () => eq(weekStartMonday('2026-05-16'), '2026-05-11'));
+    it('quinta → segunda 3 dias antes', () => eq(weekStartMonday('2026-05-14'), '2026-05-11'));
+    it('Date object aceita', () => eq(weekStartMonday(new Date('2026-05-12T00:00:00')), '2026-05-11'));
+    it('virada de ano: 1/jan/2027 (sexta) → segunda 28/dez/2026', () => eq(weekStartMonday('2027-01-01'), '2026-12-28'));
+  });
+
+  describe('addDays', () => {
+    it('+1 dia', () => eq(addDays('2026-05-11', 1), '2026-05-12'));
+    it('+7 dias', () => eq(addDays('2026-05-11', 7), '2026-05-18'));
+    it('-1 dia', () => eq(addDays('2026-05-11', -1), '2026-05-10'));
+    it('atravessa mês (+30d)', () => eq(addDays('2026-05-11', 30), '2026-06-10'));
+    it('atravessa ano (+365d em 2026 não-bissexto)', () => eq(addDays('2026-05-11', 365), '2027-05-11'));
+  });
+
+  describe('effPrazoForAnalysis', () => {
+    it('task com prazo retorna o prazo', () => eq(effPrazoForAnalysis({ prazo: '2026-06-01' }, '2026-05-15'), '2026-06-01'));
+    it('task sem prazo cai pra today fornecido', () => eq(effPrazoForAnalysis({ prazo: '' }, '2026-05-15'), '2026-05-15'));
+    it('task null cai pra today', () => eq(effPrazoForAnalysis(null, '2026-05-15'), '2026-05-15'));
+  });
+
+  describe('taskWeekIndex', () => {
+    const today = '2026-05-13';  // quarta · W0 = 11-17/mai
+    it('task concluída → null (não entra na análise prospectiva)', () => {
+      eq(taskWeekIndex({ status: 'concluido', prazo: '2026-05-13' }, today), null);
+    });
+    it('atrasada (prazo na semana passada) → -1', () => {
+      eq(taskWeekIndex({ status: 'andamento', prazo: '2026-05-04' }, today), -1);
+    });
+    it('prazo nesta semana → 0', () => {
+      eq(taskWeekIndex({ status: 'andamento', prazo: '2026-05-15' }, today), 0);
+    });
+    it('prazo W+1 (próxima segunda) → 1', () => {
+      eq(taskWeekIndex({ status: 'andamento', prazo: '2026-05-18' }, today), 1);
+    });
+    it('prazo W+2 → 2', () => {
+      eq(taskWeekIndex({ status: 'andamento', prazo: '2026-05-25' }, today), 2);
+    });
+    it('prazo W+3 → 3', () => {
+      eq(taskWeekIndex({ status: 'andamento', prazo: '2026-06-01' }, today), 3);
+    });
+    it('prazo W+4 (fora da janela) → null', () => {
+      eq(taskWeekIndex({ status: 'andamento', prazo: '2026-06-08' }, today), null);
+    });
+    it('prazo distante (julho) → null', () => {
+      eq(taskWeekIndex({ status: 'andamento', prazo: '2026-07-01' }, today), null);
+    });
+    it('task sem prazo → default semana atual → 0', () => {
+      eq(taskWeekIndex({ status: 'andamento', prazo: '' }, today), 0);
+    });
+    it('atrasada concluída → null (não atrasada)', () => {
+      eq(taskWeekIndex({ status: 'concluido', prazo: '2026-05-01' }, today), null);
+    });
+  });
+
   // =================== RENDER ===================
   const results = document.getElementById('results');
   let pass = 0, fail = 0;
