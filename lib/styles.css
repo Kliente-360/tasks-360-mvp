@@ -256,6 +256,13 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     max-width: 360px;
   }
+  /* truncate genérico pra cliente/projeto/responsável — evita quebra de linha em nomes longos
+     (ex: "WhatsApp TPweb · Sustentação"). Tooltip nativo via title attr no x-text. */
+  .tbl tbody td .tbl-truncate {
+    display: block;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 160px;
+  }
   .tbl tbody tr { transition: background 150ms ease; cursor: pointer; }
   .tbl tbody tr:hover { background: var(--surface-3); }
   .tbl thead th.sortable { cursor: pointer; }

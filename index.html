@@ -947,9 +947,9 @@
                   </template>
                 </div>
               </td>
-              <td class="text-ink-soft" x-text="nomeCliente(t.clienteId)"></td>
-              <td class="text-ink-soft" x-text="nomeProjeto(t.projetoId)"></td>
-              <td class="text-ink-soft" x-text="nomePessoa(t.pessoaId)"></td>
+              <td class="text-ink-soft"><span class="tbl-truncate" :title="nomeCliente(t.clienteId)" x-text="nomeCliente(t.clienteId)"></span></td>
+              <td class="text-ink-soft"><span class="tbl-truncate" :title="nomeProjeto(t.projetoId)" x-text="nomeProjeto(t.projetoId)"></span></td>
+              <td class="text-ink-soft"><span class="tbl-truncate" :title="nomePessoa(t.pessoaId)" x-text="nomePessoa(t.pessoaId)"></span></td>
               <td>
                 <span class="pri" :class="'pri-'+t.prioridade">
                   <span class="pri-dot"></span>
