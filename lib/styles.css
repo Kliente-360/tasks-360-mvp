@@ -254,14 +254,19 @@
   .tbl tbody td .tbl-title {
     font-weight: 500; color: var(--ink);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    max-width: 360px;
+    max-width: 240px;
   }
-  /* truncate genérico pra cliente/projeto/responsável — evita quebra de linha em nomes longos
-     (ex: "WhatsApp TPweb · Sustentação"). Tooltip nativo via title attr no x-text. */
+  /* truncate genérico pra cliente/projeto/responsável — evita quebra de linha em nomes longos.
+     Width fluida (responsive) com cap pra não dominar a row. Tooltip via title attr. */
   .tbl tbody td .tbl-truncate {
     display: block;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    max-width: 160px;
+    max-width: 120px;
+  }
+  /* Em telas grandes (≥1280px) pode esticar mais sem prejuízo */
+  @media (min-width: 1280px) {
+    .tbl tbody td .tbl-title { max-width: 320px; }
+    .tbl tbody td .tbl-truncate { max-width: 160px; }
   }
   .tbl tbody tr { transition: background 150ms ease; cursor: pointer; }
   .tbl tbody tr:hover { background: var(--surface-3); }

@@ -802,7 +802,11 @@
       <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto">
         <option value="">Todos os projetos</option>
         <option value="__empty__">— sem projeto</option>
-        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+        <!-- Opções: "Cliente · Projeto" quando não-selecionado (contexto pra escolher).
+             Quando selecionado, mostra só "Projeto" — assim o select fechado lê curto. -->
+        <template x-for="p in projetosFiltrados" :key="p.id">
+          <option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option>
+        </template>
       </select>
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
