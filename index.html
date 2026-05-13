@@ -1121,10 +1121,11 @@
         <div class="mb-3 px-1">
           <div class="kcol-op-crumb" x-text="lblStatus(SUB_TO_MACRO[sub])"></div>
           <div class="kcol-op-name" x-text="lblSub(sub)"></div>
-          <div class="font-mono text-xs text-muted mt-1.5" x-text="kanbanColSub(sub).length + ' itens · ' + kanbanColSub(sub).reduce((a,b)=>a+(+b.esforco||0),0) + 'h'"></div>
+          <!-- Métrica oculta quando coluna vazia — "vazio" abaixo já fala por si só. -->
+          <div x-show="kanbanColSub(sub).length > 0" class="font-mono text-xs text-muted mt-1.5" x-text="kanbanColSub(sub).length + ' itens · ' + kanbanColSub(sub).reduce((a,b)=>a+(+b.esforco||0),0) + 'h'"></div>
           <div class="mt-2" @click.stop>
             <template x-if="quickAddSub !== sub">
-              <button class="text-[11px] text-muted hover:text-brand-dark font-mono transition-colors" @click="openQuickAdd(sub)">+ adicionar</button>
+              <button class="kcol-add-btn" @click="openQuickAdd(sub)" :title="'Adicionar tarefa em ' + lblSub(sub)">+ adicionar</button>
             </template>
             <template x-if="quickAddSub === sub">
               <div class="flex flex-col gap-1.5">
@@ -1172,29 +1173,8 @@
               <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias na macro'" x-text="agingDays(t)+'d'"></span>
                 <span x-show="needsTriage(t)" class="triage-badge" :title="triageFailures(t).join(' · ')">triar</span>
             </div>
-            <div class="mt-3 pt-3 border-t border-line" @click.stop>
-              <select class="inp text-xs py-1.5" :value="t.subetapa" @change="setTaskSubetapa(t, $event.target.value)" title="Mover para…">
-                <optgroup label="Backlog">
-                  <option value="backlog">→ Backlog</option>
-                  <option value="priorizado">→ Priorizado</option>
-                  <option value="em_definicao">→ Em definição</option>
-                  <option value="escopo_definido">→ Escopo definido</option>
-                </optgroup>
-                <optgroup label="Em andamento">
-                  <option value="em_desenvolvimento">→ Em desenvolvimento</option>
-                  <option value="em_homologacao">→ Em homologação</option>
-                  <option value="em_revisao">→ Em revisão</option>
-                  <option value="pronto_producao">→ Pronto p/ produção</option>
-                  <option value="em_implantacao">→ Em implantação</option>
-                </optgroup>
-                <optgroup label="Bloqueado">
-                  <option value="bloqueado">→ Bloqueado</option>
-                </optgroup>
-                <optgroup label="Concluído">
-                  <option value="concluido">→ Concluído</option>
-                </optgroup>
-              </select>
-            </div>
+            <!-- Dropdown "→ Status" removido: a posição da coluna já indica a subetapa.
+                 Drag-and-drop ou abrir o modal são os caminhos pra mover. -->
           </div>
         </template>
         <div x-show="kanbanColSub(sub).length===0" class="text-center text-muted text-xs py-8 italic">vazio</div>
