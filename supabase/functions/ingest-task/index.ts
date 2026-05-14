@@ -21,7 +21,8 @@
 //     "status":       "andamento",                  // opcional (legacy: backlog|andamento|bloqueado|concluido)
 //     "complexidade": "media",                      // opcional: alta|media|baixa
 //     "tipo_trabalho":"feature",                    // opcional: bug|feature|discovery|manutencao|admin
-//     "tags":         ["frontend","auth"]           // opcional, array de strings
+//     "tags":         ["frontend","auth"],          // opcional, array de strings
+//     "criado_por_ia":true                          // opcional, default false. Marca task como originada de automação IA (Cowork etc).
 //   }
 //
 // Subetapa vs status (importante):
@@ -211,6 +212,20 @@ Deno.serve(async (req) => {
       .map((x: unknown) => String(x || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24))
       .filter((x: string) => x.length > 0);
   }
+  // criado_por_ia: aceita true/false (boolean ou strings "true"/"false"/"1"/"0").
+  // Default = null (não toca o campo no update; insert usa default false).
+  let criadoPorIa: boolean | null = null;
+  if (body.criado_por_ia != null) {
+    const v = body.criado_por_ia;
+    if (typeof v === 'boolean') criadoPorIa = v;
+    else if (typeof v === 'string') {
+      const s = v.toLowerCase().trim();
+      if (s === 'true' || s === '1')  criadoPorIa = true;
+      else if (s === 'false' || s === '0') criadoPorIa = false;
+      else return err(422, 'invalid_criado_por_ia', 'criado_por_ia deve ser boolean');
+    } else if (typeof v === 'number') criadoPorIa = v === 1;
+    else return err(422, 'invalid_criado_por_ia', 'criado_por_ia deve ser boolean');
+  }
 
   // Existe? Procura por (source, external_id).
   // Carrega status atual pra detectar mudança e gravar histórico.
@@ -235,6 +250,7 @@ Deno.serve(async (req) => {
   if (complexidade)                 payload.complexidade = complexidade;
   if (tipoTrabalho)                 payload.tipo_trabalho = tipoTrabalho;
   if (tags)                         payload.tags         = tags;
+  if (criadoPorIa != null)          payload.criado_por_ia = criadoPorIa;
   if (subetapa) {
     payload.subetapa = subetapa;
     // subetapa_em / status_em só viram update quando subetapa muda

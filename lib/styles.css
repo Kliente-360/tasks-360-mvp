@@ -867,6 +867,21 @@
   }
   .tag-chip-suggest:hover { background: var(--brand-tint); color: var(--brand-dark); border-style: solid; border-color: var(--brand-soft); }
 
+  /* IA chip: marca tasks criadas por automação (Cowork etc).
+     Roxo discreto pra diferenciar de tags (azul brand) e prioridade.
+     Compacto pra encaixar antes do título sem quebrar layout. */
+  .ia-chip {
+    display: inline-flex; align-items: center; gap: 2px;
+    font-size: 10px; font-family: var(--font-mono); font-weight: 600;
+    padding: 1px 5px; border-radius: 999px;
+    background: #ede9fe; color: #5b21b6;
+    border: 1px solid #ddd6fe; line-height: 1.5; white-space: nowrap;
+    vertical-align: middle; flex-shrink: 0;
+  }
+  .ia-chip-mini {
+    font-size: 9px; padding: 0 4px;
+  }
+
   /* drag manual no backlog */
   .manual-row { cursor: grab; }
   .manual-row:active { cursor: grabbing; }
