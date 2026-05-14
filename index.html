@@ -2352,6 +2352,13 @@
     <div class="page-bar-info">
       <span class="page-bar-narrative">
         <strong x-text="clientes.length"></strong>&nbsp;clientes&nbsp;·&nbsp;<strong x-text="projetos.length"></strong>&nbsp;projetos&nbsp;·&nbsp;<strong x-text="pessoas.length"></strong>&nbsp;pessoas
+        <span x-show="cadTab === 'clientes' && clientesSemDominio.length > 0"
+              class="ml-2 text-[11px] font-mono cursor-pointer hover:underline"
+              style="color:#92400e"
+              title="Clientes ativos sem domínios cadastrados — clique pra revisar"
+              @click="cadTab='clientes'">
+          · <strong x-text="clientesSemDominio.length"></strong> sem domínio
+        </span>
       </span>
     </div>
     <div class="page-bar-controls">
@@ -2405,6 +2412,11 @@
                 <span x-show="c.tier === 'descoberta'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Cliente em descoberta">descoberta</span>
                 <span x-show="c.arquivadoEm" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Cliente arquivado">arquivado</span>
                 <span x-show="c.ehInterno" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--triage-soft);color:var(--triage)" title="Bucket interno · tasks de gestão · excluído de heurísticas e do portal">interno</span>
+                <span x-show="!c.ehInterno && !c.arquivadoEm && (!c.dominios || c.dominios.length === 0)"
+                      class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono cursor-pointer hover:opacity-80"
+                      style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d"
+                      title="Sem domínios de email cadastrados — automação Cowork não consegue identificar pelo email dos participantes. Clique pra configurar."
+                      @click="openEditCliente(c)">sem domínio</span>
               </div>
               <div class="text-xs text-muted" x-text="contarTarefasCliente(c.id) + ' tarefas · ' + contarProjetosCliente(c.id) + ' projetos'"></div>
             </div>
