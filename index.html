@@ -218,27 +218,53 @@
           </span>
         </button>
         <div x-show="notifPanelOpen" x-transition.opacity
-             class="fixed md:absolute top-14 md:top-full right-3 md:right-0 md:mt-2 bg-elev border border-line rounded-lg shadow-xl z-50 w-[320px] max-w-[calc(100vw-24px)] max-h-[70vh] overflow-hidden flex flex-col">
+             class="fixed md:absolute top-14 md:top-full right-3 md:right-0 md:mt-2 bg-elev border border-line rounded-lg shadow-xl z-50 w-[340px] max-w-[calc(100vw-24px)] max-h-[70vh] overflow-hidden flex flex-col">
           <div class="px-3 py-2 border-b border-line flex items-center justify-between">
             <div class="font-brand font-semibold text-sm">Notificações</div>
             <button x-show="unreadCount > 0" class="text-[10px] text-muted hover:text-brand-dark" @click="markAllNotificationsRead()">marcar tudo lido</button>
           </div>
+          <!-- Filter chips por tipo -->
+          <div class="px-2 py-1.5 border-b border-line flex items-center gap-1 overflow-x-auto" x-show="notifications.length > 0">
+            <button class="notif-chip" :class="notifKindFilter === 'all' && 'is-on'" @click="notifKindFilter = 'all'">
+              tudo <span class="opacity-60" x-text="'· ' + notifKindCounts.all"></span>
+            </button>
+            <button class="notif-chip" :class="notifKindFilter === 'mention' && 'is-on'" @click="notifKindFilter = 'mention'" title="Menções">
+              @ <span class="opacity-60" x-text="'· ' + notifKindCounts.mention"></span>
+            </button>
+            <button class="notif-chip" :class="notifKindFilter === 'assignment' && 'is-on'" @click="notifKindFilter = 'assignment'" title="Atribuições e comentários em tarefas suas">
+              atribuições <span class="opacity-60" x-text="'· ' + notifKindCounts.assignment"></span>
+            </button>
+            <button class="notif-chip" :class="notifKindFilter === 'status' && 'is-on'" @click="notifKindFilter = 'status'" title="Mudanças de status">
+              status <span class="opacity-60" x-text="'· ' + notifKindCounts.status"></span>
+            </button>
+          </div>
           <div class="flex-1 overflow-y-auto">
-            <template x-for="n in notifications" :key="n.id">
+            <template x-for="n in notificationsFiltradas" :key="n.id">
               <button class="w-full text-left px-3 py-2.5 border-b border-line last:border-0 hover:bg-brand-tint transition-colors"
                       :class="!n.read_at && 'bg-brand-tint/30'"
                       @click="openNotification(n)">
-                <div class="flex items-start gap-2">
-                  <span class="mt-1 shrink-0 w-2 h-2 rounded-full" :class="n.read_at ? 'bg-line' : 'bg-brand'"></span>
+                <div class="flex items-start gap-2.5">
+                  <!-- Ícone por kind (cor distinta) -->
+                  <span class="notif-kind-icon shrink-0" :class="'notif-kind-' + n.kind" :title="n.kind">
+                    <span x-show="n.kind === 'mention'">@</span>
+                    <span x-show="n.kind === 'assigned'">👤</span>
+                    <span x-show="n.kind === 'comment_on_my_task'">💬</span>
+                    <span x-show="n.kind === 'cliente_respondeu'">🏢</span>
+                    <span x-show="n.kind === 'status_change'">↻</span>
+                  </span>
                   <div class="min-w-0 flex-1">
-                    <div class="text-sm text-ink truncate" x-text="notifSummary(n)"></div>
-                    <div x-show="n.payload && n.payload.preview" class="text-xs text-muted mt-0.5 truncate" x-text="n.payload && n.payload.preview"></div>
-                    <div class="text-[10px] font-mono text-muted mt-0.5" x-text="fmtPostedEm(n.criado_em)"></div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="shrink-0 w-1.5 h-1.5 rounded-full" :class="n.read_at ? 'bg-transparent' : 'bg-brand'"></span>
+                      <div class="text-sm text-ink truncate" x-text="notifSummary(n)"></div>
+                    </div>
+                    <div x-show="n.payload && n.payload.preview" class="text-xs text-muted mt-0.5 truncate pl-3" x-text="n.payload && n.payload.preview"></div>
+                    <div class="text-[10px] font-mono text-muted mt-0.5 pl-3" x-text="fmtPostedEm(n.criado_em)"></div>
                   </div>
                 </div>
               </button>
             </template>
             <div x-show="notifications.length === 0" class="px-4 py-8 text-center text-xs text-muted italic">Sem notificações ainda.</div>
+            <div x-show="notifications.length > 0 && notificationsFiltradas.length === 0" class="px-4 py-8 text-center text-xs text-muted italic">Nada nesse filtro.</div>
           </div>
         </div>
       </div>
