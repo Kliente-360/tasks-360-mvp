@@ -245,12 +245,13 @@
   .tbl { border-collapse: separate; border-spacing: 0; width: 100%; }
   .tbl thead th {
     text-align: left; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--muted); padding: var(--sp-3) var(--sp-4);
+    text-transform: uppercase; color: var(--muted); padding: var(--sp-3) var(--sp-3);
     border-bottom: 1px solid var(--line-strong); user-select: none; background: var(--surface-3);
   }
   /* Row vertical sp-3 (compromisso entre original sp-4 e o tentado sp-2 que ficou apertado).
-     Horizontal sp-4 mantém respiro. Vertical-align middle pra chips alinharem com texto. */
-  .tbl tbody td { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: middle; }
+     Horizontal sp-3 (era sp-4) — economiza ~80px no total da tabela com 10 colunas pra
+     evitar scroll horizontal em viewports 1280-1440px. Vertical-align middle pra chips. */
+  .tbl tbody td { padding: var(--sp-3) var(--sp-3); border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: middle; }
   /* Title da row: 1 linha sempre, ellipsis quando passa do max-width. Tooltip via title attr no x-bind.
      Cliente·Projeto: idem, ligeiramente mais largo do que antes (subiu de 120→160) descontando do title. */
   .tbl tbody td .tbl-title {
