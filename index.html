@@ -691,8 +691,9 @@
       </div>
     </div>
 
-    <!-- Card 6 · Sugestões de redistribuição (correlação pessoa × projeto) -->
-    <div class="card p-5 md:p-7" x-show="weeklyRedistSuggestions.length > 0">
+    <!-- Card 6 · Sugestões de redistribuição (correlação pessoa × projeto)
+         Sempre visível — empty state com diag explica por que não há sugestão. -->
+    <div class="card p-5 md:p-7">
       <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
         <h2 class="font-brand text-lg font-semibold">Sugestões de redistribuição</h2>
         <span class="text-xs text-muted font-mono">correlação pessoa × projeto</span>
@@ -700,7 +701,27 @@
       <p class="text-xs text-muted mb-3 leading-relaxed">
         Pessoa e projeto sobrecarregados na mesma semana, com a pessoa concentrando ≥40% do esforço naquele projeto. Sugere realocar pra quem tem o cliente como principal/secundário e folga na semana.
       </p>
-      <div class="space-y-2">
+
+      <!-- Empty state · diag info por estágio quando zero sugestões -->
+      <div x-show="weeklyRedistSuggestions.length === 0" class="rounded-md border border-line p-4" style="background:var(--surface-3)">
+        <div class="text-sm font-medium text-ink-soft mb-2">Sem sugestões esta semana.</div>
+        <div class="text-xs text-muted leading-relaxed mb-3">
+          A lógica exige <strong>todos</strong> os critérios juntos: pessoa em sobrecarga/pressão + concentrando ≥40% em UM projeto + projeto-sustentação também em sobrecarga + task não-P0 disponível. Se algum falha, nada é sugerido.
+        </div>
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono mb-2">Diagnóstico</div>
+        <ul class="text-xs space-y-1 font-mono">
+          <li class="flex items-center gap-2"><span class="text-muted">pessoas internas:</span> <strong x-text="weeklyRedistDiagInfo.pessoasInternas"></strong></li>
+          <li class="flex items-center gap-2"><span class="text-muted">sustentações cadastradas:</span> <strong x-text="weeklyRedistDiagInfo.sustentacoes"></strong></li>
+          <li class="flex items-center gap-2"><span class="text-muted">pessoas com sobrecarga em alguma semana:</span> <strong x-text="weeklyRedistDiagInfo.pessoasComSobrecarga"></strong></li>
+          <li class="flex items-center gap-2"><span class="text-muted">sustentações em sobrecarga/pressão:</span> <strong x-text="weeklyRedistDiagInfo.sustEmPressao"></strong></li>
+        </ul>
+        <div x-show="weeklyRedistDiagInfo.pessoasInternas === 0" class="text-xs text-muted mt-2 italic">→ Cadastre pessoas internas em Cadastros · Pessoas.</div>
+        <div x-show="weeklyRedistDiagInfo.sustentacoes === 0" class="text-xs text-muted mt-2 italic">→ Cadastre projetos tipo=sustentação com orçamento mensal em Cadastros · Projetos.</div>
+        <div x-show="weeklyRedistDiagInfo.pessoasInternas > 0 && weeklyRedistDiagInfo.pessoasComSobrecarga === 0" class="text-xs text-muted mt-2 italic">→ Ninguém em sobrecarga na janela 4 semanas — operação distribuída.</div>
+        <div x-show="weeklyRedistDiagInfo.pessoasComSobrecarga > 0 && weeklyRedistDiagInfo.sustEmPressao === 0" class="text-xs text-muted mt-2 italic">→ Sobrecarga existe mas não em sustentações — pode estar em projetos fechados (lógica atual só atua em sustentação).</div>
+      </div>
+
+      <div x-show="weeklyRedistSuggestions.length > 0" class="space-y-2">
         <template x-for="(s, i) in weeklyRedistSuggestions" :key="i">
           <div class="redist-card">
             <div class="redist-header">
