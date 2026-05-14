@@ -204,7 +204,7 @@
       <button class="btn btn-ghost btn-icon text-xs hidden md:inline-flex" @click="openHelp()" title="Ajuda" aria-label="Ajuda"><span>?</span></button>
       <button class="btn btn-ghost btn-icon text-xs hidden md:inline-flex" @click="toggleTheme()" :title="theme==='dark' ? 'Mudar para claro' : 'Mudar para escuro'" aria-label="Alternar tema"><span x-text="theme==='dark' ? '☀' : '☾'"></span></button>
       <div class="w-px h-6 bg-line mx-1 md:mx-2 hidden md:block" x-show="viewerRole !== ROLE.CLIENTE"></div>
-      <button class="btn btn-primary text-xs" x-show="viewerRole !== ROLE.CLIENTE" @click="openNew()" title="Nova tarefa (n)" aria-label="Nova tarefa">+ task</button>
+      <button class="btn btn-primary btn-fixed-w text-xs" x-show="viewerRole !== ROLE.CLIENTE" @click="openNew()" title="Nova tarefa (n)" aria-label="Nova tarefa">+ task</button>
 
       <!-- Notifications -->
       <div class="relative" x-show="authEnabled && currentPessoa" @click.outside="notifPanelOpen=false">
@@ -2154,8 +2154,8 @@
         <input type="checkbox" x-model="showArchivedCadastros" :disabled="cadTab === 'pessoas'">
         <span>arquivados</span>
       </label>
-      <!-- Largura fixa pra não saltar quando muda o toggle. -->
-      <button class="btn btn-primary text-xs justify-center" style="width:120px"
+      <!-- .btn-fixed-w garante mesmo width do + task no header global → padrão unificado. -->
+      <button class="btn btn-primary btn-fixed-w text-xs"
               @click="cadTab==='pessoas' ? openNewPessoa() : (cadTab==='clientes' ? openNewCliente() : openNewProjeto())"
               :title="cadTab==='clientes' ? 'Novo cliente' : (cadTab==='projetos' ? 'Novo projeto' : 'Nova pessoa')">
         + <span x-text="cadTab==='clientes' ? 'cliente' : (cadTab==='projetos' ? 'projeto' : 'pessoa')"></span>
@@ -3653,7 +3653,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label class="lbl">Nome</label>
-            <input type="text" class="inp" x-model="editingPessoa.nome" placeholder="Ex: Maria Silva">
+            <input type="text" class="inp" x-model="editingPessoa.nome" placeholder="Ex: Maria Silva" x-ref="pessoaNomeInput">
           </div>
           <div>
             <label class="lbl">Email</label>
@@ -3771,7 +3771,7 @@
         <div class="grid grid-cols-1 gap-3">
           <div>
             <label class="lbl">Nome</label>
-            <input type="text" class="inp" x-model="editingCliente.nome">
+            <input type="text" class="inp" x-model="editingCliente.nome" x-ref="clienteNomeInput" placeholder="Ex: Acme Ltda.">
           </div>
           <div>
             <label class="lbl">Tier</label>
@@ -3809,7 +3809,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label class="lbl">Nome</label>
-            <input type="text" class="inp" x-model="editingProjeto.nome">
+            <input type="text" class="inp" x-model="editingProjeto.nome" x-ref="projetoNomeInput" placeholder="Ex: Sales Cloud — Onda 1">
           </div>
           <div>
             <label class="lbl">Cliente</label>
