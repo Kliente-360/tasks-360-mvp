@@ -11,9 +11,13 @@
 //     "external_id":  "a0X5g000000XYZ",            // id do registro no SF
 //     "titulo":       "Customizar layout",
 //     "descricao":    "...",                        // opcional
-//     "cliente":      "Bodytech",                   // opcional, by name
-//     "projeto":      "Sustentação BT",             // opcional, by name
-//     "responsavel":  "Jéssica",                    // opcional, by name
+//     "cliente":      "Bodytech",                   // opcional, by name. Pode ser "" / null
+//                                                   // / "Triagem" (sentinel) = task entra
+//                                                   // sem cliente, aparece direto na Triagem.
+//     "projeto":      "Sustentação BT",             // opcional, by name. "Triagem" sentinel = null.
+//                                                   // Se cliente é null/sentinel, projeto é
+//                                                   // ignorado (não tenta lookup sem cliente).
+//     "responsavel":  "Jéssica",                    // opcional, by name. "Triagem" sentinel = null.
 //     "prioridade":   "P1",                         // opcional: P0|P1|P2|P3
 //     "esforco":      4,                            // opcional, horas
 //     "prazo":        "2026-06-15",                 // opcional, YYYY-MM-DD
@@ -57,6 +61,17 @@ const SUBS_VALID    = [
 ];
 const COMPLEX_VALID = ['alta', 'media', 'baixa'];
 const TIPO_VALID    = ['bug', 'feature', 'discovery', 'manutencao', 'admin'];
+
+// Sentinel values: quando a automação não consegue identificar
+// cliente/projeto/responsável, pode mandar "Triagem" (ou variantes)
+// em vez de omitir o campo. Tratamos como null e a task entra em
+// Triagem normalmente (triageFailures detecta cliente/responsável faltando).
+const TRIAGE_SENTINELS = new Set(['triagem', '__triagem__', 'sem cliente', 'sem-cliente']);
+function isTriageSentinel(v: unknown): boolean {
+  if (v == null) return false;
+  const s = String(v).trim().toLowerCase();
+  return TRIAGE_SENTINELS.has(s);
+}
 
 // Mapeamento legacy: status (macro) → subetapa default daquele macro.
 // Usado só quando body manda 'status' sem 'subetapa' (compat SF antigo).
@@ -109,8 +124,11 @@ Deno.serve(async (req) => {
   if (!titulo) return err(422, 'missing_titulo', 'titulo is required');
 
   // Resoluções por nome
+  // Cliente: campo opcional. Aceita string vazia, null, ou sentinel
+  // "Triagem" — todos resultam em clienteId=null e a task entra direto
+  // em Triagem (triageFailures detecta cliente faltando).
   let clienteId: string | null = null;
-  if (body.cliente) {
+  if (body.cliente && !isTriageSentinel(body.cliente)) {
     try {
       const r = await findByName('clientes', String(body.cliente));
       if (!r) return err(422, 'cliente_not_found', `cliente '${body.cliente}' não cadastrado`);
@@ -118,37 +136,30 @@ Deno.serve(async (req) => {
     } catch (e) { return err(500, 'db_error', String((e as Error).message)); }
   }
 
+  // Projeto: depende de cliente. Se cliente é null (omitido/sentinel/vazio),
+  // ignora projeto silenciosamente — não faz sentido projeto sem cliente,
+  // e lookup global é arriscado (nomes genéricos tipo "Sustentação" existem
+  // em vários clientes).
   let projetoId: string | null = null;
-  if (body.projeto) {
+  if (clienteId && body.projeto && !isTriageSentinel(body.projeto)) {
     try {
-      // Quando cliente foi resolvido, escopa busca do projeto a esse cliente
-      // — evita ambiguidade com nomes genéricos ("Sustentação", "Implantação"
-      // etc.) que aparecem em múltiplos clientes.
-      let r: { id: string; cliente_id: string } | null = null;
-      if (clienteId) {
-        const { data, error } = await sb
-          .from('projetos')
-          .select('id, cliente_id')
-          .eq('cliente_id', clienteId)
-          .ilike('nome', String(body.projeto).trim())
-          .limit(1)
-          .maybeSingle();
-        if (error) throw error;
-        r = data;
-      } else {
-        r = await findByName('projetos', String(body.projeto)) as any;
-      }
-      if (!r) return err(422, 'projeto_not_found', `projeto '${body.projeto}' não cadastrado${clienteId ? ` para o cliente '${body.cliente}'` : ''}`);
-      if (clienteId && r.cliente_id !== clienteId) {
-        return err(422, 'projeto_cliente_mismatch',
-          `projeto '${body.projeto}' não pertence ao cliente '${body.cliente}'`);
-      }
-      projetoId = r.id as string;
+      const { data, error } = await sb
+        .from('projetos')
+        .select('id, cliente_id')
+        .eq('cliente_id', clienteId)
+        .ilike('nome', String(body.projeto).trim())
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return err(422, 'projeto_not_found', `projeto '${body.projeto}' não cadastrado para o cliente '${body.cliente}'`);
+      projetoId = data.id as string;
     } catch (e) { return err(500, 'db_error', String((e as Error).message)); }
   }
 
+  // Responsável: opcional. Sentinel "Triagem" também é aceito como null
+  // (task fica sem responsável e cai em Triagem).
   let pessoaId: string | null = null;
-  if (body.responsavel) {
+  if (body.responsavel && !isTriageSentinel(body.responsavel)) {
     try {
       const r = await findByName('pessoas', String(body.responsavel));
       if (!r) return err(422, 'responsavel_not_found', `responsavel '${body.responsavel}' não cadastrado`);
