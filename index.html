@@ -1545,8 +1545,9 @@
       <div class="portal-header-eyebrow">Portal · Kliente 360</div>
       <div class="portal-header-name" x-text="portalCliente && portalCliente.nome"></div>
       <div class="portal-header-sub" x-text="portalHeadline"></div>
-      <!-- Switch discreto pra admin/interno trocar de cliente sem sair do portal -->
-      <div x-show="viewerRole !== 'cliente'" class="portal-header-switch hidden md:block">
+      <!-- Switch discreto pra admin/interno trocar de cliente sem sair do portal.
+           Mobile: in-flow abaixo do título (full-width). Desktop: absolute top-right. -->
+      <div x-show="viewerRole !== 'cliente'" class="portal-header-switch">
         <select class="portal-header-switch-sel" x-model="portalClienteId" @change="setPortalCliente($event.target.value)" title="Trocar cliente">
           <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
         </select>
@@ -2331,44 +2332,34 @@
     </div>
   </div>
 
-  <!-- Segmentação · filtros de adoption (visão interna) — mobile only; desktop usa .page-header acima. -->
-  <div class="flex flex-wrap items-center gap-2 mb-4 md:mb-5 md:hidden" x-show="!adoptionViewPortal">
-    <span class="text-[10px] uppercase tracking-wider text-muted font-mono">filtrar:</span>
-    <select class="inp text-xs py-1 w-auto" x-model="adoptionFilter.role">
-      <option value="">Role</option>
-      <option value="admin">admin</option>
-      <option value="interno">interno</option>
-    </select>
-    <select class="inp text-xs py-1 w-auto" x-model="adoptionFilter.senioridade">
-      <option value="">Senioridade</option>
-      <option value="junior">junior</option>
-      <option value="pleno">pleno</option>
-      <option value="senior">senior</option>
-      <option value="lead">lead</option>
-    </select>
-    <select class="inp text-xs py-1 w-auto" x-model="adoptionFilter.clientePrincipalId">
-      <option value="">Cliente principal</option>
-      <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
-    </select>
-    <button x-show="adoptionAnyFilter()" class="btn btn-ghost text-xs" @click="adoptionFilter = { role: '', senioridade: '', clientePrincipalId: '' }">
-      ✕ limpar filtros
-    </button>
-    <div class="ml-auto flex items-center gap-2">
-      <span class="text-[10px] uppercase tracking-wider text-muted font-mono">visão:</span>
-      <button class="btn btn-ghost text-xs"
-              :class="!adoptionViewPortal && '!text-brand-dark !bg-brand-tint'"
-              @click="adoptionViewPortal = false">interna</button>
-      <button class="btn btn-ghost text-xs"
-              :class="adoptionViewPortal && '!text-brand-dark !bg-brand-tint'"
-              @click="adoptionViewPortal = true">portal cliente</button>
+  <!-- Mobile: toggle + filtros empilhados (desktop usa .page-bar acima). Mesmo padrão do Kanban. -->
+  <div class="flex flex-col gap-2 mb-5 md:hidden">
+    <div class="view-toggle flex" role="tablist" aria-label="Visão de Adoção">
+      <button class="flex-1" :class="!adoptionViewPortal && 'active'" @click="adoptionViewPortal = false">Interna</button>
+      <button class="flex-1" :class="adoptionViewPortal && 'active'" @click="adoptionViewPortal = true">Portal cliente</button>
     </div>
-  </div>
-
-  <!-- Toggle visão (mobile/quando filtro escondido) — desktop usa .page-header acima. -->
-  <div class="flex items-center gap-2 mb-4 md:mb-5 md:hidden" x-show="adoptionViewPortal">
-    <span class="text-[10px] uppercase tracking-wider text-muted font-mono">visão:</span>
-    <button class="btn btn-ghost text-xs" @click="adoptionViewPortal = false">interna</button>
-    <button class="btn btn-ghost text-xs !text-brand-dark !bg-brand-tint" @click="adoptionViewPortal = true">portal cliente</button>
+    <template x-if="!adoptionViewPortal">
+      <div class="flex flex-col gap-2">
+        <div class="flex gap-2">
+          <select class="inp flex-1" :class="adoptionFilter.role && 'is-active'" x-model="adoptionFilter.role">
+            <option value="">Role</option>
+            <option value="admin">admin</option>
+            <option value="interno">interno</option>
+          </select>
+          <select class="inp flex-1" :class="adoptionFilter.senioridade && 'is-active'" x-model="adoptionFilter.senioridade">
+            <option value="">Senioridade</option>
+            <option value="junior">junior</option>
+            <option value="pleno">pleno</option>
+            <option value="senior">senior</option>
+            <option value="lead">lead</option>
+          </select>
+        </div>
+        <select class="inp" :class="adoptionFilter.clientePrincipalId && 'is-active'" x-model="adoptionFilter.clientePrincipalId">
+          <option value="">Cliente principal</option>
+          <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+        </select>
+      </div>
+    </template>
   </div>
 
   <!-- ============ VISÃO INTERNA (toggle) ============ -->
