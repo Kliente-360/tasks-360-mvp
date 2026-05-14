@@ -355,8 +355,8 @@
   .btn-icon { padding: var(--sp-1) var(--sp-2); }
   .btn:disabled { opacity: 0.35; cursor: not-allowed; }
   /* Botão primário com largura fixa pra consistência entre + task (header) e + cliente/projeto/pessoa (cadastros).
-     Calculado pelo maior label ("+ projeto") + padding decente; demais labels ficam centralizados. */
-  .btn-fixed-w { width: 96px; justify-content: center; }
+     Width justa pro maior label ("+ projeto") + padding compacto; demais labels ficam centralizados. */
+  .btn-fixed-w { width: 72px; justify-content: center; padding-left: var(--sp-2); padding-right: var(--sp-2); }
 
   /* ============ INPUTS ============ focus ring cyan (era brand) — ação fica reservada pro botão */
   .inp {
