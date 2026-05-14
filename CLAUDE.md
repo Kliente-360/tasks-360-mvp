@@ -14,10 +14,10 @@ Convenções do projeto que valem pra qualquer sessão.
 
 ## Versionamento
 
-- `APP_VERSION` em `lib/helpers.js` segue `v1.01.<N>`. **Bumpa BUILD +1 antes de cada commit em main.**
+- `APP_VERSION` em `lib/helpers.js` segue `v1.<MINOR>.<BUILD>`. **Bumpa BUILD +1 antes de cada commit em main.**
 - BUILD é sequencial independente do número do PR no GitHub — os dois divergiram ao longo do trabalho de design e **não tentar realinhar**.
-- Versão atual: `v1.01.261`.
-- Em mudança grande de UX/dados, bumpa MINOR e zera BUILD (decisão manual).
+- Versão atual: `v1.02.000`.
+- Em mudança grande de UX/dados, bumpa MINOR e zera BUILD (decisão manual). Último bump: 01→02 fechando o ciclo de design (PRs #253-#270).
 - Após commit em main, arquivos de migration vão pra `supabase/migrations/applied/` (mover manualmente — não tem automação).
 
 ## Git workflow
