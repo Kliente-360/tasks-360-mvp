@@ -966,15 +966,24 @@
   /* Faixa contínua macro no topo das colunas op (vencedor Kanban A):
      - 4px (era 3px) — mais perceptível como guia
      - backlog/concluido neutros pra deixar andamento e bloqueado saltarem */
-  .kcol-op { position: relative; padding-top: var(--sp-4); }
-  .kcol-op::before {
+  /* Faixa de cor macro · usada em kcol-op (operacional, 11 cols) E kcol-exec
+     (executiva, 4 cols). Mesmas cores garantem consistência visual entre
+     as duas visões do Kanban. Concluído usa brand-soft (verde-tint discreto). */
+  .kcol-op,
+  .kcol-exec { position: relative; padding-top: var(--sp-4); }
+  .kcol-op::before,
+  .kcol-exec::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
     border-radius: 4px 4px 0 0; background: var(--line-strong);
   }
-  .kcol-op[data-m="andamento"]::before { background: var(--brand); }
-  .kcol-op[data-m="bloqueado"]::before { background: var(--p0); }
-  .kcol-op[data-m="concluido"]::before { background: var(--brand-soft); }
-  .kcol-op[data-m="backlog"]::before    { background: var(--line-strong); }
+  .kcol-op[data-m="andamento"]::before,
+  .kcol-exec[data-m="andamento"]::before { background: var(--brand); }
+  .kcol-op[data-m="bloqueado"]::before,
+  .kcol-exec[data-m="bloqueado"]::before { background: var(--p0); }
+  .kcol-op[data-m="concluido"]::before,
+  .kcol-exec[data-m="concluido"]::before { background: var(--brand-soft); }
+  .kcol-op[data-m="backlog"]::before,
+  .kcol-exec[data-m="backlog"]::before   { background: var(--line-strong); }
   .kcol-op-crumb {
     font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600;
     color: var(--muted);

@@ -1201,11 +1201,13 @@
                 <span :class="atrasada(t) && 'late'" x-text="t.prazo ? fmtDate(t.prazo) : '—'"></span>
               </td>
               <td>
-                <!-- Triar removido daqui: a aba Triagem já cataloga tasks que precisam. Status fica enxuto. -->
+                <!-- Coluna mostra SUB-ETAPA (mais granular) colorida pela cor do
+                     STATUS MACRO (data-s). Filtro de status macro continua atuando
+                     no nível macro — independente do que é exibido aqui. -->
                 <div class="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
-                  <span class="status" :data-s="t.status" :title="tempoNaEtapa(t)">
+                  <span class="status" :data-s="t.status" :title="lblStatus(t.status) + ' · ' + tempoNaEtapa(t)">
                     <span class="status-dot"></span>
-                    <span x-text="lblStatus(t.status)"></span>
+                    <span x-text="lblSub(t.subetapa)"></span>
                   </span>
                   <span x-show="agingLevel(t)!=='fresh'" class="aging-badge" :class="'aging-'+agingLevel(t)" :title="'parada há ' + agingDays(t) + ' dias neste status'" x-text="agingDays(t)+'d'"></span>
                 </div>
@@ -1439,7 +1441,7 @@
   <!-- ============ VISÃO EXECUTIVA (nível 1, read-only) ============ -->
   <div x-show="effectiveKanbanView==='exec'" class="kanban-scroll">
     <template x-for="col in ['backlog','andamento','bloqueado','concluido']" :key="col">
-      <div class="kcol kcol-readonly">
+      <div class="kcol kcol-exec kcol-readonly" :data-m="col">
         <div class="flex items-center justify-between mb-3 px-1">
           <div>
             <div class="text-[11px] uppercase tracking-wider text-muted font-semibold" x-text="lblStatus(col)"></div>
