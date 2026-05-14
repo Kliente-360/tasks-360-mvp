@@ -806,11 +806,10 @@
           <strong x-text="triagemTasks.filter(t => !(+t.esforco)).length"></strong>&nbsp;sem esforço
         </button>
         <button type="button" class="triage-filter-chip"
-                x-show="triagemTasks.filter(t => t.criadoPorIa).length > 0"
                 :class="triagemFilter.origem === 'ia' && 'is-on'"
                 @click="triagemFilter.origem = triagemFilter.origem === 'ia' ? '' : 'ia'"
-                title="Filtra só tasks criadas por automação IA (Cowork etc).">
-          <strong x-text="triagemTasks.filter(t => t.criadoPorIa).length"></strong>&nbsp;🤖 IA
+                title="Filtra só tasks criadas por automação IA (Cowork etc). Combina com sem resp / sem prazo / sem esforço.">
+          <strong x-text="triagemTasks.filter(t => t.criadoPorIa).length"></strong>&nbsp;🤖 criadas por IA
         </button>
       </div>
     </div>
@@ -833,7 +832,6 @@
         <strong x-text="triagemTasks.filter(t => !(+t.esforco)).length"></strong>&nbsp;sem esforço
       </button>
       <button type="button" class="triage-filter-chip flex-1 justify-center"
-              x-show="triagemTasks.filter(t => t.criadoPorIa).length > 0"
               :class="triagemFilter.origem === 'ia' && 'is-on'"
               @click="triagemFilter.origem = triagemFilter.origem === 'ia' ? '' : 'ia'">
         <strong x-text="triagemTasks.filter(t => t.criadoPorIa).length"></strong>&nbsp;🤖 IA
