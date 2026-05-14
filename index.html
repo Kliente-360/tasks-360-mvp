@@ -453,7 +453,10 @@
           <template x-for="t in focusGroups[group.key]" :key="t.id">
             <div class="kcard" @click="openEdit(t)">
               <div class="flex items-start justify-between gap-2 mb-2">
-                <div class="font-medium text-sm leading-snug min-w-0" x-text="t.titulo"></div>
+                <div class="font-medium text-sm leading-snug min-w-0">
+                  <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini mr-1" title="Criada por automação IA">🤖 IA</span>
+                  <span x-text="t.titulo"></span>
+                </div>
                 <span class="pri shrink-0" :class="'pri-'+t.prioridade">
                   <span class="pri-dot"></span>
                   <span x-text="t.prioridade"></span>
@@ -802,11 +805,18 @@
                 @click="triagemFilter.semEsforco = !triagemFilter.semEsforco">
           <strong x-text="triagemTasks.filter(t => !(+t.esforco)).length"></strong>&nbsp;sem esforço
         </button>
+        <button type="button" class="triage-filter-chip"
+                x-show="triagemTasks.filter(t => t.criadoPorIa).length > 0"
+                :class="triagemFilter.origem === 'ia' && 'is-on'"
+                @click="triagemFilter.origem = triagemFilter.origem === 'ia' ? '' : 'ia'"
+                title="Filtra só tasks criadas por automação IA (Cowork etc).">
+          <strong x-text="triagemTasks.filter(t => t.criadoPorIa).length"></strong>&nbsp;🤖 IA
+        </button>
       </div>
     </div>
 
     <!-- Filtros mobile (chips em row própria, agora com contadores como no desktop) -->
-    <div x-show="triagemTasks.length > 0" class="flex items-center gap-1.5 md:hidden">
+    <div x-show="triagemTasks.length > 0" class="flex items-center gap-1.5 md:hidden flex-wrap">
       <button type="button" class="triage-filter-chip flex-1 justify-center"
               :class="triagemFilter.semResp && 'is-on'"
               @click="triagemFilter.semResp = !triagemFilter.semResp">
@@ -821,6 +831,12 @@
               :class="triagemFilter.semEsforco && 'is-on'"
               @click="triagemFilter.semEsforco = !triagemFilter.semEsforco">
         <strong x-text="triagemTasks.filter(t => !(+t.esforco)).length"></strong>&nbsp;sem esforço
+      </button>
+      <button type="button" class="triage-filter-chip flex-1 justify-center"
+              x-show="triagemTasks.filter(t => t.criadoPorIa).length > 0"
+              :class="triagemFilter.origem === 'ia' && 'is-on'"
+              @click="triagemFilter.origem = triagemFilter.origem === 'ia' ? '' : 'ia'">
+        <strong x-text="triagemTasks.filter(t => t.criadoPorIa).length"></strong>&nbsp;🤖 IA
       </button>
     </div>
 
@@ -851,6 +867,7 @@
                   <span class="pri-dot"></span>
                   <span x-text="t.prioridade"></span>
                 </span>
+                <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini" title="Criada por automação IA">🤖 IA</span>
                 <span class="font-medium text-ink break-words" x-text="t.titulo"></span>
               </div>
               <div class="text-xs text-muted font-mono break-words">
@@ -1173,7 +1190,10 @@
                        @change="toggleSelect(t.id)">
               </td>
               <td>
-                <div class="tbl-title" :title="t.titulo" x-text="t.titulo"></div>
+                <div class="tbl-title" :title="t.titulo">
+                  <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini mr-1" title="Criada por automação IA">🤖 IA</span>
+                  <span x-text="t.titulo"></span>
+                </div>
                 <div x-show="(t.tags || []).length>0" class="flex flex-wrap gap-1 mt-1">
                   <template x-for="tag in (t.tags || [])" :key="tag">
                     <span class="tag-chip tag-chip-link" @click.stop="f.tag = tag" x-text="'#' + tag"></span>
@@ -1261,7 +1281,10 @@
           <template x-for="t in g.tasks" :key="t.id">
             <div class="kcard" @click="openEdit(t)">
               <div class="flex items-start justify-between gap-2 mb-2">
-                <div class="font-medium text-sm leading-snug min-w-0" x-text="t.titulo"></div>
+                <div class="font-medium text-sm leading-snug min-w-0">
+                  <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini mr-1" title="Criada por automação IA">🤖 IA</span>
+                  <span x-text="t.titulo"></span>
+                </div>
                 <span class="pri shrink-0" :class="'pri-'+t.prioridade">
                   <span class="pri-dot"></span>
                   <span x-text="t.prioridade"></span>
@@ -1410,7 +1433,10 @@
                @dragstart="onDragStart($event, t)"
                @dragend="draggingId=''; dragOverCol=''">
             <div class="flex items-start justify-between gap-2 mb-2">
-              <div class="font-medium text-sm leading-snug" x-text="t.titulo"></div>
+              <div class="font-medium text-sm leading-snug">
+                <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini mr-1" title="Criada por automação IA">🤖 IA</span>
+                <span x-text="t.titulo"></span>
+              </div>
               <span class="pri" :class="'pri-'+t.prioridade">
                 <span class="pri-dot"></span>
                 <span x-text="t.prioridade"></span>
@@ -1453,7 +1479,10 @@
         <template x-for="t in kanbanCol(col)" :key="t.id">
           <div class="kcard" @click="openEdit(t)">
             <div class="flex items-start justify-between gap-2 mb-2">
-              <div class="font-medium text-sm leading-snug" x-text="t.titulo"></div>
+              <div class="font-medium text-sm leading-snug">
+                <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini mr-1" title="Criada por automação IA">🤖 IA</span>
+                <span x-text="t.titulo"></span>
+              </div>
               <span class="pri" :class="'pri-'+t.prioridade">
                 <span class="pri-dot"></span>
                 <span x-text="t.prioridade"></span>
@@ -3435,6 +3464,7 @@
          (aparecem só quando aplicável). -->
     <div class="tmodal-head">
       <input class="tmodal-title" x-model="editing.titulo" placeholder="O que precisa ser feito?" x-ref="tituloInput" aria-label="Título da tarefa">
+      <span x-show="editing.criadoPorIa" class="ia-chip" title="Criada por automação IA">🤖 IA</span>
       <span x-show="editing.prioridade" class="pri" :class="'pri-' + editing.prioridade">
         <span class="pri-dot"></span>
         <span x-text="editing.prioridade"></span>
