@@ -55,6 +55,8 @@ Não é um Jira, não é um Trello, não é um Asana. É **opinativo**, executiv
 
 **Em análise (Dashboard + Briefing redesign)**: ver [`PROPOSAL-DASHBOARD-BRIEFING.md`](./PROPOSAL-DASHBOARD-BRIEFING.md). Proposta de reposicionamento conceitual — Briefing como carta editorial executiva (prescritiva, prosa), Dashboard como painel analítico do gestor (quantitativo, gaps & desvios). Resolve risco de redundância entre as duas abas. ~14h de execução em 7 PRs.
 
+**Catálogo de KPIs**: ver [`KPIS.md`](./KPIS.md). Lista completa de todos os indicadores usados no app — adoção, performance, capacidade, operação, saúde, externo, orçamento. Define cálculo, threshold e onde vive cada um. Inclui KPIs propostos no Dashboard v2 (% entregue no prazo, variância de carga, bottleneck por sub-etapa, concentração de cliente).
+
 ---
 
 ## 2. Princípios de produto
