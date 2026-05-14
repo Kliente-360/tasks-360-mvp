@@ -4053,6 +4053,28 @@
             </select>
             <div class="text-[10px] text-muted mt-1">"Estratégico" alimenta a heurística de atrasadas em cliente crítico.</div>
           </div>
+          <div>
+            <label class="lbl">Domínios de email</label>
+            <div class="flex flex-wrap gap-1.5 mb-1.5" x-show="(editingCliente.dominios || []).length > 0">
+              <template x-for="d in (editingCliente.dominios || [])" :key="d">
+                <span class="tag-chip">
+                  <span x-text="d"></span>
+                  <button type="button" @click="removeDominioCliente(d)" title="Remover">×</button>
+                </span>
+              </template>
+            </div>
+            <div class="flex gap-1.5">
+              <input type="text" class="inp flex-1" x-model="newDominio" x-ref="dominioInput"
+                     placeholder="bodytech.com.br"
+                     @keydown.enter.prevent="addDominioCliente()"
+                     @keydown.,.prevent="addDominioCliente()"
+                     @keydown.space.prevent="addDominioCliente()">
+              <button type="button" class="btn btn-ghost text-xs" @click="addDominioCliente()">+ adicionar</button>
+            </div>
+            <div class="text-[10px] text-muted mt-1">
+              Usado por automações (Cowork, Apps Script com Gemini) pra identificar cliente pelos participantes de reunião. Sem o <code>@</code>. Enter/vírgula/espaço adiciona.
+            </div>
+          </div>
         </div>
       </div>
     </div>
