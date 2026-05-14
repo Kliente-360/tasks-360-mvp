@@ -862,15 +862,10 @@
   <!-- Page bar unificado (1 linha): narrativa + busca + 7 filtros + limpar + ⋯ -->
   <div class="page-bar hidden md:flex">
     <div class="page-bar-info">
-      <!-- Narrativa compacta · sem filtro mostra "N tarefas", com filtro mostra "X/Y · Z ocultas".
-           Texto curto pra page-bar caber em uma linha mesmo com 7 filtros. -->
+      <!-- Header padronizado: "Backlog · N tarefas". N é total ABERTAS (não-concluídas,
+           sem cliente interno), independente dos filtros. Padroniza com outras abas. -->
       <span class="page-bar-narrative whitespace-nowrap">
-        <template x-if="tasks.length - filtered.length > 0">
-          <span><strong x-text="filtered.length"></strong>/<strong x-text="tasks.length"></strong><span class="text-muted font-normal"> · <strong class="text-ink" x-text="tasks.length - filtered.length"></strong> ocultas</span></span>
-        </template>
-        <template x-if="tasks.length - filtered.length === 0">
-          <span><strong x-text="tasks.length"></strong> tarefas</span>
-        </template>
+        Backlog<span class="text-muted font-normal"> · <strong class="text-ink" x-text="backlogTotalAbertas"></strong> tarefas</span>
       </span>
     </div>
     <div class="page-bar-controls">
@@ -1057,6 +1052,31 @@
             @click="clearFilters()">
       ✕ limpar filtros<span class="badge-count ml-1" x-text="activeFiltersCount + (f.q?1:0) + (f.tag?1:0)"></span>
     </button>
+  </div>
+
+  <!-- Cards de stats · desktop only · respeitam filtros aplicados.
+       Mesma estrutura visual dos cards do Foco. -->
+  <div class="hidden md:grid grid-cols-5 gap-3 mb-4">
+    <div class="card p-3 md:p-4">
+      <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Total filtrado</div>
+      <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" x-text="backlogCards.total"></div>
+    </div>
+    <div class="card p-3 md:p-4">
+      <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Backlog</div>
+      <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" x-text="backlogCards.backlog"></div>
+    </div>
+    <div class="card p-3 md:p-4">
+      <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Em andamento</div>
+      <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" x-text="backlogCards.andamento"></div>
+    </div>
+    <div class="card p-3 md:p-4">
+      <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Bloqueadas</div>
+      <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" :class="backlogCards.bloqueadas > 0 && 'text-[color:var(--p0)]'" x-text="backlogCards.bloqueadas"></div>
+    </div>
+    <div class="card p-3 md:p-4">
+      <div class="text-[10px] uppercase tracking-wider text-muted font-mono">Atrasadas</div>
+      <div class="font-brand text-2xl md:text-3xl font-semibold mt-1" :class="backlogCards.atrasadas > 0 && 'text-[color:var(--p0)]'" x-text="backlogCards.atrasadas"></div>
+    </div>
   </div>
 
   <div class="card tbl-wrap hidden md:block">
