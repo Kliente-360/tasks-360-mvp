@@ -597,11 +597,11 @@
       <p class="text-sm text-ink-soft leading-relaxed" x-text="briefingCapacidade.recomendacao"></p>
     </div>
 
-    <!-- Card 5 · Capacidade próximas 4 semanas (granular) -->
+    <!-- Card 5 · Capacidade semanal (pessoa + sustentação · contextos recorrentes) -->
     <div class="card p-5 md:p-7">
       <div class="flex items-baseline justify-between mb-3 flex-wrap gap-2">
-        <h2 class="font-brand text-lg font-semibold">Capacidade · próximas 4 semanas</h2>
-        <span class="text-xs text-muted font-mono">bucket por prazo · default semana atual</span>
+        <h2 class="font-brand text-lg font-semibold">Capacidade semanal · pessoa + sustentação</h2>
+        <span class="text-xs text-muted font-mono">contexto recorrente · próximas 4 semanas</span>
       </div>
 
       <!-- Heatmap pessoa × semana · responsivo (grid desktop, card mobile) -->
@@ -663,25 +663,31 @@
         </div>
       </div>
 
-      <!-- Projetos fechados: escopo -->
-      <div x-show="weeklyCapacityAnalysis.projetosFechados.length > 0" class="mt-5 pt-4 border-t border-line">
-        <div class="text-[10px] uppercase tracking-wider text-muted font-mono font-semibold mb-2">Projetos · escopo comprometido vs orçamento total</div>
-        <div class="space-y-2">
-          <template x-for="pj in weeklyCapacityAnalysis.projetosFechados" :key="pj.projetoId">
-            <div class="flex items-center gap-3 py-1.5 border-b border-line last:border-0">
-              <span class="brief-tag" :class="pj.estourado ? 'brief-tag-sobrecarga' : (pj.risco ? 'brief-tag-pressao' : 'brief-tag-ok')" x-text="pj.estourado ? 'estourado' : (pj.risco ? 'risco' : 'ok')"></span>
-              <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium text-ink truncate" x-text="pj.nome"></div>
-                <div class="text-[10px] text-muted font-mono" x-text="nomeCliente(pj.clienteId) + ' · ' + pj.countTasks + ' tasks · ' + Math.round(pj.usado) + 'h usadas + ' + Math.round(pj.comprometido) + 'h abertas / ' + pj.orcTotal + 'h'"></div>
-              </div>
-              <div class="text-sm font-mono font-semibold" :class="pj.estourado ? 'text-[color:var(--p0)]' : (pj.risco ? 'text-amber-700' : 'text-ink-soft')" x-text="pj.pctEsgotamento + '%'"></div>
-            </div>
-          </template>
-        </div>
+      <div x-show="weeklyCapacityAnalysis.sustentacoes.length === 0" class="mt-4 text-xs text-muted italic">
+        Nenhuma sustentação cadastrada. Em Cadastros · Projetos, marque tipo=sustentação e preencha orçamento mensal pra ativar análise contratual recorrente.
       </div>
+    </div>
 
-      <div x-show="weeklyCapacityAnalysis.sustentacoes.length === 0 && weeklyCapacityAnalysis.projetosFechados.length === 0" class="mt-4 text-xs text-muted italic">
-        Nenhum projeto com tipo + orçamento cadastrado. Em Cadastros · Projetos, marque tipo (sustentação/projeto) e preencha as horas pra ativar análise contratual.
+    <!-- Card 5b · Projetos fechados (escopo · contexto one-shot) -->
+    <div class="card p-5 md:p-7" x-show="weeklyCapacityAnalysis.projetosFechados.length > 0">
+      <div class="flex items-baseline justify-between mb-3 flex-wrap gap-2">
+        <h2 class="font-brand text-lg font-semibold">Projetos fechados · escopo vs orçamento</h2>
+        <span class="text-xs text-muted font-mono">contexto one-shot · escopo total contratado</span>
+      </div>
+      <p class="text-xs text-muted mb-3 leading-relaxed">
+        Projetos com escopo fechado (tipo=projeto + orçamento total em horas). Consumo = horas usadas em tasks concluídas + horas comprometidas em tasks ativas. Sinal: <strong>estourado</strong> >110% · <strong>risco</strong> 90-110% · <strong>ok</strong> &lt;90%.
+      </p>
+      <div class="space-y-2">
+        <template x-for="pj in weeklyCapacityAnalysis.projetosFechados" :key="pj.projetoId">
+          <div class="flex items-center gap-3 py-1.5 border-b border-line last:border-0">
+            <span class="brief-tag" :class="pj.estourado ? 'brief-tag-sobrecarga' : (pj.risco ? 'brief-tag-pressao' : 'brief-tag-ok')" x-text="pj.estourado ? 'estourado' : (pj.risco ? 'risco' : 'ok')"></span>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-ink truncate" x-text="pj.nome"></div>
+              <div class="text-[10px] text-muted font-mono" x-text="nomeCliente(pj.clienteId) + ' · ' + pj.countTasks + ' tasks · ' + Math.round(pj.usado) + 'h usadas + ' + Math.round(pj.comprometido) + 'h abertas / ' + pj.orcTotal + 'h'"></div>
+            </div>
+            <div class="text-sm font-mono font-semibold" :class="pj.estourado ? 'text-[color:var(--p0)]' : (pj.risco ? 'text-amber-700' : 'text-ink-soft')" x-text="pj.pctEsgotamento + '%'"></div>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -718,12 +724,22 @@
             </div>
             <div class="redist-rec redist-rec-warn" x-show="s.reason === 'no-match'">
               <div class="text-xs text-ink-soft leading-relaxed">
-                Sem pessoa com <span x-text="nomeCliente(s.hit.clienteId)"></span> como principal/secundário. Analisar manualmente: cogitar mover prazo da task abaixo ou ajustar escopo da semana.
+                Nenhuma pessoa cadastrada com <span class="font-medium" x-text="nomeCliente(s.hit.clienteId)"></span> como cliente principal/secundário. Cadastre em Cadastros · Pessoas pra habilitar redistribuição automática, ou analise manualmente (mover prazo, ajustar escopo).
+              </div>
+            </div>
+            <div class="redist-rec redist-rec-warn" x-show="s.reason === 'no-cap'">
+              <div class="text-xs text-ink-soft leading-relaxed">
+                <span x-text="s.diag.matched + ' pessoa(s)'"></span> com <span class="font-medium" x-text="nomeCliente(s.hit.clienteId)"></span> (<span x-text="s.diag.semCapNomes || s.diag.matchedNomes"></span>) mas sem capacidade horas/semana declarada. Cadastre <span class="font-mono">capacidade_horas_semana</span> em Cadastros · Pessoas pra habilitar análise.
+              </div>
+            </div>
+            <div class="redist-rec redist-rec-warn" x-show="s.reason === 'no-slack'">
+              <div class="text-xs text-ink-soft leading-relaxed">
+                <span x-text="s.diag.withCap + ' pessoa(s)'"></span> com cliente <span class="font-medium" x-text="nomeCliente(s.hit.clienteId)"></span> (<span x-text="s.diag.matchedNomes"></span>) mas sem folga na semana (≥80% capacidade). Analisar manualmente: mover prazo, renegociar escopo da semana ou aceitar pressão pontual.
               </div>
             </div>
             <div class="redist-rec redist-rec-warn" x-show="s.reason === 'no-fit'">
               <div class="text-xs text-ink-soft leading-relaxed">
-                Há candidatos com match de cliente mas nenhum tem folga suficiente pra absorver. Analisar manualmente.
+                <span x-text="s.diag.withSlack + ' candidato(s)'"></span> com folga mas absorver essa task estouraria a capacidade da semana. Analisar manualmente: priorizar task mais leve, mover prazo ou renegociar.
               </div>
             </div>
 
