@@ -2379,15 +2379,6 @@
     </div>
   </div>
 
-  <!-- Banner narrativo (1 frase com o essencial) -->
-  <div class="card p-4 md:p-5 mb-4 md:mb-5" style="background:var(--surface-3);border-left:3px solid var(--brand)">
-    <div class="text-[10px] uppercase tracking-wider text-muted font-mono mb-1">Esta semana</div>
-    <div class="text-sm md:text-base text-ink font-medium leading-relaxed" x-text="usageNarrativeHeadline"></div>
-    <div x-show="adoptionAnyFilter()" class="text-xs text-muted mt-2 font-mono">
-      filtro ativo · <span x-text="usageNarrativeFiltered"></span>
-    </div>
-  </div>
-
   <!-- Mobile: toggle + filtros empilhados (desktop usa .page-bar acima). Mesmo padrão do Kanban. -->
   <div class="flex flex-col gap-2 mb-5 md:hidden">
     <div class="view-toggle flex" role="tablist" aria-label="Visão de Adoção">
@@ -2471,17 +2462,17 @@
          x-text="adoptionSuccessIndicators.conclusao"></div>
   </div>
 
-  <!-- Alertas A1-A10 derivados (só aparecem se houver) -->
-  <div x-show="usageAlertas.length > 0" class="space-y-2 mb-4 md:mb-5">
+  <!-- Ações da semana · 5 alertas acionáveis ordenados por urgência -->
+  <div x-show="usageAlertas.length > 0" class="mb-4 md:mb-5">
+    <div class="text-[10px] uppercase tracking-wider text-muted font-mono mb-2">Ações da semana</div>
+    <div class="space-y-2">
     <template x-for="a in usageAlertas" :key="a.kind + a.titulo">
       <div class="card p-3 md:p-4 flex items-start gap-3"
            :style="a.severity === 'alta' ? 'border-left:3px solid var(--p0)' :
-                    a.severity === 'positivo' ? 'border-left:3px solid var(--sig-green-strong)' :
                     a.severity === 'media' ? 'border-left:3px solid var(--sig-amber)' :
                     'border-left:3px solid var(--muted)'">
         <span class="text-[10px] uppercase tracking-wider font-mono font-semibold shrink-0 mt-0.5"
               :style="a.severity === 'alta' ? 'color:var(--p0)' :
-                      a.severity === 'positivo' ? 'color:var(--sig-green-strong)' :
                       a.severity === 'media' ? 'color:#b45309' : 'color:var(--muted)'"
               x-text="a.severity"></span>
         <div class="flex-1 min-w-0">
@@ -2490,69 +2481,7 @@
         </div>
       </div>
     </template>
-  </div>
-
-  <!-- KPIs com Δ vs semana anterior -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-6">
-    <div class="kpi">
-      <div class="kpi-lbl">Eventos · 7d</div>
-      <div class="kpi-num brand" x-text="usageWeekDeltas.eventos.atual"></div>
-      <div class="kpi-trend"
-           :class="usageWeekDeltas.eventos.pct > 0 ? 'text-emerald-700' : (usageWeekDeltas.eventos.pct < 0 ? 'text-[color:var(--p0)]' : 'text-muted')"
-           x-text="(usageWeekDeltas.eventos.pct > 0 ? '↑ +' : (usageWeekDeltas.eventos.pct < 0 ? '↓ ' : '= ')) + Math.abs(usageWeekDeltas.eventos.pct) + '% vs sem ant'"></div>
     </div>
-    <div class="kpi">
-      <div class="kpi-lbl">Pessoas ativas · 7d</div>
-      <div class="kpi-num" :class="usageWeekDeltas.pessoasAtivas.atual >= 2 && 'brand'" x-text="usageWeekDeltas.pessoasAtivas.atual"></div>
-      <div class="kpi-trend"
-           :class="usageWeekDeltas.pessoasAtivas.delta > 0 ? 'text-emerald-700' : (usageWeekDeltas.pessoasAtivas.delta < 0 ? 'text-[color:var(--p0)]' : 'text-muted')"
-           x-text="(usageWeekDeltas.pessoasAtivas.delta > 0 ? '↑ +' : (usageWeekDeltas.pessoasAtivas.delta < 0 ? '↓ ' : '= ')) + Math.abs(usageWeekDeltas.pessoasAtivas.delta) + ' vs sem ant'"></div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-lbl">Sessions · 7d</div>
-      <div class="kpi-num" x-text="usageWeekDeltas.sessions.atual"></div>
-      <div class="kpi-trend"
-           :class="usageWeekDeltas.sessions.pct > 0 ? 'text-emerald-700' : (usageWeekDeltas.sessions.pct < 0 ? 'text-[color:var(--p0)]' : 'text-muted')"
-           x-text="(usageWeekDeltas.sessions.pct > 0 ? '↑ +' : (usageWeekDeltas.sessions.pct < 0 ? '↓ ' : '= ')) + Math.abs(usageWeekDeltas.sessions.pct) + '% vs sem ant'"></div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-lbl">Mês corrente · eventos</div>
-      <div class="kpi-num" x-text="usageMonthDelta.atual"></div>
-      <div class="kpi-trend"
-           :class="usageMonthDelta.pct > 0 ? 'text-emerald-700' : (usageMonthDelta.pct < 0 ? 'text-[color:var(--p0)]' : 'text-muted')"
-           x-text="(usageMonthDelta.pct > 0 ? '↑ +' : (usageMonthDelta.pct < 0 ? '↓ ' : '= ')) + Math.abs(usageMonthDelta.pct) + '% vs mês ant'"></div>
-    </div>
-  </div>
-
-  <!-- Volume semanal · 12 semanas (bar chart div-based) -->
-  <div class="card p-4 md:p-6 mb-4">
-    <div class="font-brand text-xl font-semibold mb-1">Volume semanal · 12 semanas</div>
-    <div class="text-xs text-muted mb-4">eventos do app por semana. Lê tendência macro de 3 meses em 1 olhada.</div>
-    <div class="grid grid-cols-12 gap-1 md:gap-2" style="height:140px;align-items:end">
-      <template x-for="(w, i) in usageVolume12Sem.weeks" :key="i">
-        <div class="flex flex-col items-center gap-1 h-full min-w-0">
-          <div class="text-[9px] font-mono text-muted" x-text="w.count"></div>
-          <div class="w-full bg-bg-elev rounded-t-sm flex-1 overflow-hidden flex items-end">
-            <div class="w-full rounded-t-sm transition-all"
-                 :class="i === usageVolume12Sem.weeks.length - 1 ? 'bg-brand-dark' : 'bg-brand'"
-                 :style="'height:' + Math.max(2, (w.count / usageVolume12Sem.max) * 100) + '%'"></div>
-          </div>
-          <div class="text-[9px] font-mono text-muted truncate" x-text="w.label"></div>
-        </div>
-      </template>
-    </div>
-  </div>
-
-  <div class="card p-4 md:p-6 mb-4">
-    <div class="font-brand text-xl font-semibold mb-1">Volume diário (30d)</div>
-    <div class="text-xs text-muted mb-4">eventos do app por dia: mudanças de status, comentários e replies. Salesforce excluído.</div>
-    <div style="height:200px"><canvas id="chartMvpVolume"></canvas></div>
-  </div>
-
-  <div class="card p-4 md:p-6 mb-4">
-    <div class="font-brand text-xl font-semibold mb-1">DAU · 14 dias</div>
-    <div class="text-xs text-muted mb-4">Pessoas distintas com algum evento no dia. Indica regularidade do time.</div>
-    <div style="height:200px"><canvas id="chartMvpDau"></canvas></div>
   </div>
 
   <!-- ============ HEATMAP pessoa × dia (28d) ============ -->
@@ -2609,9 +2538,7 @@
             <th class="py-1.5 px-2">Classe</th>
             <th class="py-1.5 px-2 text-right">Eventos</th>
             <th class="py-1.5 px-2 text-right">Dias / 30</th>
-            <th class="py-1.5 px-2 text-right">Sessões</th>
-            <th class="py-1.5 px-2 text-right">Última atividade</th>
-            <th class="py-1.5 pl-2">Top features</th>
+            <th class="py-1.5 pl-2 text-right">Última atividade</th>
           </tr>
         </thead>
         <tbody>
@@ -2630,36 +2557,13 @@
               </td>
               <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.total"></td>
               <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.dias_ativos"></td>
-              <td class="py-1.5 px-2 text-right font-mono text-xs" x-text="r.sessions"></td>
-              <td class="py-1.5 px-2 text-right font-mono text-xs"
+              <td class="py-1.5 pl-2 text-right font-mono text-xs"
                   :class="r.kind === 'silenciosa' || r.kind === 'nunca' ? 'text-[color:var(--p0)]' : 'text-muted'"
                   x-text="r.ultimo_dias == null ? 'sem registro' : (r.ultimo_dias === 0 ? 'hoje' : 'há ' + r.ultimo_dias + 'd')"></td>
-              <td class="py-1.5 pl-2 font-mono text-xs text-muted truncate max-w-[280px]" x-text="r.top3 || '—'"></td>
             </tr>
           </template>
         </tbody>
       </table>
-    </div>
-  </div>
-
-  <!-- ============ BLOCO 5 · O QUÊ · Sparklines por feature (tendência visual) ============ -->
-  <div class="card p-4 md:p-6 mb-5" x-show="usageFeatureSparklines.length > 0">
-    <div class="flex items-baseline justify-between mb-1 flex-wrap gap-2">
-      <div class="font-brand text-xl font-semibold">Tendência por feature · 28 dias</div>
-      <span class="text-xs text-muted font-mono">linha = uso diário · top 10 por volume</span>
-    </div>
-    <div class="text-xs text-muted mb-3">Crescimento linear? Pico e abandono? Lê tendência por feature em 1 olhada.</div>
-    <div class="space-y-1.5">
-      <template x-for="f in usageFeatureSparklines" :key="f.event">
-        <div class="flex items-center gap-3 py-1 border-b border-line last:border-0">
-          <span class="font-mono text-xs flex-1 min-w-0 truncate" x-text="f.event"></span>
-          <svg class="w-32 md:w-48 h-8 shrink-0" :viewBox="'0 0 ' + (f.daily.length * 4) + ' 32'" preserveAspectRatio="none">
-            <polyline fill="none" stroke="var(--brand)" stroke-width="1.5"
-                      :points="f.daily.map((n, i) => (i * 4) + ',' + (32 - (n / f.max) * 28)).join(' ')"></polyline>
-          </svg>
-          <span class="font-mono text-xs text-muted w-16 text-right shrink-0" x-text="f.total + ' tot.'"></span>
-        </div>
-      </template>
     </div>
   </div>
 
