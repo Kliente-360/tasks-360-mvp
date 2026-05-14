@@ -1041,6 +1041,9 @@
     .kpi-lbl { margin-bottom: 8px; }
     .btn { padding: 10px 14px; font-size: 13px; }
     .btn-icon { padding: 8px 12px; }
+    /* Botão fixo (+ task no header, + new em Cadastros) alinhado à altura do
+       view-toggle (~32px) pra harmonizar ao lado dele no mobile. */
+    .btn-fixed-w { padding-top: 6px; padding-bottom: 6px; font-size: 12px; }
     .inp { padding: 10px 12px; font-size: 16px; } /* 16px evita zoom automático do iOS no focus */
     .modal-card { max-height: calc(100vh - 24px); display: flex; flex-direction: column; }
     .kanban-scroll, .kanban-scroll-op {
