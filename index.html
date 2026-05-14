@@ -729,22 +729,22 @@
       </div>
     </div>
 
-    <!-- Filtros mobile (chips em row própria, mesma estrutura) -->
+    <!-- Filtros mobile (chips em row própria, agora com contadores como no desktop) -->
     <div x-show="triagemTasks.length > 0" class="flex items-center gap-1.5 md:hidden">
       <button type="button" class="triage-filter-chip flex-1 justify-center"
               :class="triagemFilter.semResp && 'is-on'"
               @click="triagemFilter.semResp = !triagemFilter.semResp">
-        sem resp.
+        <strong x-text="triagemTasks.filter(t => !t.pessoaId).length"></strong>&nbsp;sem resp.
       </button>
       <button type="button" class="triage-filter-chip flex-1 justify-center"
               :class="triagemFilter.semPrazo && 'is-on'"
               @click="triagemFilter.semPrazo = !triagemFilter.semPrazo">
-        sem prazo
+        <strong x-text="triagemTasks.filter(t => !t.prazo).length"></strong>&nbsp;sem prazo
       </button>
       <button type="button" class="triage-filter-chip flex-1 justify-center"
               :class="triagemFilter.semEsforco && 'is-on'"
               @click="triagemFilter.semEsforco = !triagemFilter.semEsforco">
-        sem esforço
+        <strong x-text="triagemTasks.filter(t => !(+t.esforco)).length"></strong>&nbsp;sem esforço
       </button>
     </div>
 
@@ -757,14 +757,16 @@
       Nenhuma task casa com os filtros ativos.
     </div>
 
-    <!-- Cards -->
+    <!-- Cards: mobile empilha (título + meta + chips em rows próprias).
+         Desktop mantém chips à direita do título. -->
     <template x-for="t in triagemTasksFiltered" :key="t.id">
-      <div class="card p-4 md:p-5 cursor-pointer hover:border-line-strong transition-colors"
+      <div class="card p-3 md:p-5 cursor-pointer hover:border-line-strong transition-colors"
            :class="selectedIds.includes(t.id) && 'bg-brand-tint'"
            @click="openEdit(t)">
-        <div class="flex items-start justify-between gap-3 mb-2">
-          <div class="min-w-0 flex-1 flex items-center gap-3">
-            <input type="checkbox" class="shrink-0"
+        <!-- Row 1: checkbox + título (+ chips à direita no desktop) -->
+        <div class="flex items-start gap-3 md:items-center md:justify-between md:gap-3">
+          <div class="min-w-0 flex-1 flex items-start md:items-center gap-3">
+            <input type="checkbox" class="shrink-0 mt-0.5 md:mt-0"
                    :checked="selectedIds.includes(t.id)"
                    @click.stop="toggleSelected(t.id)">
             <div class="min-w-0 flex-1">
@@ -773,20 +775,27 @@
                   <span class="pri-dot"></span>
                   <span x-text="t.prioridade"></span>
                 </span>
-                <span class="font-medium text-ink" x-text="t.titulo"></span>
+                <span class="font-medium text-ink break-words" x-text="t.titulo"></span>
               </div>
-              <div class="text-xs text-muted font-mono">
+              <div class="text-xs text-muted font-mono break-words">
                 <span x-text="lblSub(t.subetapa)"></span>
                 <span x-show="t.clienteId"> · <span x-text="nomeCliente(t.clienteId)"></span></span>
                 <span x-show="t.criadoEm"> · criada há <span x-text="agingDays({ subetapaEm: t.criadoEm }) + 'd'"></span></span>
               </div>
             </div>
           </div>
-          <div class="flex flex-wrap gap-1 shrink-0 justify-end max-w-[55%]">
+          <!-- Chips desktop only (à direita do título) -->
+          <div class="hidden md:flex flex-wrap gap-1 shrink-0 justify-end max-w-[55%]">
             <template x-for="f in t._failures" :key="f">
               <span class="triage-chip" x-text="f"></span>
             </template>
           </div>
+        </div>
+        <!-- Chips mobile only (linha própria, alinhada ao texto) -->
+        <div class="flex flex-wrap gap-1 mt-2 pl-7 md:hidden">
+          <template x-for="f in t._failures" :key="f">
+            <span class="triage-chip" x-text="f"></span>
+          </template>
         </div>
       </div>
     </template>
