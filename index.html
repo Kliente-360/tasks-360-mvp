@@ -2164,11 +2164,26 @@
     </div>
   </div>
 
-  <!-- Mobile: header simples -->
-  <div class="tabs-row border-b border-line mb-5 md:hidden">
-    <div class="tab" :class="cadTab==='clientes' && 'active'" @click="cadTab='clientes'">Clientes <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + clientes.length"></span></div>
-    <div class="tab" :class="cadTab==='projetos' && 'active'" @click="cadTab='projetos'">Projetos <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + projetos.length"></span></div>
-    <div class="tab" :class="cadTab==='pessoas' && 'active'" @click="cadTab='pessoas'">Pessoas <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + pessoas.length"></span></div>
+  <!-- Mobile: toggle + arquivados + new (mesmo padrão de Kanban/Adoption mobile). -->
+  <div class="flex flex-col gap-2 mb-5 md:hidden">
+    <div class="view-toggle flex" role="tablist" aria-label="Seção de cadastros">
+      <button class="flex-1" :class="cadTab==='pessoas' && 'active'" @click="cadTab='pessoas'">Pessoas</button>
+      <button class="flex-1" :class="cadTab==='clientes' && 'active'" @click="cadTab='clientes'">Clientes</button>
+      <button class="flex-1" :class="cadTab==='projetos' && 'active'" @click="cadTab='projetos'">Projetos</button>
+    </div>
+    <div class="flex items-center gap-2">
+      <label class="flex items-center gap-1.5 text-xs cursor-pointer whitespace-nowrap"
+             :class="cadTab === 'pessoas' ? 'opacity-40 cursor-not-allowed' : 'text-muted'"
+             :title="cadTab === 'pessoas' ? 'Pessoas não são arquivadas (usar inativar)' : 'Incluir registros arquivados na listagem'">
+        <input type="checkbox" x-model="showArchivedCadastros" :disabled="cadTab === 'pessoas'">
+        <span>arquivados</span>
+      </label>
+      <button class="btn btn-primary text-xs ml-auto"
+              @click="cadTab==='pessoas' ? openNewPessoa() : (cadTab==='clientes' ? openNewCliente() : openNewProjeto())"
+              :title="cadTab==='clientes' ? 'Novo cliente' : (cadTab==='projetos' ? 'Novo projeto' : 'Nova pessoa')">
+        + <span x-text="cadTab==='clientes' ? 'cliente' : (cadTab==='projetos' ? 'projeto' : 'pessoa')"></span>
+      </button>
+    </div>
   </div>
 
   <!-- clientes (criação agora pelo modal openNewCliente — botão "+" do header) -->
