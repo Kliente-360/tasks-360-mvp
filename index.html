@@ -2172,7 +2172,7 @@
       <button class="flex-1" :class="cadTab==='clientes' && 'active'" @click="cadTab='clientes'">Clientes</button>
       <button class="flex-1" :class="cadTab==='projetos' && 'active'" @click="cadTab='projetos'">Projetos</button>
     </div>
-    <button class="btn btn-primary text-xs shrink-0"
+    <button class="btn btn-primary btn-fixed-w text-xs"
             @click="cadTab==='pessoas' ? openNewPessoa() : (cadTab==='clientes' ? openNewCliente() : openNewProjeto())"
             :title="cadTab==='clientes' ? 'Novo cliente' : (cadTab==='projetos' ? 'Novo projeto' : 'Nova pessoa')">
       + <span x-text="cadTab==='clientes' ? 'cliente' : (cadTab==='projetos' ? 'projeto' : 'pessoa')"></span>
