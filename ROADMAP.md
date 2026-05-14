@@ -933,6 +933,24 @@ Thresholds que provavelmente vão precisar ajuste quando rodar com dado real:
 
 Quando 3+ thresholds virarem pedido recorrente de ajuste, criar tabela `heuristic_settings` (key, value, scope=global|workspace). Por agora todos hardcoded — preferível.
 
+##### Sticky thead na tabela Backlog (parked)
+
+Tentativa de "ancorar" o header da tabela do Backlog ao topo do viewport (logo abaixo do app header sticky) durante scroll. Múltiplas abordagens falharam silenciosamente:
+
+- `position: sticky; top: 64px` no `<th>` (clássica)
+- Mesma com `-webkit-sticky` prefix
+- Mesma com `transform: translateZ(0)` (force compositor layer)
+- Sticky no `<thead>` element
+- Sticky combinado em `<thead>` + `<th>` com especificidade alta
+- Removido `overflow: hidden` do `<th>` (suspeito de bloquear)
+- JS overlay clonado: `<div fixed>` no body com clone do thead + colgroup sincronizado por scroll/resize listener + `x-effect` na section
+
+Nenhuma versão funcionou visualmente em produção. Suspeitas não confirmadas: conflito de stacking-context com `border-radius` do `.card` + animation `transform` do `.fade-up` no section, ou timing de hidratação do Alpine ao entrar na tab.
+
+**Mitigação atual** (mai/2026): 5 cards de stats acima da tabela (Total · Backlog · Em andamento · Bloqueadas · Atrasadas) dão contexto visual mesmo sem ver headers das colunas.
+
+**Reabrir quando**: tivermos sessão dedicada de debug ao vivo (DevTools, breakpoints) ou migrarmos pra Next.js (Onda 0) onde controlamos DOM/CSS mais determinísticamente.
+
 ### WhatsApp digest (parking lot · pra avaliar quando o single-file estiver modularizado)
 
 Engajamento push pra gestor de agência brasileira via WhatsApp. **Plano discutido em mai/2026, sem ação imediata.** Reabrir quando: (a) modularização estiver concluída, (b) primeira feature de IA validada, (c) ≥3 gestores externos pedirem.
