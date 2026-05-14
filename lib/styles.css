@@ -242,35 +242,31 @@
      - tracking uppercase 0.08em (padrão do sistema)
      - row hover passa de brand-tint pra surface-3 (verde fica reservado pra ação)
      - tipografia Plex via var(--fs-*) */
-  .tbl { border-collapse: separate; border-spacing: 0; width: 100%; }
+  /* table-layout fixed + colgroup percentual = tabela TRULY fluida.
+     Colunas pequenas (badges, datas, ações) com width fixa em px.
+     Título e cliente·projeto recebem o resto do espaço via width auto.
+     O ellipsis adapta automaticamente ao container, independente do viewport. */
+  .tbl { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
   .tbl thead th {
     text-align: left; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--muted); padding: var(--sp-3) var(--sp-3);
     border-bottom: 1px solid var(--line-strong); user-select: none; background: var(--surface-3);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  /* Row vertical sp-3 (compromisso entre original sp-4 e o tentado sp-2 que ficou apertado).
-     Horizontal sp-3 (era sp-4) — economiza ~80px no total da tabela com 10 colunas pra
-     evitar scroll horizontal em viewports 1280-1440px. Vertical-align middle pra chips. */
-  .tbl tbody td { padding: var(--sp-3) var(--sp-3); border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: middle; }
-  /* Title da row: 1 linha sempre, ellipsis quando passa do max-width. Tooltip via title attr no x-bind.
-     Cliente·Projeto: idem, ligeiramente mais largo do que antes (subiu de 120→160) descontando do title. */
+  .tbl tbody td { padding: var(--sp-3) var(--sp-3); border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: middle; overflow: hidden; }
+  /* Título e cliente·projeto truncam ao espaço da coluna (não a max-width fixo).
+     Como table-layout=fixed distribui colunas autonomamente, ellipsis é dinâmico. */
   .tbl tbody td .tbl-title {
     display: block; font-weight: 500; color: var(--ink);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    max-width: 260px;
   }
   .tbl tbody td .tbl-cliproj {
     display: block; color: var(--ink-soft);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    max-width: 160px;
   }
-  @media (min-width: 1280px) {
-    .tbl tbody td .tbl-title    { max-width: 340px; }
-    .tbl tbody td .tbl-cliproj  { max-width: 200px; }
-  }
-  @media (min-width: 1500px) {
-    .tbl tbody td .tbl-title    { max-width: 420px; }
-    .tbl tbody td .tbl-cliproj  { max-width: 240px; }
+  /* Coluna RESPONSÁVEL truncar nome longo via td-level. */
+  .tbl tbody td.tbl-resp {
+    color: var(--ink-soft); white-space: nowrap; text-overflow: ellipsis;
   }
   .tbl tbody tr { transition: background 150ms ease; cursor: pointer; }
   .tbl tbody tr:hover { background: var(--surface-3); }
@@ -955,9 +951,9 @@
   .loading-pulse span:nth-child(3) { animation-delay: 0.30s; }
   .loading-pulse span:nth-child(4) { animation-delay: 0.45s; }
 
-  /* tabela com scroll horizontal preservando colunas */
+  /* Wrap só pra fallback em viewport bem estreito (md). Com table-layout: fixed
+     + colgroup, a tabela cabe no container nativo em viewports md+ normais. */
   .tbl-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch; border-radius: 8px; }
-  .tbl-wrap .tbl { min-width: 760px; }
 
   /* kanban com carrossel horizontal em mobile */
   .kanban-scroll { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
