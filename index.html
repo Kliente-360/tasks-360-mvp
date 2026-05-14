@@ -204,7 +204,7 @@
       <button class="btn btn-ghost btn-icon text-xs hidden md:inline-flex" @click="openHelp()" title="Ajuda" aria-label="Ajuda"><span>?</span></button>
       <button class="btn btn-ghost btn-icon text-xs hidden md:inline-flex" @click="toggleTheme()" :title="theme==='dark' ? 'Mudar para claro' : 'Mudar para escuro'" aria-label="Alternar tema"><span x-text="theme==='dark' ? '☀' : '☾'"></span></button>
       <div class="w-px h-6 bg-line mx-1 md:mx-2 hidden md:block" x-show="viewerRole !== ROLE.CLIENTE"></div>
-      <button class="btn btn-primary text-xs md:text-sm" x-show="viewerRole !== ROLE.CLIENTE" @click="openNew()"><span class="md:hidden">+ Nova</span><span class="hidden md:inline">+ Nova tarefa</span></button>
+      <button class="btn btn-primary text-xs" x-show="viewerRole !== ROLE.CLIENTE" @click="openNew()" title="Nova tarefa (n)" aria-label="Nova tarefa">+ task</button>
 
       <!-- Notifications -->
       <div class="relative" x-show="authEnabled && currentPessoa" @click.outside="notifPanelOpen=false">
@@ -2135,7 +2135,33 @@
 
 <!-- ============ CADASTROS ============ -->
 <template x-if="tab==='cad'"><section class="fade-up">
-  <div class="tabs-row border-b border-line mb-5 md:mb-6">
+  <!-- Page bar padrão: narrativa (counts) + toggle (sub-tabs) + actions (+ adicionar / arquivados) -->
+  <div class="page-bar hidden md:flex">
+    <div class="page-bar-info">
+      <span class="page-bar-narrative">
+        <strong x-text="clientes.length"></strong>&nbsp;clientes&nbsp;·&nbsp;<strong x-text="projetos.length"></strong>&nbsp;projetos&nbsp;·&nbsp;<strong x-text="pessoas.length"></strong>&nbsp;pessoas
+      </span>
+    </div>
+    <div class="page-bar-controls">
+      <div class="view-toggle" role="tablist" aria-label="Seção de cadastros">
+        <button :class="cadTab==='clientes' && 'active'" @click="cadTab='clientes'; cadAddOpen=false">Clientes</button>
+        <button :class="cadTab==='projetos' && 'active'" @click="cadTab='projetos'; cadAddOpen=false">Projetos</button>
+        <button :class="cadTab==='pessoas' && 'active'" @click="cadTab='pessoas'; cadAddOpen=false">Pessoas</button>
+      </div>
+      <label class="flex items-center gap-1.5 text-xs text-muted cursor-pointer whitespace-nowrap" x-show="cadTab !== 'pessoas'">
+        <input type="checkbox" x-model="showArchivedCadastros">
+        <span>arquivados</span>
+      </label>
+      <button class="btn btn-primary text-xs"
+              @click="cadTab==='pessoas' ? openNewPessoa() : (cadAddOpen = !cadAddOpen, cadAddOpen && $nextTick(() => { const r = cadTab==='clientes' ? $refs.newCliInput : $refs.newProjInput; r && r.focus(); }))"
+              :title="cadTab==='clientes' ? 'Adicionar cliente' : (cadTab==='projetos' ? 'Adicionar projeto' : 'Adicionar pessoa')">
+        + <span x-text="cadTab==='clientes' ? 'cliente' : (cadTab==='projetos' ? 'projeto' : 'pessoa')"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile: header simples -->
+  <div class="tabs-row border-b border-line mb-5 md:hidden">
     <div class="tab" :class="cadTab==='clientes' && 'active'" @click="cadTab='clientes'">Clientes <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + clientes.length"></span></div>
     <div class="tab" :class="cadTab==='projetos' && 'active'" @click="cadTab='projetos'">Projetos <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + projetos.length"></span></div>
     <div class="tab" :class="cadTab==='pessoas' && 'active'" @click="cadTab='pessoas'">Pessoas <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + pessoas.length"></span></div>
@@ -2143,22 +2169,16 @@
 
   <!-- clientes -->
   <div x-show="cadTab==='clientes'">
-    <div class="card p-4 md:p-5 mb-4">
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-        <div class="md:col-span-9">
+    <!-- Form inline só quando cadAddOpen (toggle pelo + cliente no page-bar) -->
+    <div class="card p-4 mb-4" x-show="cadAddOpen" x-transition.opacity>
+      <div class="flex items-end gap-3 flex-wrap">
+        <div class="flex-1 min-w-[280px]">
           <label class="lbl">Nome do cliente</label>
-          <input class="inp" x-model="newCli" x-ref="newCliInput" placeholder="Ex: Acme Ltda." @keyup.enter="addCliente()">
+          <input class="inp" x-model="newCli" x-ref="newCliInput" placeholder="Ex: Acme Ltda." @keyup.enter="addCliente(); cadAddOpen=false">
         </div>
-        <div class="md:col-span-3">
-          <button class="btn btn-primary w-full justify-center" @click="addCliente()">+ Adicionar cliente</button>
-        </div>
+        <button class="btn btn-primary" @click="addCliente(); cadAddOpen=false">Adicionar</button>
+        <button class="btn btn-ghost" @click="cadAddOpen=false; newCli=''">cancelar</button>
       </div>
-    </div>
-    <div class="flex items-center justify-end mb-2">
-      <label class="flex items-center gap-2 text-xs text-muted cursor-pointer">
-        <input type="checkbox" x-model="showArchivedCadastros">
-        <span>incluir arquivados</span>
-      </label>
     </div>
     <div class="card">
       <template x-for="c in clientesVisiveis" :key="c.id">
@@ -2193,29 +2213,23 @@
 
   <!-- projetos -->
   <div x-show="cadTab==='projetos'">
-    <div class="card p-4 md:p-5 mb-4">
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-        <div class="md:col-span-5">
+    <!-- Form inline só quando cadAddOpen (toggle pelo + projeto no page-bar) -->
+    <div class="card p-4 mb-4" x-show="cadAddOpen" x-transition.opacity>
+      <div class="flex items-end gap-3 flex-wrap">
+        <div class="flex-1 min-w-[240px]">
           <label class="lbl">Nome do projeto</label>
-          <input class="inp" x-model="newProj.nome" x-ref="newProjInput" placeholder="Ex: Sales Cloud — Onda 1" @keyup.enter="addProjeto()">
+          <input class="inp" x-model="newProj.nome" x-ref="newProjInput" placeholder="Ex: Sales Cloud — Onda 1" @keyup.enter="addProjeto(); cadAddOpen=false">
         </div>
-        <div class="md:col-span-4">
+        <div class="flex-1 min-w-[200px]">
           <label class="lbl">Cliente</label>
           <select class="inp" x-model="newProj.clienteId">
             <option value="">Selecione…</option>
             <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
           </select>
         </div>
-        <div class="md:col-span-3">
-          <button class="btn btn-primary w-full justify-center" @click="addProjeto()">+ Adicionar projeto</button>
-        </div>
+        <button class="btn btn-primary" @click="addProjeto(); cadAddOpen=false">Adicionar</button>
+        <button class="btn btn-ghost" @click="cadAddOpen=false; newProj={nome:'',clienteId:''}">cancelar</button>
       </div>
-    </div>
-    <div class="flex items-center justify-end mb-2">
-      <label class="flex items-center gap-2 text-xs text-muted cursor-pointer">
-        <input type="checkbox" x-model="showArchivedCadastros">
-        <span>incluir arquivados</span>
-      </label>
     </div>
     <div class="card">
       <template x-for="p in projetosVisiveis" :key="p.id">
@@ -2246,11 +2260,8 @@
     </div>
   </div>
 
-  <!-- pessoas -->
+  <!-- pessoas (botão "+ pessoa" mora no page-bar acima — clique abre o modal openNewPessoa) -->
   <div x-show="cadTab==='pessoas'">
-    <div class="flex items-center justify-end mb-4">
-      <button class="btn btn-primary text-sm" @click="openNewPessoa()">+ Nova pessoa</button>
-    </div>
     <div class="card">
       <template x-for="p in pessoas" :key="p.id">
         <div class="flex items-center justify-between gap-3 flex-wrap px-4 md:px-5 py-3 border-b border-line last:border-0">
