@@ -20,6 +20,7 @@
 //         "nome": "Bodytech",
 //         "tier": "estrategico",          // estrategico|potencial|descoberta|null
 //         "eh_interno": false,
+//         "dominios": ["bodytech.com.br"], // SEMPRE presente; [] se vazio.
 //         "projetos": [                     // só se ?with_projetos=true
 //           { "id":"...", "nome":"Sustentação BT", "tipo":"sustentacao" }
 //         ]
@@ -27,6 +28,10 @@
 //       ...
 //     ]
 //   }
+//
+// Use `dominios` pra identificar cliente quando o nome é acrônimo (CTF, VB
+// etc.) e não aparece no domínio dos participantes da reunião. Match
+// case-insensitive contra o domínio do email após o @.
 //
 // Use case típico (automação Cowork):
 //   1. Chama GET /get-clientes?with_projetos=true no início do fluxo
@@ -67,17 +72,20 @@ Deno.serve(async (req) => {
   const includeInterno  = url.searchParams.get('include_interno')  === 'true';
   const withProjetos    = url.searchParams.get('with_projetos')    === 'true';
 
-  let q = sb.from('clientes').select('id, nome, tier, eh_interno, arquivado_em').order('nome');
+  let q = sb.from('clientes').select('id, nome, tier, eh_interno, arquivado_em, dominios').order('nome');
   if (!includeArchived) q = q.is('arquivado_em', null);
   if (!includeInterno)  q = q.eq('eh_interno', false);
   const { data: clientes, error: cErr } = await q;
   if (cErr) return err(500, 'db_error', cErr.message);
 
-  type Cliente = { id: string; nome: string; tier: string | null; eh_interno: boolean; arquivado_em: string | null };
-  type ClienteOut = { id: string; nome: string; tier: string | null; eh_interno: boolean; projetos?: { id: string; nome: string; tipo: string | null }[] };
+  type Cliente = { id: string; nome: string; tier: string | null; eh_interno: boolean; arquivado_em: string | null; dominios: string[] | null };
+  type ClienteOut = { id: string; nome: string; tier: string | null; eh_interno: boolean; dominios: string[]; projetos?: { id: string; nome: string; tipo: string | null }[] };
 
+  // `dominios` sempre como array — mesmo que DB retorne null (defesa contra
+  // rows pré-migration ou se algum dia o NOT NULL for relaxado).
   const out: ClienteOut[] = (clientes as Cliente[]).map(c => ({
     id: c.id, nome: c.nome, tier: c.tier, eh_interno: c.eh_interno,
+    dominios: Array.isArray(c.dominios) ? c.dominios : [],
   }));
 
   if (withProjetos && out.length) {
