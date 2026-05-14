@@ -248,16 +248,17 @@
      O ellipsis adapta automaticamente ao container, independente do viewport. */
   .tbl { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
   /* thead sticky com TOP=64px (altura do app header sticky top-0 z-40).
-     Sticky tanto no <thead> quanto nos <th> pra cobrir variações de browser.
-     Especificidade .tbl-wrap > qualquer override. Sem overflow:hidden no th
-     pra não interferir com o algoritmo de sticky em algumas engines. */
-  .tbl thead { position: sticky; top: 64px; z-index: 5; }
+     transform: translateZ(0) força compositor layer — corrige sticky em
+     algumas engines quando ancestors têm border-radius/box-shadow. */
   .tbl-wrap .tbl thead th {
     text-align: left; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--muted); padding: var(--sp-3) var(--sp-3);
     border-bottom: 1px solid var(--line-strong); user-select: none; background: var(--surface-3);
     text-overflow: ellipsis; white-space: nowrap;
-    position: sticky; top: 64px; z-index: 5;
+    position: -webkit-sticky;
+    position: sticky;
+    top: 64px; z-index: 5;
+    transform: translateZ(0);
   }
   .tbl tbody td { padding: var(--sp-3) var(--sp-3); border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: middle; overflow: hidden; }
   /* Título e cliente·projeto truncam ao espaço da coluna (não a max-width fixo).
