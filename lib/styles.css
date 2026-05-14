@@ -247,19 +247,25 @@
      Título e cliente·projeto recebem o resto do espaço via width auto.
      O ellipsis adapta automaticamente ao container, independente do viewport. */
   .tbl { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
-  /* thead sticky com TOP=64px (altura do app header sticky top-0 z-40).
-     transform: translateZ(0) força compositor layer — corrige sticky em
-     algumas engines quando ancestors têm border-radius/box-shadow. */
+  /* Header da tabela — sticky implementado via JS (overlay clonado em .tbl-thead-floating).
+     CSS sticky não funcionou em nenhuma variação testada (translateZ, -webkit prefix,
+     em thead, em th, com/sem overflow). Provavelmente bug de stacking-context interno
+     com border-radius do .card + animation transform do .fade-up. JS-side fica
+     bulletproof e cobre toda viewport. */
   .tbl-wrap .tbl thead th {
     text-align: left; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--muted); padding: var(--sp-3) var(--sp-3);
     border-bottom: 1px solid var(--line-strong); user-select: none; background: var(--surface-3);
     text-overflow: ellipsis; white-space: nowrap;
-    position: -webkit-sticky;
-    position: sticky;
-    top: 64px; z-index: 5;
-    transform: translateZ(0);
   }
+  .tbl-thead-floating {
+    /* container do clone — quem posiciona é o JS via inline style. .card-like aqui
+       pra continuar com border-radius nos cantos e shadow sutil. */
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .tbl-thead-floating .tbl { background: var(--surface-1); }
   .tbl tbody td { padding: var(--sp-3) var(--sp-3); border-bottom: 1px solid var(--line); font-size: var(--fs-sm); vertical-align: middle; overflow: hidden; }
   /* Título e cliente·projeto truncam ao espaço da coluna (não a max-width fixo).
      Como table-layout=fixed distribui colunas autonomamente, ellipsis é dinâmico. */
