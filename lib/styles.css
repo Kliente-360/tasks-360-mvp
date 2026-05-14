@@ -1041,9 +1041,16 @@
     .kpi-lbl { margin-bottom: 8px; }
     .btn { padding: 10px 14px; font-size: 13px; }
     .btn-icon { padding: 8px 12px; }
-    /* Botão fixo (+ task no header, + new em Cadastros) ~25% mais baixo no mobile
-       pra harmonizar com a altura do view-toggle ao lado. */
-    .btn-fixed-w { padding-top: 3px; padding-bottom: 3px; font-size: 12px; line-height: 1.2; }
+    /* Altura unificada dos controles mobile: 32px = bloco "tasks 360" + versão
+       no header (font 18px + mt-1 + font 10px com leading-none).
+       Anula min-height: 44px do WCAG definido abaixo — width fixo 72px (ou
+       toggle multi-botão) já dá touch target adequado. */
+    .btn-fixed-w {
+      min-height: 0; height: 32px;
+      padding-top: 0; padding-bottom: 0;
+      font-size: 12px; line-height: 1;
+    }
+    .view-toggle button { padding-top: 8px; padding-bottom: 8px; }
     .inp { padding: 10px 12px; font-size: 16px; } /* 16px evita zoom automático do iOS no focus */
     .modal-card { max-height: calc(100vh - 24px); display: flex; flex-direction: column; }
     .kanban-scroll, .kanban-scroll-op {
