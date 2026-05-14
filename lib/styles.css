@@ -1043,9 +1043,10 @@
     .btn-icon { padding: 8px 12px; }
     /* Altura unificada dos controles mobile: 32px = bloco "tasks 360" + versão
        no header (font 18px + mt-1 + font 10px com leading-none).
-       Anula min-height: 44px do WCAG definido abaixo — width fixo 72px (ou
-       toggle multi-botão) já dá touch target adequado. */
-    .btn-fixed-w {
+       Seletor composto `.btn.btn-fixed-w` (especificidade 0,2,0) vence o
+       `.btn { min-height: 44px }` (WCAG touch target, 0,1,0) definido abaixo.
+       Touch target continua adequado: width fixo 72px no botão. */
+    .btn.btn-fixed-w {
       min-height: 0; height: 32px;
       padding-top: 0; padding-bottom: 0;
       font-size: 12px; line-height: 1;
