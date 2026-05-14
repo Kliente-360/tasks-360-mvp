@@ -53,6 +53,8 @@ Não é um Jira, não é um Trello, não é um Asana. É **opinativo**, executiv
 
 **Próximo passo (P0)**: captura rápida de task (`Cmd+Shift+N` global) + notif digest hourly. Em paralelo, **P1: primeira feature de IA** ("resumir thread de task") fecha a maior lacuna competitiva. Detalhe em CONTEXT.md §14.
 
+**Em análise (Dashboard + Briefing redesign)**: ver [`PROPOSAL-DASHBOARD-BRIEFING.md`](./PROPOSAL-DASHBOARD-BRIEFING.md). Proposta de reposicionamento conceitual — Briefing como carta editorial executiva (prescritiva, prosa), Dashboard como painel analítico do gestor (quantitativo, gaps & desvios). Resolve risco de redundância entre as duas abas. ~14h de execução em 7 PRs.
+
 ---
 
 ## 2. Princípios de produto
