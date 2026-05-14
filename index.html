@@ -3100,23 +3100,7 @@
           <template x-if="memoSinalGeralOperacao === 'vermelho'"><span>Operação com sinais críticos</span></template>
         </span>
       </div>
-
-      <div class="memo-toc">
-        <div class="memo-toc-title">Neste documento</div>
-        <ol class="memo-toc-list">
-          <li>Sumário executivo</li>
-          <li>Performance da operação</li>
-          <li>Saúde por cliente</li>
-          <li>Saúde por pessoa</li>
-          <li>Gaps & desvios analíticos</li>
-          <li>Capacidade · próximas 4 semanas</li>
-          <li>Decisões + sinais positivos</li>
-          <li>Anexos · dados de apoio</li>
-        </ol>
-      </div>
     </section>
-
-    <div class="memo-page-break"></div>
 
     <!-- ============ PÁGINA 2 · PERFORMANCE DA OPERAÇÃO ============ -->
     <section class="memo-block memo-page">
@@ -3135,14 +3119,13 @@
       <p class="memo-rec" x-text="dashboardVelocityIndicators.conclusao"></p>
     </section>
 
-    <div class="memo-page-break"></div>
 
     <!-- ============ PÁGINA 3 · SAÚDE POR CLIENTE ============ -->
     <section class="memo-block memo-page">
       <div class="memo-pagenum">3 · Saúde por cliente</div>
       <h2>Quem precisa conversar e o quê?</h2>
       <div x-show="memoSaudeClientes.length === 0" class="memo-empty">
-        Sem clientes ativos no momento.
+        <strong>Nenhum cliente com tasks ativas no momento.</strong> Possíveis razões: (a) nenhum cliente externo cadastrado, (b) todas as tasks de clientes externos estão concluídas, (c) somente cliente interno (Kliente 360) tem tasks abertas.
       </div>
       <ul class="memo-narrative-list" x-show="memoSaudeClientes.length > 0">
         <template x-for="c in memoSaudeClientes" :key="c.id">
@@ -3157,14 +3140,13 @@
       </ul>
     </section>
 
-    <div class="memo-page-break"></div>
 
     <!-- ============ PÁGINA 4 · SAÚDE POR PESSOA ============ -->
     <section class="memo-block memo-page">
       <div class="memo-pagenum">4 · Saúde por pessoa</div>
       <h2>Quem está como?</h2>
       <div x-show="memoSaudePessoas.length === 0" class="memo-empty">
-        Nenhuma pessoa interna cadastrada com tasks ativas.
+        <strong>Nenhuma pessoa interna cadastrada.</strong> Em Cadastros · Pessoas, cadastre pessoas com role=admin ou role=interno pra ver a análise de saúde individual aqui.
       </div>
       <ul class="memo-narrative-list" x-show="memoSaudePessoas.length > 0">
         <template x-for="p in memoSaudePessoas" :key="p.id">
@@ -3179,7 +3161,6 @@
       </ul>
     </section>
 
-    <div class="memo-page-break"></div>
 
     <!-- ============ PÁGINA 5 · GAPS & DESVIOS ANALÍTICOS ============ -->
     <section class="memo-block memo-page">
@@ -3187,7 +3168,7 @@
       <h2>Onde estão os gargalos invisíveis?</h2>
       <p class="memo-lead-sub">Análises quantitativas interpretadas. Sinal sistêmico, não nominal.</p>
       <div x-show="memoGaps.length === 0" class="memo-empty">
-        Nenhum gap sistêmico identificado. Operação rodando sem desvios estatísticos significativos.
+        <strong>Nenhum gap sistêmico identificado.</strong> Analisado: lead time, variância de carga (max/min pctCap entre pessoas), concentração de cliente (top % horas), bottleneck por sub-etapa (aging médio), % entregue no prazo, taxa de retrabalho (reopens). Nenhuma métrica fora dos limites calibrados.
       </div>
       <ul class="memo-gaps-list" x-show="memoGaps.length > 0">
         <template x-for="(g, i) in memoGaps" :key="i">
@@ -3199,7 +3180,6 @@
       </ul>
     </section>
 
-    <div class="memo-page-break"></div>
 
     <!-- ============ PÁGINA 6 · CAPACIDADE · 4 SEMANAS ============ -->
     <section class="memo-block memo-page memo-block-table">
@@ -3296,7 +3276,6 @@
       </div>
     </section>
 
-    <div class="memo-page-break"></div>
 
     <!-- ============ PÁGINA 7 · DECISÕES + SINAIS POSITIVOS ============ -->
     <section class="memo-block memo-page">
@@ -3307,7 +3286,7 @@
         <div class="memo-col">
           <h3 class="memo-h3 memo-h3-decision">Decisões pendentes</h3>
           <div x-show="memoDecisoes.length === 0" class="memo-empty">
-            Nenhuma decisão pendente identificada.
+            <strong>Nenhuma decisão crítica identificada.</strong> Critérios atuais: projeto fechado &gt;110% executado, sustentação estourando capacidade contratada, pessoa em sobrecarga sem candidato automático. Nenhum desses cenários ativo nesta semana.
           </div>
           <ul class="memo-decision-list" x-show="memoDecisoes.length > 0">
             <template x-for="(d, i) in memoDecisoes" :key="i">
@@ -3318,7 +3297,7 @@
         <div class="memo-col">
           <h3 class="memo-h3 memo-h3-positive">Sinais positivos</h3>
           <div x-show="memoSinaisPositivos.length === 0" class="memo-empty">
-            Sem destaques positivos identificados nesta semana.
+            <strong>Sem destaques positivos automáticos nesta semana.</strong> Critérios: throughput em alta, lead time verde, % no prazo verde, clientes em fluxo, sustentações ok. Conforme operação atinge estes patamares, destaques aparecem aqui.
           </div>
           <ul class="memo-positive-list" x-show="memoSinaisPositivos.length > 0">
             <template x-for="(s, i) in memoSinaisPositivos" :key="i">
@@ -3329,7 +3308,6 @@
       </div>
     </section>
 
-    <div class="memo-page-break"></div>
 
     <!-- ============ PÁGINA 8 · ANEXOS ============ -->
     <section class="memo-block memo-page memo-block-table">
