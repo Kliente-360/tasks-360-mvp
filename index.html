@@ -2193,7 +2193,7 @@
                 <span x-show="c.tier === 'potencial'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--p2-soft);color:var(--p2)" title="Cliente potencial">potencial</span>
                 <span x-show="c.tier === 'descoberta'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Cliente em descoberta">descoberta</span>
                 <span x-show="c.arquivadoEm" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Cliente arquivado">arquivado</span>
-                <span x-show="c.ehInterno" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--p2-soft);color:var(--p2)" title="Bucket interno · tasks de gestão · excluído de heurísticas e do portal">interno</span>
+                <span x-show="c.ehInterno" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--triage-soft);color:var(--triage)" title="Bucket interno · tasks de gestão · excluído de heurísticas e do portal">interno</span>
               </div>
               <div class="text-xs text-muted" x-text="contarTarefasCliente(c.id) + ' tarefas · ' + contarProjetosCliente(c.id) + ' projetos'"></div>
             </div>
