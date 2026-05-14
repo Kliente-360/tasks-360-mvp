@@ -862,11 +862,10 @@
   <!-- Page bar unificado (1 linha): narrativa + busca + 7 filtros + limpar + ⋯ -->
   <div class="page-bar hidden md:flex">
     <div class="page-bar-info">
-      <span class="page-bar-narrative">
-        <strong x-text="filtered.length"></strong> de <strong x-text="tasks.length"></strong> tarefas
-      </span>
-      <span class="page-bar-metrics" x-show="tasks.length - filtered.length > 0">
-        <strong x-text="tasks.length - filtered.length"></strong> ocultas
+      <!-- Narrativa + ocultas combinados num único span pra evitar quebra de linha
+           quando filtro reduz muito o resultado e o "ocultas" aparece. -->
+      <span class="page-bar-narrative whitespace-nowrap">
+        <strong x-text="filtered.length"></strong> de <strong x-text="tasks.length"></strong> tarefas<span x-show="tasks.length - filtered.length > 0" class="text-muted font-normal"> · <strong class="text-ink" x-text="tasks.length - filtered.length"></strong> ocultas</span>
       </span>
     </div>
     <div class="page-bar-controls">
@@ -898,7 +897,7 @@
       </select>
       <select class="inp w-[140px]" :class="(f.status && f.status !== 'abertas') && 'is-active'" x-model="f.status">
         <option value="abertas">Abertas</option>
-        <option value="">Status</option>
+        <option value="">Todas</option>
         <option value="backlog">Backlog</option>
         <option value="andamento">Em andamento</option>
         <option value="bloqueado">Bloqueado</option>
@@ -1002,7 +1001,7 @@
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
       <select class="inp" :class="(f.status && f.status !== 'abertas') && 'is-active'" x-model="f.status">
         <option value="abertas">Abertas (sem concluídas)</option>
-        <option value="">Status</option>
+        <option value="">Todas</option>
         <option value="backlog">Backlog</option>
         <option value="andamento">Em andamento</option>
         <option value="bloqueado">Bloqueado</option>
