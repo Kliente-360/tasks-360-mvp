@@ -954,9 +954,9 @@
   .loading-pulse span:nth-child(3) { animation-delay: 0.30s; }
   .loading-pulse span:nth-child(4) { animation-delay: 0.45s; }
 
-  /* Wrap só pra fallback em viewport bem estreito (md). Com table-layout: fixed
-     + colgroup, a tabela cabe no container nativo em viewports md+ normais. */
-  .tbl-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch; border-radius: 8px; }
+  /* Wrap simples. Sem overflow — table-layout: fixed + colgroup garantem fit
+     em viewports md+. Overflow no wrapper quebra `position:sticky` do thead. */
+  .tbl-wrap { border-radius: 8px; }
 
   /* kanban com carrossel horizontal em mobile */
   .kanban-scroll { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
