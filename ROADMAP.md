@@ -53,7 +53,7 @@ Não é um Jira, não é um Trello, não é um Asana. É **opinativo**, executiv
 
 **Próximo passo (P0)**: captura rápida de task (`Cmd+Shift+N` global) + notif digest hourly. Em paralelo, **P1: primeira feature de IA** ("resumir thread de task") fecha a maior lacuna competitiva. Detalhe em CONTEXT.md §14.
 
-**Em análise (Dashboard + Briefing redesign)**: ver [`PROPOSAL-DASHBOARD-BRIEFING.md`](./PROPOSAL-DASHBOARD-BRIEFING.md). Proposta de reposicionamento conceitual — Briefing como carta editorial executiva (prescritiva, prosa), Dashboard como painel analítico do gestor (quantitativo, gaps & desvios). Resolve risco de redundância entre as duas abas. ~14h de execução em 7 PRs.
+**Em execução (Resumo Executivo PDF)**: ver [`PROPOSAL-MEMO-EXECUTIVO.md`](./PROPOSAL-MEMO-EXECUTIVO.md). Em vez de redesenhar Dashboard+Briefing como abas, concentramos o storytelling executivo num **único PDF semanal** consolidado de 8 páginas. App existente preservado; PDF vira o artefato de reunião/comercial/board. ~10h em 4 PRs (M1-M4).
 
 **Catálogo de KPIs**: ver [`KPIS.md`](./KPIS.md). Lista completa de todos os indicadores usados no app — adoção, performance, capacidade, operação, saúde, externo, orçamento. Define cálculo, threshold e onde vive cada um. Inclui KPIs propostos no Dashboard v2 (% entregue no prazo, variância de carga, bottleneck por sub-etapa, concentração de cliente).
 
