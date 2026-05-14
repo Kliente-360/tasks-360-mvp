@@ -764,9 +764,9 @@
            :class="selectedIds.includes(t.id) && 'bg-brand-tint'"
            @click="openEdit(t)">
         <!-- Row 1: checkbox + título (+ chips à direita no desktop) -->
-        <div class="flex items-start gap-3 md:items-center md:justify-between md:gap-3">
-          <div class="min-w-0 flex-1 flex items-start md:items-center gap-3">
-            <input type="checkbox" class="shrink-0 mt-0.5 md:mt-0"
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0 flex-1 flex items-center gap-3">
+            <input type="checkbox" class="shrink-0"
                    :checked="selectedIds.includes(t.id)"
                    @click.stop="toggleSelected(t.id)">
             <div class="min-w-0 flex-1">
