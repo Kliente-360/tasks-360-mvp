@@ -1061,6 +1061,21 @@
 
   <div class="card tbl-wrap hidden md:block">
     <table class="tbl">
+      <!-- Colgroup com widths fixas pras colunas pequenas. TAREFA fica em auto
+           e absorve o espaço restante do container — dá ellipsis dinâmico
+           independente do viewport (1280px ou 4K). table-layout: fixed no CSS. -->
+      <colgroup>
+        <col style="width: 32px">
+        <col>
+        <col style="width: 200px">
+        <col style="width: 120px">
+        <col style="width: 60px">
+        <col style="width: 50px">
+        <col style="width: 100px">
+        <col style="width: 100px">
+        <col style="width: 160px">
+        <col style="width: 36px">
+      </colgroup>
       <thead>
         <tr>
           <th class="w-8" @click.stop>
@@ -1121,7 +1136,7 @@
                 </div>
               </td>
               <td><span class="tbl-cliproj" :title="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></span></td>
-              <td class="text-ink-soft" :title="nomePessoa(t.pessoaId)" x-text="nomePessoa(t.pessoaId)"></td>
+              <td class="text-ink-soft truncate" :title="nomePessoa(t.pessoaId)" x-text="nomePessoa(t.pessoaId)"></td>
               <td>
                 <span class="pri" :class="'pri-'+t.prioridade">
                   <span class="pri-dot"></span>
