@@ -974,6 +974,22 @@
               <span>Mostrar tarefas arquivadas</span>
             </label>
           </div>
+          <div class="more-row">
+            <label title="Filtra só tasks criadas por automação IA (Cowork etc).">
+              <input type="checkbox"
+                     :checked="f.origem === 'ia'"
+                     @change="f.origem = $event.target.checked ? 'ia' : ''">
+              <span>Somente criadas por 🤖 IA</span>
+            </label>
+          </div>
+          <div class="more-row">
+            <label title="Filtra só tasks criadas por humanos (oculta IA).">
+              <input type="checkbox"
+                     :checked="f.origem === 'humano'"
+                     @change="f.origem = $event.target.checked ? 'humano' : ''">
+              <span>Somente criadas por humanos</span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
