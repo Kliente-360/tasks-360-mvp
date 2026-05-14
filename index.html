@@ -3072,108 +3072,141 @@
   </div>
 </div>
 
-<!-- ============ RELATÓRIO EXECUTIVO (print-only, 1 página) ============ -->
+<!-- ============ RESUMO EXECUTIVO (print-only, 8 páginas) ============
+     Memo executivo narrativo. Cada página responde uma pergunta diferente,
+     todas conectadas. Ver PROPOSAL-MEMO-EXECUTIVO.md §3 pra estrutura. -->
 <section class="print-only" aria-hidden="true">
   <article class="memo">
-    <header class="memo-head">
-      <div class="memo-title">tasks 360 · briefing executivo</div>
-      <div class="memo-meta">
-        <span>kliente 360 · só sócios</span>
-        <span>snapshot <strong x-text="reportStampDate"></strong> · <span x-text="reportStampTime"></span></span>
+
+    <!-- ============ PÁGINA 1 · CAPA + SUMÁRIO EXECUTIVO ============ -->
+    <header class="memo-head memo-cover">
+      <div class="memo-eyebrow">RESUMO EXECUTIVO</div>
+      <div class="memo-title">tasks 360</div>
+      <div class="memo-subtitle">
+        <span x-text="memoSemanaLabel"></span>
+        ·
+        <span x-text="reportStampDate"></span>
       </div>
     </header>
 
-    <section class="memo-block">
-      <h2>Esta semana</h2>
-      <p class="memo-lead" x-text="briefingNarrativa"></p>
-    </section>
+    <section class="memo-block memo-page-1-content">
+      <p class="memo-lead memo-lead-cover" x-html="memoSumarioExecutivo"></p>
 
-    <section class="memo-block memo-actions">
-      <h2>Pontos de atenção <span class="memo-count" x-text="'(' + (briefingClientesRisco.length + briefingTimeRisco.length) + ')'"></span></h2>
-      <div x-show="briefingClientesRisco.length === 0 && briefingTimeRisco.length === 0" class="memo-empty">
-        Nada crítico. Nenhum cliente em risco, time em equilíbrio.
+      <div class="memo-signal-banner" :class="'memo-signal-banner-' + memoSinalGeralOperacao">
+        <span class="memo-signal-big" :class="'memo-signal-big-' + memoSinalGeralOperacao"></span>
+        <span class="memo-signal-label">
+          <template x-if="memoSinalGeralOperacao === 'verde'"><span>Operação saudável</span></template>
+          <template x-if="memoSinalGeralOperacao === 'amarelo'"><span>Operação com pontos de atenção</span></template>
+          <template x-if="memoSinalGeralOperacao === 'vermelho'"><span>Operação com sinais críticos</span></template>
+        </span>
       </div>
-      <ul x-show="briefingClientesRisco.length > 0 || briefingTimeRisco.length > 0">
-        <template x-for="c in briefingClientesRisco" :key="'c:'+c.id">
-          <li>
-            <span class="memo-tag" :class="'memo-tag-' + c.sinal">cliente</span>
-            <strong x-text="c.nome"></strong> · <span x-text="c.motivo"></span>
-            <em x-text="' → ' + c.acao"></em>
-          </li>
+
+      <div class="memo-toc">
+        <div class="memo-toc-title">Neste documento</div>
+        <ol class="memo-toc-list">
+          <li>Sumário executivo</li>
+          <li>Performance da operação</li>
+          <li>Saúde por cliente</li>
+          <li>Saúde por pessoa</li>
+          <li>Gaps & desvios analíticos</li>
+          <li>Capacidade · próximas 4 semanas</li>
+          <li>Decisões + sinais positivos</li>
+          <li>Anexos · dados de apoio</li>
+        </ol>
+      </div>
+    </section>
+
+    <div class="memo-page-break"></div>
+
+    <!-- ============ PÁGINA 2 · PERFORMANCE DA OPERAÇÃO ============ -->
+    <section class="memo-block memo-page">
+      <div class="memo-pagenum">2 · Performance da operação</div>
+      <h2>Como estamos performando?</h2>
+      <div class="memo-perf-grid">
+        <template x-for="c in dashboardVelocityIndicators.cards" :key="c.key">
+          <div class="memo-perf-card" :class="'memo-perf-' + c.sig">
+            <div class="memo-perf-label" x-text="c.label"></div>
+            <div class="memo-perf-value" x-text="c.value"></div>
+            <div class="memo-perf-meta" x-text="c.metaText"></div>
+            <div class="memo-perf-delta" x-text="c.detalhe"></div>
+          </div>
         </template>
-        <template x-for="p in briefingTimeRisco" :key="'p:'+p.id">
-          <li>
-            <span class="memo-tag" :class="'memo-tag-' + (p.cargaNivel === 'sobrecarga' ? 'vermelho' : 'amarelo')">time</span>
-            <strong x-text="p.nome"></strong> ·
-            <span x-text="(p.pctCap != null ? p.pctCap + '% capacidade · ' : '') + p.tasks + ' tasks' + (p.atrasadas > 0 ? ', ' + p.atrasadas + ' atrasadas' : '')"></span>
-            <em x-text="' → ' + p.acao"></em>
+      </div>
+      <p class="memo-rec" x-text="dashboardVelocityIndicators.conclusao"></p>
+    </section>
+
+    <div class="memo-page-break"></div>
+
+    <!-- ============ PÁGINA 3 · SAÚDE POR CLIENTE ============ -->
+    <section class="memo-block memo-page">
+      <div class="memo-pagenum">3 · Saúde por cliente</div>
+      <h2>Quem precisa conversar e o quê?</h2>
+      <div x-show="memoSaudeClientes.length === 0" class="memo-empty">
+        Sem clientes ativos no momento.
+      </div>
+      <ul class="memo-narrative-list" x-show="memoSaudeClientes.length > 0">
+        <template x-for="c in memoSaudeClientes" :key="c.id">
+          <li class="memo-narrative-item">
+            <span class="memo-signal" :class="'memo-signal-' + c.sinal"></span>
+            <div>
+              <strong x-text="c.nome"></strong>
+              <span class="memo-narrative-text" x-html="' — ' + c.mensagem"></span>
+            </div>
           </li>
         </template>
       </ul>
     </section>
 
-    <section class="memo-block">
-      <h2>Tendência da operação</h2>
-      <ul class="memo-trend">
-        <template x-for="t in briefingTendencia" :key="t.label">
-          <li>
-            <span class="memo-trend-label" x-text="t.label + ':'"></span>
-            <strong x-text="t.value"></strong>
-            <span class="memo-trend-delta" :class="t.deltaGood === true ? 'memo-good' : (t.deltaGood === false ? 'memo-bad' : 'memo-muted')" x-text="t.deltaText"></span>
+    <div class="memo-page-break"></div>
+
+    <!-- ============ PÁGINA 4 · SAÚDE POR PESSOA ============ -->
+    <section class="memo-block memo-page">
+      <div class="memo-pagenum">4 · Saúde por pessoa</div>
+      <h2>Quem está como?</h2>
+      <div x-show="memoSaudePessoas.length === 0" class="memo-empty">
+        Nenhuma pessoa interna cadastrada com tasks ativas.
+      </div>
+      <ul class="memo-narrative-list" x-show="memoSaudePessoas.length > 0">
+        <template x-for="p in memoSaudePessoas" :key="p.id">
+          <li class="memo-narrative-item">
+            <span class="memo-signal" :class="'memo-signal-' + p.sinal"></span>
+            <div>
+              <strong x-text="p.nome"></strong>
+              <span class="memo-narrative-text" x-html="' — ' + p.mensagem"></span>
+            </div>
           </li>
         </template>
       </ul>
     </section>
 
-    <section class="memo-block">
-      <h2>Capacidade do time vs demanda</h2>
-      <p>
-        <strong x-text="briefingCapacidade.alocado + 'h'"></strong> alocadas em tasks ativas contra
-        <strong x-text="briefingCapacidade.capacidade + 'h/semana'"></strong> de capacidade declarada
-        (<span x-text="briefingCapacidade.pessoasComCap"></span> pessoas) · utilização
-        <strong x-text="briefingCapacidade.utilizacao + '%'"></strong>.
-      </p>
-      <p class="memo-rec" x-text="briefingCapacidade.recomendacao"></p>
+    <div class="memo-page-break"></div>
+
+    <!-- ============ PÁGINA 5 · GAPS & DESVIOS ANALÍTICOS ============ -->
+    <section class="memo-block memo-page">
+      <div class="memo-pagenum">5 · Gaps & desvios analíticos</div>
+      <h2>Onde estão os gargalos invisíveis?</h2>
+      <p class="memo-lead-sub">Análises quantitativas interpretadas. Sinal sistêmico, não nominal.</p>
+      <div x-show="memoGaps.length === 0" class="memo-empty">
+        Nenhum gap sistêmico identificado. Operação rodando sem desvios estatísticos significativos.
+      </div>
+      <ul class="memo-gaps-list" x-show="memoGaps.length > 0">
+        <template x-for="(g, i) in memoGaps" :key="i">
+          <li class="memo-gap-item" :class="'memo-gap-' + g.severidade">
+            <div class="memo-gap-titulo" x-text="g.titulo"></div>
+            <div class="memo-gap-detalhe" x-html="g.detalhe"></div>
+          </li>
+        </template>
+      </ul>
     </section>
 
-    <section class="memo-block memo-block-table">
-      <h2>Time interno · carga</h2>
-      <table class="memo-tbl">
-        <thead>
-          <tr>
-            <th>Pessoa</th>
-            <th style="width:9%" class="memo-num">Tasks</th>
-            <th style="width:11%" class="memo-num">Horas</th>
-            <th style="width:11%" class="memo-num">Atrasadas</th>
-            <th style="width:36%">Distribuição</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template x-for="p in reportTeamLoad" :key="p.id">
-            <tr>
-              <td>
-                <strong x-text="p.nome"></strong>
-                <template x-if="p.cargaNivel==='sobrecarga'"><span class="memo-tag memo-tag-vermelho">sobrec</span></template>
-                <template x-if="p.cargaNivel==='pressao'"><span class="memo-tag memo-tag-amarelo">pressão</span></template>
-                <template x-if="p.cargaNivel==='folga'"><span class="memo-tag memo-tag-verde">folga</span></template>
-              </td>
-              <td class="memo-num" x-text="p.tasks"></td>
-              <td class="memo-num" x-text="p.horas + 'h'"></td>
-              <td class="memo-num" :class="p.atrasadas > 0 && 'memo-bad'" x-text="p.atrasadas"></td>
-              <td>
-                <div class="memo-bar">
-                  <div class="memo-bar-fill" :style="'width:' + p.barOk + '%'"></div>
-                  <div class="memo-bar-fill late" :style="'width:' + p.barLate + '%'"></div>
-                </div>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-    </section>
+    <div class="memo-page-break"></div>
 
-    <section class="memo-block memo-block-table">
-      <h2>Capacidade · próximas 4 semanas</h2>
+    <!-- ============ PÁGINA 6 · CAPACIDADE · 4 SEMANAS ============ -->
+    <section class="memo-block memo-page memo-block-table">
+      <div class="memo-pagenum">6 · Capacidade · próximas 4 semanas</div>
+      <h2>O que vem aí?</h2>
+
+      <h3 class="memo-h3">Heatmap pessoa × semana</h3>
       <table class="memo-tbl" x-show="weeklyCapacityAnalysis.pessoas.length > 0">
         <thead>
           <tr>
@@ -3201,8 +3234,8 @@
         </tbody>
       </table>
 
-      <div x-show="weeklyCapacityAnalysis.sustentacoes.length > 0" style="margin-top: 10px;">
-        <h2 style="font-size: 11px; margin-bottom: 4px;">Sustentações · cap. mensal contratada / 4</h2>
+      <div x-show="weeklyCapacityAnalysis.sustentacoes.length > 0" style="margin-top: 14px;">
+        <h3 class="memo-h3">Sustentações · cap. mensal contratada / 4</h3>
         <table class="memo-tbl">
           <thead>
             <tr>
@@ -3232,8 +3265,8 @@
         </table>
       </div>
 
-      <div x-show="weeklyCapacityAnalysis.projetosFechados.length > 0" style="margin-top: 10px;">
-        <h2 style="font-size: 11px; margin-bottom: 4px;">Projetos fechados · escopo comprometido vs orçamento</h2>
+      <div x-show="weeklyCapacityAnalysis.projetosFechados.length > 0" style="margin-top: 14px;">
+        <h3 class="memo-h3">Projetos fechados · escopo vs orçamento</h3>
         <table class="memo-tbl">
           <thead>
             <tr>
@@ -3263,48 +3296,133 @@
       </div>
     </section>
 
-    <section class="memo-block memo-block-table">
-      <h2>Clientes ativos · saúde, atrasos e consumo de horas orçadas</h2>
-      <table class="memo-tbl">
+    <div class="memo-page-break"></div>
+
+    <!-- ============ PÁGINA 7 · DECISÕES + SINAIS POSITIVOS ============ -->
+    <section class="memo-block memo-page">
+      <div class="memo-pagenum">7 · Decisões + sinais positivos</div>
+      <h2>O que decidir esta semana? O que celebrar?</h2>
+
+      <div class="memo-two-col">
+        <div class="memo-col">
+          <h3 class="memo-h3 memo-h3-decision">Decisões pendentes</h3>
+          <div x-show="memoDecisoes.length === 0" class="memo-empty">
+            Nenhuma decisão pendente identificada.
+          </div>
+          <ul class="memo-decision-list" x-show="memoDecisoes.length > 0">
+            <template x-for="(d, i) in memoDecisoes" :key="i">
+              <li class="memo-decision-item" x-html="d"></li>
+            </template>
+          </ul>
+        </div>
+        <div class="memo-col">
+          <h3 class="memo-h3 memo-h3-positive">Sinais positivos</h3>
+          <div x-show="memoSinaisPositivos.length === 0" class="memo-empty">
+            Sem destaques positivos identificados nesta semana.
+          </div>
+          <ul class="memo-positive-list" x-show="memoSinaisPositivos.length > 0">
+            <template x-for="(s, i) in memoSinaisPositivos" :key="i">
+              <li class="memo-positive-item" x-html="s"></li>
+            </template>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="memo-page-break"></div>
+
+    <!-- ============ PÁGINA 8 · ANEXOS ============ -->
+    <section class="memo-block memo-page memo-block-table">
+      <div class="memo-pagenum">8 · Anexos · dados de apoio</div>
+      <h2>Detalhe quantitativo</h2>
+
+      <h3 class="memo-h3">Top 5 atrasadas</h3>
+      <div x-show="memoTopAtrasadas.length === 0" class="memo-empty memo-empty-small">Nenhuma atrasada.</div>
+      <table class="memo-tbl" x-show="memoTopAtrasadas.length > 0">
         <thead>
           <tr>
-            <th>Cliente</th>
-            <th style="width:11%">Tier</th>
-            <th style="width:7%" class="memo-num">Tasks</th>
-            <th style="width:8%" class="memo-num">Horas</th>
-            <th style="width:11%" class="memo-num">% Orç. (h)</th>
-            <th style="width:9%" class="memo-num">Atrasadas</th>
-            <th style="width:11%" class="memo-num">Aguard. cli.</th>
-            <th style="width:18%">Saúde</th>
+            <th>Tarefa</th>
+            <th style="width:18%">Cliente</th>
+            <th style="width:14%">Responsável</th>
+            <th style="width:10%" class="memo-num">Dias atraso</th>
+            <th style="width:8%" class="memo-num">Pri</th>
           </tr>
         </thead>
         <tbody>
-          <template x-for="c in reportClientesExec" :key="c.id">
+          <template x-for="t in memoTopAtrasadas" :key="t.id">
             <tr>
-              <td><strong x-text="c.nome"></strong></td>
-              <td x-text="c.tier || '—'" :class="!c.tier && 'memo-muted'"></td>
-              <td class="memo-num" x-text="c.ativas"></td>
-              <td class="memo-num" x-text="c.horas + 'h'"></td>
-              <td class="memo-num">
-                <template x-if="c.pctOrc != null">
-                  <span x-text="c.pctOrc + '%'" :class="c.pctOrc > 100 ? 'memo-bad' : (c.pctOrc > 80 ? 'memo-amber' : '')"></span>
-                </template>
-                <template x-if="c.pctOrc == null"><span class="memo-muted">—</span></template>
-              </td>
-              <td class="memo-num" :class="c.atrasadas > 0 && 'memo-bad'" x-text="c.atrasadas"></td>
-              <td class="memo-num" :class="c.bloqAguard > 0 && 'memo-amber'" x-text="c.bloqAguard"></td>
-              <td>
-                <span class="memo-signal" :class="'memo-signal-' + c.sinal"></span>
-                <span x-text="c.sinalReason"></span>
-              </td>
+              <td x-text="t.titulo"></td>
+              <td x-text="nomeCliente(t.clienteId)"></td>
+              <td x-text="nomePessoa(t.pessoaId) || '—'"></td>
+              <td class="memo-num memo-bad" x-text="diasAtraso(t) + 'd'"></td>
+              <td class="memo-num" x-text="t.prioridade || '—'"></td>
             </tr>
           </template>
         </tbody>
       </table>
+
+      <h3 class="memo-h3" style="margin-top: 12px;">Top 5 bloqueadas</h3>
+      <div x-show="memoTopBloqueadas.length === 0" class="memo-empty memo-empty-small">Nenhuma bloqueada.</div>
+      <table class="memo-tbl" x-show="memoTopBloqueadas.length > 0">
+        <thead>
+          <tr>
+            <th>Tarefa</th>
+            <th style="width:18%">Cliente</th>
+            <th style="width:14%">Responsável</th>
+            <th style="width:13%">Bloqueio</th>
+            <th style="width:8%" class="memo-num">Pri</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="t in memoTopBloqueadas" :key="t.id">
+            <tr>
+              <td x-text="t.titulo"></td>
+              <td x-text="nomeCliente(t.clienteId)"></td>
+              <td x-text="nomePessoa(t.pessoaId) || '—'"></td>
+              <td x-text="t.bloqueadoPor || 'sem classif.'"></td>
+              <td class="memo-num" x-text="t.prioridade || '—'"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+
+      <h3 class="memo-h3" style="margin-top: 12px;">Top 5 aguardando cliente</h3>
+      <div x-show="memoTopAguardando.length === 0" class="memo-empty memo-empty-small">Nenhuma aguardando cliente.</div>
+      <table class="memo-tbl" x-show="memoTopAguardando.length > 0">
+        <thead>
+          <tr>
+            <th>Tarefa</th>
+            <th style="width:18%">Cliente</th>
+            <th style="width:14%">Responsável</th>
+            <th style="width:14%" class="memo-num">Aguardando há</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="t in memoTopAguardando" :key="t.id">
+            <tr>
+              <td x-text="t.titulo"></td>
+              <td x-text="nomeCliente(t.clienteId)"></td>
+              <td x-text="nomePessoa(t.pessoaId) || '—'"></td>
+              <td class="memo-num" :class="agingDays(t) > 5 && 'memo-bad'" x-text="agingDays(t) + 'd'"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+
+      <div class="memo-charts-row" style="margin-top: 14px;">
+        <div class="memo-chart-block">
+          <h3 class="memo-h3">Throughput · 8 semanas</h3>
+          <div style="height: 120px; position: relative;"><canvas id="memoChartThroughput"></canvas></div>
+        </div>
+        <div class="memo-chart-block">
+          <h3 class="memo-h3">Lead time por cliente · 90d</h3>
+          <div style="height: 120px; position: relative;"><canvas id="memoChartLeadTime"></canvas></div>
+        </div>
+      </div>
     </section>
 
     <footer class="memo-foot">
-      tasks 360 · briefing executivo · kliente 360 · documento interno (sócios)
+      tasks 360 · resumo executivo · kliente 360 · documento interno (sócios)
     </footer>
   </article>
 </section>

@@ -1377,6 +1377,165 @@
     text-align: center;
   }
 
+  /* ============ RESUMO EXECUTIVO · classes pra 8 páginas ============ */
+  .print-only .memo-page-break { page-break-after: always; break-after: page; }
+  .print-only .memo-page { page-break-inside: avoid; }
+  .print-only .memo-pagenum {
+    font-size: 9px; color: #999; font-family: var(--font-mono);
+    text-transform: uppercase; letter-spacing: 0.14em;
+    margin-bottom: 6px; padding-bottom: 4px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  /* Pág 1 · Capa */
+  .print-only .memo-cover {
+    border-bottom: 3px solid #009900; padding-bottom: 14px; margin-bottom: 20px;
+  }
+  .print-only .memo-eyebrow {
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: #009900; font-weight: 600; font-family: var(--font-mono);
+    margin-bottom: 4px;
+  }
+  .print-only .memo-cover .memo-title {
+    font-size: 32px; font-weight: 700; color: #111; line-height: 1.1;
+    font-family: var(--font-brand, 'Quicksand', sans-serif);
+  }
+  .print-only .memo-subtitle {
+    font-size: 13px; color: #555; margin-top: 4px;
+    font-family: var(--font-mono);
+  }
+  .print-only .memo-lead-cover {
+    font-size: 13px; line-height: 1.65; color: #1f2937;
+    margin-bottom: 18px;
+  }
+  .print-only .memo-signal-banner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-radius: 6px;
+    margin: 16px 0;
+    font-size: 12px; font-weight: 600;
+  }
+  .print-only .memo-signal-banner-verde   { background: #f0fdf4; color: #166534; border-left: 4px solid #16a34a; }
+  .print-only .memo-signal-banner-amarelo { background: #fffbeb; color: #92400e; border-left: 4px solid #f59e0b; }
+  .print-only .memo-signal-banner-vermelho{ background: #fef2f2; color: #991b1b; border-left: 4px solid #dc2626; }
+  .print-only .memo-signal-big {
+    display: inline-block; width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+  }
+  .print-only .memo-signal-big-verde   { background: #16a34a; }
+  .print-only .memo-signal-big-amarelo { background: #f59e0b; }
+  .print-only .memo-signal-big-vermelho{ background: #dc2626; }
+  .print-only .memo-toc {
+    margin-top: 20px; padding: 14px 18px; border: 1px solid #e5e5e5;
+    border-radius: 6px; background: #fafafa;
+  }
+  .print-only .memo-toc-title {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #666; font-weight: 600; margin-bottom: 8px;
+    font-family: var(--font-mono);
+  }
+  .print-only .memo-toc-list {
+    margin: 0; padding-left: 18px; list-style: decimal;
+    font-size: 11px; line-height: 1.7; color: #333;
+  }
+
+  /* Pág 2 · Performance · grid de 4 KPIs */
+  .print-only .memo-perf-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin: 14px 0 16px;
+  }
+  .print-only .memo-perf-card {
+    padding: 12px 14px; border-radius: 6px;
+    border-left: 4px solid #ccc;
+  }
+  .print-only .memo-perf-card.memo-perf-verde    { background: #f0fdf4; border-left-color: #16a34a; }
+  .print-only .memo-perf-card.memo-perf-amarelo  { background: #fffbeb; border-left-color: #f59e0b; }
+  .print-only .memo-perf-card.memo-perf-vermelho { background: #fef2f2; border-left-color: #dc2626; }
+  .print-only .memo-perf-card.memo-perf-sem-dado { background: #f5f5f5; border-left-color: #ccc; }
+  .print-only .memo-perf-label {
+    font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #555; font-weight: 600; font-family: var(--font-mono);
+  }
+  .print-only .memo-perf-value {
+    font-size: 24px; font-weight: 700; line-height: 1; margin: 6px 0 4px;
+    color: #111; font-family: var(--font-brand, 'Quicksand', sans-serif);
+  }
+  .print-only .memo-perf-meta, .print-only .memo-perf-delta {
+    font-size: 10px; color: #666; font-family: var(--font-mono);
+  }
+  .print-only .memo-perf-delta { margin-top: 2px; }
+
+  /* Pág 3+4 · Lista narrativa prescritiva */
+  .print-only .memo-narrative-list {
+    list-style: none; margin: 0; padding: 0;
+  }
+  .print-only .memo-narrative-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0; border-bottom: 1px dotted #e5e5e5;
+    font-size: 11px; line-height: 1.55; color: #1f2937;
+  }
+  .print-only .memo-narrative-item:last-child { border-bottom: 0; }
+  .print-only .memo-narrative-item .memo-signal {
+    width: 9px; height: 9px; margin-top: 4px; flex-shrink: 0;
+  }
+  .print-only .memo-narrative-text { color: #444; }
+
+  /* Pág 5 · Gaps & desvios */
+  .print-only .memo-lead-sub {
+    font-size: 11px; color: #666; margin-bottom: 12px; font-style: italic;
+  }
+  .print-only .memo-gaps-list {
+    list-style: none; margin: 0; padding: 0;
+  }
+  .print-only .memo-gap-item {
+    padding: 10px 14px; margin-bottom: 8px;
+    border-left: 4px solid #ccc; border-radius: 0 4px 4px 0;
+    page-break-inside: avoid;
+  }
+  .print-only .memo-gap-item.memo-gap-vermelho { background: #fef2f2; border-left-color: #dc2626; }
+  .print-only .memo-gap-item.memo-gap-amarelo  { background: #fffbeb; border-left-color: #f59e0b; }
+  .print-only .memo-gap-titulo {
+    font-size: 11.5px; font-weight: 700; color: #111;
+    margin-bottom: 4px;
+  }
+  .print-only .memo-gap-detalhe {
+    font-size: 11px; line-height: 1.55; color: #333;
+  }
+
+  /* Pág 7 · Duas colunas */
+  .print-only .memo-two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+    margin-top: 10px;
+  }
+  .print-only .memo-col h3 { margin: 0 0 8px; }
+  .print-only .memo-h3 {
+    font-size: 11px; font-weight: 700; color: #111;
+    margin: 12px 0 6px; padding-bottom: 3px;
+    border-bottom: 1px solid #e5e5e5;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .print-only .memo-h3-decision { color: #b91c1c; border-bottom-color: #fecaca; }
+  .print-only .memo-h3-positive { color: #166534; border-bottom-color: #bbf7d0; }
+  .print-only .memo-decision-list, .print-only .memo-positive-list {
+    list-style: none; margin: 0; padding: 0;
+  }
+  .print-only .memo-decision-item, .print-only .memo-positive-item {
+    padding: 6px 0; font-size: 11px; line-height: 1.5; color: #1f2937;
+    border-bottom: 1px dotted #f0f0f0;
+  }
+  .print-only .memo-decision-item:last-child, .print-only .memo-positive-item:last-child { border-bottom: 0; }
+  .print-only .memo-decision-item::before { content: '▸ '; color: #b91c1c; font-weight: 700; }
+  .print-only .memo-positive-item::before { content: '✓ '; color: #166534; font-weight: 700; }
+
+  /* Pág 8 · Charts row */
+  .print-only .memo-charts-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  .print-only .memo-chart-block {
+    padding: 8px; border: 1px solid #e5e5e5; border-radius: 4px;
+  }
+  .print-only .memo-empty-small {
+    padding: 6px 10px; font-size: 10px;
+    background: #f5f5f5; color: #999; border-radius: 4px;
+  }
+
   @media print {
     @page { size: A4 portrait; margin: 10mm 12mm; }
     html, body { background: #fff !important; height: auto !important; }
