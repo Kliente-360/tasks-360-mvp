@@ -862,10 +862,15 @@
   <!-- Page bar unificado (1 linha): narrativa + busca + 7 filtros + limpar + ⋯ -->
   <div class="page-bar hidden md:flex">
     <div class="page-bar-info">
-      <!-- Narrativa + ocultas combinados num único span pra evitar quebra de linha
-           quando filtro reduz muito o resultado e o "ocultas" aparece. -->
+      <!-- Narrativa compacta · sem filtro mostra "N tarefas", com filtro mostra "X/Y · Z ocultas".
+           Texto curto pra page-bar caber em uma linha mesmo com 7 filtros. -->
       <span class="page-bar-narrative whitespace-nowrap">
-        <strong x-text="filtered.length"></strong> de <strong x-text="tasks.length"></strong> tarefas<span x-show="tasks.length - filtered.length > 0" class="text-muted font-normal"> · <strong class="text-ink" x-text="tasks.length - filtered.length"></strong> ocultas</span>
+        <template x-if="tasks.length - filtered.length > 0">
+          <span><strong x-text="filtered.length"></strong>/<strong x-text="tasks.length"></strong><span class="text-muted font-normal"> · <strong class="text-ink" x-text="tasks.length - filtered.length"></strong> ocultas</span></span>
+        </template>
+        <template x-if="tasks.length - filtered.length === 0">
+          <span><strong x-text="tasks.length"></strong> tarefas</span>
+        </template>
       </span>
     </div>
     <div class="page-bar-controls">
@@ -883,7 +888,7 @@
       <select class="inp w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
         <option value="">Pessoas</option>
         <option value="__empty__">— sem responsável</option>
-        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+        <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
       <select class="inp w-[80px]" :class="f.pri && 'is-active'" x-model="f.pri">
         <option value="">Pri</option>
@@ -976,7 +981,7 @@
       <select class="inp" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
         <option value="">Pessoas</option>
         <option value="__empty__">— sem responsável</option>
-        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+        <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
     <div class="col-span-2 md:col-span-1 md:block" :class="!filtersOpen && 'hidden'">
@@ -1270,7 +1275,7 @@
       <select class="inp w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
         <option value="">Responsáveis</option>
         <option value="__empty__">— sem responsável</option>
-        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+        <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
       <div class="view-toggle" role="tablist" aria-label="Visão do kanban">
         <button :class="kanbanView==='op' && 'active'" @click="kanbanView='op'" title="Operacional — colunas detalhadas">Operacional</button>
@@ -1296,7 +1301,7 @@
     <select class="inp" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
       <option value="">Responsáveis</option>
       <option value="__empty__">— sem responsável</option>
-      <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+      <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
   </div>
 
@@ -1442,7 +1447,7 @@
       <select class="inp w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
         <option value="">Responsáveis</option>
         <option value="__empty__">— sem responsável</option>
-        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+        <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
   </div>
@@ -1462,7 +1467,7 @@
     <select class="inp" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
       <option value="">Responsáveis</option>
       <option value="__empty__">— sem responsável</option>
-      <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+      <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
   </div>
 
@@ -1888,7 +1893,7 @@
       <select class="inp w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
         <option value="">Responsáveis</option>
         <option value="__empty__">— sem responsável</option>
-        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+        <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
   </div>
@@ -1940,7 +1945,7 @@
     <select class="inp" :class="f.pessoa && 'is-active'" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
       <option value="">Responsáveis</option>
       <option value="__empty__">— sem responsável</option>
-      <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+      <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
   </div>
 
@@ -2977,7 +2982,7 @@
     <select class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[140px]" @change="bulkSetPessoa($event.target.value); $event.target.value=''" title="Atribuir…">
       <option value="" disabled selected>atribuir…</option>
       <option value="__none__">— sem responsável —</option>
-      <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+      <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
     <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]" @change="bulkSetPriority($event.target.value); $event.target.value=''" title="Prioridade…">
       <option value="" disabled selected>prioridade…</option>
@@ -3344,7 +3349,7 @@
               <label class="lbl">Responsável</label>
               <select class="inp" x-model="editing.pessoaId">
                 <option value="">—</option>
-                <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+                <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
               </select>
             </div>
             <div>
