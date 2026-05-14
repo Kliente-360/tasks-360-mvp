@@ -1379,7 +1379,10 @@
 
   /* ============ RESUMO EXECUTIVO · classes pra 8 páginas ============ */
   .print-only .memo-page-break { page-break-after: always; break-after: page; }
-  .print-only .memo-page { page-break-inside: avoid; }
+  /* Espaçamento entre seções memo-page (substitui quebras de página).
+     2 quebras de linha visuais via margin. page-break-inside: avoid
+     pra cada seção tentar ficar inteira mas tabelas longas podem quebrar. */
+  .print-only .memo-page { page-break-inside: avoid; margin-top: 24px; }
   .print-only .memo-pagenum {
     font-size: 9px; color: #999; font-family: var(--font-mono);
     text-transform: uppercase; letter-spacing: 0.14em;
