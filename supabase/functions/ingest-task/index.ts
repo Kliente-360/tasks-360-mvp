@@ -120,8 +120,24 @@ Deno.serve(async (req) => {
   let projetoId: string | null = null;
   if (body.projeto) {
     try {
-      const r = await findByName('projetos', String(body.projeto));
-      if (!r) return err(422, 'projeto_not_found', `projeto '${body.projeto}' não cadastrado`);
+      // Quando cliente foi resolvido, escopa busca do projeto a esse cliente
+      // — evita ambiguidade com nomes genéricos ("Sustentação", "Implantação"
+      // etc.) que aparecem em múltiplos clientes.
+      let r: { id: string; cliente_id: string } | null = null;
+      if (clienteId) {
+        const { data, error } = await sb
+          .from('projetos')
+          .select('id, cliente_id')
+          .eq('cliente_id', clienteId)
+          .ilike('nome', String(body.projeto).trim())
+          .limit(1)
+          .maybeSingle();
+        if (error) throw error;
+        r = data;
+      } else {
+        r = await findByName('projetos', String(body.projeto)) as any;
+      }
+      if (!r) return err(422, 'projeto_not_found', `projeto '${body.projeto}' não cadastrado${clienteId ? ` para o cliente '${body.cliente}'` : ''}`);
       if (clienteId && r.cliente_id !== clienteId) {
         return err(422, 'projeto_cliente_mismatch',
           `projeto '${body.projeto}' não pertence ao cliente '${body.cliente}'`);
