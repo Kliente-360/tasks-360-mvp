@@ -44,11 +44,14 @@ Não é um Jira, não é um Trello, não é um Asana. É **opinativo**, executiv
 
 ### Estado atual
 
-Protótipo **modular** (não mais single-file) com Alpine + Tailwind + Chart.js, hospedado no Netlify (`https://tasks-360-mvp.netlify.app`). Stack continua sem build step — agora dividida em `index.html` (3.5k linhas), `lib/styles.css`, `lib/helpers.js`, `lib/adapters.js`, `lib/supabase-client.js`, **13 views em `lib/views/*`** e `lib/app.js` (542 linhas, só shell + INIT).
+**v1.02.005 · produto comercializável internamente.** Modular com Alpine + Tailwind + Chart.js, hospedado no Netlify (`https://tasks-360-mvp.netlify.app`). Stack continua sem build step — dividida em `index.html` (~3.5k linhas), `lib/styles.css`, `lib/helpers.js`, `lib/adapters.js`, `lib/supabase-client.js`, **13 views em `lib/views/*`** e `lib/app.js` (state + INIT).
 
-**Maio/2026 — protótipo MVP completo + RLS role-aware + modularização concluída.** Detalhe em [§9.0](#90-onda-protótipo-pós-h1h2h3--ganhos-de-fechamento-maio2026).
+**Marcos mai/2026:**
+- Protótipo MVP completo + RLS role-aware (Onda E) + modularização (Onda F).
+- **Ciclo de design** (PRs #253-#270): page-bar consistente em 7 abas, modais cadastros refeitos, mobile harmonizado, deep linking URL.
+- **Adoção interna** (PRs #234-#241): cliente interno bucket de gestão, notif por tipo, foco com narrativa, indicadores de sucesso.
 
-**Próximo passo recomendado**: primeira feature de IA ("resumir thread de task") + email digest semanal. A Onda 0 (rebuild Next/Drizzle) pode esperar — a modularização adiou significativamente a necessidade.
+**Próximo passo (P0)**: captura rápida de task (`Cmd+Shift+N` global) + notif digest hourly. Em paralelo, **P1: primeira feature de IA** ("resumir thread de task") fecha a maior lacuna competitiva. Detalhe em CONTEXT.md §14.
 
 ---
 
@@ -433,7 +436,17 @@ Lista levantada via comparação com Linear, Asana, ClickUp, Height, Motion, Jir
 
 #### 9.1.4 Recém-fechados (changelog)
 
-**Maio/2026**
+**Maio/2026 · ciclo de design + adoção interna (v1.02.000-v1.02.005)**
+- **Ciclo de design** (PRs #253-#270): page-bar consistente em 7 abas, modais cliente/projeto/pessoa refeitos e unificados em width, page-bar padrão pra Foco/Portal/Backlog, switch portal mobile, filtros Adoption padronizados.
+- **Mobile harmonizado**: `+ task` e `+ new` (Cadastros) com altura 32px alinhada ao bloco "tasks 360" + versão. View-toggle full-width com mesma altura.
+- **Deep linking URL**: `?tab=kanban&task=<uuid>` — abrir task ou aba via link compartilhado, botão "copiar link" no modal.
+- **Refactor histórico**: `task_status_history` unificada em `task_field_history` (field='status') — simplifica reads e realtime.
+- **Cliente interno** (`eh_interno` flag): bucket de gestão admin-only, excluído de heurísticas de carga/sobrecarga/projeto/redistribuição, oculto pra não-admin e do Portal.
+- **Notificações por tipo** (mention/assignment/status_change): chips de filtro no dropdown + ícone colorido por kind.
+- **Foco como tab default** pra admin/interno + **narrativa heurística do dia** (headline com contagens + sugestão clicável "Comece por: ...").
+- **Adoption · indicadores de sucesso** no topo: DAU/WAU, sessões/dia, comments públicos/sem, % tasks triadas com sinal verde/amarelo/vermelho + conclusão heurística agregadora.
+
+**Maio/2026 · pré ciclo**
 - Auth definitivo: Google OAuth interno + magic link cliente externo, cache de pessoa em localStorage, guard contra realtime duplicado.
 - 3 roles (admin/interno/cliente), `viewerRole` reativo, "Meu foco" e Portal automáticos.
 - Notifications in-app (sino + badge), mentions com picker + highlight.

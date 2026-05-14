@@ -10,13 +10,17 @@ Aplicativo de gestão de backlog interno para a **Kliente 360** (consultoria ofi
 
 ## 2. Estado atual
 
-**v1.01.207 · em uso real, com cliente externo logando.** Multi-file (não mais single-file) — `index.html` reduzido pra HTML puro + 1 entry point Alpine modular. Stack: Alpine.js + Tailwind CDN + Chart.js + marked.js, conectado a backend Supabase de verdade — Postgres com **RLS fechada role-aware**, Auth (magic link), Realtime, Edge Functions, Storage e pg_cron.
+**v1.02.005 · em uso real interno, com cliente externo logando.** Pós ciclo de design (PRs #253-#270) + features estratégicas (cliente interno bucket, notif por tipo, foco narrativa, adoption indicators de sucesso). Multi-file modular. Stack: Alpine.js + Tailwind CDN + Chart.js + marked.js, conectado a backend Supabase — Postgres com **RLS fechada role-aware**, Auth (magic link), Realtime, Edge Functions, Storage e pg_cron.
 
-A **modularização foi concluída em mai/2026** (21 PRs, #191-#212): `index.html` saiu de 10.807 → 3.492 linhas; o script Alpine que vivia inline foi extraído pra `lib/app.js` (542 linhas, agora só state + INIT/PERSISTÊNCIA) e fatiado em **13 views** sob `lib/views/*` (portal, briefing, calendar-foco, utilities, anexos, notifications-checklist, cadastros, task-modal, adoption, charts, backlog-kanban, core-data, telemetria-export). CSS extraído pra `lib/styles.css` (1.587 linhas). Adapters e cliente Supabase em arquivos próprios. Padrão técnico de composição: `Object.defineProperties(base, getOwnPropertyDescriptors(makeXxxView()))` em `app()` — preserva getters reativos do Alpine que `Object.assign` achataria.
+**Modularização (Onda F)** concluída em mai/2026 (21 PRs, #191-#212): `index.html` saiu de 10.807 → 3.492 linhas; Alpine extraído pra `lib/app.js` (~580 linhas, state + INIT/PERSISTÊNCIA) e fatiado em **13 views** sob `lib/views/*`. CSS em `lib/styles.css` (~1.700 linhas). Padrão de composição: `Object.defineProperties(base, getOwnPropertyDescriptors(makeXxxView()))` em `app()` — preserva getters reativos do Alpine que `Object.assign` achataria.
 
-**A RLS deixou de ser "aberta consciente" em mai/2026** — tenant isolation real via policies por role (`admin`/`interno`/`cliente`), com helpers `app_pessoa_role()`, `app_pessoa_cliente_id()`, `app_is_staff()` e RPC `app_link_current_user_to_pessoa()` pra first-login. A migração pra Next + Drizzle é a Onda 0, ainda parked — a modularização ganhou tempo significativo antes desse passo ser inevitável.
+**Ciclo de design (mai/2026)** entregou page-bar consistente em 7 abas, modais cadastros refeitos, mobile harmonizado (toggle + new com altura 32px alinhada ao bloco logo+versão), deep linking URL, e portal mobile switcher. Saiu de "protótipo robusto" pra "produto comercializável".
 
-**Convenção de versão**: `APP_VERSION` em `lib/helpers.js` é **sempre igual ao número do PR mergeado**. Ex: PR #218 → `v1.01.218`. Bump em **todo PR** (docs/teste/refactor/feat — sem exceção). Convenção alinhada em mai/2026 (PR #218); até então docs/test podiam pular, gerando gap de 5 entre PR# e versão. Hoje é espelho 1:1. Exposto no header como subtítulo do logo.
+**Features estratégicas pós-design**: bucket de cliente interno (`eh_interno` flag, admin-only, excluído de heurísticas), notificações por tipo (mention/assignment/status_change com chips de filtro), foco com narrativa heurística + abertura padrão pra admin/interno, e card de indicadores de sucesso da adoção interna no topo da aba Adoption.
+
+**A RLS deixou de ser "aberta consciente"** — tenant isolation real via policies por role (`admin`/`interno`/`cliente`), com helpers `app_pessoa_role()`, `app_pessoa_cliente_id()`, `app_is_staff()` e RPC `app_link_current_user_to_pessoa()` pra first-login. A migração pra Next + Drizzle (Onda 0) segue parked — a modularização ganhou tempo significativo.
+
+**Convenção de versão**: `APP_VERSION` em `lib/helpers.js` segue `v1.<MINOR>.<BUILD>`. BUILD é sequencial, +1 a cada commit em main, **independente do número do PR no GitHub**. Os dois divergiram ao longo do trabalho de design (PR # foi mais devagar que BUILD) e a convenção foi explicitamente desalinhada — ver `CLAUDE.md`. Último bump MINOR: 01→02 fechando ciclo de design.
 
 **Convenção de fluxo git**: develop em branches `feat/...`, `fix/...`, `polish/...`, `docs/...`, `refactor/...`, `test/...`. PR squash-merge em `main`. Não pushar direto em main.
 
@@ -228,77 +232,111 @@ Cada evolução preserva: estética Kliente 360, princípios da seção 3, conve
 
 ## 14. Diagnóstico estratégico e visão de futuro
 
-Atualizado em mai/2026 · v1.01.187. Esta seção captura uma leitura honesta do estado atual contra benchmarks de mercado e propõe priorização. **Não é roadmap operacional** (esse vive em `ROADMAP.md`) — é leitura de produto e estratégia.
+**Diagnóstico v2 · atualizado mai/2026 · v1.02.005.** Esta seção captura uma leitura honesta do estado atual contra benchmarks acessíveis ao mercado-alvo (agências BR de serviços profissionais 8-50 pessoas) e propõe priorização. **Não é roadmap operacional** (esse vive em `ROADMAP.md`) — é leitura de produto e estratégia.
 
-### 14.1 Onde isso se encaixa no mercado
+### 14.1 Onde isso se encaixa no mercado · score atualizado
 
-| Categoria | Players | Posição relativa |
-|---|---|---|
-| Task manager genérico (Asana, Linear, ClickUp, Monday) | $7–24/seat | Mais opinado e enxuto. **Não tenta competir em features** — sem sprints, story points, automation builder, custom fields. Isso é virtude consciente (Seção 3). |
-| PSA · agency operating system (Productive, Scoro, Mavenlink/Kantata) | $9–63/seat | **Espaço-alvo natural**. ~70% das features que importam (capacity, projetos contratados, briefing executivo, portal cliente) com fração do peso visual. Falta: time tracking real, faturamento. |
-| Capacity planning standalone (Float, Runn, Resource Guru) | $7–12/seat, silo isolado | **Onda D** colocou o app à frente: capacity combinada com tarefa real, sem viver em ferramenta separada. |
-| Portal cliente embedded (Basecamp, Productive client portal, Notion guest) | Acoplado à ferramenta | Portal v2 é **o diferencial mais subestimado**. Basecamp tem versão estática; Productive cobra caro; Notion guest é cru. Storytelling + heurísticas + lead time é design product, não engenharia. |
-| Documentação executiva (Linear Insights, Notion docs+DB, Hex) | — | Briefing + PDF é único nessa combinação. Linear Insights é dashboard frio; aqui há **narrativa**. |
-| IA-first (Linear AI, Asana Intelligence, Notion AI, Glean) | Embutidos | **Lacuna real.** Zero IA em produção em 2026. ROADMAP tem Onda 5+ planejada mas não executada. |
+Escala 1-5. **Negrito** = vantagem real defensável.
+
+| Dimensão | K360 | Productive | Scoro | Asana | Linear | Notion | Basecamp |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Capacity weekly bucketing** | **5** | 3 | 3 | 1 | 1 | 1 | 1 |
+| **Briefing narrado pré-IA** | **5** | 2 | 2 | 1 | 2 | 1 | 1 |
+| **Portal cliente embedded** | **5** | 3 | 3 | 2 | 1 | 2 | 4 |
+| **Adoption analytics interno** | **5** | 2 | 1 | 2 | 2 | 2 | 1 |
+| **Mobile experience polish** | 4 | 3 | 3 | 4 | 4 | 4 | 3 |
+| **Onboarding (3 perspectivas)** | 4 | 2 | 2 | 3 | 4 | 3 | 3 |
+| Sub-etapas pipeline custom | 4 | 4 | 4 | 5 | 4 | 5 | 2 |
+| Auth + RLS multi-tenant | 4 | 5 | 5 | 5 | 5 | 4 | 4 |
+| Integrações nativas | 1 | 5 | 5 | 5 | 4 | 4 | 3 |
+| Time tracking real | 0 | 5 | 5 | 2 | 1 | 1 | 1 |
+| Faturamento integrado | 0 | 5 | 5 | 0 | 0 | 0 | 0 |
+| *Features de IA em produção* | *0* | *3* | *2* | *3* | *4* | *4* | *1* |
+| Preço (USD/seat/mês) | 0 (interno) | 9-63 | 12-69 | 11-25 | 8-14 | 8-15 | 99 flat |
+
+**Soma das vantagens reais: 6 fossos defensáveis** (vs 3 no diagnóstico anterior · ganhamos design polish, adoption v2 e mobile). **Gaps inalterados: IA (0), time tracking (0), faturamento (0), integrações (1).**
 
 **Posicionamento sugerido pra fora**: "sistema operacional enxuto pra agências brasileiras de serviços profissionais. Capacity planning, gestão executiva narrada, e portal cliente de verdade — em um único produto, em português, sem o peso enterprise."
 
-### 14.2 Os 3 fossos defensáveis hoje
+### 14.2 Os 4 fossos defensáveis hoje
 
-Recursos que **não existem combinados em nenhum competidor brasileiro** acessível:
+Recursos que **não existem combinados em nenhum competidor brasileiro acessível**:
 
-1. **Briefing executivo narrado + 15 heurísticas pré-IA**. Linear Insights tem números; aqui há história em português. Heurísticas determinísticas calibradas (severidade por janela) agregadas em narrativa semanal. Defensável porque é hard work de modelagem, não feature checkbox.
-2. **Capacity weekly bucketing (Onda D)**. Bucketing por prazo em 4 semanas, atrasadas puxam pra W0, defaults só pra análise (não toca dado real). Combinado com sugestões de redistribuição correlacionando pessoa × projeto. Float/Runn fazem capacity, mas em silo.
-3. **Portal cliente embedded com storytelling**. Header narrativo, alertas amigáveis, KPIs com delta, sparkline 6m, distribuição por projeto, lead time 90d. RLS tenant isolation real (Onda E). Não é "view filtrada" — é produto público.
+1. **Capacity weekly bucketing combinada com tarefa real.** Float/Runn fazem capacity em silo. Aqui é dentro da própria tarefa, com sugestões de redistribuição pessoa × projeto. **Defensável por 12+ meses.**
+2. **Briefing executivo narrado + 14 heurísticas determinísticas.** Linear Insights tem números frios. Notion+templates depende do usuário escrever. Aqui há prosa executiva auto-gerada. **Defensável por 18+ meses.**
+3. **Portal cliente embedded com storytelling.** Basecamp é estático, Productive cobra premium, Notion guest é cru. Header narrativo, alertas amigáveis, RLS tenant isolation real, deep linking URL. **Defensável por 24+ meses.**
+4. **Adoption analytics interno v2 (5 camadas).** Productive/Scoro mostram contadores; aqui há overview, classificação pessoa/feature, heatmap 28d, alertas operacionais A1-A10, e **indicadores de sucesso com sinal + conclusão heurística no topo**. Singular no mercado-alvo. **Defensável por 18+ meses.**
 
-### 14.3 Pontos cegos honestos (estado em mai/2026 pós-Onda F)
+### 14.3 Pontos cegos honestos (mai/2026 pós ciclo de design)
 
-1. ~~**`index.html` ~10.800 linhas**~~ → ✅ **resolvido na Onda F** (PRs #191-#212). 90% reduzido pra 3.5k linhas de HTML puro; 13 views modulares + adapters + supabase-client extraídos. Adia significativamente a necessidade da Onda 0 (Next/Drizzle).
-2. **Testes automatizados** — parcial. Helpers puros cobertos (`weekStartMonday`, `taskWeekIndex`, `bucketTasksByWeek`, `projetoCapacidadeSemana`, `triageFailures`, etc.) via PRs #192-#195. **Falta cobrir getters complexos extraídos** (`portalMetrics`, `weeklyCapacityAnalysis`, `weeklyRedistSuggestions`, `briefingTendencia`, `reportClientesExec`) — agora muito mais fácil porque vivem em arquivos isolados. ~4h.
-3. **Ausência de IA visível**. Continua o maior gap competitivo. Linear/Notion já comoditizam IA. Primeira feature low-risk/high-value: "resumir conversa da task" — Anthropic Sonnet 4.6 + prompt caching, fallback gracioso. ~1 dia.
-4. **Migrations rodadas no Dashboard manualmente**. CLAUDE.md formaliza, mas é frágil. Incidente do `recipient_pessoa_id` em PR #186 mostrou. Útil ter ao menos um lint local que valida sintaxe antes de colar.
-5. **Telemetria caseira (`usage_events`)**. Ok pra MVP. PostHog free tier quando precisar funil real.
-6. **Anon key embedded + JWT exp 2036**. Risco aceito. Encurtar exp pra 1h com refresh é ~2h.
-7. **Aba Foco sub-utilizada**. Não recebeu atenção recente. Pode virar a tela mais usada se receber: agenda do dia + 3 alertas top + 3 tasks priorizadas pela IA.
+1. ~~**`index.html` ~10.800 linhas**~~ → ✅ resolvido (Onda F).
+2. ~~**Mobile UX inconsistente**~~ → ✅ resolvido (ciclo de design PRs #253-#270 + correções pós-diagnóstico v2: notif por tipo, foco narrativa, adoption indicators).
+3. **Ausência de IA visível**. **Continua sendo o gap #1.** Linear/Notion comoditizam IA. Primeira feature low-risk/high-value: "resumir thread da task" — Anthropic Sonnet 4.6 + prompt caching, fallback gracioso. ~1 dia.
+4. **Captura rápida de task.** ⌘K + `n` existem mas não há atalho global "criar task em 2-5s sem trocar de aba". Linear é melhor aqui. ~3h.
+5. **Time tracking = 0.** Bloqueia faturamento e bloqueia retro honesta "quanto realmente custou esse projeto?" — dor interna recorrente em agência.
+6. **Testes parciais.** Helpers puros cobertos; getters complexos extraídos ainda não. ~4h pra fechar.
+7. **Migrations manuais via Dashboard.** Frágil; útil um lint local que valida sintaxe antes de colar.
+8. **Anon key embedded + JWT exp 2036.** RLS protege, mas defesa em profundidade pede JWT 1h + refresh. ~2h.
 
-### 14.4 Visão escalonada de futuro (atualizada mai/2026)
+### 14.4 Visão escalonada de futuro (atualizada mai/2026 v1.02.005)
 
-#### P0 · agora
-- **Smoke test do app modularizado em produção** — após 17 refactors mergeados em sequência, validar tab por tab: foco, backlog, kanban, calendar, dashboard, briefing, portal, cadastros, triagem, modal task, comments, anexos. Granularidade dos PRs facilita isolar regressão.
+#### P0 · entregue maio/2026 (ciclo de adoção interna)
+- ✅ Notificações por tipo (mention/assignment/status_change) com chips de filtro
+- ✅ Foco como tab de abertura padrão pra admin/interno + narrativa heurística do dia
+- ✅ Card de indicadores de sucesso da adoção interna (DAU/WAU, sessões/dia, comments públicos/sem, tasks triadas) com conclusão heurística
 
-#### P1 · próximas 2-4 semanas (alto retorno, baixo-médio risco)
-- **Primeira feature IA · "resumir thread da task"**: Anthropic Sonnet 4.6 + prompt caching + fallback gracioso. ~1 dia. **Fecha a maior lacuna competitiva.**
-- **Email digest semanal**: Briefing executivo enviado domingo 18h via Edge Function + pg_cron. ~4h. Lock-in real.
-- **JWT exp curto** (1h + refresh automático): defesa em profundidade. ~2h.
-- **Testes em getters extraídos**: Vitest ou seguir runner caseiro `tests/index.html` pra `portalMetrics`, `weeklyCapacityAnalysis`, `weeklyRedistSuggestions`, `portalAlerts`, `reportClientesExec`. ~4h.
+#### P0 · próximas 1-2 semanas (continuação adoção interna)
+- **Captura rápida de task** (`Cmd+Shift+N` global) — abre modal pré-preenchido. ~3h.
+- **Notif digest hourly** — agrupar push por hora, evitar quebra de foco. ~4h.
 
-#### P2 · próximo trimestre
-- **Capacidade prevista** com snapshot histórico semanal — heurística "estoura em N semanas". 1-2 dias.
-- **WhatsApp digest** — promover do parking lot pra implementação se email digest validar a tese de push. Plano completo em `ROADMAP.md`.
-- **Aba Foco repensada** — resumo IA do dia + 3 alertas top + 3 tasks priorizadas.
-- **Heurísticas pendentes** (skill mismatch, senioridade malalocada) do parking lot do ROADMAP. ~30-60min cada.
+#### P1 · próximas 2-4 semanas (primeira IA)
+- **Resumir thread de task** com Anthropic Sonnet 4.6 + prompt caching. ~1 dia. **Fecha a maior lacuna competitiva.**
+- **Captura via texto livre** ("amanhã preciso revisar a apresentação do Cliente X") → Haiku 4.5 estrutura. ~0.5 dia.
+- **Email digest semanal** dom 18h via Edge Function + pg_cron. ~4h.
+- **JWT exp 1h + refresh.** ~2h.
+- **Testes nos getters extraídos.** ~4h.
 
-#### P3 · 3-6 meses
-- **Onda 0 modesta**: Next 15 + Drizzle só pro Portal cliente (escopo limitado, aprender padrão).
-- **Slack/Teams integration** — em paralelo ao WhatsApp.
-- **Time tracking real** — start/stop, habilita faturamento.
-- **Webhooks externos** (incoming + outgoing).
+#### P2 · próximo trimestre (lock-in interno + preparo comercial)
+- **Time tracking básico** (start/stop por task) — habilita retro honesta semanal; preparação pra faturamento.
+- **Templates de projeto** (criar projeto novo a partir de template com 15 tasks).
+- **Capacidade prevista** com snapshot histórico semanal — heurística "estoura em N semanas".
+- **Aba Foco com IA leve** — resumo do dia + 3 tasks priorizadas pelo modelo.
+- **WhatsApp digest** se email validar a tese de push.
+
+#### P3 · 3-6 meses (comercial externo)
+- **Onda 0 modesta** — Next 15 + Drizzle só pro Portal cliente (escopo limitado).
+- **Slack integration.**
+- **API pública** (REST + webhooks documentada).
+- **Multi-workspace** quando >2 agências usarem.
 
 #### P4 · 6-12 meses
-- **Multi-workspace boundary** quando >2 agências usarem.
-- **API pública** (REST + webhooks documentada).
+- **Faturamento integrado** (NFe via gateway BR).
 - **PWA bem-feita** primeiro, nativo só se métrica indicar.
-- **Faturamento integrado** (horas × hourly_rate × cliente, NF-e via gateway BR).
+- **Heurísticas IA-driven** (skill mismatch via embeddings, etc.)
 
-### 14.5 Riscos ranqueados (atualizado mai/2026 pós-Onda F)
+### 14.5 Indicadores de sucesso · adoção interna (precondição comercial)
 
-1. ~~**Single-file vira parede**~~ → ✅ **mitigado pela Onda F**. Modularização entregue, 13 views isoladas. Onda 0 pode ser planejada com calma.
-2. **IA gap**. **Subiu pra #1 ranking**. Médio-alto, 6 meses. Linear/Notion comoditizam IA. Próxima feature de impacto.
-3. **Anon key embedded + JWT 2036**. Baixo agora (RLS fechada), crônico. JWT curto + auth proxy resolve em ~2h.
-4. **Brand confusion · "Kliente 360" CRM vs tasks 360**. Nome do produto não está claro pra quem chega de fora. Decisão de naming antes de virar comercial.
-5. **CDN do Tailwind**. Anunciado fim do CDN. Trocar por instalação local em ~1h, anotado.
-6. **Testes parciais**. Helpers cobertos; getters extraídos ainda não. Risco de regressão silenciosa em heurística complexa.
+Métricas que dirão se o app virou hábito interno. Materializadas como card no topo da aba Adoption (v1.02.005).
 
-### 14.6 Em uma frase
+| Métrica | Meta 30d | Meta 60d | Status v1.02.005 |
+|---|---|---|---|
+| DAU/WAU | ≥70% | ≥85% | em medição |
+| Sessões/dia/pessoa | ≥5 | ≥8 | em medição |
+| Comments públicos / semana | ≥20 | ≥40 | em medição |
+| % tasks triadas (pri+esf+resp+prazo) | ≥80% | ≥90% | em medição |
 
-**É um produto técnico-criativo bem pensado, com 3 diferenciais reais (Briefing narrado, Capacity semanal, Portal cliente embedded). Modularização concluída (mai/2026) reduziu o `index.html` em 90% e adia significativamente a necessidade da Onda 0 (Next/Drizzle). Próximo movimento decisivo: primeira feature de IA — única lacuna competitiva crítica restante.**
+Se em 60 dias 4/4 baterem → **pronto pra piloto comercial controlado** (1-2 agências amigas).
+
+### 14.6 Riscos ranqueados (atualizado mai/2026 v1.02.005)
+
+1. **IA gap continua #1.** Médio-alto, 6 meses. Linear/Notion já comoditizam. P1 vai mitigar.
+2. **Time perde hábito** se P0 não fechar captura rápida + notif digest. Médio, 2 sem.
+3. **Adoption v2 vira métrica de vaidade** se não acompanhada de ação semanal. Médio. Mitigar com Briefing executivo abrindo seção "ações da semana".
+4. **Brand confusion** "Kliente 360" CRM vs tasks 360. Decisão de naming antes de qualquer movimento comercial. Médio.
+5. **Anon key + JWT 2036** crônico. Baixo agora (RLS fechada). JWT curto + refresh em P1.
+6. **CDN do Tailwind anunciou fim.** Trocar por instalação local em ~1h.
+7. **Onda 0 vira "rebuild infinito"** se tentada cedo demais. Baixa-média. Manter modular sem build até time interno provar valor.
+
+### 14.7 Em uma frase
+
+**O app saiu de "protótipo robusto" pra "produto comercializável" no ciclo de design + adoção interna (PRs #253-#270 + #234-#241). Caminho crítico agora: ~7h de polish (captura rápida + notif digest) + 1.5 dia de primeira IA. Em 4-6 semanas time interno deve estar 100% migrado — só então faz sentido conversar comercial externo.**
