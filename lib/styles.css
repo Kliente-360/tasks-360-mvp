@@ -1852,6 +1852,35 @@
   .more-menu-panel .more-row + .more-row { border-top: 1px solid var(--line); }
   .more-menu-panel label { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
 
+  /* ============ SETTINGS MODAL (cliente/projeto/pessoa) ============
+     Reutiliza .tmodal-head (header slate) e .tmodal-section/title.
+     .smodal-card define o container + max-height + scroll interno. */
+  .smodal-card {
+    background: var(--bg-elev); border: 1px solid var(--line);
+    border-radius: var(--r-lg); box-shadow: var(--shadow-modal);
+    width: 100%; max-width: 640px; max-height: 88vh;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .smodal-card.smodal-sm { max-width: 440px; }
+  .smodal-body {
+    flex: 1 1 auto; overflow-y: auto;
+    padding: 0 var(--sp-5);
+  }
+  .smodal-body .tmodal-section { padding: var(--sp-4) 0; }
+  .smodal-body .tmodal-section:first-child { padding-top: var(--sp-5); }
+  .smodal-body .tmodal-section:last-of-type { padding-bottom: var(--sp-5); }
+  .smodal-meta {
+    padding: var(--sp-3) 0; margin-top: var(--sp-2);
+    border-top: 1px dashed var(--line);
+    font-size: 10px; font-family: var(--font-mono); color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .smodal-foot {
+    padding: var(--sp-3) var(--sp-5);
+    border-top: 1px solid var(--line); background: var(--surface-3);
+    display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-2);
+  }
+
   /* ============ A11Y FINISH ============ */
 
   /* Respeita preferência do SO por reduzir movimento (vestibular sensitivity, foco, etc).

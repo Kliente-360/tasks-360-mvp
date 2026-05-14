@@ -2144,12 +2144,14 @@
     </div>
     <div class="page-bar-controls">
       <div class="view-toggle" role="tablist" aria-label="Seção de cadastros">
+        <button :class="cadTab==='pessoas' && 'active'" @click="cadTab='pessoas'; cadAddOpen=false">Pessoas</button>
         <button :class="cadTab==='clientes' && 'active'" @click="cadTab='clientes'; cadAddOpen=false">Clientes</button>
         <button :class="cadTab==='projetos' && 'active'" @click="cadTab='projetos'; cadAddOpen=false">Projetos</button>
-        <button :class="cadTab==='pessoas' && 'active'" @click="cadTab='pessoas'; cadAddOpen=false">Pessoas</button>
       </div>
-      <label class="flex items-center gap-1.5 text-xs text-muted cursor-pointer whitespace-nowrap" x-show="cadTab !== 'pessoas'">
-        <input type="checkbox" x-model="showArchivedCadastros">
+      <label class="flex items-center gap-1.5 text-xs cursor-pointer whitespace-nowrap"
+             :class="cadTab === 'pessoas' ? 'opacity-40 cursor-not-allowed' : 'text-muted'"
+             :title="cadTab === 'pessoas' ? 'Pessoas não são arquivadas (usar inativar)' : 'Incluir registros arquivados na listagem'">
+        <input type="checkbox" x-model="showArchivedCadastros" :disabled="cadTab === 'pessoas'">
         <span>arquivados</span>
       </label>
       <button class="btn btn-primary text-xs"
@@ -3661,44 +3663,53 @@
 
 <!-- ============ MODAL EDITAR PESSOA ============ -->
 <div x-show="modalPessoa" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modalPessoa=false" @keydown.escape.window="modalPessoa=false" x-transition.opacity>
-  <div class="modal-card bg-elev border border-line rounded-xl shadow-xl w-full max-w-[480px] overflow-hidden flex flex-col">
-    <div class="px-5 md:px-6 py-3 border-b border-line flex items-center justify-between">
-      <div>
-        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">pessoa</div>
-        <div class="font-brand font-semibold text-base mt-0.5" x-text="editingPessoa && (editingPessoa.id ? editingPessoa.nome : 'Nova pessoa')"></div>
+  <div class="smodal-card">
+    <!-- Header slate padrão -->
+    <div class="tmodal-head">
+      <div class="flex-1 min-w-0">
+        <div class="text-[10px] uppercase tracking-wider text-white/55 font-mono">pessoa</div>
+        <div class="font-brand font-semibold text-base text-white mt-0.5 truncate" x-text="editingPessoa && (editingPessoa.id ? editingPessoa.nome : 'Nova pessoa')"></div>
       </div>
-      <button class="text-muted hover:text-ink text-2xl px-2" @click="modalPessoa=false" aria-label="Fechar">×</button>
+      <button class="text-white/70 hover:text-white text-2xl px-2 -mr-2" @click="modalPessoa=false" aria-label="Fechar">×</button>
     </div>
-    <div class="flex-1 overflow-y-auto px-5 md:px-6 py-4 space-y-3" x-show="editingPessoa">
-      <div>
-        <label class="lbl">Nome</label>
-        <input type="text" class="inp" x-model="editingPessoa.nome" placeholder="Ex: Maria Silva">
+
+    <!-- Body com seções e grid 2-col -->
+    <div class="smodal-body" x-show="editingPessoa">
+      <!-- 1. Dados básicos -->
+      <div class="tmodal-section">
+        <div class="tmodal-section-title">Dados</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="lbl">Nome</label>
+            <input type="text" class="inp" x-model="editingPessoa.nome" placeholder="Ex: Maria Silva">
+          </div>
+          <div>
+            <label class="lbl">Email</label>
+            <input type="email" inputmode="email" class="inp" x-model="editingPessoa.email" placeholder="maria@empresa.com">
+          </div>
+          <div>
+            <label class="lbl">Perfil</label>
+            <select class="inp" x-model="editingPessoa.role" @change="editingPessoa.role !== ROLE.CLIENTE && (editingPessoa.cliente_id = null)">
+              <option value="admin">Admin · acesso total</option>
+              <option value="interno">Time Kliente 360 · interno</option>
+              <option value="cliente">Cliente externo · só Portal</option>
+            </select>
+          </div>
+          <div x-show="editingPessoa.role === ROLE.CLIENTE">
+            <label class="lbl">Cliente vinculado</label>
+            <select class="inp" x-model="editingPessoa.cliente_id">
+              <option :value="null">— selecionar cliente —</option>
+              <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+            </select>
+          </div>
+        </div>
+        <div class="text-[10px] text-muted mt-2">email usado pra login com magic link.<span x-show="editingPessoa.role === ROLE.CLIENTE"> · portal mostra só tarefas do cliente vinculado.</span></div>
       </div>
-      <div>
-        <label class="lbl">Email</label>
-        <input type="email" inputmode="email" class="inp" x-model="editingPessoa.email" placeholder="maria@empresa.com">
-        <div class="text-[10px] text-muted mt-1">usado pra login com magic link.</div>
-      </div>
-      <div>
-        <label class="lbl">Perfil</label>
-        <select class="inp" x-model="editingPessoa.role" @change="editingPessoa.role !== ROLE.CLIENTE && (editingPessoa.cliente_id = null)">
-          <option value="admin">Admin · acesso total</option>
-          <option value="interno">Time Kliente 360 · interno</option>
-          <option value="cliente">Cliente externo · só Portal</option>
-        </select>
-      </div>
-      <div x-show="editingPessoa.role === ROLE.CLIENTE">
-        <label class="lbl">Cliente vinculado</label>
-        <select class="inp" x-model="editingPessoa.cliente_id">
-          <option :value="null">— selecionar cliente —</option>
-          <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
-        </select>
-        <div class="text-[10px] text-muted mt-1">o Portal mostra apenas tarefas deste cliente.</div>
-      </div>
-      <!-- Atributos de heurística (apenas pra time interno/admin) -->
-      <div x-show="editingPessoa.role !== ROLE.CLIENTE" class="space-y-3 pt-3 border-t border-line">
-        <div class="text-[10px] uppercase tracking-wider text-muted font-mono font-semibold">heurísticas</div>
-        <div class="grid grid-cols-2 gap-3">
+
+      <!-- 2. Heurísticas (admin/interno) -->
+      <div class="tmodal-section" x-show="editingPessoa.role !== ROLE.CLIENTE">
+        <div class="tmodal-section-title">Heurísticas</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
             <label class="lbl">Cliente principal</label>
             <select class="inp" x-model="editingPessoa.cliente_principal_id">
@@ -3713,12 +3724,9 @@
               <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
             </select>
           </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="lbl">Capacidade · horas/semana</label>
+            <label class="lbl">Capacidade · h/sem</label>
             <input type="number" min="0" step="1" class="inp" x-model.number="editingPessoa.capacidade_horas_semana" placeholder="40">
-            <div class="text-[10px] text-muted mt-1">base do "% alocado".</div>
           </div>
           <div>
             <label class="lbl">Senioridade</label>
@@ -3729,141 +3737,157 @@
               <option value="senior">Sênior</option>
               <option value="lead">Lead</option>
             </select>
-            <div class="text-[10px] text-muted mt-1">júnior + complexidade alta = alerta.</div>
           </div>
         </div>
-        <div>
-          <label class="lbl">Skills</label>
-          <div class="flex flex-wrap items-center gap-1.5 p-2 inp" style="min-height: 38px; cursor: text;" @click="$refs.skillInput && $refs.skillInput.focus()">
-            <template x-for="sk in (editingPessoa.skills || [])" :key="sk">
-              <span class="tag-chip">
-                <span x-text="sk"></span>
-                <button type="button" @click.stop="removeSkill(sk)" aria-label="remover">✕</button>
-              </span>
-            </template>
-            <input x-ref="skillInput" type="text" x-model="editingPessoa._skillsInput"
-                   class="bg-transparent border-0 outline-none text-sm flex-1 min-w-[100px] p-0"
-                   placeholder="adicionar skill (enter ou vírgula)…"
-                   @keydown.enter.prevent="addSkill()"
-                   @keydown.,.prevent="addSkill()"
-                   @keydown.tab.prevent="addSkill()"
-                   @blur="setTimeout(() => addSkill(), 120)">
-          </div>
-          <div x-show="suggest(editingPessoa._skillsInput, allSkills, editingPessoa.skills).length > 0" class="flex flex-wrap gap-1 mt-1.5">
-            <template x-for="sk in suggest(editingPessoa._skillsInput, allSkills, editingPessoa.skills)" :key="sk">
-              <button type="button" class="tag-chip-suggest" @mousedown.prevent="addExistingSkill(sk)" x-text="'+ ' + sk"></button>
-            </template>
-          </div>
-          <div class="text-[10px] text-muted mt-1">letras, números e hífen. lowercase automático. máx 24 chars.</div>
-        </div>
+        <div class="text-[10px] text-muted mt-2">capacidade alimenta "% alocado" · júnior + complexidade alta = alerta.</div>
       </div>
-      <div x-show="editingPessoa.id" class="text-[10px] font-mono text-muted pt-2 border-t border-line">
-        <div>id: <span x-text="editingPessoa.id"></span></div>
-        <div x-show="editingPessoa.invited_at">convidada em: <span x-text="new Date(editingPessoa.invited_at).toLocaleString('pt-BR')"></span></div>
+
+      <!-- 3. Skills -->
+      <div class="tmodal-section" x-show="editingPessoa.role !== ROLE.CLIENTE">
+        <div class="tmodal-section-title">Skills</div>
+        <div class="flex flex-wrap items-center gap-1.5 p-2 inp" style="min-height: 38px; cursor: text;" @click="$refs.skillInput && $refs.skillInput.focus()">
+          <template x-for="sk in (editingPessoa.skills || [])" :key="sk">
+            <span class="tag-chip">
+              <span x-text="sk"></span>
+              <button type="button" @click.stop="removeSkill(sk)" aria-label="remover">✕</button>
+            </span>
+          </template>
+          <input x-ref="skillInput" type="text" x-model="editingPessoa._skillsInput"
+                 class="bg-transparent border-0 outline-none text-sm flex-1 min-w-[100px] p-0"
+                 placeholder="adicionar skill (enter ou vírgula)…"
+                 @keydown.enter.prevent="addSkill()"
+                 @keydown.,.prevent="addSkill()"
+                 @keydown.tab.prevent="addSkill()"
+                 @blur="setTimeout(() => addSkill(), 120)">
+        </div>
+        <div x-show="suggest(editingPessoa._skillsInput, allSkills, editingPessoa.skills).length > 0" class="flex flex-wrap gap-1 mt-1.5">
+          <template x-for="sk in suggest(editingPessoa._skillsInput, allSkills, editingPessoa.skills)" :key="sk">
+            <button type="button" class="tag-chip-suggest" @mousedown.prevent="addExistingSkill(sk)" x-text="'+ ' + sk"></button>
+          </template>
+        </div>
+        <div class="text-[10px] text-muted mt-1">letras, números e hífen. lowercase automático. máx 24 chars.</div>
+      </div>
+
+      <!-- Metadados (id/data) bem discretos no rodapé do body -->
+      <div x-show="editingPessoa.id" class="smodal-meta">
+        <span>id: <span x-text="editingPessoa.id"></span></span>
+        <span x-show="editingPessoa.invited_at"> · convidada em <span x-text="new Date(editingPessoa.invited_at).toLocaleString('pt-BR')"></span></span>
       </div>
     </div>
-    <div class="px-5 md:px-6 py-3 border-t border-line flex items-center justify-end gap-2">
+
+    <!-- Footer -->
+    <div class="smodal-foot">
       <button class="btn btn-ghost text-sm" @click="modalPessoa=false">cancelar</button>
-      <button class="btn btn-primary text-sm" @click="savePessoa()">salvar alterações</button>
+      <button class="btn btn-primary text-sm" @click="savePessoa()" x-text="editingPessoa && editingPessoa.id ? 'salvar' : 'criar pessoa'"></button>
     </div>
   </div>
 </div>
 
 <!-- ============ MODAL EDITAR CLIENTE ============ -->
 <div x-show="modalCliente" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modalCliente=false" @keydown.escape.window="modalCliente=false" x-transition.opacity>
-  <div class="modal-card bg-elev border border-line rounded-xl shadow-xl w-full max-w-[420px] overflow-hidden flex flex-col">
-    <div class="px-5 md:px-6 py-3 border-b border-line flex items-center justify-between">
-      <div>
-        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">cliente</div>
-        <div class="font-brand font-semibold text-base mt-0.5" x-text="editingCliente && editingCliente.nome"></div>
+  <div class="smodal-card smodal-sm">
+    <div class="tmodal-head">
+      <div class="flex-1 min-w-0">
+        <div class="text-[10px] uppercase tracking-wider text-white/55 font-mono">cliente</div>
+        <div class="font-brand font-semibold text-base text-white mt-0.5 truncate" x-text="editingCliente && editingCliente.nome"></div>
       </div>
-      <button class="text-muted hover:text-ink text-2xl px-2" @click="modalCliente=false" aria-label="Fechar">×</button>
+      <button class="text-white/70 hover:text-white text-2xl px-2 -mr-2" @click="modalCliente=false" aria-label="Fechar">×</button>
     </div>
-    <div class="flex-1 overflow-y-auto px-5 md:px-6 py-4 space-y-3" x-show="editingCliente">
-      <div>
-        <label class="lbl">Nome</label>
-        <input type="text" class="inp" x-model="editingCliente.nome">
-      </div>
-      <div>
-        <label class="lbl">Tier</label>
-        <select class="inp" x-model="editingCliente.tier">
-          <option value="">— sem classificação —</option>
-          <option value="estrategico">Estratégico · prioridade alta + SLA crítico</option>
-          <option value="potencial">Potencial · oportunidade de crescimento</option>
-          <option value="descoberta">Descoberta · pontual ou exploratório</option>
-        </select>
-        <div class="text-[10px] text-muted mt-1">"Estratégico" alimenta a heurística de atrasadas em cliente crítico.</div>
+    <div class="smodal-body" x-show="editingCliente">
+      <div class="tmodal-section">
+        <div class="tmodal-section-title">Dados</div>
+        <div class="grid grid-cols-1 gap-3">
+          <div>
+            <label class="lbl">Nome</label>
+            <input type="text" class="inp" x-model="editingCliente.nome">
+          </div>
+          <div>
+            <label class="lbl">Tier</label>
+            <select class="inp" x-model="editingCliente.tier">
+              <option value="">— sem classificação —</option>
+              <option value="estrategico">Estratégico · prioridade alta + SLA crítico</option>
+              <option value="potencial">Potencial · oportunidade de crescimento</option>
+              <option value="descoberta">Descoberta · pontual ou exploratório</option>
+            </select>
+            <div class="text-[10px] text-muted mt-1">"Estratégico" alimenta a heurística de atrasadas em cliente crítico.</div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="px-5 md:px-6 py-3 border-t border-line flex items-center justify-end gap-2">
+    <div class="smodal-foot">
       <button class="btn btn-ghost text-sm" @click="modalCliente=false">cancelar</button>
-      <button class="btn btn-primary text-sm" @click="saveCliente()">salvar alterações</button>
+      <button class="btn btn-primary text-sm" @click="saveCliente()">salvar</button>
     </div>
   </div>
 </div>
 
 <!-- ============ MODAL EDITAR PROJETO ============ -->
 <div x-show="modalProjeto" class="fixed inset-0 z-50 flex items-center justify-center modal-bg p-2 md:p-4" @click.self="modalProjeto=false" @keydown.escape.window="modalProjeto=false" x-transition.opacity>
-  <div class="modal-card bg-elev border border-line rounded-xl shadow-xl w-full max-w-[480px] overflow-hidden flex flex-col">
-    <div class="px-5 md:px-6 py-3 border-b border-line flex items-center justify-between">
-      <div>
-        <div class="text-[10px] uppercase tracking-wider text-muted font-mono">projeto</div>
-        <div class="font-brand font-semibold text-base mt-0.5" x-text="editingProjeto && editingProjeto.nome"></div>
+  <div class="smodal-card">
+    <div class="tmodal-head">
+      <div class="flex-1 min-w-0">
+        <div class="text-[10px] uppercase tracking-wider text-white/55 font-mono">projeto</div>
+        <div class="font-brand font-semibold text-base text-white mt-0.5 truncate" x-text="editingProjeto && editingProjeto.nome"></div>
       </div>
-      <button class="text-muted hover:text-ink text-2xl px-2" @click="modalProjeto=false" aria-label="Fechar">×</button>
+      <button class="text-white/70 hover:text-white text-2xl px-2 -mr-2" @click="modalProjeto=false" aria-label="Fechar">×</button>
     </div>
-    <div class="flex-1 overflow-y-auto px-5 md:px-6 py-4 space-y-3" x-show="editingProjeto">
-      <div>
-        <label class="lbl">Nome</label>
-        <input type="text" class="inp" x-model="editingProjeto.nome">
-      </div>
-      <div>
-        <label class="lbl">Cliente</label>
-        <select class="inp" x-model="editingProjeto.clienteId">
-          <option value="">— selecionar cliente —</option>
-          <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
-        </select>
-      </div>
-      <div>
-        <label class="lbl">Tipo</label>
-        <select class="inp" x-model="editingProjeto.tipo">
-          <option value="">—</option>
-          <option value="sustentacao">Sustentação · contínuo</option>
-          <option value="projeto">Projeto · escopo fechado</option>
-          <option value="discovery">Discovery · investigação</option>
-        </select>
-      </div>
-      <div class="space-y-3 pt-3 border-t border-line">
-        <div class="text-[10px] uppercase tracking-wider text-muted font-mono font-semibold">SLA &amp; orçamento</div>
-        <div class="grid grid-cols-2 gap-3">
+    <div class="smodal-body" x-show="editingProjeto">
+      <div class="tmodal-section">
+        <div class="tmodal-section-title">Dados</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label class="lbl">Resposta · horas</label>
+            <label class="lbl">Nome</label>
+            <input type="text" class="inp" x-model="editingProjeto.nome">
+          </div>
+          <div>
+            <label class="lbl">Cliente</label>
+            <select class="inp" x-model="editingProjeto.clienteId">
+              <option value="">— selecionar cliente —</option>
+              <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Tipo</label>
+            <select class="inp" x-model="editingProjeto.tipo">
+              <option value="">—</option>
+              <option value="sustentacao">Sustentação · contínuo</option>
+              <option value="projeto">Projeto · escopo fechado</option>
+              <option value="discovery">Discovery · investigação</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="tmodal-section">
+        <div class="tmodal-section-title">SLA &amp; orçamento</div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div>
+            <label class="lbl">Resposta · h</label>
             <input type="number" min="0" step="1" class="inp" x-model.number="editingProjeto.slaRespostaHoras" placeholder="—">
           </div>
           <div>
             <label class="lbl">Entrega · dias</label>
             <input type="number" min="0" step="1" class="inp" x-model.number="editingProjeto.slaEntregaDias" placeholder="—">
-            <div class="text-[10px] text-muted mt-1">aciona heurística "SLA iminente" entre 80% e 120%.</div>
+          </div>
+          <div>
+            <label class="lbl">
+              <span x-show="editingProjeto.tipo === 'sustentacao'">Horas/mês</span>
+              <span x-show="editingProjeto.tipo === 'projeto'">Orçamento · h</span>
+              <span x-show="editingProjeto.tipo === 'discovery' || !editingProjeto.tipo">Orçamento · h</span>
+            </label>
+            <input type="number" min="0" step="1" class="inp" x-model.number="editingProjeto.orcamentoHoras" placeholder="—">
           </div>
         </div>
-        <div>
-          <label class="lbl">
-            <span x-show="editingProjeto.tipo === 'sustentacao'">Horas contratadas / mês</span>
-            <span x-show="editingProjeto.tipo === 'projeto'">Orçamento total · horas</span>
-            <span x-show="editingProjeto.tipo === 'discovery' || !editingProjeto.tipo">Orçamento · horas</span>
-          </label>
-          <input type="number" min="0" step="1" class="inp" x-model.number="editingProjeto.orcamentoHoras" placeholder="—">
-          <div class="text-[10px] text-muted mt-1">
-            <span x-show="editingProjeto.tipo === 'sustentacao'">Capacidade semanal = orçamento mensal / 4. Heurística "sustentação estourando" alerta semana a semana.</span>
-            <span x-show="editingProjeto.tipo === 'projeto'">Escopo total fechado. Heurística "projeto estourando escopo" compara contra soma de esforço de todas as tasks.</span>
-            <span x-show="editingProjeto.tipo === 'discovery'">Discovery não entra em heurísticas de capacidade — só informativo.</span>
-          </div>
+        <div class="text-[10px] text-muted mt-2 leading-relaxed">
+          <span>SLA entrega aciona heurística "SLA iminente" entre 80% e 120%.</span>
+          <span x-show="editingProjeto.tipo === 'sustentacao'"> · Sustentação: capacidade semanal = orçamento mensal / 4.</span>
+          <span x-show="editingProjeto.tipo === 'projeto'"> · Projeto: escopo fechado, compara com soma de esforço das tasks.</span>
+          <span x-show="editingProjeto.tipo === 'discovery'"> · Discovery não entra em heurística de capacidade — só informativo.</span>
         </div>
       </div>
     </div>
-    <div class="px-5 md:px-6 py-3 border-t border-line flex items-center justify-end gap-2">
+    <div class="smodal-foot">
       <button class="btn btn-ghost text-sm" @click="modalProjeto=false">cancelar</button>
-      <button class="btn btn-primary text-sm" @click="saveProjeto()">salvar alterações</button>
+      <button class="btn btn-primary text-sm" @click="saveProjeto()">salvar</button>
     </div>
   </div>
 </div>
