@@ -1063,9 +1063,11 @@
     <table class="tbl">
       <!-- Colgroup com widths fixas pras colunas pequenas. TAREFA fica em auto
            e absorve o espaço restante do container — dá ellipsis dinâmico
-           independente do viewport (1280px ou 4K). table-layout: fixed no CSS. -->
+           independente do viewport (1280px ou 4K). table-layout: fixed no CSS.
+           Primeira e última colunas com mesma largura (52px) pra simetria visual
+           do checkbox bulk-action (esquerda) e botão excluir (direita). -->
       <colgroup>
-        <col style="width: 32px">
+        <col style="width: 52px">
         <col>
         <col style="width: 200px">
         <col style="width: 120px">
@@ -1074,7 +1076,7 @@
         <col style="width: 100px">
         <col style="width: 100px">
         <col style="width: 160px">
-        <col style="width: 36px">
+        <col style="width: 52px">
       </colgroup>
       <thead>
         <tr>
