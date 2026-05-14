@@ -4055,7 +4055,7 @@
             <label class="lbl">Nome</label>
             <input type="text" class="inp" x-model="editingCliente.nome" x-ref="clienteNomeInput" placeholder="Ex: Acme Ltda.">
           </div>
-          <div>
+          <div x-show="!editingCliente.ehInterno">
             <label class="lbl">Tier</label>
             <select class="inp" x-model="editingCliente.tier">
               <option value="">— sem classificação —</option>
@@ -4065,7 +4065,7 @@
             </select>
             <div class="text-[10px] text-muted mt-1">"Estratégico" alimenta a heurística de atrasadas em cliente crítico.</div>
           </div>
-          <div>
+          <div x-show="!editingCliente.ehInterno">
             <label class="lbl">Domínios de email</label>
             <div class="flex flex-wrap gap-1.5 mb-1.5" x-show="(editingCliente.dominios || []).length > 0">
               <template x-for="d in (editingCliente.dominios || [])" :key="d">
@@ -4086,6 +4086,9 @@
             <div class="text-[10px] text-muted mt-1">
               Usado por automações (Cowork, Apps Script com Gemini) pra identificar cliente pelos participantes de reunião. Sem o <code>@</code>. Enter/vírgula/espaço adiciona.
             </div>
+          </div>
+          <div x-show="editingCliente.ehInterno" class="text-xs text-muted italic px-1 py-2">
+            Bucket interno (gestão). Não usa tier nem domínios de email — não aparece em heurísticas, dashboards do cliente, nem em automações.
           </div>
         </div>
       </div>
