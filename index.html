@@ -2144,9 +2144,9 @@
     </div>
     <div class="page-bar-controls">
       <div class="view-toggle" role="tablist" aria-label="Seção de cadastros">
-        <button :class="cadTab==='pessoas' && 'active'" @click="cadTab='pessoas'; cadAddOpen=false">Pessoas</button>
-        <button :class="cadTab==='clientes' && 'active'" @click="cadTab='clientes'; cadAddOpen=false">Clientes</button>
-        <button :class="cadTab==='projetos' && 'active'" @click="cadTab='projetos'; cadAddOpen=false">Projetos</button>
+        <button :class="cadTab==='pessoas' && 'active'" @click="cadTab='pessoas'">Pessoas</button>
+        <button :class="cadTab==='clientes' && 'active'" @click="cadTab='clientes'">Clientes</button>
+        <button :class="cadTab==='projetos' && 'active'" @click="cadTab='projetos'">Projetos</button>
       </div>
       <label class="flex items-center gap-1.5 text-xs cursor-pointer whitespace-nowrap"
              :class="cadTab === 'pessoas' ? 'opacity-40 cursor-not-allowed' : 'text-muted'"
@@ -2154,9 +2154,10 @@
         <input type="checkbox" x-model="showArchivedCadastros" :disabled="cadTab === 'pessoas'">
         <span>arquivados</span>
       </label>
-      <button class="btn btn-primary text-xs"
-              @click="cadTab==='pessoas' ? openNewPessoa() : (cadAddOpen = !cadAddOpen, cadAddOpen && $nextTick(() => { const r = cadTab==='clientes' ? $refs.newCliInput : $refs.newProjInput; r && r.focus(); }))"
-              :title="cadTab==='clientes' ? 'Adicionar cliente' : (cadTab==='projetos' ? 'Adicionar projeto' : 'Adicionar pessoa')">
+      <!-- Largura fixa pra não saltar quando muda o toggle. -->
+      <button class="btn btn-primary text-xs justify-center" style="width:120px"
+              @click="cadTab==='pessoas' ? openNewPessoa() : (cadTab==='clientes' ? openNewCliente() : openNewProjeto())"
+              :title="cadTab==='clientes' ? 'Novo cliente' : (cadTab==='projetos' ? 'Novo projeto' : 'Nova pessoa')">
         + <span x-text="cadTab==='clientes' ? 'cliente' : (cadTab==='projetos' ? 'projeto' : 'pessoa')"></span>
       </button>
     </div>
@@ -2169,19 +2170,8 @@
     <div class="tab" :class="cadTab==='pessoas' && 'active'" @click="cadTab='pessoas'">Pessoas <span class="text-muted font-mono text-xs ml-2" x-text="'· ' + pessoas.length"></span></div>
   </div>
 
-  <!-- clientes -->
+  <!-- clientes (criação agora pelo modal openNewCliente — botão "+" do header) -->
   <div x-show="cadTab==='clientes'">
-    <!-- Form inline só quando cadAddOpen (toggle pelo + cliente no page-bar) -->
-    <div class="card p-4 mb-4" x-show="cadAddOpen" x-transition.opacity>
-      <div class="flex items-end gap-3 flex-wrap">
-        <div class="flex-1 min-w-[280px]">
-          <label class="lbl">Nome do cliente</label>
-          <input class="inp" x-model="newCli" x-ref="newCliInput" placeholder="Ex: Acme Ltda." @keyup.enter="addCliente(); cadAddOpen=false">
-        </div>
-        <button class="btn btn-primary" @click="addCliente(); cadAddOpen=false">Adicionar</button>
-        <button class="btn btn-ghost" @click="cadAddOpen=false; newCli=''">cancelar</button>
-      </div>
-    </div>
     <div class="card">
       <template x-for="c in clientesVisiveis" :key="c.id">
         <div class="flex items-center justify-between gap-3 flex-wrap px-4 md:px-5 py-3 border-b border-line last:border-0" :class="c.arquivadoEm && 'opacity-60'">
@@ -2208,31 +2198,13 @@
       </template>
       <div x-show="clientes.length===0" class="text-center py-10">
         <div class="text-sm text-muted mb-3 italic">Nenhum cliente cadastrado.</div>
-        <button class="btn btn-primary" @click="$refs.newCliInput.focus()">+ Adicionar primeiro cliente</button>
+        <button class="btn btn-primary" @click="openNewCliente()">+ cliente</button>
       </div>
     </div>
   </div>
 
-  <!-- projetos -->
+  <!-- projetos (criação agora pelo modal openNewProjeto — botão "+" do header) -->
   <div x-show="cadTab==='projetos'">
-    <!-- Form inline só quando cadAddOpen (toggle pelo + projeto no page-bar) -->
-    <div class="card p-4 mb-4" x-show="cadAddOpen" x-transition.opacity>
-      <div class="flex items-end gap-3 flex-wrap">
-        <div class="flex-1 min-w-[240px]">
-          <label class="lbl">Nome do projeto</label>
-          <input class="inp" x-model="newProj.nome" x-ref="newProjInput" placeholder="Ex: Sales Cloud — Onda 1" @keyup.enter="addProjeto(); cadAddOpen=false">
-        </div>
-        <div class="flex-1 min-w-[200px]">
-          <label class="lbl">Cliente</label>
-          <select class="inp" x-model="newProj.clienteId">
-            <option value="">Selecione…</option>
-            <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
-          </select>
-        </div>
-        <button class="btn btn-primary" @click="addProjeto(); cadAddOpen=false">Adicionar</button>
-        <button class="btn btn-ghost" @click="cadAddOpen=false; newProj={nome:'',clienteId:''}">cancelar</button>
-      </div>
-    </div>
     <div class="card">
       <template x-for="p in projetosVisiveis" :key="p.id">
         <div class="flex items-center justify-between gap-3 flex-wrap px-4 md:px-5 py-3 border-b border-line last:border-0" :class="p.arquivadoEm && 'opacity-60'">
@@ -2256,7 +2228,7 @@
       </template>
       <div x-show="projetos.length===0" class="text-center py-10">
         <div class="text-sm text-muted mb-3 italic">Nenhum projeto cadastrado.</div>
-        <button class="btn btn-primary" @click="$refs.newProjInput.focus()" :disabled="clientes.length===0">+ Adicionar primeiro projeto</button>
+        <button class="btn btn-primary" @click="openNewProjeto()" :disabled="clientes.length===0">+ projeto</button>
         <div x-show="clientes.length===0" class="text-xs text-muted mt-2 italic">Cadastre um cliente antes.</div>
       </div>
     </div>
@@ -3706,10 +3678,10 @@
         <div class="text-[10px] text-muted mt-2">email usado pra login com magic link.<span x-show="editingPessoa.role === ROLE.CLIENTE"> · portal mostra só tarefas do cliente vinculado.</span></div>
       </div>
 
-      <!-- 2. Heurísticas (admin/interno) -->
+      <!-- 2. Heurísticas (admin/interno) — grid 2x2 pra alinhamento melhor -->
       <div class="tmodal-section" x-show="editingPessoa.role !== ROLE.CLIENTE">
         <div class="tmodal-section-title">Heurísticas</div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label class="lbl">Cliente principal</label>
             <select class="inp" x-model="editingPessoa.cliente_principal_id">

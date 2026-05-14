@@ -1856,7 +1856,7 @@
      Reutiliza .tmodal-head (header slate) e .tmodal-section/title.
      .smodal-card define o container + max-height + scroll interno. */
   .smodal-card {
-    background: var(--bg-elev); border: 1px solid var(--line);
+    background: var(--bg-elev); border: 0;
     border-radius: var(--r-lg); box-shadow: var(--shadow-modal);
     width: 100%; max-width: 640px; max-height: 88vh;
     overflow: hidden; display: flex; flex-direction: column;
