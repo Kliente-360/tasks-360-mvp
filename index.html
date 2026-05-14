@@ -349,7 +349,7 @@
     <div class="page-bar-controls" x-show="viewerRole === ROLE.ADMIN">
       <select class="inp w-[200px]" :class="focusPessoaId && 'is-active'" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
         <option value="">atuando como…</option>
-        <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+        <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
   </div>
@@ -358,7 +358,7 @@
   <div x-show="viewerRole === ROLE.ADMIN" class="md:hidden mb-4">
     <select class="inp w-full" :class="focusPessoaId && 'is-active'" x-model="focusPessoaId" @change="setFocusPessoa($event.target.value)">
       <option value="">— atuando como —</option>
-      <template x-for="p in pessoas" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+      <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
   </div>
 
@@ -1532,7 +1532,7 @@
     <div x-show="viewerRole !== 'cliente'" class="flex justify-center">
       <select class="inp w-full md:w-[280px]" x-model="portalClienteId" @change="setPortalCliente($event.target.value)">
         <option value="">— selecionar cliente —</option>
-        <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+        <template x-for="c in clientesAtivosExternos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
     </div>
   </div>
@@ -1549,7 +1549,7 @@
            Mobile: in-flow abaixo do título (full-width). Desktop: absolute top-right. -->
       <div x-show="viewerRole !== 'cliente'" class="portal-header-switch">
         <select class="portal-header-switch-sel" x-model="portalClienteId" @change="setPortalCliente($event.target.value)" title="Trocar cliente">
-          <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+          <template x-for="c in clientesAtivosExternos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
         </select>
       </div>
     </div>
@@ -2193,15 +2193,16 @@
                 <span x-show="c.tier === 'potencial'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--p2-soft);color:var(--p2)" title="Cliente potencial">potencial</span>
                 <span x-show="c.tier === 'descoberta'" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Cliente em descoberta">descoberta</span>
                 <span x-show="c.arquivadoEm" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono text-muted" style="background:var(--bg-elev);border:1px solid var(--line)" title="Cliente arquivado">arquivado</span>
+                <span x-show="c.ehInterno" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono" style="background:var(--p2-soft);color:var(--p2)" title="Bucket interno · tasks de gestão · excluído de heurísticas e do portal">interno</span>
               </div>
               <div class="text-xs text-muted" x-text="contarTarefasCliente(c.id) + ' tarefas · ' + contarProjetosCliente(c.id) + ' projetos'"></div>
             </div>
           </div>
           <div class="flex gap-1">
-            <button class="btn btn-ghost text-xs" x-show="!c.arquivadoEm" @click="arquivarCliente(c)" title="Esconder de selects e dashboards">arquivar</button>
+            <button class="btn btn-ghost text-xs" x-show="!c.arquivadoEm && !c.ehInterno" @click="arquivarCliente(c)" title="Esconder de selects e dashboards">arquivar</button>
             <button class="btn btn-ghost text-xs" x-show="c.arquivadoEm" @click="desarquivarCliente(c)">desarquivar</button>
             <button class="btn btn-ghost text-xs" @click="openEditCliente(c)">editar</button>
-            <button class="btn btn-danger text-xs" @click="deleteCliente(c)">excluir</button>
+            <button class="btn btn-danger text-xs" x-show="!c.ehInterno" @click="deleteCliente(c)">excluir</button>
           </div>
         </div>
       </template>
