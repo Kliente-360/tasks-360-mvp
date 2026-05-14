@@ -402,6 +402,18 @@
 
   <!-- Painel de foco -->
   <div x-show="effectiveFocusPessoaId" class="space-y-4 md:space-y-5">
+    <!-- Narrativa heurística do dia. Sem IA — gerada determinísticamente
+         a partir de focusGroups. Headline com contagens + sugestão de
+         primeira ação concreta. Click na sugestão abre o modal task. -->
+    <div x-show="focoNarrativa" class="card p-4 md:p-5" style="border-left: 3px solid var(--brand)">
+      <div class="text-[10px] uppercase tracking-wider text-muted font-mono mb-1">Seu dia · <span x-text="(new Date()).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })"></span></div>
+      <div class="text-base md:text-lg leading-snug" x-html="focoNarrativa && focoNarrativa.headline"></div>
+      <button x-show="focoNarrativa && focoNarrativa.criticaId" class="mt-2 text-sm text-left text-brand-dark hover:underline cursor-pointer"
+              @click="(() => { const t = tasksById.get(focoNarrativa.criticaId); if (t) openEdit(t); })()"
+              x-text="focoNarrativa && focoNarrativa.action"></button>
+      <div x-show="focoNarrativa && !focoNarrativa.criticaId" class="mt-2 text-sm text-ink-soft" x-text="focoNarrativa && focoNarrativa.action"></div>
+    </div>
+
     <!-- KPIs -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div class="card p-3 md:p-4">
