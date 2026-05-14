@@ -2011,46 +2011,84 @@
     </div>
   </div>
 
-  <div class="card p-4 md:p-6 mb-5 md:mb-6">
-    <div class="mb-4">
-      <div class="font-brand text-xl font-semibold">Velocidade da operação</div>
-      <div class="text-xs text-muted mt-0.5">throughput, lead time e cycle time — baseado no histórico de status</div>
-    </div>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5">
-      <div class="kpi">
-        <div class="kpi-lbl">Throughput 7d</div>
-        <div class="kpi-num brand" x-text="kpiVelocity.throughput7d"></div>
-        <div class="kpi-trend">tarefas concluídas</div>
+  <!-- Velocidade da operação · hero v2 com sinal + conclusão heurística (mesmo padrão Adoption) -->
+  <div class="card p-4 md:p-6 mb-5 md:mb-6"
+       :style="dashboardVelocityIndicators.conclusaoSeveridade === 'verde' ? 'border-left:3px solid var(--sig-green-strong)' :
+               dashboardVelocityIndicators.conclusaoSeveridade === 'amarelo' ? 'border-left:3px solid var(--sig-amber)' :
+               dashboardVelocityIndicators.conclusaoSeveridade === 'vermelho' ? 'border-left:3px solid var(--p0)' :
+               'border-left:3px solid var(--line-strong)'">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <div>
+        <div class="font-brand text-xl font-semibold">Velocidade da operação</div>
+        <div class="text-xs text-muted mt-0.5">throughput · lead · cycle · previsibilidade · janela 30d</div>
       </div>
-      <div class="kpi">
-        <div class="kpi-lbl">Throughput 30d</div>
-        <div class="kpi-num" x-text="kpiVelocity.throughput30d"></div>
-        <div class="kpi-trend">últimos 30 dias</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-lbl">Lead time médio</div>
-        <div class="kpi-num" x-text="kpiVelocity.leadTime ? kpiVelocity.leadTime + 'd' : '—'"></div>
-        <div class="kpi-trend">criação → concluído</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-lbl">Cycle time médio</div>
-        <div class="kpi-num" x-text="kpiVelocity.cycleTime ? kpiVelocity.cycleTime + 'd' : '—'"></div>
-        <div class="kpi-trend">andamento → concluído</div>
+      <div class="text-[10px] font-mono">
+        <span class="text-[color:var(--sig-green-strong)]" x-text="dashboardVelocityIndicators.verdes + ' verde(s)'"></span>
+        <span class="text-muted"> · </span>
+        <span class="text-[color:var(--sig-amber)]" x-text="dashboardVelocityIndicators.amarelos + ' amarelo(s)'"></span>
+        <span class="text-muted"> · </span>
+        <span class="text-[color:var(--p0)]" x-text="dashboardVelocityIndicators.vermelhos + ' crítico(s)'"></span>
+        <span class="text-muted" x-show="dashboardVelocityIndicators.semDado > 0"> · </span>
+        <span class="text-muted" x-show="dashboardVelocityIndicators.semDado > 0" x-text="dashboardVelocityIndicators.semDado + ' s/dado'"></span>
       </div>
     </div>
-    <div style="height:200px"><canvas id="chartThroughput"></canvas></div>
-    <div class="text-[11px] text-muted mt-2">8 semanas, segunda a domingo. Histórico começa quando o registro de status foi habilitado.</div>
-
-    <div class="border-t border-line mt-5 pt-5">
-      <div class="mb-4">
-        <div class="font-brand text-base font-semibold">Lead time médio por cliente</div>
-        <div class="text-xs text-muted mt-0.5">média de dias da criação à conclusão · últimos 90 dias</div>
-      </div>
-      <template x-if="leadTimePorCliente.length===0">
-        <div class="text-sm text-muted italic py-6">Sem tarefas concluídas no período.</div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+      <template x-for="c in dashboardVelocityIndicators.cards" :key="c.key">
+        <div class="rounded-md border border-line p-3"
+             :style="c.sig === 'verde' ? 'background:var(--sig-green-bg)' :
+                     c.sig === 'amarelo' ? 'background:var(--sig-amber-bg)' :
+                     c.sig === 'vermelho' ? 'background:var(--p0-soft)' :
+                     'background:var(--surface-3)'"
+             :title="c.help">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] uppercase tracking-wider font-mono"
+                  :style="c.sig === 'verde' ? 'color:var(--sig-green-strong)' :
+                          c.sig === 'amarelo' ? 'color:var(--sig-amber-fg)' :
+                          c.sig === 'vermelho' ? 'color:var(--p0)' :
+                          'color:var(--muted)'"
+                  x-text="c.label"></span>
+            <span class="w-2 h-2 rounded-full shrink-0"
+                  :style="c.sig === 'verde' ? 'background:var(--sig-green-strong)' :
+                          c.sig === 'amarelo' ? 'background:var(--sig-amber)' :
+                          c.sig === 'vermelho' ? 'background:var(--p0)' :
+                          'background:var(--muted)'"></span>
+          </div>
+          <div class="font-brand text-2xl md:text-3xl font-semibold leading-none"
+               :style="c.sig === 'verde' ? 'color:var(--sig-green-strong)' :
+                       c.sig === 'amarelo' ? 'color:var(--sig-amber-fg)' :
+                       c.sig === 'vermelho' ? 'color:var(--p0)' :
+                       'color:var(--ink-soft)'"
+               x-text="c.value"></div>
+          <div class="text-[10px] font-mono text-muted mt-1.5" x-text="c.metaText"></div>
+          <div class="text-[10px] font-mono text-muted mt-0.5 truncate" x-text="c.detalhe"></div>
+        </div>
       </template>
-      <div x-show="leadTimePorCliente.length>0" style="height:240px"><canvas id="chartLeadTime"></canvas></div>
     </div>
+    <div class="text-sm leading-relaxed"
+         :style="dashboardVelocityIndicators.conclusaoSeveridade === 'verde' ? 'color:var(--sig-green-strong)' :
+                 dashboardVelocityIndicators.conclusaoSeveridade === 'amarelo' ? 'color:var(--sig-amber-fg)' :
+                 dashboardVelocityIndicators.conclusaoSeveridade === 'vermelho' ? 'color:var(--p0)' :
+                 'color:var(--muted)'"
+         x-text="dashboardVelocityIndicators.conclusao"></div>
+
+    <!-- Detalhes opcionais (charts) — collapsed por default. Power users abrem se quiserem trend. -->
+    <details class="mt-4 pt-4 border-t border-line">
+      <summary class="cursor-pointer flex items-center justify-between gap-2 list-none [&::-webkit-details-marker]:hidden">
+        <span class="text-[10px] uppercase tracking-wider text-muted font-mono">Tendências detalhadas (charts)</span>
+        <span class="text-xs text-muted font-mono">click pra expandir</span>
+      </summary>
+      <div class="mt-4">
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono mb-1">Throughput · 8 semanas</div>
+        <div style="height:200px"><canvas id="chartThroughput"></canvas></div>
+        <div class="text-[11px] text-muted mt-2 mb-5">8 semanas, segunda a domingo. Histórico começa quando o registro de status foi habilitado.</div>
+
+        <div class="text-[10px] uppercase tracking-wider text-muted font-mono mb-1">Lead time médio por cliente · 90d</div>
+        <template x-if="leadTimePorCliente.length===0">
+          <div class="text-sm text-muted italic py-6">Sem tarefas concluídas no período.</div>
+        </template>
+        <div x-show="leadTimePorCliente.length>0" style="height:240px"><canvas id="chartLeadTime"></canvas></div>
+      </div>
+    </details>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-5 md:mb-6">
