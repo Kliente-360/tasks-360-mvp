@@ -22,16 +22,18 @@
 </style>
 </head>
 <body>
-  <h1>tests · helpers puros</h1>
-  <div class="sub">sem framework · sem build · carrega <code>../lib/helpers.js</code></div>
+  <h1>tests · unidades puras</h1>
+  <div class="sub">sem framework · sem build · cobre helpers.js + adapters.js + mutações de task</div>
   <div id="summary"></div>
   <div id="results"></div>
   <div class="footer">
-    abrir direto no browser (file:// ou servido). Modificar <code>../lib/helpers.js</code> e dar refresh.<br>
+    abrir direto no browser (file:// ou servido). Modificar os arquivos em <code>../lib/</code> e dar refresh.<br>
     voltar pro app: <a href="../index.html">index.html</a>
   </div>
 
 <script src="../lib/helpers.js"></script>
+<script src="../lib/adapters.js"></script>
+<script src="../lib/views/core-data.js"></script>
 <script>
   // Mini test runner. Sem framework — só funções e contagem.
   const _suites = [];
@@ -357,6 +359,242 @@
     });
     it('string numérica em orçamento → Number conversion funciona', () => {
       eq(projetoCapacidadeSemana({ tipo: 'sustentacao', orcamentoHoras: '80' }), 20);
+    });
+  });
+
+  // =================== ADAPTERS · JS <-> DB ===================
+  describe('F (tipos de campo)', () => {
+    it('string: null/undefined → ""', () => {
+      eq(F.string.from(null), '');
+      eq(F.string.from(undefined), '');
+      eq(F.string.from('x'), 'x');
+    });
+    it('fkNull: from "" pra valor, to null pra vazio', () => {
+      eq(F.fkNull.from(null), '');
+      eq(F.fkNull.from('c1'), 'c1');
+      eq(F.fkNull.to(''), null);
+      eq(F.fkNull.to('c1'), 'c1');
+    });
+    it('num: coerção e fallback 0', () => {
+      eq(F.num.from('8'), 8);
+      eq(F.num.from(null), 0);
+      eq(F.num.from('abc'), 0);
+    });
+    it('numNull: preserva null, converte resto', () => {
+      eq(F.numNull.from(null), null);
+      eq(F.numNull.from('5'), 5);
+      eq(F.numNull.to(''), null);
+      eq(F.numNull.to('3'), 3);
+    });
+    it('boolTrue: só false vira false (default true)', () => {
+      eq(F.boolTrue.from(undefined), true);
+      eq(F.boolTrue.from(false), false);
+      eq(F.boolTrue.from(true), true);
+    });
+    it('boolFalse: só true vira true (default false)', () => {
+      eq(F.boolFalse.from(undefined), false);
+      eq(F.boolFalse.from(true), true);
+      eq(F.boolFalse.from(false), false);
+    });
+    it('arr: não-array → []', () => {
+      eq(F.arr.from(null), []);
+      eq(F.arr.from(['a']), ['a']);
+      eq(F.arr.from('x'), []);
+    });
+    it('date: ISO → timestamp ms; vazio → 0', () => {
+      eq(F.date.from(''), 0);
+      eq(F.date.from(null), 0);
+      truthy(F.date.from('2026-05-15T00:00:00Z') > 0);
+    });
+  });
+
+  describe('taskFromDb', () => {
+    const row = {
+      id: 't1', titulo: 'Tarefa', cliente_id: 'c1', projeto_id: null,
+      pessoa_id: 'p1', prioridade: 'P1', esforco: '8', complexidade: 'alta',
+      prazo: '2026-06-01', status: 'andamento', subetapa: 'em_revisao',
+      tags: ['frontend'], status_em: '2026-05-10T12:00:00Z',
+      criado_por_ia: true, arquivado_em: null, visivel_cliente: false,
+    };
+    it('mapeia snake_case → camelCase', () => {
+      const t = taskFromDb(row);
+      eq(t.id, 't1');
+      eq(t.clienteId, 'c1');
+      eq(t.pessoaId, 'p1');
+      eq(t.subetapa, 'em_revisao');
+    });
+    it('esforco string → número', () => eq(taskFromDb(row).esforco, 8));
+    it('projeto_id null → "" (fkNull)', () => eq(taskFromDb(row).projetoId, ''));
+    it('status_em ISO → timestamp ms', () => truthy(taskFromDb(row).statusEm > 0));
+    it('criado_por_ia true → criadoPorIa true', () => eq(taskFromDb(row).criadoPorIa, true));
+    it('criado_por_ia ausente → false (boolFalse default)', () => {
+      eq(taskFromDb({ id: 'x', titulo: 'y' }).criadoPorIa, false);
+    });
+    it('visivel_cliente false → visivelCliente false', () => eq(taskFromDb(row).visivelCliente, false));
+    it('descricao ausente → undefined (lazy load semantic)', () => {
+      eq(taskFromDb(row).descricao, undefined);
+    });
+    it('descricao presente → string', () => {
+      eq(taskFromDb({ id: 'x', descricao: 'abc' }).descricao, 'abc');
+    });
+    it('tags ausente → [] (arr default)', () => {
+      eq(taskFromDb({ id: 'x' }).tags, []);
+    });
+  });
+
+  describe('taskToDb', () => {
+    it('campos readonly (id, *_em, ordem, reopen) não vão no payload', () => {
+      const out = taskToDb({ id: 't1', titulo: 'x', statusEm: 123, criadoEm: 456, ordem: 2, reopenCount: 1 });
+      eq(out.id, undefined);
+      eq(out.status_em, undefined);
+      eq(out.criado_em, undefined);
+      eq(out.ordem, undefined);
+      eq(out.reopen_count, undefined);
+    });
+    it('descricao undefined → não toca a coluna (lazy)', () => {
+      const out = taskToDb({ titulo: 'x' });
+      eq('descricao' in out, false);
+    });
+    it('descricao definida → vai no payload', () => {
+      eq(taskToDb({ titulo: 'x', descricao: 'abc' }).descricao, 'abc');
+    });
+    it('clienteId "" → cliente_id null (fkNull)', () => {
+      eq(taskToDb({ titulo: 'x', clienteId: '' }).cliente_id, null);
+    });
+    it('criadoPorIa → criado_por_ia', () => {
+      eq(taskToDb({ titulo: 'x', criadoPorIa: true }).criado_por_ia, true);
+    });
+    it('auto-classifica external_source quando há externalId sem source', () => {
+      eq(taskToDb({ titulo: 'x', externalId: 'SF1' }).external_source, 'salesforce');
+    });
+    it('externalSource explícito é preservado', () => {
+      eq(taskToDb({ titulo: 'x', externalId: 'SF1', externalSource: 'asana' }).external_source, 'asana');
+    });
+  });
+
+  describe('clienteFromDb', () => {
+    it('dominios array preservado', () => {
+      eq(clienteFromDb({ id: 'c1', nome: 'Body', dominios: ['body.com'] }).dominios, ['body.com']);
+    });
+    it('dominios null → [] (arr)', () => {
+      eq(clienteFromDb({ id: 'c1', nome: 'Body', dominios: null }).dominios, []);
+    });
+    it('eh_interno → ehInterno (boolFalse)', () => {
+      eq(clienteFromDb({ id: 'c1', nome: 'X', eh_interno: true }).ehInterno, true);
+      eq(clienteFromDb({ id: 'c1', nome: 'X' }).ehInterno, false);
+    });
+    it('arquivado_em vazio → null', () => {
+      eq(clienteFromDb({ id: 'c1', nome: 'X', arquivado_em: null }).arquivadoEm, null);
+    });
+  });
+
+  describe('makeBlank(TASK_FIELDS)', () => {
+    const blank = makeBlank(TASK_FIELDS);
+    it('defaults convencionais aplicados', () => {
+      eq(blank.prioridade, 'P2');
+      eq(blank.esforco, 4);
+      eq(blank.complexidade, 'media');
+      eq(blank.status, 'backlog');
+      eq(blank.subetapa, 'backlog');
+    });
+    it('tags é array novo (não compartilhado)', () => {
+      const a = makeBlank(TASK_FIELDS), b = makeBlank(TASK_FIELDS);
+      a.tags.push('x');
+      eq(b.tags, [], 'arrays de blanks distintos não compartilham referência');
+    });
+    it('criadoPorIa default false', () => eq(blank.criadoPorIa, false));
+    it('arquivadoEm default null', () => eq(blank.arquivadoEm, null));
+    it('overrides aplicados', () => {
+      eq(makeBlank(TASK_FIELDS, { titulo: 'Novo' }).titulo, 'Novo');
+    });
+  });
+
+  // =================== MUTAÇÕES DE TASK (core-data helpers) ===================
+  // Os helpers só tocam this.tasks / this._dataRev / this._touchTasks.
+  // Montamos um contexto mínimo e chamamos via .call para testá-los puros.
+  describe('mutações de task', () => {
+    const cd = window.makeCoreDataView();
+    const MUT = ['_touchTasks','_patchTask','_replaceTask','_upsertTask','_patchTasks','_removeTask','_removeTasks','_setAllTasks'];
+    function ctx(tasks) {
+      const c = { tasks: tasks || [], _dataRev: 0 };
+      for (const m of MUT) c[m] = cd[m];
+      return c;
+    }
+    it('_patchTask aplica delta e bumpa _dataRev', () => {
+      const c = ctx([{ id: 'a', status: 'backlog' }, { id: 'b', status: 'backlog' }]);
+      const prev = c._patchTask('a', { status: 'andamento' });
+      eq(prev.status, 'backlog', 'retorna task anterior');
+      eq(c.tasks[0].status, 'andamento');
+      eq(c.tasks[1].status, 'backlog', 'outras intocadas');
+      eq(c._dataRev, 1);
+    });
+    it('_patchTask id inexistente → null, sem bump', () => {
+      const c = ctx([{ id: 'a' }]);
+      eq(c._patchTask('zzz', { x: 1 }), null);
+      eq(c._dataRev, 0);
+    });
+    it('_replaceTask troca o objeto inteiro', () => {
+      const c = ctx([{ id: 'a', status: 'backlog' }]);
+      c._replaceTask('a', { id: 'a', status: 'concluido', novo: true });
+      eq(c.tasks[0].novo, true);
+      eq(c._dataRev, 1);
+    });
+    it('_upsertTask insere nova no topo', () => {
+      const c = ctx([{ id: 'a' }]);
+      c._upsertTask({ id: 'b' });
+      eq(c.tasks.map(t => t.id), ['b', 'a']);
+    });
+    it('_upsertTask substitui existente', () => {
+      const c = ctx([{ id: 'a', v: 1 }]);
+      c._upsertTask({ id: 'a', v: 2 });
+      eq(c.tasks.length, 1);
+      eq(c.tasks[0].v, 2);
+    });
+    it('_patchTasks aplica delta a vários ids', () => {
+      const c = ctx([{ id: 'a', p: 'P2' }, { id: 'b', p: 'P2' }, { id: 'c', p: 'P2' }]);
+      c._patchTasks(['a', 'c'], { p: 'P0' });
+      eq(c.tasks.map(t => t.p), ['P0', 'P2', 'P0']);
+      eq(c._dataRev, 1);
+    });
+    it('_patchTasks aceita Set', () => {
+      const c = ctx([{ id: 'a', p: 1 }, { id: 'b', p: 1 }]);
+      c._patchTasks(new Set(['b']), { p: 9 });
+      eq(c.tasks.map(t => t.p), [1, 9]);
+    });
+    it('_removeTask remove e retorna a task', () => {
+      const c = ctx([{ id: 'a' }, { id: 'b' }]);
+      const removed = c._removeTask('a');
+      eq(removed.id, 'a');
+      eq(c.tasks.map(t => t.id), ['b']);
+      eq(c._dataRev, 1);
+    });
+    it('_removeTask id inexistente → null sem bump', () => {
+      const c = ctx([{ id: 'a' }]);
+      eq(c._removeTask('zzz'), null);
+      eq(c._dataRev, 0);
+    });
+    it('_removeTasks remove vários', () => {
+      const c = ctx([{ id: 'a' }, { id: 'b' }, { id: 'c' }]);
+      c._removeTasks(['a', 'c']);
+      eq(c.tasks.map(t => t.id), ['b']);
+    });
+    it('_setAllTasks substitui o array inteiro', () => {
+      const c = ctx([{ id: 'a' }]);
+      c._setAllTasks([{ id: 'x' }, { id: 'y' }]);
+      eq(c.tasks.map(t => t.id), ['x', 'y']);
+      eq(c._dataRev, 1);
+    });
+    it('_setAllTasks com não-array → []', () => {
+      const c = ctx([{ id: 'a' }]);
+      c._setAllTasks(null);
+      eq(c.tasks, []);
+    });
+    it('patch→revert restaura estado e re-invalida', () => {
+      const c = ctx([{ id: 'a', status: 'backlog' }]);
+      const prev = c._patchTask('a', { status: 'andamento' });
+      c._replaceTask('a', prev);
+      eq(c.tasks[0].status, 'backlog');
+      eq(c._dataRev, 2, 'patch + revert = 2 invalidações');
     });
   });
 
