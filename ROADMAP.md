@@ -951,6 +951,14 @@ Nenhuma versão funcionou visualmente em produção. Suspeitas não confirmadas:
 
 **Reabrir quando**: tivermos sessão dedicada de debug ao vivo (DevTools, breakpoints) ou migrarmos pra Next.js (Onda 0) onde controlamos DOM/CSS mais determinísticamente.
 
+##### Módulo `_shared` nas edge functions (parked)
+
+`ingest-task`, `get-clientes` e `get-pessoas` duplicam ~20 linhas de boilerplate cada: leitura de env (`SUPABASE_URL`/`SERVICE_KEY`/`INGEST_API_KEYS`), setup do `createClient`, helpers `json`/`err` e o check de `X-API-Key`. O caminho natural de DRY seria um `supabase/functions/_shared/api.ts` importado por `../_shared/api.ts`.
+
+**Por que adia**: o workflow de deploy é copy-paste de um único `index.ts` no Dashboard (ver `CLAUDE.md` — sem CLI). Um import relativo `../_shared/api.ts` quebra esse fluxo — colar só o `index.ts` deixa o import sem resolver. Os ~20 × 3 = 60 linhas de boilerplate custam menos que complicar o deploy de funções que mudam raramente.
+
+**Reabrir quando**: o deploy de edge functions migrar pra multi-arquivo (CLI ou editor multi-file do Dashboard).
+
 ### WhatsApp digest (parking lot · pra avaliar quando o single-file estiver modularizado)
 
 Engajamento push pra gestor de agência brasileira via WhatsApp. **Plano discutido em mai/2026, sem ação imediata.** Reabrir quando: (a) modularização estiver concluída, (b) primeira feature de IA validada, (c) ≥3 gestores externos pedirem.
