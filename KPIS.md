@@ -1,7 +1,7 @@
 # KPIs do tasks 360 · referência completa
 
 > Catálogo de métricas e indicadores usados no app, organizados por categoria conceitual.
-> Última atualização: mai/2026 · v1.02.016
+> Última atualização: mai/2026 · v1.02.050
 
 Para cada KPI: pergunta-resposta, cálculo, por quê importa, onde está hoje (ou onde está proposto), e thresholds quando há calibração.
 

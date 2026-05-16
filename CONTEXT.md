@@ -10,7 +10,11 @@ Aplicativo de gestão de backlog interno para a **Kliente 360** (consultoria ofi
 
 ## 2. Estado atual
 
-**v1.02.005 · em uso real interno, com cliente externo logando.** Pós ciclo de design (PRs #253-#270) + features estratégicas (cliente interno bucket, notif por tipo, foco narrativa, adoption indicators de sucesso). Multi-file modular. Stack: Alpine.js + Tailwind CDN + Chart.js + marked.js, conectado a backend Supabase — Postgres com **RLS fechada role-aware**, Auth (magic link), Realtime, Edge Functions, Storage e pg_cron.
+**v1.02.050 · em uso real interno, com cliente externo logando.** Pós ciclo de design (PRs #253-#270) + features estratégicas (cliente interno bucket, notif por tipo, foco narrativa, adoption indicators de sucesso) + Resumo Executivo PDF + integração de automação IA (Cowork) + ciclo de performance/refactor. Multi-file modular. Stack: Alpine.js + Tailwind CDN + Chart.js + marked.js, conectado a backend Supabase — Postgres com **RLS fechada role-aware**, Auth (magic link), Realtime, Edge Functions, Storage e pg_cron.
+
+**Automação IA / Cowork (mai/2026)**: tasks ganham flag `criado_por_ia` (chip 🤖 IA no Backlog/Kanban/Foco/Triagem/modal, filtro na Triagem e no menu ⋯ do Backlog). Clientes ganham `dominios[]` (domínios de email, pra automação resolver o cliente pelos participantes de reunião). Novas edge functions `get-clientes` e `get-pessoas` expõem o vocabulário pra automações externas; `ingest-task` aceita `criado_por_ia` e cliente vazio / sentinel `"Triagem"`.
+
+**Performance + refactor (mai/2026)**: realtime aplica delta do payload em vez de refetch da tabela inteira; `_tasksSig` O(1); `tasksById` memoizado; toda mutação de `this.tasks` centralizada em 7 helpers (`_patchTask`, `_replaceTask`, `_upsertTask`, `_patchTasks`, `_removeTask`, `_removeTasks`, `_setAllTasks`) em `core-data.js`.
 
 **Modularização (Onda F)** concluída em mai/2026 (21 PRs, #191-#212): `index.html` saiu de 10.807 → 3.492 linhas; Alpine extraído pra `lib/app.js` (~580 linhas, state + INIT/PERSISTÊNCIA) e fatiado em **13 views** sob `lib/views/*`. CSS em `lib/styles.css` (~1.700 linhas). Padrão de composição: `Object.defineProperties(base, getOwnPropertyDescriptors(makeXxxView()))` em `app()` — preserva getters reativos do Alpine que `Object.assign` achataria.
 
@@ -73,7 +77,7 @@ Logos oficiais (PNG) em `/assets/`.
   - **RLS fechada role-aware** (admin/interno/cliente) via helpers stable security definer
   - **Auth** com magic link (lista fechada de pessoas pré-cadastradas; sem signup público)
   - **Realtime** em `tasks`, `clientes`, `projetos`, `pessoas`, `task_comments`, `task_status_history`, `task_field_history`, `task_attachments`
-  - **Edge Functions** (`ingest-task`, `ingest-comment`, `delete-task`, `cleanup-attachments`)
+  - **Edge Functions** (`ingest-task`, `ingest-comment`, `delete-task`, `cleanup-attachments`, `get-clientes`, `get-pessoas`)
   - **Storage** bucket privado `task-attachments` (anexos de imagem, signed URLs 1h) com policy tenant-aware
   - **pg_cron + pg_net** rodando cleanup diário de anexos de tasks concluídas há mais de 30d
 - **Deploy**: Netlify (auto deploy no push em `main`)
@@ -98,7 +102,10 @@ Estrutura de rotas planejada: route groups `(internal)` e `(client)` com middlew
 
 ```
 clientes
-  id, nome, tier (estrategico|potencial|descoberta), arquivado_em
+  id, nome, tier (estrategico|potencial|descoberta),
+  eh_interno (bucket de gestão admin-only, sem tier/dominios),
+  dominios[] (domínios de email pra automação resolver cliente),
+  arquivado_em
 
 projetos
   id, cliente_id, nome, tipo, sla_*, orcamento_horas, arquivado_em
@@ -112,6 +119,7 @@ tasks
   prazo, status (macro), subetapa (sub), bloqueado_por,
   visivel_cliente, tags[], checklist (jsonb [{id, body, done}]),
   tempo_real_horas, reopen_count, ordem (float pra reorder manual),
+  criado_por_ia (bool · task vinda de automação IA / Cowork),
   external_source (salesforce|null), external_id,
   arquivado_em, criado_em, status_em, subetapa_em
 
@@ -149,7 +157,7 @@ Detalhes críticos:
 - **Onda 1 — MVP backlog interno**: **entregue.** Tasks, comments, checklist, anexos, histórico, auditoria, kanban, calendário, dashboard.
 - **Onda 2 — Portal cliente**: **entregue + repaginada v2 (PR #182).** Login restrito, RLS tenant isolation real, visão narrativa (header + alertas + KPIs com delta + sparkline 6m + distribuição + lead time + listas), HOWTO_CLIENTE.md dedicado.
 - **Onda 3 — Analytics**: **entregue.** 8 visões fixas dentro do Dashboard.
-- **Onda 4 — Integração Salesforce**: **entregue.** Edge functions ingest-task, ingest-comment, delete-task.
+- **Onda 4 — Integração Salesforce + automações externas**: **entregue.** Edge functions `ingest-task` (aceita `criado_por_ia` + cliente vazio/sentinel `"Triagem"`), `ingest-comment`, `delete-task`, e leitura `get-clientes` / `get-pessoas` (expõem vocabulário pra automações IA descobrirem cliente/projeto/responsável antes de criar task).
 - **Onda 5 — Notificações**: sino in-app (mentions, assignment, cliente respondeu) entregue. Email/Slack ainda não.
 - **Onda A/B/C — Heurísticas pré-IA** (entregues entre PR #~130 e #170): 9 alertas determinísticos baseados em atributos da task/pessoa/projeto/cliente. Onda A = grande sem início, sobrecarga acumulada (depois aposentada), estratégico atrasado, bloqueio cliente, SLA iminente. Onda B = jr+complexidade, reaberturas. Onda C = bloqueio por dependência, estimativa furada.
 - **Onda D — Capacidade semanal** (PRs #173–#175): bucketing semanal por prazo (4 semanas: atual + 3 próximas, atrasadas puxam pra W0). 5 heurísticas novas (H11 sustentação estourando, H12 sustentação ociosa, H13 projeto estouro, H14 projeto risco, H15 pessoa sobrecarga W), agregadas em **Briefing executivo** (heatmap pessoa × semana + listas sustentação/projeto), banner Dashboard e PDF executivo. Aposentou H2 antiga ("sobrecarga acumulada"), que mascarava sazonalidade. **15 heurísticas ativas hoje.**
@@ -232,7 +240,7 @@ Cada evolução preserva: estética Kliente 360, princípios da seção 3, conve
 
 ## 14. Diagnóstico estratégico e visão de futuro
 
-**Diagnóstico v2 · atualizado mai/2026 · v1.02.005.** Esta seção captura uma leitura honesta do estado atual contra benchmarks acessíveis ao mercado-alvo (agências BR de serviços profissionais 8-50 pessoas) e propõe priorização. **Não é roadmap operacional** (esse vive em `ROADMAP.md`) — é leitura de produto e estratégia.
+**Diagnóstico v2 · atualizado mai/2026 · v1.02.050.** Esta seção captura uma leitura honesta do estado atual contra benchmarks acessíveis ao mercado-alvo (agências BR de serviços profissionais 8-50 pessoas) e propõe priorização. **Não é roadmap operacional** (esse vive em `ROADMAP.md`) — é leitura de produto e estratégia.
 
 ### 14.1 Onde isso se encaixa no mercado · score atualizado
 
@@ -274,11 +282,11 @@ Recursos que **não existem combinados em nenhum competidor brasileiro acessíve
 3. **Ausência de IA visível**. **Continua sendo o gap #1.** Linear/Notion comoditizam IA. Primeira feature low-risk/high-value: "resumir thread da task" — Anthropic Sonnet 4.6 + prompt caching, fallback gracioso. ~1 dia.
 4. **Captura rápida de task.** ⌘K + `n` existem mas não há atalho global "criar task em 2-5s sem trocar de aba". Linear é melhor aqui. ~3h.
 5. **Time tracking = 0.** Bloqueia faturamento e bloqueia retro honesta "quanto realmente custou esse projeto?" — dor interna recorrente em agência.
-6. **Testes parciais.** Helpers puros cobertos; getters complexos extraídos ainda não. ~4h pra fechar.
+6. **Testes parciais.** `helpers.js`, `adapters.js` (camada JS↔DB) e os 7 helpers de mutação de task cobertos em `tests/index.html`. Getters de heurística (briefing/capacidade) ainda sem teste — exigiriam harness Alpine maior.
 7. **Migrations manuais via Dashboard.** Frágil; útil um lint local que valida sintaxe antes de colar.
 8. **Anon key embedded + JWT exp 2036.** RLS protege, mas defesa em profundidade pede JWT 1h + refresh. ~2h.
 
-### 14.4 Visão escalonada de futuro (atualizada mai/2026 v1.02.005)
+### 14.4 Visão escalonada de futuro (atualizada mai/2026 v1.02.050)
 
 #### P0 · entregue maio/2026 (ciclo de adoção interna)
 - ✅ Notificações por tipo (mention/assignment/status_change) com chips de filtro
@@ -316,9 +324,9 @@ Recursos que **não existem combinados em nenhum competidor brasileiro acessíve
 
 ### 14.5 Indicadores de sucesso · adoção interna (precondição comercial)
 
-Métricas que dirão se o app virou hábito interno. Materializadas como card no topo da aba Adoption (v1.02.005).
+Métricas que dirão se o app virou hábito interno. Materializadas como card no topo da aba Adoption (v1.02.050).
 
-| Métrica | Meta 30d | Meta 60d | Status v1.02.005 |
+| Métrica | Meta 30d | Meta 60d | Status v1.02.050 |
 |---|---|---|---|
 | DAU/WAU | ≥70% | ≥85% | em medição |
 | Sessões/dia/pessoa | ≥5 | ≥8 | em medição |
@@ -327,7 +335,7 @@ Métricas que dirão se o app virou hábito interno. Materializadas como card no
 
 Se em 60 dias 4/4 baterem → **pronto pra piloto comercial controlado** (1-2 agências amigas).
 
-### 14.6 Riscos ranqueados (atualizado mai/2026 v1.02.005)
+### 14.6 Riscos ranqueados (atualizado mai/2026 v1.02.050)
 
 1. **IA gap continua #1.** Médio-alto, 6 meses. Linear/Notion já comoditizam. P1 vai mitigar.
 2. **Time perde hábito** se P0 não fechar captura rápida + notif digest. Médio, 2 sem.

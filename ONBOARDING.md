@@ -2,7 +2,7 @@
 
 > Três perspectivas da mesma ferramenta. Leia a sua, dê uma passada de olho nas outras.
 >
-> **Versão atual**: v1.01.171 · maio/2026. Para o manual técnico de cada feature, ver [`HOWTO.md`](./HOWTO.md). Para conceito geral, ver [`README.md`](./README.md).
+> **Versão atual**: v1.02.050 · maio/2026. Para o manual técnico de cada feature, ver [`HOWTO.md`](./HOWTO.md). Para conceito geral, ver [`README.md`](./README.md).
 
 ---
 
@@ -18,10 +18,10 @@ O tasks 360 é a fonte de verdade do que está rolando na operação. Você não
 
 ## Conceitos que importam pra você
 
-- **Cliente.tier** — `estratégico` / `recorrente` / `transacional`. Heurísticas usam isso pra escalar alertas. Ex: tarefa atrasada de cliente estratégico pisca no banner; transacional não.
-- **Projeto.tipo** — `discovery` / `entrega` / `recorrente`. Define como ler o lead time esperado.
+- **Cliente.tier** — `estratégico` / `potencial` / `descoberta`. Heurísticas usam isso pra escalar alertas. Ex: tarefa atrasada de cliente estratégico pisca no banner; descoberta não.
+- **Projeto.tipo** — `sustentação` / `projeto` / `discovery`. Define como ler capacidade e lead time esperado.
 - **Projeto.sla_* + orcamento_horas** — habilitam alertas de SLA iminente e de estouro de orçamento.
-- **Heurísticas pré-IA** (9 no banner do Dashboard) — alertas determinísticos, sem caixa-preta. Cada um tem critério explícito.
+- **Heurísticas pré-IA** (14 ativas, top 3 no banner do Dashboard) — alertas determinísticos, sem caixa-preta. Cada um tem critério explícito.
 - **Status como verdade única** — não há "status real" e "status do app". O que está no app É o estado da operação. Se o time não atualizar, você está cego.
 - **Saúde por projeto** — semáforo verde/âmbar/vermelho com critérios fixos. Vermelho = atrasadas, SLA quase vencido, ou bloqueio +5d. Não é palpite.
 - **Capacidade por pessoa** — % alocado vs capacidade declarada (`capacidade_horas_semana`). Vermelho = overflow.
@@ -54,7 +54,7 @@ O tasks 360 é a fonte de verdade do que está rolando na operação. Você não
 - **Briefing → Capacidade vs demanda** dá a recomendação direta (contratar / manter / cortar) com base em utilização e sobrecargas persistentes.
 
 **Decisão de demitir cliente**
-- Cliente transacional consumindo horas de projeto estratégico → ver Dashboard (Volume por cliente + Lead time por cliente).
+- Cliente de descoberta consumindo horas de projeto estratégico → ver Dashboard (Volume por cliente + Lead time por cliente).
 
 **Decisão de deprecar feature**
 - **Adoption → Features órfãs** — features com uso abaixo do limite saudável (pessoas ativas × 4 / 30d). Candidatas a sumir na próxima revisão.
@@ -66,7 +66,7 @@ O tasks 360 é a fonte de verdade do que está rolando na operação. Você não
 - **Atalho `g d`** Dashboard · `g b` Backlog · `g f` Meu foco.
 - **Não preencha tarefas**. Sua função é ler o sistema, não alimentá-lo.
 - **Defina `tier` em todos os clientes**. Sem isso, metade das heurísticas não funciona.
-- **Exportar PDF executivo** (Cmd+K → "Exportar PDF") quando precisar levar pra reunião offline — 1 página, memo narrativo, 2 tabelas.
+- **Exportar o Resumo Executivo em PDF** (Cmd+K → "Exportar PDF") quando precisar levar pra reunião offline — documento narrativo de 8 seções (sinal geral, performance, saúde de clientes e pessoas, gaps, capacidade, decisões, anexos).
 
 ## O que NÃO fazer
 
@@ -74,12 +74,12 @@ O tasks 360 é a fonte de verdade do que está rolando na operação. Você não
 - Não usar pra micro-gestão ("cliquei na task do Fulano de manhã pra ver se ele já mexeu"). O Dashboard responde isso sem precisar abrir task.
 - Não trocar os critérios de heurística sem alinhar. São determinísticos por design.
 
-## Novidades recentes (v1.01.167–171)
+## Novidades recentes (v1.02)
 
-- **Anexos por task**: ⌘V cola prints direto no modal. Você não precisa anexar nada — mas vai ver no Anexos das tasks que o time documentou visualmente. Cleanup automático de 30d após `concluido`.
-- **Checklist por task**: mini-tasks dentro da task (colapsável). Útil pra ver granularidade sem inflar o backlog. Contador done/total no header da seção.
-- **Editar/excluir comentário**: agora o autor edita (✎) e admin/autor exclui (✕). Útil pra corrigir typo sem fantasma de "x respondeu duas vezes".
-- **Portal cliente com replies aninhados**: ao responder o cliente no Portal, sua resposta herda a visibilidade do thread automaticamente. Sem risco de vazar contexto interno.
+- **Resumo Executivo em PDF**: o export virou um documento narrativo único de 8 seções (sinal geral, performance, saúde de clientes/pessoas, gaps, capacidade, decisões, anexos), pensado pra reunião de sócios — semanal ou sob demanda.
+- **Tasks criadas por IA**: automação externa (Cowork lendo notas de reunião) cria tasks via API. Elas chegam com chip 🤖 IA e caem na Triagem pra um humano atribuir cliente/responsável. Você não precisa fazer nada — mas é bom saber de onde vêm.
+- **Notificações por tipo** (mention / assignment / status change) com chips de filtro no sino.
+- **Briefing como tela de abertura** do admin, com narrativa heurística do dia.
 
 ---
 
@@ -168,17 +168,13 @@ Você é a pessoa que mais usa o app no dia-a-dia depois dos analistas.
 - **Não fechar task que não foi entregue** — analista preenche `tempo_real_horas` antes de marcar done. Sem isso, você não consegue medir nada.
 - **Não usar P0 pra tudo**. Se tudo é P0, nada é. P0 é raro.
 
-## Novidades recentes (v1.01.167–171)
+## Novidades recentes (v1.02)
 
-- **Modal de task reorganizado**: ordem agora é **Atribuição → Descrição → Checklist → Esforço → Metadata**. Esforço perdeu o título "Esforço · prazo"; Metadata virou sem título. Hábito vai aderir rápido.
-- **Checklist colapsável**: pra quando uma task precisa quebrar em 3-5 mini-passos sem virar 3-5 tasks. Default fechado; abre auto se já tem itens. Enter cria próximo, ESC em linha vazia remove. **Não substitui** sub-tarefas reais — se vai dar +4h ou se outra pessoa pega o item, crie task de verdade.
-- **Comentários ricos**:
-  - Edit (autor) e delete (autor + admin) — "(editado)" inline pra rastrear.
-  - Toggle interno/externo direto no header do comentário publicado — repensou se quer mostrar pro cliente, clica.
-  - Reply herda visibilidade do parent automaticamente. Se o cliente perguntou (público), sua resposta vai pro Portal. Se o thread é interno, sua resposta fica interna. Sem clicar checkbox toda vez.
-- **Anexos paste-only**: ⌘V em qualquer aba do modal anexa o print. Útil pra documentar bug, registrar entrega, mostrar evolução.
-- **Mobile dedicado**: modal de task vira sheet card com safe-area do home indicator. 4 abas mobile: Detalhes · Conversa · Anexos · Histórico (com contador em cada).
-- **ESC encadeado**: dentro do modal task, ESC fecha o mais interno primeiro (picker @mention → linha checklist vazia → reply → lightbox → modal). Quase nunca apertar 3x.
+- **Tasks criadas por IA na Triagem**: automação externa (Cowork) cria tasks via API; elas chegam com chip 🤖 IA. A Triagem ganhou um chip de filtro `🤖 criadas por IA` (combina com `sem resp.` / `sem prazo` / `sem esforço`) — dá pra triar o fluxo de IA separado do humano. O Backlog também filtra IA/humano no menu ⋯.
+- **Domínios de email no cliente**: em Cadastros > Clientes, cada cliente tem uma lista de domínios (`bodytech.com.br`). É o que a automação usa pra identificar o cliente certo. Clientes sem domínio aparecem com chip âmbar "sem domínio" — vale configurar.
+- **Capacidade semanal (Onda D)**: heatmap pessoa × semana + heurísticas de sustentação/projeto estourando, no Briefing executivo.
+- **Backlog**: faixa colorida na borda esquerda dos cards/linhas indicando o grupo de status; 5 cards de stats no topo.
+- **Resumo Executivo em PDF**: export virou documento narrativo de 8 seções pra reunião de sócios.
 
 ---
 
@@ -269,18 +265,12 @@ A regra de ouro: **se mexeu, atualiza**. Status desatualizado prejudica todo mun
 - **Não usar comentário pra discussão longa de design**. Discussão vai em call ou Notion; comentário é registro.
 - **Não trocar prazo sem comentário**. Histórico mostra a mudança, mas o "por quê" some se você não escrever.
 
-## Novidades recentes (v1.01.167–171)
+## Novidades recentes (v1.02)
 
-- **Checklist na task**: ao invés de criar 5 tasks pequenas pra um trabalho que cabe numa só, abre a seção Checklist no modal e lista os passos. Marca conforme avança — linha riscada visualmente. Útil pra documentar "como fiz" e pra deixar pro próximo: "faltou o passo 4".
-- **Anexa print colando**: ⌘V (Mac) ou Ctrl+V (Win) em qualquer lugar do modal cola a imagem da clipboard. App redimensiona pra 1600px e comprime. Excelente pra:
-  - Bug que o cliente mandou — cola o print junto da descrição.
-  - Antes/depois — anexa dois prints lado a lado.
-  - Evidência de entrega — print final no Anexos antes de marcar `done`.
-- **Editar comentário próprio**: errou typo? Clica no ✎ no header do comentário. Edita inline, ⌘↵ salva, ESC cancela. "(editado)" inline indica que foi mexido.
-- **Excluir comentário**: você (autor) ou admin podem. Útil pra apagar comentário duplicado ou postado na task errada.
-- **Comentar pro cliente ficou mais claro**: o toggle "Visível ao cliente no Portal" troca em tempo real e aparece no header (`interno` / `externo`). Pode clicar pra alternar mesmo depois de publicar.
-- **Resposta ao cliente herda visibilidade**: respondeu no thread público → vira público automático. Respondeu num thread interno → fica interno. Menos chance de vazar contexto.
-- **@-self serve de lembrete**: a partir da v1.01.159, mencionar-se a si próprio também dispara notificação (sino). Use pra deixar um "me lembra" amanhã.
+- **Chip 🤖 IA**: algumas tasks chegam de uma automação externa (Cowork lendo notas de reunião) e aparecem com o chip 🤖 IA antes do título. Trate igual a qualquer task — só saiba que o título e a descrição vieram de uma IA e podem precisar de ajuste fino ao triar.
+- **Notificações por tipo**: o sino agora separa menção / atribuição / mudança de status com chips de filtro. Mais fácil achar o que é pra você.
+- **Meu foco com narrativa**: a aba abre com um resumo heurístico do dia (o que está atrasado, o que é prioridade).
+- **ESC encadeado** no modal: ESC fecha o elemento mais interno primeiro (picker @mention → linha de checklist vazia → reply → lightbox → modal).
 
 ---
 

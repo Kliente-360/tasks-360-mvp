@@ -28,8 +28,8 @@ Esta ferramenta materializa esse método. Quem não opera assim não vai gostar 
 |---|---|
 | **Sócios e liderança** | Dashboard com throughput, lead time, cycle time, atrasos e represa por status. Saúde da operação numa página. |
 | **PMs e consultores** | Backlog filtrável, kanban com drag-and-drop, calendário de entregas, reordenação manual, comentários. |
-| **Time externo (Salesforce)** | Sincronização automática: tasks criadas/atualizadas/deletadas no SF refletem aqui em tempo real. Comentários do Chatter aparecem no app. |
-| **Clientes** (futuro) | Portal restrito com a visão do próprio backlog em linguagem de cliente, não de PM. |
+| **Time externo (Salesforce) + automações IA** | Sincronização automática: tasks criadas/atualizadas/deletadas no SF refletem aqui em tempo real. Comentários do Chatter aparecem no app. Automações de IA (ex: Cowork) criam tasks via API, marcadas com chip 🤖 IA. |
+| **Clientes** | Portal restrito com a visão do próprio backlog em linguagem de cliente, não de PM. **Em produção.** |
 
 ---
 
@@ -37,7 +37,7 @@ Esta ferramenta materializa esse método. Quem não opera assim não vai gostar 
 
 ### Operação no dia-a-dia
 
-- **7 visões integradas**: Meu foco (urgências do dia), Backlog (tabela filtrável), Kanban (operacional 11 colunas / executiva 4 macros), Calendário (entregas por mês), Dashboard, Cadastros, Adoption.
+- **Visões integradas**: Meu foco (urgências do dia), Briefing executivo (admin), Triagem (tasks incompletas), Backlog (tabela filtrável), Kanban (operacional 11 colunas / executiva 4 macros), Calendário (entregas por mês), Dashboard, Cadastros, Adoption — mais o Portal cliente. Visibilidade por role.
 - **Etapas em dois níveis**: 4 macros fixas (Backlog, Em andamento, Bloqueado, Concluído) + 11 sub-etapas (Priorizado, Em definição, Em desenvolvimento, Em homologação, Pronto p/ produção etc.). Macro derivada da sub via trigger; toggle Operacional/Executiva no kanban.
 - **Modal de task com 4 abas**: Detalhes (campos), Conversa (comentários), Anexos (imagens), Histórico (timeline de mudanças). Mobile fica em sheet-card com safe-area pra home indicator do iPhone.
 - **Quick add inline**: cada coluna do kanban operacional tem `+ adicionar` para captura rápida — só título + Enter.
@@ -67,11 +67,12 @@ Esta ferramenta materializa esse método. Quem não opera assim não vai gostar 
 - **Volume por cliente** e **carga por pessoa**: distribuição de horas em tarefas abertas.
 - **Lista de atrasadas** com dias de atraso, ordenada por urgência.
 
-### Integração com Salesforce
+### Integração com Salesforce e automações externas
 
-- **Edge Function `ingest-task`**: SF cria/atualiza tasks via REST; resolução automática de cliente/projeto/responsável por nome.
+- **Edge Function `ingest-task`**: SF e automações de IA criam/atualizam tasks via REST; resolução automática de cliente/projeto/responsável por nome. Aceita `criado_por_ia` e cliente vazio / sentinel `"Triagem"`.
+- **Edge Function `ingest-comment`**: comentários do Chatter pulled automaticamente, exibidos com badge SF.
 - **Edge Function `delete-task`**: SF apaga tasks com cascade automático (comments e histórico vão junto).
-- **Comentários do Chatter**: pulled automaticamente, exibidos com badge SF.
+- **Edge Functions `get-clientes` / `get-pessoas`**: leitura — expõem clientes (com domínios de email + projetos) e pessoas (candidatos a responsável) pra automações descobrirem o vocabulário antes de criar task.
 - **Histórico bidirecional**: mudança de status no SF aparece com `actor_source='salesforce'` na timeline.
 
 ### Portal cliente
@@ -84,7 +85,7 @@ Esta ferramenta materializa esse método. Quem não opera assim não vai gostar 
 
 - **Login com magic link** (toggleable): lista fechada de pessoas, sem senha. Vincula automaticamente pessoa cadastrada à conta auth no primeiro login.
 - **PWA com ícone próprio + tab title "tasks 360"**: "Adicionar à tela de início" no iPhone instala como app.
-- **Export PDF — relatório executivo**: snapshot CEO-first em 2 páginas A4 (capa com KPIs + sinais de risco + 3 charts; tabela de backlog priorizado). Ignora filtros — sempre relatório completo.
+- **Export PDF — Resumo Executivo**: documento narrativo de 8 seções (sinal geral, performance, saúde de clientes/pessoas, gaps & desvios, capacidade, decisões, anexos), pensado pra reunião de sócios. Ignora filtros — sempre relatório completo.
 - **Export CSV** filtrado: gestão pega a planilha do que tá visível.
 - **Tema claro / escuro**: respeita preferência do sistema. Header do modal task usa charcoal `#1f2937`.
 - **Realtime**: qualquer mudança propaga em segundos pra todas as sessões abertas — inclusive comentários, checklist e anexos.
@@ -97,11 +98,11 @@ Esta ferramenta materializa esse método. Quem não opera assim não vai gostar 
 Single-file deliberadamente enxuto, focado em validar fluxo e UX antes de construir a versão "de verdade":
 
 - **Frontend**: HTML único + [Alpine.js](https://alpinejs.dev/) + Tailwind CDN + Chart.js + marked.js
-- **Backend**: [Supabase](https://supabase.com) — Postgres com RLS aberta (protótipo), Realtime, Edge Functions, Storage (anexos), pg_cron + pg_net (cleanup agendado)
+- **Backend**: [Supabase](https://supabase.com) — Postgres com RLS fechada role-aware (admin/interno/cliente), Realtime, Edge Functions, Storage (anexos), pg_cron + pg_net (cleanup agendado)
 - **Hosting**: [Netlify](https://www.netlify.com/) (deploy automático no push)
 - **Auth**: Supabase Auth (magic link, sem senha)
 - **Helpers puros**: `lib/helpers.js` expõe constantes do domínio (STATUS, ROLE, PRIORIDADE, …) e funções puras (`atrasada`, `effEsforco`, `triageFailures`, `cargaNivelFromPctCap`). Carregado **antes** do script inline pra Alpine consumir os mesmos símbolos que os testes.
-- **Sem build step**: editar `index.html` e refrescar. Versão atual em `lib/helpers.js` segue `v1.01.<PR_number>`.
+- **Sem build step**: editar arquivos em `lib/` e refrescar. Versão atual em `lib/helpers.js` segue `v1.<MINOR>.<BUILD>` — BUILD é sequencial por commit em main, **independente do número do PR** (os dois divergiram; ver `CLAUDE.md`).
 
 A justificativa do "sem build step": é uma fase, não a arquitetura final. O foco é descobrir requisitos com uso real antes de pagar o custo de framework e bundler. Em mai/2026, a fase single-file deu lugar a fase modular: vários arquivos JS/CSS carregados em sequência via `<script>`/`<link>`, sem bundler. A migração pra stack profissional (Next + Drizzle + design system extraído) continua sendo a próxima onda quando o multi-file pesar. **RLS hoje é role-aware e tenant-scoped** — `prototipo_all` foi removida em mai/2026 (PRs #185-#188).
 
@@ -118,13 +119,13 @@ cd tasks-360-mvp
 
 **Supabase via Dashboard, sempre.** Nada de CLI. Rodar SQLs em `supabase/migrations/` na ordem cronológica do filename no SQL Editor. Edge Functions copy-paste no painel de Edge Functions. Cron via SQL Editor (pg_cron + pg_net habilitados em Database > Extensions). Detalhes em [`CLAUDE.md`](./CLAUDE.md).
 
-Para integrar com Salesforce, deploy das Edge Functions em `supabase/functions/` (ingest-task, ingest-comment, delete-task).
+Para integrar com Salesforce e automações externas, deploy das Edge Functions em `supabase/functions/` (`ingest-task`, `ingest-comment`, `delete-task`, `cleanup-attachments`, `get-clientes`, `get-pessoas`).
 
 ---
 
 ## Estado atual
 
-**Maio 2026 — MVP modular em uso real, com cliente externo logando.** Versão atual: `v1.01.207` (bumpa a cada PR mergeado em main). Saiu de single-file de 10.8k linhas pra estrutura modular (`index.html` + `lib/helpers.js` + `lib/adapters.js` + `lib/supabase-client.js` + 13 views em `lib/views/*` + `lib/app.js`). RLS fechada role-aware (admin/interno/cliente).
+**Maio 2026 — MVP modular em uso real, com cliente externo logando.** Versão atual: `v1.02.050` (BUILD bumpa a cada commit em main). Saiu de single-file de 10.8k linhas pra estrutura modular (`index.html` + `lib/helpers.js` + `lib/adapters.js` + `lib/supabase-client.js` + 13 views em `lib/views/*` + `lib/app.js`). RLS fechada role-aware (admin/interno/cliente).
 
 Camadas entregues:
 - Ondas de polimento H1/H2/H3 completas
@@ -134,6 +135,9 @@ Camadas entregues:
 - Anexos paste-only (storage + cleanup automático 30d)
 - Portal cliente com replies aninhados + herança de visibilidade
 - Mobile layout dedicado (sheet card + safe-area)
+- Capacidade semanal + 14 heurísticas determinísticas + Briefing executivo
+- Resumo Executivo em PDF (8 seções)
+- Integração de automação IA: flag `criado_por_ia`, domínios de cliente, edge functions `get-clientes`/`get-pessoas`
 
 Detalhes históricos em [`ROADMAP.md`](./ROADMAP.md).
 

@@ -4,7 +4,7 @@
 >
 > **Dentro do app**: clique no botão **?** no topo (ou ⌘K → "Manual") pra abrir esse documento renderizado bonito, com índice navegável.
 >
-> Última atualização: 12/05/2026 · v1.01.171 · onda de modal task (anexos paste-only, checklist colapsável, edit/delete de comentário, reply herdando visibilidade, ESC encadeado).
+> Última atualização: 16/05/2026 · v1.02.050 · Resumo Executivo PDF (8 seções), tasks criadas por IA (chip 🤖 + filtros), domínios de email no cliente, integração de automação externa (Cowork).
 
 ---
 
@@ -21,10 +21,11 @@
 9. [Comentários](#comentários)
 10. [Checklist da tarefa](#checklist-da-tarefa)
 11. [Anexos (imagens via paste)](#anexos-imagens-via-paste)
-12. [Exportar (PDF / CSV)](#exportar-pdf--csv)
-13. [Login (quando ativado)](#login-quando-ativado)
-14. [Tema, mobile, PWA](#tema-mobile-pwa)
-15. [Glossário](#glossário)
+12. [Tasks criadas por IA](#tasks-criadas-por-ia)
+13. [Exportar (PDF / CSV)](#exportar-pdf--csv)
+14. [Login (quando ativado)](#login-quando-ativado)
+15. [Tema, mobile, PWA](#tema-mobile-pwa)
+16. [Glossário](#glossário)
 
 ---
 
@@ -102,18 +103,22 @@ Visível para `admin` e `interno`. Fila de tarefas que ainda **não estão pront
 
 Cards ordenados por gravidade (mais critérios falhando primeiro). Chips âmbar mostram exatamente **o que falta**. Click no card abre o modal pra preencher — ao satisfazer todos os critérios, a task **sai da fila automaticamente**.
 
+Os chips de filtro no topo (`sem resp.` · `sem prazo` · `sem esforço` · `🤖 criadas por IA`) são combináveis — clicar em mais de um aplica interseção (ex: `🤖 IA` + `sem prazo` = tasks criadas por IA que ainda precisam de prazo). Útil pra triar separadamente o fluxo vindo de automação.
+
 > Badge `triar` (âmbar) aparece inline em qualquer task que precise (Foco, Backlog, Kanban, Calendário) — assim o triador identifica de qualquer view, não só da aba dedicada.
 
 ### Backlog
 
 Tabela mestre. Cabeçalho ordenável por qualquer coluna (clique). Colunas: Tarefa · Cliente · Projeto · Responsável · Pri · Hrs · Cmplx · Prazo · Status. Linha clicada abre o detalhe.
 
+- Cada linha tem uma faixa colorida na borda esquerda indicando o grupo macro de status
 - Atrasadas em vermelho
 - Aging badge em laranja/vermelho quando uma tarefa está parada além do limite saudável
-- **Agrupar por** (no topo da tabela): default sem agrupamento (lista plana). Opções: Responsável · Cliente · Projeto · Status · Etapa · Prioridade · Complexidade. Cada grupo vira um header colapsável (clique pra expandir/recolher) com contagem e total de horas.
+- Chip `🤖 IA` antes do título marca tasks criadas por automação de IA (ver [Tasks criadas por IA](#tasks-criadas-por-ia))
+- **Agrupar por** (menu ⋯ no topo da tabela): default sem agrupamento (lista plana). Opções: Responsável · Cliente · Projeto · Status · Etapa · Prioridade · Complexidade. Cada grupo vira um header colapsável (clique pra expandir/recolher) com contagem e total de horas.
 - **Ordenar**: no desktop, click no cabeçalho da coluna alterna asc/desc/none. No mobile, botão "Ordenar: [chave] ↑↓" abre painel com 10 opções; click na mesma chave alterna direção, click em outra ativa em ascendente. Etapa segue ordem natural do fluxo, não alfabética.
 - **Ordem manual**: botão "≡ ordem manual" → arraste linhas pra reordenar (desabilitado quando há agrupamento; só desktop)
-- **Filtros**: cliente, projeto, pessoa, status, prioridade, tag (ver [Filtros](#filtros-e-busca))
+- **Filtros**: cliente, projeto, pessoa, status, prioridade, tag (ver [Filtros](#filtros-e-busca)). No menu ⋯ também há "mostrar arquivadas" e os toggles "somente criadas por 🤖 IA" / "somente criadas por humanos".
 - **Bulk actions**: checkbox por linha (ver [Bulk actions](#bulk-actions-na-tabela))
 - **Pagination**: cada grupo mostra até 100 rows por padrão; botão **"mostrando X de Y · carregar mais"** no fim da lista pra revelar o restante. Mantém o render leve mesmo com centenas de tasks.
 
@@ -151,13 +156,17 @@ Filtros de cliente e responsável afetam tudo.
 
 Três sub-abas: Clientes · Projetos · Pessoas. Cadastre antes de criar tarefas que dependam.
 
-Em **Clientes**, o botão "editar" abre modal com nome e **tier** (estratégico / recorrente / spot). Tier alimenta a heurística "atrasada em cliente estratégico" e aparece como badge na listagem. **Arquivar** esconde o cliente dos selects e da Saúde por projeto sem deletar (badge "arquivado" + linha esmaecida). Toggle "incluir arquivados" no topo mostra de volta.
+Em **Clientes**, o botão "editar" abre modal com:
+- **Nome**
+- **Tier** (`estratégico` / `potencial` / `descoberta`) — alimenta a heurística "atrasada em cliente estratégico" e aparece como badge na listagem.
+- **Domínios de email** — lista de chips (ex: `bodytech.com.br`). Usado por automações (Cowork lendo notas de reunião) pra identificar o cliente pelos participantes. Digite e tecle Enter/vírgula/espaço pra adicionar. Clientes ativos sem domínio ganham um chip âmbar **"sem domínio"** na lista, e o page-bar mostra quantos faltam configurar.
+- Clientes do tipo **interno** (bucket de gestão, `eh_interno`) não mostram tier nem domínios — não entram em heurísticas, dashboards de cliente nem automações.
 
-Em **Projetos**, o botão "editar" abre modal com nome, cliente e atributos de **SLA + orçamento** (resposta em horas, entrega em dias, orçamento total em horas). SLA de entrega aciona a heurística "SLA iminente" entre 80% e 120% do prazo. Os atributos aparecem como badges discretas na listagem. **Arquivar** funciona igual ao de cliente — esconde do radar, sem deletar.
+**Arquivar** esconde o cliente dos selects e da Saúde por projeto sem deletar (badge "arquivado" + linha esmaecida). Toggle "incluir arquivados" no topo mostra de volta.
+
+Em **Projetos**, o botão "editar" abre modal com nome, cliente, **tipo** (`sustentação` / `projeto` / `discovery`) e atributos de **SLA + orçamento** (resposta em horas, entrega em dias, orçamento total em horas). SLA de entrega aciona a heurística "SLA iminente" entre 80% e 120% do prazo. Os atributos aparecem como badges discretas na listagem. **Arquivar** funciona igual ao de cliente — esconde do radar, sem deletar.
 
 Em **Pessoas**, o botão "editar" abre modal com nome, email, perfil (Admin / Time Kliente 360 / Cliente externo) e — quando perfil for "Cliente externo" — o cliente vinculado. Pra time interno: capacidade semanal, skills e **senioridade** (júnior/pleno/sênior/lead). Júnior + complexidade alta vira alerta na heurística.
-
-Em **Projetos**, agora também tem **tipo** (implantação/sustentação/discovery/projeto), badge na lista.
 
 Tasks têm contador `reopenCount` automático (incrementado por trigger SQL quando voltam de "concluído" pra qualquer outro status). Aparece como badge "reaberta Nx" no header do modal. Tarefas reabertas 2+ vezes viram alerta na heurística.
 
@@ -219,25 +228,33 @@ Aba dedicada para o cliente externo. Layout simples com 4 cards (Aguardando voc�
 
 ## Heurísticas (sinais de risco)
 
-Banner no topo do **Dashboard** mostra alertas determinísticos (sem IA) baseados em atributos de task, pessoa, cliente e projeto. Severidade `alta` (vermelho) ou `media` (âmbar). 10 heurísticas ativas:
+Banner no topo do **Dashboard** mostra alertas determinísticos (sem IA) baseados em atributos de task, pessoa, cliente e projeto. Severidade `alta` (vermelho) ou `media` (âmbar). **14 heurísticas ativas:**
 
-**Onda A** (5):
+**Onda A — risco operacional** (4):
 1. **Tarefa grande sem início** com prazo a ≤10 dias
-2. **Sobrecarga real** — pessoa com horas alocadas > capacidade semanal
-3. **Cliente estratégico com atrasada(s)**
-4. **Bloqueio aguardando cliente há +5 dias**
-5. **SLA contratado quase vencido** (projetos com `sla_entrega_dias`)
+2. **Cliente estratégico com atrasada(s)**
+3. **Bloqueio aguardando cliente há +5 dias**
+4. **SLA contratado quase vencido** (projetos com `sla_entrega_dias`)
 
-**Onda B** (2):
-6. **Júnior + complexidade alta** — task de alta complexidade atribuída a pessoa júnior
-7. **Reaberturas crônicas** — task com `reopen_count ≥ 2` (qualidade)
+**Onda B — qualidade** (2):
+5. **Júnior + complexidade alta** — task de alta complexidade atribuída a pessoa júnior
+6. **Reaberturas crônicas** — task com `reopen_count ≥ 2`
 
-**Onda C** (2):
-8. **Bloqueio por dependência** — task em backlog com prazo ≤14d e dependência ainda aberta
-9. **Estimativa furada** — `tempo_real_horas > 1.5x esforço`
+**Onda C — dependências** (2):
+7. **Bloqueio por dependência** — task em backlog com prazo ≤14d e dependência ainda aberta
+8. **Estimativa furada** — `tempo_real_horas > 1.5x esforço`
+
+**Onda D — capacidade semanal** (5):
+9. **Pessoa sobrecarregada na semana** — horas alocadas na semana > capacidade
+10. **Sustentação estourando** — projeto de sustentação acima do orçamento semanal
+11. **Sustentação ociosa** — sustentação muito abaixo do contratado por semanas seguidas
+12. **Projeto estourando escopo** — projeto fechado acima do orçamento total
+13. **Projeto em risco de estouro** — projeto fechado próximo do limite de orçamento
 
 **Operacional** (1):
-10. **Triagem represada** — N tasks precisando de triagem (sem responsável / cliente / prazo / esforço em etapa onde aplica). Alta se ≥10, média caso contrário.
+14. **Triagem represada** — N tasks precisando de triagem (sem responsável / cliente / prazo / esforço em etapa onde aplica). Alta se ≥10, média caso contrário.
+
+> A antiga heurística "sobrecarga acumulada" (Onda A) foi aposentada na Onda D — mascarava sazonalidade. A versão semanal (#9) a substitui.
 
 > Cálculo em single-pass + memo: o conjunto inteiro de heurísticas é recomputado só quando tasks/pessoas/clientes/projetos mudam relevantemente.
 
@@ -540,17 +557,38 @@ Cron `cleanup-task-attachments-daily` roda **todo dia às 03:17 UTC** e apaga an
 
 ---
 
+## Tasks criadas por IA
+
+Automações externas (ex: **Cowork** lendo notas de reunião do Gemini) criam tasks via API. Essas tasks chegam marcadas com `criado_por_ia` e ganham um chip **🤖 IA** antes do título em todas as visões (Backlog, Kanban, Foco, Triagem, modal).
+
+Como separar o fluxo de IA do fluxo humano:
+- **Triagem** — chip de filtro `🤖 criadas por IA` (combina com `sem resp.` / `sem prazo` / `sem esforço`).
+- **Backlog** — no menu ⋯, toggles "somente criadas por 🤖 IA" / "somente criadas por humanos".
+
+Tasks criadas por IA sem cliente identificado caem direto na **Triagem** pra um humano atribuir cliente/responsável/prazo. A automação resolve o cliente pelos **domínios de email** cadastrados em Cadastros > Clientes (ver [Cadastros](#cadastros)).
+
+> Tecnicamente: a automação consulta as edge functions `get-clientes` e `get-pessoas` pra descobrir o vocabulário, e cria via `ingest-task`. Detalhes de API ficam fora deste manual (ver docs de integração).
+
+---
+
 ## Exportar (PDF / CSV)
 
 Botão **↓ exportar** no canto superior direito.
 
-### PDF · relatório executivo
+### PDF · Resumo Executivo
 
-Snapshot **completo** (ignora filtros). 3 páginas A4 desenhadas pra leitura executiva (CEO-first):
+Snapshot **completo** (ignora filtros). Documento narrativo único — **"Resumo Executivo · tasks 360 · semana N"** — pensado pra sócios/CEO, gerado semanalmente ou sob demanda. Seções concatenadas (sem quebras de página, espaçamento por linhas em branco):
 
-1. **Resumo executivo** — 6 KPIs hero + sinais de risco + 3 charts (status, horas por cliente, throughput 8 sem.)
-2. **Gestão do time** — 4 charts em grid 2×2 mostrando distribuição por pessoa (×Cliente em horas, ×Status em horas, ×Cliente em tarefas, ×Status em tarefas). Bloco final com **sugestões de redistribuição** geradas automaticamente: "Passar X (atrasada, 8h) de Karen (60h) pra Drieli (15h)", até 5 sugestões.
-3. **Gestão dos clientes** — 2 charts no topo (tarefas concluídas em 14d por cliente · SLA médio em 14d por cliente) + tabela com sinal semafórico (ativas, atrasadas, aguardando cliente, entregues 14d, tendência vs 14d ant., SLA médio) + top 10 pendentes críticos (score ponderado).
+1. **Capa + sumário** — sinal geral da operação + sumário executivo
+2. **Performance** — eficiência da operação (entrega no prazo, reabertura, aguardando cliente, bloqueios, aging) + charts de throughput e lead time
+3. **Saúde dos clientes** — sinal por cliente
+4. **Saúde das pessoas** — carga por pessoa (inclui quem está com 0 tasks)
+5. **Gaps & desvios** — análises quantitativas de risco
+6. **Capacidade** — análise semanal + sugestões de redistribuição
+7. **Decisões** — decisões pendentes + sinais positivos
+8. **Anexos**
+
+Seções sem dado mostram explicitamente o porquê de estarem vazias (em vez de sumir).
 
 > **Convenção de horas em charts e PDF**: tarefas com esforço 0 contam como 4h padrão. Em listas e tabelas operacionais (Backlog/Kanban) mostra-se o valor real informado.
 
