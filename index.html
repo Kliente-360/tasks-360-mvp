@@ -3056,6 +3056,24 @@
   </div>
 </div>
 
+<!-- ============ CAPTURA RÁPIDA (cmd+shift+n) ============ -->
+<div x-show="quickCaptureOpen" x-transition.opacity class="fixed inset-0 z-[80] bg-black/40 flex items-start justify-center pt-[18vh] px-4" @click="closeQuickCapture()" @keydown.escape.window="closeQuickCapture()">
+  <div class="bg-elev border border-line rounded-lg shadow-2xl w-full max-w-[520px] overflow-hidden" @click.stop>
+    <div class="px-3 py-2.5 border-b border-line flex items-center gap-2">
+      <span class="text-brand text-base" aria-hidden="true">⚡</span>
+      <input id="quickCaptureInput" type="text"
+             class="flex-1 bg-transparent outline-none text-sm py-1 placeholder:text-muted"
+             placeholder="Capturar tarefa — digite o título e Enter"
+             x-model="quickCaptureTitle"
+             @keydown.enter.prevent="submitQuickCapture()"
+             @keydown.escape.prevent="closeQuickCapture()">
+    </div>
+    <div class="px-3 py-1.5 text-[10px] font-mono text-muted">
+      ↵ capturar (segue capturando) · esc fechar · entra em Triagem sem cliente/responsável
+    </div>
+  </div>
+</div>
+
 <!-- ============ BULK ACTIONS BAR ============ -->
 <div x-show="selectedIds.length > 0 && (tab==='backlog' || tab==='triagem')"
      x-transition.opacity
