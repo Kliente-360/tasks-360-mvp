@@ -116,6 +116,19 @@
     });
   });
 
+  describe('escapeHtml', () => {
+    it('escapa < > pra entidades', () => eq(escapeHtml('<img onerror=x>'), '&lt;img onerror=x&gt;'));
+    it('escapa & " \'', () => eq(escapeHtml('a & "b" \'c\''), 'a &amp; &quot;b&quot; &#39;c&#39;'));
+    it('null/undefined → string vazia', () => {
+      eq(escapeHtml(null), '');
+      eq(escapeHtml(undefined), '');
+    });
+    it('texto limpo passa intacto', () => eq(escapeHtml('Bodytech'), 'Bodytech'));
+    it('payload de script vira inerte', () => {
+      truthy(!escapeHtml('<script>alert(1)</script>').includes('<script>'));
+    });
+  });
+
   describe('fmtDate', () => {
     it('formata ISO pra DD/MM/YYYY', () => eq(fmtDate('2026-05-10'), '10/05/2026'));
     it('vazio retorna —', () => eq(fmtDate(''), '—'));
