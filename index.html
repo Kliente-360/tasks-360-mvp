@@ -858,7 +858,7 @@
           <div class="min-w-0 flex-1 flex items-center gap-3">
             <input type="checkbox" class="shrink-0"
                    :checked="selectedIds.includes(t.id)"
-                   @click.stop="toggleSelected(t.id)">
+                   @click.stop="toggleSelect(t.id)">
             <div class="min-w-0 flex-1">
               <div class="flex items-baseline gap-2 flex-wrap mb-1">
                 <span class="pri" :class="'pri-'+t.prioridade" x-show="t.prioridade">
