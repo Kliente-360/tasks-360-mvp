@@ -1,0 +1,17 @@
+# Netlify config — branch de rebuild (rebuild/next-app).
+#
+# O app Next.js novo vive em web/. Este arquivo só existe nesta branch —
+# `main` (app Alpine atual) não tem netlify.toml e segue buildando a raiz
+# no site Netlify ORIGINAL, intocado.
+#
+# Setup do site Netlify NOVO:
+#   - Repositório: Kliente-360/tasks-360-mvp
+#   - Branch de produção: rebuild/next-app
+#   - O resto (base, comando, plugin Next) este arquivo resolve.
+#   - Env vars no painel do site novo: ver web/.env.example
+[build]
+  base = "web"
+  command = "npm run build"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
