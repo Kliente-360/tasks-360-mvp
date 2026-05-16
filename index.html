@@ -20,7 +20,8 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<!-- Chart.js: carregado sob demanda via _ensureChartJs() (lib/views/charts.js)
+     — só pra quem abre Dashboard/Briefing ou exporta PDF. -->
 <script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js"></script>
 <!-- Helpers puros (testáveis em tests/index.html). Carregar ANTES do script inline. -->
 <script src="lib/helpers.js"></script>
