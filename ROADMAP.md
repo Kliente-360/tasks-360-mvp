@@ -44,7 +44,7 @@ Não é um Jira, não é um Trello, não é um Asana. É **opinativo**, executiv
 
 ### Estado atual
 
-**v1.02.005 · produto comercializável internamente.** Modular com Alpine + Tailwind + Chart.js, hospedado no Netlify (`https://tasks-360-mvp.netlify.app`). Stack continua sem build step — dividida em `index.html` (~3.5k linhas), `lib/styles.css`, `lib/helpers.js`, `lib/adapters.js`, `lib/supabase-client.js`, **13 views em `lib/views/*`** e `lib/app.js` (state + INIT).
+**v1.02.050 · produto comercializável internamente.** Modular com Alpine + Tailwind + Chart.js, hospedado no Netlify (`https://tasks-360-mvp.netlify.app`). Stack continua sem build step — dividida em `index.html` (~3.5k linhas), `lib/styles.css`, `lib/helpers.js`, `lib/adapters.js`, `lib/supabase-client.js`, **13 views em `lib/views/*`** e `lib/app.js` (state + INIT).
 
 **Marcos mai/2026:**
 - Protótipo MVP completo + RLS role-aware (Onda E) + modularização (Onda F).
@@ -353,7 +353,7 @@ Expandir conforme decisões surgirem.
 
 Painel rápido pra retomar contexto. Atualizar quando algo entrar/sair.
 
-Último update: 10/05/2026 — pós-revisão técnica rev 2 (PRs #116-#122).
+Último update: 16/05/2026 — v1.02.050 (automação IA + ciclo de performance).
 
 ---
 
@@ -413,11 +413,9 @@ Painel rápido pra retomar contexto. Atualizar quando algo entrar/sair.
 
 Lista levantada via comparação com Linear, Asana, ClickUp, Height, Motion, Jira, Notion. **Não está no caminho crítico** — menu pra futuras ondas quando surgir dor real ou pra diferenciação. Reavaliar a cada 1-2 ondas.
 
-**Já temos** (riscar quando confirmado): command palette (Cmd+K), bulk actions, kanban, calendário, histórico unificado de status + 9 campos, heurísticas pré-IA, multi-tenancy + RLS, realtime, Portal cliente, dependências, reopen_count, SLA por projeto, briefing executivo, onboarding 3 perspectivas.
+**Já temos**: command palette (Cmd+K), bulk actions, kanban, calendário, histórico unificado de status + 9 campos, heurísticas pré-IA, multi-tenancy + RLS, realtime, Portal cliente, dependências, reopen_count, SLA por projeto, briefing executivo, onboarding 3 perspectivas, **anexos em tasks** (Storage + cleanup cron), **@mentions com notificação** (disparo validado).
 
 **Alto impacto, baixo esforço**
-- **Anexos** (Supabase Storage) em tasks/comments — quase obrigatório pra consultoria (briefs, prints, docs).
-- **@mentions com notificação** — parser `@nome` em comments + notif. Mention picker já existe; falta validar disparo.
 - **Saved views / filtros nomeados** — "Minhas tasks atrasadas", "Aguardando cliente X".
 
 **Médio impacto, médio esforço**
@@ -440,7 +438,17 @@ Lista levantada via comparação com Linear, Asana, ClickUp, Height, Motion, Jir
 
 #### 9.1.4 Recém-fechados (changelog)
 
-**Maio/2026 · ciclo de design + adoção interna (v1.02.000-v1.02.005)**
+**Maio/2026 · automação IA + performance (v1.02.036-050)**
+- **Resumo Executivo PDF**: export virou documento narrativo único de 8 seções (capa+sumário, performance, saúde de clientes, saúde de pessoas, gaps & desvios, capacidade, decisões, anexos). Seções vazias explicam o porquê. Sem quebras de página.
+- **Tasks criadas por IA** (`criado_por_ia`): flag boolean, chip 🤖 IA no Backlog/Kanban/Foco/Triagem/modal, filtro chip na Triagem e toggle IA/humano no menu ⋯ do Backlog.
+- **Domínios de email no cliente** (`dominios[]`): chip-input no modal de cliente, chip âmbar "sem domínio" + contador na aba Cadastros. Cliente interno esconde tier/domínios.
+- **Edge functions de leitura** `get-clientes` e `get-pessoas`: expõem vocabulário (clientes + domínios + projetos; pessoas candidatas a responsável com carga) pra automação Cowork. `ingest-task` aceita `criado_por_ia` + cliente vazio/sentinel `"Triagem"`.
+- **Performance**: realtime aplica delta do payload em vez de refetch da tabela inteira; `_tasksSig` O(1); `tasksById` memoizado. Fim da tempestade de refetch que degradava com a adoção do time.
+- **Refactor**: toda mutação de `this.tasks` centralizada em 7 helpers (`_patchTask`, `_replaceTask`, `_upsertTask`, `_patchTasks`, `_removeTask`, `_removeTasks`, `_setAllTasks`) — elimina o footgun de invalidação manual de memo.
+- **Testes**: `tests/index.html` agora cobre `adapters.js` (camada JS↔DB) e os helpers de mutação, além de `helpers.js`.
+- **Fixes**: tabela do Backlog não atualizava após salvar via modal; command palette piscava no Cmd+K (init rodava 2×).
+
+**Maio/2026 · ciclo de design + adoção interna (v1.02.000-035)**
 - **Ciclo de design** (PRs #253-#270): page-bar consistente em 7 abas, modais cliente/projeto/pessoa refeitos e unificados em width, page-bar padrão pra Foco/Portal/Backlog, switch portal mobile, filtros Adoption padronizados.
 - **Mobile harmonizado**: `+ task` e `+ new` (Cadastros) com altura 32px alinhada ao bloco "tasks 360" + versão. View-toggle full-width com mesma altura.
 - **Deep linking URL**: `?tab=kanban&task=<uuid>` — abrir task ou aba via link compartilhado, botão "copiar link" no modal.

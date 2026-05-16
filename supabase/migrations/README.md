@@ -29,17 +29,19 @@ Se for criar projeto Supabase do zero, rodar todos em ordem (próximo da ordem a
 | `2026-05-11_cliente_tier_realign.sql` | Alinha `cliente.tier` ao vocabulário do app: `estrategico/recorrente/spot` (era `estrategico/regular/oportunidade`). Remap automático dos valores legados. |
 | `2026-05-11_tier_v2_e_tipo_projeto.sql` | Vocabulário v2: `cliente.tier = estrategico/potencial/descoberta`; `projeto.tipo = sustentacao/projeto/discovery` (removeu `implantacao`). Remap automático. |
 | `2026-05-11_arquivar_task.sql` | `tasks.arquivado_em timestamptz` + index parcial. Task arquivada some de listas/dashboards/heurísticas (preserva histórico). |
+| `2026-05-12_rls_role_aware.sql` | RLS fechada role-aware (admin/interno/cliente); drop de `prototipo_all`; helpers `app_pessoa_role()`/`app_pessoa_cliente_id()`/`app_is_staff()`; RPC `app_link_current_user_to_pessoa()`. |
 
-## `pending/` — aguardando execução
+## Migrations na raiz de `migrations/` — aguardando mover
 
-Patches escritos mas ainda **não rodados em produção**. Fluxo:
+Migrations escritas e commitadas, ainda **não movidas** pra `applied/` (ficam soltas na raiz de `migrations/`). Após rodar no SQL Editor e confirmar OK, mover manualmente pra `applied/` — não há automação. Fluxo:
 
-1. Criar `pending/<data>_<descricao>.sql` (ex: `2026-05-15_arquivamento.sql`)
+1. Criar `migrations/<data>_<descricao>.sql`
 2. Cabeçalho do SQL deve listar premissas (idempotência, dependências, rollback)
 3. Rodar no SQL Editor do projeto
 4. Confirmar OK
-5. `git mv pending/<arquivo> applied/`
-6. Commit
+5. Mover o arquivo pra `applied/` e commitar
+
+Soltas hoje na raiz (verificar se já foram aplicadas no projeto antes de mover): `2026-05-12_comment_edit.sql`, `2026-05-12_pessoa_first_link.sql`, `2026-05-12_task_attachments.sql`, `2026-05-12_task_checklist.sql`, `2026-05-14_notif_status_change.sql`, `2026-05-14_cliente_dominios.sql` (`clientes.dominios text[]` + index GIN), `2026-05-14_task_criado_por_ia.sql` (`tasks.criado_por_ia boolean` + index parcial).
 
 ## Regras gerais
 
