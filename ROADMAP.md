@@ -51,7 +51,7 @@ Não é um Jira, não é um Trello, não é um Asana. É **opinativo**, executiv
 - **Ciclo de design** (PRs #253-#270): page-bar consistente em 7 abas, modais cadastros refeitos, mobile harmonizado, deep linking URL.
 - **Adoção interna** (PRs #234-#241): cliente interno bucket de gestão, notif por tipo, foco com narrativa, indicadores de sucesso.
 
-**Próximo passo (P0)**: captura rápida de task (`Cmd+Shift+N` global) + notif digest hourly. Em paralelo, **P1: primeira feature de IA** ("resumir thread de task") fecha a maior lacuna competitiva. Detalhe em CONTEXT.md §14.
+**Próximo passo (P0)**: notif digest hourly (captura rápida ⌘⇧N já entregue). Em paralelo, **P1: primeira feature de IA** ("resumir thread de task") fecha a maior lacuna competitiva. Detalhe em CONTEXT.md §14.
 
 **Em execução (Resumo Executivo PDF)**: ver [`PROPOSAL-MEMO-EXECUTIVO.md`](./PROPOSAL-MEMO-EXECUTIVO.md). Em vez de redesenhar Dashboard+Briefing como abas, concentramos o storytelling executivo num **único PDF semanal** consolidado de 8 páginas. App existente preservado; PDF vira o artefato de reunião/comercial/board. ~10h em 4 PRs (M1-M4).
 
@@ -403,7 +403,6 @@ Painel rápido pra retomar contexto. Atualizar quando algo entrar/sair.
 | Item | Custo | Ganho |
 |---|---|---|
 | Cache local persistente (IndexedDB) pra clientes/projetos/pessoas | ~4h | Boot offline-first, TTI <500ms |
-| Realtime channel scoping por cliente | ~2h | -80% tráfego em Portal |
 | Notifications archive + paginate | ~3h | Evita crescer monotônico |
 | Partition `_tasksAtivas` / `_tasksConcluidas` memoizadas | ~1h | ~10x menos iterações em hot getters |
 
@@ -437,6 +436,10 @@ Lista levantada via comparação com Linear, Asana, ClickUp, Height, Motion, Jir
 ---
 
 #### 9.1.4 Recém-fechados (changelog)
+
+**Maio/2026 · captura rápida + scoping (v1.02.054+)**
+- **Captura rápida** (`⌘⇧N` / Ctrl+Shift+N + ação na command palette): overlay mínimo só-título pra registrar tarefa em 2-5s sem trocar de aba, funciona até digitando em outro campo. Task entra em `backlog` e cai na Triagem. Fecha o gap de "captura rápida" do diagnóstico §14.3.
+- **Realtime channel scoping**: assinatura de `tasks`/`projetos` filtrada por `cliente_id` pro role cliente (Portal) — corta o ruído de receber a corrente de mudanças da agência inteira. Staff segue no canal amplo.
 
 **Maio/2026 · automação IA + performance (v1.02.036-050)**
 - **Resumo Executivo PDF**: export virou documento narrativo único de 8 seções (capa+sumário, performance, saúde de clientes, saúde de pessoas, gaps & desvios, capacidade, decisões, anexos). Seções vazias explicam o porquê. Sem quebras de página.

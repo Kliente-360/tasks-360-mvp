@@ -280,7 +280,7 @@ Recursos que **não existem combinados em nenhum competidor brasileiro acessíve
 1. ~~**`index.html` ~10.800 linhas**~~ → ✅ resolvido (Onda F).
 2. ~~**Mobile UX inconsistente**~~ → ✅ resolvido (ciclo de design PRs #253-#270 + correções pós-diagnóstico v2: notif por tipo, foco narrativa, adoption indicators).
 3. **Ausência de IA visível**. **Continua sendo o gap #1.** Linear/Notion comoditizam IA. Primeira feature low-risk/high-value: "resumir thread da task" — Anthropic Sonnet 4.6 + prompt caching, fallback gracioso. ~1 dia.
-4. **Captura rápida de task.** ⌘K + `n` existem mas não há atalho global "criar task em 2-5s sem trocar de aba". Linear é melhor aqui. ~3h.
+4. ~~**Captura rápida de task.**~~ → ✅ resolvido (⌘⇧N + ação na command palette · overlay só-título · v1.02.055).
 5. **Time tracking = 0.** Bloqueia faturamento e bloqueia retro honesta "quanto realmente custou esse projeto?" — dor interna recorrente em agência.
 6. **Testes parciais.** `helpers.js`, `adapters.js` (camada JS↔DB) e os 7 helpers de mutação de task cobertos em `tests/index.html`. Getters de heurística (briefing/capacidade) ainda sem teste — exigiriam harness Alpine maior.
 7. **Migrations manuais via Dashboard.** Frágil; útil um lint local que valida sintaxe antes de colar.
@@ -292,9 +292,9 @@ Recursos que **não existem combinados em nenhum competidor brasileiro acessíve
 - ✅ Notificações por tipo (mention/assignment/status_change) com chips de filtro
 - ✅ Foco como tab de abertura padrão pra admin/interno + narrativa heurística do dia
 - ✅ Card de indicadores de sucesso da adoção interna (DAU/WAU, sessões/dia, comments públicos/sem, tasks triadas) com conclusão heurística
+- ✅ Captura rápida de task (`⌘⇧N` + command palette) — overlay só-título, task cai na Triagem
 
 #### P0 · próximas 1-2 semanas (continuação adoção interna)
-- **Captura rápida de task** (`Cmd+Shift+N` global) — abre modal pré-preenchido. ~3h.
 - **Notif digest hourly** — agrupar push por hora, evitar quebra de foco. ~4h.
 
 #### P1 · próximas 2-4 semanas (primeira IA)

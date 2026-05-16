@@ -398,16 +398,25 @@ Cliente e responsável aparecem como selects no topo da própria aba.
 Abre busca global por:
 - Tarefas (título e descrição) → abre o detalhe
 - Clientes / Projetos / Pessoas → filtra Backlog
-- Ações: nova tarefa, ir pra qualquer aba, exportar PDF/CSV, limpar filtros, alternar tema, recarregar, abrir ajuda
+- Ações: nova tarefa, **captura rápida**, ir pra qualquer aba, exportar PDF/CSV, limpar filtros, alternar tema, recarregar, abrir ajuda
 
 100% teclado: ↑↓ navegar · ↵ confirmar · Esc fechar.
+
+### Captura rápida (⌘⇧N / Ctrl+Shift+N)
+
+Overlay mínimo pra registrar uma tarefa em 2-5 segundos sem trocar de aba — só o título. Funciona **de qualquer lugar, inclusive enquanto você digita em outro campo**. Enter cria e mantém o overlay aberto pra capturar a próxima; Esc fecha.
+
+A tarefa entra em `backlog` sem cliente, responsável nem prazo — vai direto pra **Triagem**, onde alguém refina depois. É a forma de não perder uma ideia/pedido no meio de outra coisa.
+
+> O Chrome reserva ⌘⇧N pra aba anônima e pode não ceder o atalho. Se isso acontecer, use **⌘K → "Captura rápida"** — esse caminho sempre funciona.
 
 ### Atalhos globais
 
 | Tecla | Ação |
 |---|---|
 | `⌘K` · `Ctrl+K` | Abrir/fechar command palette |
-| `n` | Nova tarefa |
+| `⌘⇧N` · `Ctrl+Shift+N` | Captura rápida (funciona até digitando) |
+| `n` | Nova tarefa (formulário completo) |
 | `/` | Foco na busca do Backlog (em outras abas, abre palette) |
 | `g f` | Ir pra Meu foco |
 | `g b` | Ir pra Backlog |
