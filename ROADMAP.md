@@ -967,6 +967,17 @@ Nenhuma versão funcionou visualmente em produção. Suspeitas não confirmadas:
 
 **Reabrir quando**: o deploy de edge functions migrar pra multi-arquivo (CLI ou editor multi-file do Dashboard).
 
+##### Rebuild Next.js · Onda 0 feita, parqueado (mai/2026)
+
+A migração pra stack definitiva (Next.js + Drizzle) foi **iniciada e parqueada** conscientemente.
+
+- A **Onda 0 (fundação)** foi scaffoldada na branch **`rebuild/next-app`**, subpasta `web/`: Next.js 15 + TypeScript + Tailwind com tokens da marca + Drizzle + wiring Supabase + shell de navegação. Builda OK. A branch é longa e **não foi mergeada** em `main` — fica dormente como ponto de partida.
+- O app Alpine atual (raiz do repo) segue intocado e em produção.
+
+**Por que parou**: o rebuild das Ondas 1-4 é reescrever o app inteiro (~13 semanas/1 dev) sem entregar feature nova — só troca de fundação. Os critérios de saída do protótipo (ver §9.1.6) não foram batidos, o app atual está rápido e em uso, e todo valor novo recente (webhook SF, flag IA, domínios, endpoints Cowork) foi entregue **direto no app atual**, sem rebuild. O custo/risco não se justifica agora.
+
+**Reabrir quando**: bater os 3 critérios de §9.1.6 (time todo dependendo do app · ≥3 dores que o protótipo não resolve · cliente externo pedindo acesso). Aí retomar a `rebuild/next-app` da Onda 1, incremental — uma tela verificada por vez.
+
 ### WhatsApp digest (parking lot · pra avaliar quando o single-file estiver modularizado)
 
 Engajamento push pra gestor de agência brasileira via WhatsApp. **Plano discutido em mai/2026, sem ação imediata.** Reabrir quando: (a) modularização estiver concluída, (b) primeira feature de IA validada, (c) ≥3 gestores externos pedirem.
