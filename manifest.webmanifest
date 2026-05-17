@@ -1,15 +1,40 @@
 {
-  "name": "Kliente 360 — Backlog",
-  "short_name": "Kliente 360",
-  "description": "Backlog interno da Kliente 360.",
+  "name": "tasks 360",
+  "short_name": "tasks 360",
+  "description": "Gestão de backlog da Kliente 360.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#009900",
   "theme_color": "#009900",
   "orientation": "portrait",
+  "categories": ["business", "productivity"],
   "icons": [
-    { "src": "/assets/favicon-32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "/assets/favicon-32.png",      "sizes": "32x32",   "type": "image/png" },
     { "src": "/assets/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
-    { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/assets/icon-512.png",         "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/icon-512.png",         "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova task",
+      "short_name": "Nova task",
+      "description": "Criar uma nova tarefa",
+      "url": "/?new=1",
+      "icons": [{ "src": "/assets/icon-512.png", "sizes": "512x512" }]
+    },
+    {
+      "name": "Meu Foco",
+      "short_name": "Meu Foco",
+      "description": "Urgências do dia",
+      "url": "/?tab=foco",
+      "icons": [{ "src": "/assets/icon-512.png", "sizes": "512x512" }]
+    },
+    {
+      "name": "Briefing",
+      "short_name": "Briefing",
+      "description": "Resumo executivo",
+      "url": "/?tab=brief",
+      "icons": [{ "src": "/assets/icon-512.png", "sizes": "512x512" }]
+    }
   ]
 }
