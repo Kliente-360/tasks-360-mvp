@@ -10,13 +10,15 @@ Aplicativo de gestão de backlog interno para a **Kliente 360** (consultoria ofi
 
 ## 2. Estado atual
 
-**v1.02.005 · em uso real interno, com cliente externo logando.** Pós ciclo de design (PRs #253-#270) + features estratégicas (cliente interno bucket, notif por tipo, foco narrativa, adoption indicators de sucesso). Multi-file modular. Stack: Alpine.js + Tailwind CDN + Chart.js + marked.js, conectado a backend Supabase — Postgres com **RLS fechada role-aware**, Auth (magic link), Realtime, Edge Functions, Storage e pg_cron.
+**v1.02.046 · em uso real interno, com cliente externo logando.** Pós ciclo de design (PRs #253-#270) + features estratégicas (cliente interno bucket, notif por tipo, foco narrativa, adoption indicators de sucesso) + ciclo de automação/IA-ingest (PRs #275-#282). Multi-file modular. Stack: Alpine.js + Tailwind CDN + Chart.js + marked.js, conectado a backend Supabase — Postgres com **RLS fechada role-aware**, Auth (magic link), Realtime, Edge Functions, Storage e pg_cron.
 
 **Modularização (Onda F)** concluída em mai/2026 (21 PRs, #191-#212): `index.html` saiu de 10.807 → 3.492 linhas; Alpine extraído pra `lib/app.js` (~580 linhas, state + INIT/PERSISTÊNCIA) e fatiado em **13 views** sob `lib/views/*`. CSS em `lib/styles.css` (~1.700 linhas). Padrão de composição: `Object.defineProperties(base, getOwnPropertyDescriptors(makeXxxView()))` em `app()` — preserva getters reativos do Alpine que `Object.assign` achataria.
 
 **Ciclo de design (mai/2026)** entregou page-bar consistente em 7 abas, modais cadastros refeitos, mobile harmonizado (toggle + new com altura 32px alinhada ao bloco logo+versão), deep linking URL, e portal mobile switcher. Saiu de "protótipo robusto" pra "produto comercializável".
 
 **Features estratégicas pós-design**: bucket de cliente interno (`eh_interno` flag, admin-only, excluído de heurísticas), notificações por tipo (mention/assignment/status_change com chips de filtro), foco com narrativa heurística + abertura padrão pra admin/interno, e card de indicadores de sucesso da adoção interna no topo da aba Adoption.
+
+**Ciclo de automação/IA-ingest (PRs #275–#282, mai/2026)**: flag `criado_por_ia` em tasks (ingest aceita, UI mostra chip 🤖 sempre visível na Triagem, filtro origem IA/humano no menu do Backlog); edge functions `get-clientes` e `get-pessoas` (automação descobre responsáveis/clientes por nome); ingest-task aceita task sem cliente com sentinel "Triagem" como fallback; campo `dominios` (text[]) em clientes com chip UI (exibição admin-only — internos não veem tier nem domínios no modal).
 
 **A RLS deixou de ser "aberta consciente"** — tenant isolation real via policies por role (`admin`/`interno`/`cliente`), com helpers `app_pessoa_role()`, `app_pessoa_cliente_id()`, `app_is_staff()` e RPC `app_link_current_user_to_pessoa()` pra first-login. A migração pra Next + Drizzle (Onda 0) segue parked — a modularização ganhou tempo significativo.
 
@@ -98,7 +100,7 @@ Estrutura de rotas planejada: route groups `(internal)` e `(client)` com middlew
 
 ```
 clientes
-  id, nome, tier (estrategico|potencial|descoberta), arquivado_em
+  id, nome, tier (estrategico|potencial|descoberta), dominios (text[]), arquivado_em
 
 projetos
   id, cliente_id, nome, tipo, sla_*, orcamento_horas, arquivado_em
@@ -113,6 +115,7 @@ tasks
   visivel_cliente, tags[], checklist (jsonb [{id, body, done}]),
   tempo_real_horas, reopen_count, ordem (float pra reorder manual),
   external_source (salesforce|null), external_id,
+  criado_por_ia (boolean, default false),
   arquivado_em, criado_em, status_em, subetapa_em
 
 task_comments
@@ -156,6 +159,10 @@ Detalhes críticos:
 - **Onda D+ — Sugestões de redistribuição** (PR #176): correlação pessoa × projeto na mesma semana ≥40% concentração → sugestão de realocar pra quem tem o cliente como principal/secundário e tem folga. Sem auto-apply. Top 5 ordenadas por semana e severidade.
 - **Onda E — RLS role-aware** (PRs #185–#188): tenant isolation real. Drop de `prototipo_all` em todas as tabelas sensíveis + policies por role + helpers stable. Frontend `_loadPortal` separado. RPC `app_link_current_user_to_pessoa` resolve chicken-and-egg de first login. **Cliente externo seguro.**
 - **Onda F — Modularização do single-file** (PRs #191–#212): 21 PRs sequenciais transformando `index.html` de single-file de 10.807 linhas em estrutura modular: `lib/styles.css` (CSS extraído), `lib/adapters.js` (mapeamento JS↔DB), `lib/supabase-client.js`, **13 views** em `lib/views/*` (portal, briefing, calendar-foco, utilities, anexos, notifications-checklist, cadastros, task-modal, adoption, charts, backlog-kanban, core-data, telemetria-export), `lib/app.js` reduzido a 542 linhas (state + INIT/PERSISTÊNCIA + composição de mixins). Padrão técnico: `Object.defineProperties(base, getOwnPropertyDescriptors(makeXxxView()))` preserva getters Alpine. **Adia significativamente a necessidade da Onda 0.**
+- **Ciclo de design (PRs #253–#270)**: page-bar consistente em 7 abas, modais cadastros refeitos, mobile harmonizado, deep linking URL (`?task=<uuid>`), portal mobile switcher. Saiu de "protótipo robusto" pra "produto comercializável".
+- **Ciclo de adoção interna (PRs #234–#241)**: bucket de cliente interno (`eh_interno`), notif por tipo com chips, foco com narrativa heurística + abertura padrão, card indicadores de sucesso Adoption.
+- **PDF Resumo Executivo (PRs #270–#272)**: exportação 8 páginas narrativas (capa KPIs + sinais + 3 charts + backlog + saúde pessoa).
+- **Ciclo automação/IA-ingest (PRs #275–#282)**: `criado_por_ia`, edge functions `get-clientes`/`get-pessoas`, ingest sem cliente + sentinel "Triagem", `dominios` em clientes, gating tier/domínios por role.
 
 ## 9. As 8 visões de analytics (definitivas)
 
@@ -176,8 +183,8 @@ Para gestão operacional:
 `index.html` tem 9 abas principais (gating por role · cliente externo só vê Portal):
 
 - **Foco**: urgências do dia (filtrável por pessoa). Sub-utilizada — candidato a virar a "tela mais importante" se receber resumo IA + agenda do dia.
-- **Backlog**: tabela ordenável + filtrável (cliente · projeto · pessoa · prioridade · complexidade · status · tag, todos com opção sentinel `__empty__` "vazio") + bulk actions (etapa, pessoa, prioridade, prazo, esforço, arquivar, excluir).
-- **Triagem**: cards de tarefas com critérios faltando (responsável/cliente/prazo/esforço), filtros chip "sem-X", multiselect + bulk (pessoa, prazo, esforço).
+- **Backlog**: tabela ordenável + filtrável (cliente · projeto · pessoa · prioridade · complexidade · status · tag · **origem IA/humano**, todos com opção sentinel `__empty__` "vazio") + bulk actions (etapa, pessoa, prioridade, prazo, esforço, arquivar, excluir).
+- **Triagem**: cards de tarefas com critérios faltando (responsável/cliente/prazo/esforço), filtros chip "sem-X", chip 🤖 IA sempre visível (combina com outros filtros), multiselect + bulk (pessoa, prazo, esforço).
 - **Kanban**: 11 colunas operacionais OU 4 colunas executivas (toggle), drag-and-drop, quick-add inline por coluna. Filtros: cliente · projeto · responsável.
 - **Calendário**: mensal, tasks com prazo agrupadas por dia. Filtros: cliente · projeto · responsável.
 - **Dashboard**: 8 visões analytics + banner de heurísticas (top 3) com CTA pro Briefing. Filtros: cliente · projeto · responsável.
@@ -232,7 +239,7 @@ Cada evolução preserva: estética Kliente 360, princípios da seção 3, conve
 
 ## 14. Diagnóstico estratégico e visão de futuro
 
-**Diagnóstico v2 · atualizado mai/2026 · v1.02.005.** Esta seção captura uma leitura honesta do estado atual contra benchmarks acessíveis ao mercado-alvo (agências BR de serviços profissionais 8-50 pessoas) e propõe priorização. **Não é roadmap operacional** (esse vive em `ROADMAP.md`) — é leitura de produto e estratégia.
+**Diagnóstico v2 · atualizado mai/2026 · v1.02.046.** Esta seção captura uma leitura honesta do estado atual contra benchmarks acessíveis ao mercado-alvo (agências BR de serviços profissionais 8-50 pessoas) e propõe priorização. **Não é roadmap operacional** (esse vive em `ROADMAP.md`) — é leitura de produto e estratégia.
 
 ### 14.1 Onde isso se encaixa no mercado · score atualizado
 
@@ -254,7 +261,7 @@ Escala 1-5. **Negrito** = vantagem real defensável.
 | *Features de IA em produção* | *0* | *3* | *2* | *3* | *4* | *4* | *1* |
 | Preço (USD/seat/mês) | 0 (interno) | 9-63 | 12-69 | 11-25 | 8-14 | 8-15 | 99 flat |
 
-**Soma das vantagens reais: 6 fossos defensáveis** (vs 3 no diagnóstico anterior · ganhamos design polish, adoption v2 e mobile). **Gaps inalterados: IA (0), time tracking (0), faturamento (0), integrações (1).**
+**Soma das vantagens reais: 6 fossos defensáveis** (vs 3 no diagnóstico anterior · ganhamos design polish, adoption v2 e mobile). **Gaps inalterados: IA (0), time tracking (0), faturamento (0), integrações (1).** Ciclo automação/IA-ingest (#275-#282) adiciona infraestrutura de IA no backend (ingest aceita `criado_por_ia`, edge functions de lookup) mas não fecha o gap de IA visível ao usuário.
 
 **Posicionamento sugerido pra fora**: "sistema operacional enxuto pra agências brasileiras de serviços profissionais. Capacity planning, gestão executiva narrada, e portal cliente de verdade — em um único produto, em português, sem o peso enterprise."
 
@@ -284,8 +291,11 @@ Recursos que **não existem combinados em nenhum competidor brasileiro acessíve
 - ✅ Notificações por tipo (mention/assignment/status_change) com chips de filtro
 - ✅ Foco como tab de abertura padrão pra admin/interno + narrativa heurística do dia
 - ✅ Card de indicadores de sucesso da adoção interna (DAU/WAU, sessões/dia, comments públicos/sem, tasks triadas) com conclusão heurística
+- ✅ PDF Resumo Executivo 8 páginas (PRs #270-#272)
+- ✅ `criado_por_ia` + filtro origem IA/humano + edge functions `get-clientes`/`get-pessoas` (PRs #275-#282)
+- ✅ Ingest sem cliente + sentinel "Triagem" + `dominios` em clientes
 
-#### P0 · próximas 1-2 semanas (continuação adoção interna)
+#### P0 · pendente (continuação adoção interna)
 - **Captura rápida de task** (`Cmd+Shift+N` global) — abre modal pré-preenchido. ~3h.
 - **Notif digest hourly** — agrupar push por hora, evitar quebra de foco. ~4h.
 
@@ -339,4 +349,4 @@ Se em 60 dias 4/4 baterem → **pronto pra piloto comercial controlado** (1-2 ag
 
 ### 14.7 Em uma frase
 
-**O app saiu de "protótipo robusto" pra "produto comercializável" no ciclo de design + adoção interna (PRs #253-#270 + #234-#241). Caminho crítico agora: ~7h de polish (captura rápida + notif digest) + 1.5 dia de primeira IA. Em 4-6 semanas time interno deve estar 100% migrado — só então faz sentido conversar comercial externo.**
+**O app está em `v1.02.046`, produto comercializável em uso real (PRs #253-#282). Infraestrutura de automação/IA-ingest entregue. Caminho crítico agora: ~7h de polish (captura rápida `Cmd+Shift+N` + notif digest) + 1.5 dia de primeira IA visível ao usuário (resumir thread). Em 4-6 semanas time interno deve estar 100% migrado — só então faz sentido conversar comercial externo.**
