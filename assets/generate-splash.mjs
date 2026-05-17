@@ -32,8 +32,8 @@ function buildSvg(W, H) {
   const textY = cy + distance + dotRadius + Math.min(W, H) * 0.08;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-  <rect width="${W}" height="${H}" fill="#ffffff"/>
-  <g fill="${BRAND}">
+  <rect width="${W}" height="${H}" fill="${BRAND}"/>
+  <g fill="#ffffff">
     <circle cx="${cx}" cy="${cy - distance}" r="${dotRadius}"/>
     <circle cx="${cx - distance}" cy="${cy}" r="${dotRadius}"/>
     <circle cx="${cx + distance}" cy="${cy}" r="${dotRadius}"/>
@@ -43,7 +43,7 @@ function buildSvg(W, H) {
         font-family="IBM Plex Sans"
         font-weight="600"
         font-size="${fontSize}"
-        fill="#0F1A14"
+        fill="#ffffff"
         text-anchor="middle"
         letter-spacing="-0.01em">tasks 360</text>
 </svg>`;
@@ -52,7 +52,7 @@ function buildSvg(W, H) {
 function renderSplash(W, H) {
   const svg = buildSvg(W, H);
   const resvg = new Resvg(svg, {
-    background: 'rgba(255,255,255,1)',
+    background: BRAND,
     fitTo: { mode: 'width', value: W },
     font: {
       loadSystemFonts: false,
