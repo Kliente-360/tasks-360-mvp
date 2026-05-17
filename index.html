@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="color-scheme" content="light dark">
 <title>tasks 360</title>
 
 <!-- ícones e PWA -->
@@ -14,6 +15,27 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+<!-- Apple splash screens (apple-touch-startup-image · portrait). Tela de
+     abertura no iOS enquanto carrega — sem isto fica branco/preto. -->
+<link rel="apple-touch-startup-image" href="/assets/splash/splash-750x1334.png"
+      media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/assets/splash/splash-828x1792.png"
+      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/assets/splash/splash-1125x2436.png"
+      media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/assets/splash/splash-1170x2532.png"
+      media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/assets/splash/splash-1179x2556.png"
+      media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/assets/splash/splash-1284x2778.png"
+      media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/assets/splash/splash-1290x2796.png"
+      media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/assets/splash/splash-1668x2388.png"
+      media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/assets/splash/splash-2048x2732.png"
+      media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -155,7 +177,7 @@
 </div>
 
 <!-- ============ TOASTS ============ -->
-<div class="fixed bottom-4 right-4 z-[70] flex flex-col-reverse gap-2 max-w-[calc(100vw-2rem)] md:max-w-sm pointer-events-none">
+<div class="fixed right-4 z-[70] flex flex-col-reverse gap-2 max-w-[calc(100vw-2rem)] md:max-w-sm pointer-events-none" style="bottom: calc(1rem + env(safe-area-inset-bottom))">
   <template x-for="t in toasts" :key="t.id">
     <div class="toast pointer-events-auto" :class="'toast-' + t.kind"
          x-transition:enter="transition ease-out duration-200"
@@ -3079,9 +3101,10 @@
 <div x-show="selectedIds.length > 0 && (tab==='backlog' || tab==='triagem')"
      x-transition.opacity
      class="fixed z-[55] bg-elev border border-line shadow-2xl
-            bottom-3 left-3 right-3 rounded-lg p-3
-            md:bottom-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:p-2 md:px-3
-            md:max-w-[calc(100vw-24px)]">
+            left-3 right-3 rounded-lg p-3
+            md:left-1/2 md:right-auto md:-translate-x-1/2 md:p-2 md:px-3
+            md:max-w-[calc(100vw-24px)]"
+     style="bottom: calc(0.75rem + env(safe-area-inset-bottom))">
   <!-- Header row (mobile) / inline count (desktop) -->
   <div class="flex items-center justify-between md:justify-start gap-2 md:gap-2">
     <span class="text-sm md:text-xs font-mono text-ink">

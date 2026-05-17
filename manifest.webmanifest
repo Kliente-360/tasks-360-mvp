@@ -1,13 +1,17 @@
 {
+  "id": "/?source=pwa",
   "name": "tasks 360",
   "short_name": "tasks 360",
   "description": "Gestão de backlog da Kliente 360.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#009900",
+  "background_color": "#ffffff",
   "theme_color": "#009900",
   "orientation": "portrait",
+  "lang": "pt-BR",
   "categories": ["business", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     { "src": "/assets/favicon-32.png",      "sizes": "32x32",   "type": "image/png" },
     { "src": "/assets/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
