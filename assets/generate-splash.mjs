@@ -18,7 +18,7 @@ if (!existsSync(FONT_PATH)) {
   console.error('  curl -sL "https://fonts.gstatic.com/s/ibmplexsans/v23/zYXGKVElMYYaJe8bpLHnCwDKr932-G7dytD-Dmu1swZSAXcomDVmadSDNF5zAA.ttf" -o assets/_plex-600.ttf');
   process.exit(1);
 }
-const FONT_B64 = readFileSync(FONT_PATH).toString('base64');
+const FONT_BUF = readFileSync(FONT_PATH);
 
 function buildSvg(W, H) {
   const cx = W / 2;
@@ -32,16 +32,6 @@ function buildSvg(W, H) {
   const textY = cy + distance + dotRadius + Math.min(W, H) * 0.08;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-  <defs>
-    <style>
-      @font-face {
-        font-family: 'IBM Plex Sans';
-        font-weight: 600;
-        font-style: normal;
-        src: url('data:font/ttf;base64,${FONT_B64}') format('truetype');
-      }
-    </style>
-  </defs>
   <rect width="${W}" height="${H}" fill="#ffffff"/>
   <g fill="${BRAND}">
     <circle cx="${cx}" cy="${cy - distance}" r="${dotRadius}"/>
@@ -64,7 +54,11 @@ function renderSplash(W, H) {
   const resvg = new Resvg(svg, {
     background: 'rgba(255,255,255,1)',
     fitTo: { mode: 'width', value: W },
-    font: { loadSystemFonts: false },
+    font: {
+      loadSystemFonts: false,
+      fontBuffers: [FONT_BUF],
+      defaultFontFamily: 'IBM Plex Sans',
+    },
   });
   return resvg.render().asPng();
 }
