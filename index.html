@@ -939,7 +939,7 @@
       <select class="inp w-[140px]" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
-        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
+        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
       <select class="inp w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
         <option value="">Pessoas</option>
@@ -1045,7 +1045,7 @@
         <!-- Contextual: opção não-selecionada mostra "Cliente · Projeto"; selecionada mostra só Projeto.
              Resultado: select fechado lê curto, dropdown aberto lê contexto completo. -->
         <template x-for="p in projetosFiltrados" :key="p.id">
-          <option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option>
+          <option :value="p.id" x-text="p.nome"></option>
         </template>
       </select>
     </div>
@@ -1396,7 +1396,7 @@
       <select class="inp w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
-        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
+        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
       <select class="inp w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
         <option value="">Responsáveis</option>
@@ -1421,7 +1421,7 @@
       <select class="inp flex-1" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
-        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
+        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
     </div>
     <select class="inp" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
@@ -1556,7 +1556,7 @@
       <select class="inp w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
-        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
+        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
       <select class="inp w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
         <option value="">Responsáveis</option>
@@ -1576,7 +1576,7 @@
     <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente || f.cliente==='__empty__'">
       <option value="">Projetos</option>
       <option value="__empty__">— sem projeto</option>
-      <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
+      <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
     <select class="inp" :class="f.pessoa && 'is-active'" x-model="f.pessoa">
       <option value="">Responsáveis</option>
@@ -2002,7 +2002,7 @@
       <select class="inp w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente" @change="$nextTick(()=>renderCharts())">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
-        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
+        <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
       </select>
       <select class="inp w-[140px]" :class="f.pessoa && 'is-active'" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
         <option value="">Responsáveis</option>
@@ -2054,7 +2054,7 @@
     <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente" @change="$nextTick(()=>renderCharts())">
       <option value="">Projetos</option>
       <option value="__empty__">— sem projeto</option>
-      <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
+      <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
     <select class="inp" :class="f.pessoa && 'is-active'" x-model="f.pessoa" @change="$nextTick(()=>renderCharts())">
       <option value="">Responsáveis</option>
@@ -3597,7 +3597,7 @@
               <label class="lbl">Projeto</label>
               <select class="inp" x-model="editing.projetoId" :disabled="!editing.clienteId">
                 <option value="">—</option>
-                <template x-for="p in projetosDoCliente(editing.clienteId)" :key="p.id"><option :value="p.id" x-text="editing.projetoId === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
+                <template x-for="p in projetosDoCliente(editing.clienteId)" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
               </select>
             </div>
             <div>
