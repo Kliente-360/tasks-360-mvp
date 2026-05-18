@@ -3718,6 +3718,16 @@
             </div>
           </div>
         </div>
+
+        <!-- ID externo (Salesforce / automação) -->
+        <div class="tmodal-section">
+          <div class="tmodal-section-title">Integração</div>
+          <div>
+            <label class="lbl">ID externo</label>
+            <input type="text" class="inp font-mono text-xs" x-model="editing.externalId" placeholder="— sem ID externo">
+            <div class="text-[10px] text-muted mt-1" x-show="editing.externalSource" x-text="'fonte: ' + editing.externalSource"></div>
+          </div>
+        </div>
       </div>
 
       <!-- DIREITA · conversa + histórico (tabs) -->
