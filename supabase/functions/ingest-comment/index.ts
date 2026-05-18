@@ -20,6 +20,14 @@
 //   A função só atualiza external_id + external_source no comment existente,
 //   sem criar duplicata. task_external_id ainda é obrigatório (validação de
 //   segurança: confirma que o comment pertence à task certa).
+//   Neste modo, "body" NÃO é obrigatório — pode ser omitido.
+//
+//   Exemplo de callback mínimo:
+//   {
+//     "external_id":         "ID-deles",
+//     "task_external_id":    "external_id-da-task",
+//     "internal_comment_id": "uuid-nosso-que-veio-no-webhook"
+//   }
 //
 // Reply rules: máximo 1 nível de aninhamento (treplica é proibida pelo DB).
 // Se parent_external_id apontar pra um comment que já é reply, o insert falha
@@ -106,8 +114,9 @@ Deno.serve(async (req) => {
   }
 
   // ── MODO NORMAL (create / update por external_id) ──────────────────────────
+  // body só é obrigatório aqui — no modo link não é usado.
   const text = String(body.body ?? '').trim();
-  if (!text) return err(422, 'missing_body', 'body is required');
+  if (!text) return err(422, 'missing_body', 'body is required (não necessário no modo link)');
 
   // postedEm opcional, ISO
   let postedEm: string | null = null;
