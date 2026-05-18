@@ -477,6 +477,7 @@
             <div class="kcard" @click="openEdit(t)">
               <div class="flex items-start justify-between gap-2 mb-2">
                 <div class="font-medium text-sm leading-snug min-w-0">
+                  <span x-show="t.privada" class="ia-chip ia-chip-mini mr-1" title="Task privada">🔒</span>
                   <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini mr-1" title="Criada por automação IA">🤖 IA</span>
                   <span x-text="t.titulo"></span>
                 </div>
@@ -888,6 +889,7 @@
                   <span class="pri-dot"></span>
                   <span x-text="t.prioridade"></span>
                 </span>
+                <span x-show="t.privada" class="ia-chip ia-chip-mini" title="Task privada">🔒</span>
                 <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini" title="Criada por automação IA">🤖 IA</span>
                 <span class="font-medium text-ink break-words" x-text="t.titulo"></span>
               </div>
@@ -1228,6 +1230,7 @@
               </td>
               <td>
                 <div class="tbl-title" :title="t.titulo">
+                  <span x-show="t.privada" class="ia-chip ia-chip-mini mr-1" title="Task privada">🔒</span>
                   <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini mr-1" title="Criada por automação IA">🤖 IA</span>
                   <span x-text="t.titulo"></span>
                 </div>
@@ -1319,6 +1322,7 @@
             <div class="kcard" @click="openEdit(t)">
               <div class="flex items-start justify-between gap-2 mb-2">
                 <div class="font-medium text-sm leading-snug min-w-0">
+                  <span x-show="t.privada" class="ia-chip ia-chip-mini mr-1" title="Task privada">🔒</span>
                   <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini mr-1" title="Criada por automação IA">🤖 IA</span>
                   <span x-text="t.titulo"></span>
                 </div>
@@ -3727,6 +3731,15 @@
             <input type="text" class="inp font-mono text-xs" x-model="editing.externalId" placeholder="— sem ID externo">
             <div class="text-[10px] text-muted mt-1" x-show="editing.externalSource" x-text="'fonte: ' + editing.externalSource"></div>
           </div>
+        </div>
+
+        <!-- Privada (só CEO) -->
+        <div class="tmodal-section" x-show="currentPessoa && currentPessoa.is_ceo">
+          <div class="tmodal-section-title">Privacidade</div>
+          <label class="inp flex items-center gap-2 cursor-pointer select-none" style="background: var(--bg-elev);">
+            <input type="checkbox" x-model="editing.privada" class="cursor-pointer">
+            <span class="text-sm" x-text="editing.privada ? '🔒 task privada — visível só pra você' : '— pública (visível ao time)'"></span>
+          </label>
         </div>
       </div>
 
