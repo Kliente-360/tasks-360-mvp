@@ -1454,17 +1454,18 @@
                @click="openEdit(t)"
                @dragstart="onDragStart($event, t)"
                @dragend="draggingId=''; dragOverCol=''">
-            <div class="flex items-start justify-between gap-2 mb-2">
-              <div class="font-medium text-sm leading-snug">
-                <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini mr-1" title="Criada por automação IA">🤖 IA</span>
-                <span x-text="t.titulo"></span>
-              </div>
-              <span class="pri" :class="'pri-'+t.prioridade">
+            <div class="font-medium text-sm leading-snug mb-2">
+              <span x-show="t.privada" class="ia-chip ia-chip-mini mr-1" title="Task privada">🔒</span>
+              <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini mr-1" title="Criada por automação IA">🤖 IA</span>
+              <span x-text="t.titulo"></span>
+            </div>
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <div class="text-xs text-muted truncate" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></div>
+              <span class="pri shrink-0" :class="'pri-'+t.prioridade">
                 <span class="pri-dot"></span>
                 <span x-text="t.prioridade"></span>
               </span>
             </div>
-            <div class="text-xs text-muted mb-2" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></div>
             <div x-show="(t.tags || []).length>0" class="flex flex-wrap gap-1 mb-2">
               <template x-for="tag in (t.tags || [])" :key="tag">
                 <span class="tag-chip" x-text="'#' + tag"></span>
@@ -1500,17 +1501,17 @@
         </div>
         <template x-for="t in kanbanCol(col)" :key="t.id">
           <div class="kcard" @click="openEdit(t)">
-            <div class="flex items-start justify-between gap-2 mb-2">
-              <div class="font-medium text-sm leading-snug">
-                <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini mr-1" title="Criada por automação IA">🤖 IA</span>
-                <span x-text="t.titulo"></span>
-              </div>
-              <span class="pri" :class="'pri-'+t.prioridade">
+            <div class="font-medium text-sm leading-snug mb-2">
+              <span x-show="t.criadoPorIa" class="ia-chip ia-chip-mini mr-1" title="Criada por automação IA">🤖 IA</span>
+              <span x-text="t.titulo"></span>
+            </div>
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <div class="text-xs text-muted truncate" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></div>
+              <span class="pri shrink-0" :class="'pri-'+t.prioridade">
                 <span class="pri-dot"></span>
                 <span x-text="t.prioridade"></span>
               </span>
             </div>
-            <div class="text-xs text-muted mb-1" x-text="nomeCliente(t.clienteId) + ' · ' + nomeProjeto(t.projetoId)"></div>
             <div class="text-[11px] text-ink-soft font-mono mb-2" x-text="lblSub(t.subetapa)"></div>
             <div x-show="(t.tags || []).length>0" class="flex flex-wrap gap-1 mb-2">
               <template x-for="tag in (t.tags || [])" :key="tag">
