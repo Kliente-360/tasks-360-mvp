@@ -1445,25 +1445,6 @@
           <div class="kcol-op-name" x-text="lblSub(sub)"></div>
           <!-- Métrica oculta quando coluna vazia — "vazio" abaixo já fala por si só. -->
           <div x-show="kanbanColSub(sub).length > 0" class="font-mono text-xs text-muted mt-1.5" x-text="kanbanColSub(sub).length + ' itens · ' + kanbanColSub(sub).reduce((a,b)=>a+(+b.esforco||0),0) + 'h'"></div>
-          <div class="mt-2" @click.stop>
-            <template x-if="quickAddSub !== sub">
-              <button class="kcol-add-btn" @click="openQuickAdd(sub)" :title="'Adicionar tarefa em ' + lblSub(sub)">+ adicionar</button>
-            </template>
-            <template x-if="quickAddSub === sub">
-              <div class="flex flex-col gap-1.5">
-                <input type="text" class="inp text-xs py-1.5"
-                       :id="'quickAdd-' + sub"
-                       x-model="quickAddTitle"
-                       placeholder="título da tarefa…"
-                       @keydown.enter.prevent="quickAddSubmit(sub)"
-                       @keydown.escape.prevent="closeQuickAdd()">
-                <div class="flex gap-1">
-                  <button class="btn btn-primary text-xs py-1 px-2 flex-1" @click="quickAddSubmit(sub)">criar</button>
-                  <button class="btn btn-ghost text-xs py-1 px-2" @click="closeQuickAdd()">×</button>
-                </div>
-              </div>
-            </template>
-          </div>
         </div>
         <template x-for="t in kanbanColSub(sub)" :key="t.id">
           <!-- Card task: ESPELHADO no Calendário (calSelectedTasks). Manter sincronizado. -->
