@@ -3147,6 +3147,16 @@
       <option value="__none__">— sem responsável —</option>
       <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
+    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[150px]" x-model="bulkPending.cliente" title="Cliente…">
+      <option value="">cliente…</option>
+      <option value="__none__">— sem cliente —</option>
+      <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
+    </select>
+    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[150px]" x-model="bulkPending.projeto" title="Projeto…">
+      <option value="">projeto…</option>
+      <option value="__none__">— sem projeto —</option>
+      <template x-for="p in projetos.filter(p => !bulkPending.cliente || p.clienteId === bulkPending.cliente)" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
+    </select>
     <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]" x-model="bulkPending.prioridade" title="Prioridade…">
       <option value="">prioridade…</option>
       <option value="P0">P0 · Urgente</option>
@@ -3167,7 +3177,7 @@
     <div class="flex gap-2 md:contents">
       <button class="btn btn-brand text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
               @click="bulkSave()"
-              :disabled="!(bulkPending.subetapa || bulkPending.pessoa || bulkPending.prioridade || bulkPending.prazo || bulkPending.esforco !== '')">salvar</button>
+              :disabled="!(bulkPending.subetapa || bulkPending.pessoa || bulkPending.cliente || bulkPending.projeto || bulkPending.prioridade || bulkPending.prazo || bulkPending.esforco !== '')">salvar</button>
       <button x-show="tab==='backlog'" class="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkArquivar()">arquivar</button>
       <button x-show="viewerRole === ROLE.ADMIN && tab==='backlog'" class="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkDelete()">excluir</button>
       <div class="hidden md:block w-px h-5 bg-line mx-1"></div>
