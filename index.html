@@ -3086,18 +3086,18 @@
 <!-- ============ BULK ACTIONS BAR ============ -->
 <div x-show="selectedIds.length > 0 && (tab==='backlog' || tab==='triagem')"
      x-transition.opacity
-     class="fixed z-[55] bg-elev border border-line shadow-2xl
+     class="fixed z-[55] shadow-2xl
             left-3 right-3 rounded-lg p-3
             md:left-1/2 md:right-auto md:-translate-x-1/2 md:p-2 md:px-3
             md:max-w-[calc(100vw-24px)]"
-     style="bottom: calc(0.75rem + env(safe-area-inset-bottom))">
+     style="bottom: calc(0.75rem + env(safe-area-inset-bottom)); background: var(--brand); color: #fff;">
   <!-- Header row (mobile) / inline count (desktop) -->
   <div class="flex items-center justify-between md:justify-start gap-2 md:gap-2">
-    <span class="text-sm md:text-xs font-mono text-ink">
+    <span class="text-sm md:text-xs font-mono" style="color:#fff; opacity:.9">
       <strong x-text="selectedIds.length"></strong> selecionada<span x-show="selectedIds.length !== 1">s</span>
     </span>
-    <div class="hidden md:block w-px h-5 bg-line mx-1"></div>
-    <button class="btn btn-ghost text-xs md:hidden" @click="clearSelection()" aria-label="Limpar seleção">✕ limpar</button>
+    <div class="hidden md:block w-px h-5 mx-1" style="background:rgba(255,255,255,.3)"></div>
+    <button class="btn btn-ghost text-xs md:hidden" style="color:#fff; border-color:rgba(255,255,255,.4)" @click="clearSelection()" aria-label="Limpar seleção">✕ limpar</button>
   </div>
 
   <!-- Ações: stack mobile, inline desktop -->
@@ -3157,13 +3157,14 @@
            title="Esforço em horas">
 
     <div class="flex gap-2 md:contents">
-      <button class="btn btn-primary text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
+      <button class="btn text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center font-semibold"
+              style="background:#fff; color:var(--brand); border-color:#fff"
               @click="bulkSave()"
               :disabled="!(bulkPending.subetapa || bulkPending.pessoa || bulkPending.cliente || bulkPending.projeto || bulkPending.prioridade || bulkPending.prazo || bulkPending.esforco !== '')">salvar</button>
-      <button x-show="tab==='backlog'" class="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkArquivar()">arquivar</button>
+      <button x-show="tab==='backlog'" class="btn text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" style="color:#fff; border-color:rgba(255,255,255,.4)" @click="bulkArquivar()">arquivar</button>
       <button x-show="viewerRole === ROLE.ADMIN && tab==='backlog'" class="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkDelete()">excluir</button>
-      <div class="hidden md:block w-px h-5 bg-line mx-1"></div>
-      <button class="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 hidden md:inline-flex" @click="clearSelection()">limpar</button>
+      <div class="hidden md:block w-px h-5 mx-1" style="background:rgba(255,255,255,.3)"></div>
+      <button class="btn text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 hidden md:inline-flex" style="color:#fff; border-color:rgba(255,255,255,.4)" @click="clearSelection()">limpar</button>
     </div>
   </div>
 </div>
