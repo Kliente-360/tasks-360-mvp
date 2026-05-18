@@ -3120,8 +3120,8 @@
 
   <!-- Ações: stack mobile, inline desktop -->
   <div class="flex flex-col md:flex-row md:items-center gap-2 mt-2 md:mt-0 md:ml-2">
-    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[160px]" x-model="bulkPending.subetapa" title="Mover para…">
-      <option value="">mover etapa…</option>
+    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[130px]" x-model="bulkPending.subetapa" title="Etapa">
+      <option value="">etapa…</option>
       <optgroup label="Backlog">
         <option value="backlog">Backlog</option>
         <option value="priorizado">Priorizado</option>
@@ -3142,40 +3142,40 @@
         <option value="concluido">Concluído</option>
       </optgroup>
     </select>
-    <select class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[140px]" x-model="bulkPending.pessoa" title="Atribuir…">
-      <option value="">atribuir…</option>
-      <option value="__none__">— sem responsável —</option>
+    <select class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]" x-model="bulkPending.pessoa" title="Responsável">
+      <option value="">responsável…</option>
+      <option value="__none__">— nenhum —</option>
       <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
-    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[150px]" x-model="bulkPending.cliente" title="Cliente…">
+    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]" x-model="bulkPending.cliente" title="Cliente">
       <option value="">cliente…</option>
-      <option value="__none__">— sem cliente —</option>
+      <option value="__none__">— nenhum —</option>
       <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
     </select>
-    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[150px]" x-model="bulkPending.projeto" title="Projeto…">
+    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]" x-model="bulkPending.projeto" title="Projeto">
       <option value="">projeto…</option>
-      <option value="__none__">— sem projeto —</option>
+      <option value="__none__">— nenhum —</option>
       <template x-for="p in projetos.filter(p => !bulkPending.cliente || p.clienteId === bulkPending.cliente)" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
-    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]" x-model="bulkPending.prioridade" title="Prioridade…">
-      <option value="">prioridade…</option>
-      <option value="P0">P0 · Urgente</option>
-      <option value="P1">P1 · Alta</option>
-      <option value="P2">P2 · Normal</option>
-      <option value="P3">P3 · Baixa</option>
+    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[80px]" x-model="bulkPending.prioridade" title="Prioridade">
+      <option value="">pri…</option>
+      <option value="P0">P0</option>
+      <option value="P1">P1</option>
+      <option value="P2">P2</option>
+      <option value="P3">P3</option>
     </select>
-    <input type="text" placeholder="prazo (data)"
-           class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[140px]"
+    <input type="text" placeholder="prazo"
+           class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[110px]"
            onfocus="this.type='date'" onblur="if(!this.value) this.type='text'"
            x-model="bulkPending.prazo"
-           title="Definir prazo em massa">
+           title="Prazo">
     <input type="number" min="0" step="1" placeholder="esforço (h)"
-           class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[110px]"
+           class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[90px]"
            x-model="bulkPending.esforco"
-           title="Definir esforço em horas">
+           title="Esforço em horas">
 
     <div class="flex gap-2 md:contents">
-      <button class="btn btn-brand text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
+      <button class="btn btn-primary text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
               @click="bulkSave()"
               :disabled="!(bulkPending.subetapa || bulkPending.pessoa || bulkPending.cliente || bulkPending.projeto || bulkPending.prioridade || bulkPending.prazo || bulkPending.esforco !== '')">salvar</button>
       <button x-show="tab==='backlog'" class="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkArquivar()">arquivar</button>
