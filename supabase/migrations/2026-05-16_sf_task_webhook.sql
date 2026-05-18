@@ -131,9 +131,15 @@ begin
 end;
 $$;
 
-drop trigger if exists webhook_comment on task_comments;
-create trigger webhook_comment
-  after insert or update on task_comments
+drop trigger if exists webhook_comment_insert on task_comments;
+create trigger webhook_comment_insert
+  after insert on task_comments
   for each row
-  when (OLD is distinct from NEW)   -- insert sempre passa; update só em mudança real
+  execute function trg_webhook_comment();
+
+drop trigger if exists webhook_comment_update on task_comments;
+create trigger webhook_comment_update
+  after update on task_comments
+  for each row
+  when (OLD is distinct from NEW)
   execute function trg_webhook_comment();
