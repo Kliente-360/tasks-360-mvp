@@ -931,12 +931,12 @@
     </div>
     <div class="page-bar-controls">
       <input type="text" class="inp w-[200px]" placeholder="Buscar…" x-model.debounce.150ms="f.q" :class="f.q && 'is-active'">
-      <select class="inp w-[140px]" :class="f.cliente && 'is-active'" x-model="f.cliente">
+      <select class="inp w-[140px]" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="if(!$event.target.value) f.projeto=''">
         <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
-      <select class="inp w-[140px]" :class="f.projeto && 'is-active'" x-model="f.projeto">
+      <select class="inp w-[140px]" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
@@ -1032,14 +1032,14 @@
       </button>
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
-      <select class="inp" :class="f.cliente && 'is-active'" x-model="f.cliente">
+      <select class="inp" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="if(!$event.target.value) f.projeto=''">
         <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
     </div>
     <div class="col-span-2 md:col-span-2 md:block" :class="!filtersOpen && 'hidden'">
-      <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto">
+      <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <!-- Contextual: opção não-selecionada mostra "Cliente · Projeto"; selecionada mostra só Projeto.
@@ -1388,12 +1388,12 @@
       </span>
     </div>
     <div class="page-bar-controls">
-      <select class="inp w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente">
+      <select class="inp w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="if(!$event.target.value) f.projeto=''">
         <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
-      <select class="inp w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto">
+      <select class="inp w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
@@ -1413,12 +1413,12 @@
   <!-- Mobile: filtros + toggle empilhados (desktop usa o .page-bar acima) -->
   <div class="flex flex-col gap-2 mb-5 md:hidden">
     <div class="flex gap-2">
-      <select class="inp flex-1" :class="f.cliente && 'is-active'" x-model="f.cliente">
+      <select class="inp flex-1" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="if(!$event.target.value) f.projeto=''">
         <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
-      <select class="inp flex-1" :class="f.projeto && 'is-active'" x-model="f.projeto">
+      <select class="inp flex-1" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
@@ -1548,12 +1548,12 @@
         <button class="btn btn-ghost text-xs" @click="calToday()">hoje</button>
         <button class="more-menu-btn" @click="calNext()" title="Próximo mês" aria-label="Próximo mês">›</button>
       </div>
-      <select class="inp w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente">
+      <select class="inp w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="if(!$event.target.value) f.projeto=''">
         <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
-      <select class="inp w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto">
+      <select class="inp w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
@@ -1568,12 +1568,12 @@
 
   <!-- Mobile: filtros stack -->
   <div class="flex flex-col gap-2 mb-5 md:hidden">
-    <select class="inp" :class="f.cliente && 'is-active'" x-model="f.cliente">
+    <select class="inp" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="if(!$event.target.value || $event.target.value==='__empty__') f.projeto=''">
       <option value="">Clientes</option>
       <option value="__empty__">— sem cliente</option>
       <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
     </select>
-    <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto">
+    <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente || f.cliente==='__empty__'">
       <option value="">Projetos</option>
       <option value="__empty__">— sem projeto</option>
       <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
@@ -1994,12 +1994,12 @@
       </span>
     </div>
     <div class="page-bar-controls">
-      <select class="inp w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
+      <select class="inp w-[160px]" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="if(!$event.target.value) f.projeto=''; $nextTick(()=>renderCharts())">
         <option value="">Clientes</option>
         <option value="__empty__">— sem cliente</option>
         <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
       </select>
-      <select class="inp w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto" @change="$nextTick(()=>renderCharts())">
+      <select class="inp w-[160px]" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente" @change="$nextTick(()=>renderCharts())">
         <option value="">Projetos</option>
         <option value="__empty__">— sem projeto</option>
         <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
@@ -2046,12 +2046,12 @@
   <!-- Filtros do Dashboard agora vivem no .page-header acima (desktop).
        Mobile mantém a row aqui pra não amontoar com o título compacto. -->
   <div class="flex flex-col gap-2 mb-5 md:hidden">
-    <select class="inp" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="$nextTick(()=>renderCharts())">
+    <select class="inp" :class="f.cliente && 'is-active'" x-model="f.cliente" @change="if(!$event.target.value) f.projeto=''; $nextTick(()=>renderCharts())">
       <option value="">Clientes</option>
       <option value="__empty__">— sem cliente</option>
       <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
     </select>
-    <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto" @change="$nextTick(()=>renderCharts())">
+    <select class="inp" :class="f.projeto && 'is-active'" x-model="f.projeto" :disabled="!f.cliente" @change="$nextTick(()=>renderCharts())">
       <option value="">Projetos</option>
       <option value="__empty__">— sem projeto</option>
       <template x-for="p in projetosFiltrados" :key="p.id"><option :value="p.id" x-text="f.projeto === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
@@ -3129,12 +3129,12 @@
       <option value="__none__">— nenhum —</option>
       <template x-for="p in pessoasNaoCliente" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
     </select>
-    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]" x-model="bulkPending.cliente" title="Cliente">
+    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]" x-model="bulkPending.cliente" @change="if(!bulkPending.cliente) bulkPending.projeto=''" title="Cliente">
       <option value="">cliente…</option>
       <option value="__none__">— nenhum —</option>
       <template x-for="c in clientes" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
     </select>
-    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]" x-model="bulkPending.projeto" title="Projeto">
+    <select x-show="tab==='backlog'" class="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]" x-model="bulkPending.projeto" :disabled="!bulkPending.cliente" title="Projeto">
       <option value="">projeto…</option>
       <option value="__none__">— nenhum —</option>
       <template x-for="p in projetos.filter(p => !bulkPending.cliente || p.clienteId === bulkPending.cliente)" :key="p.id"><option :value="p.id" x-text="p.nome"></option></template>
@@ -3588,14 +3588,14 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="lbl">Cliente</label>
-              <select class="inp" x-model="editing.clienteId">
+              <select class="inp" x-model="editing.clienteId" @change="if(!editing.clienteId) editing.projetoId=''">
                 <option value="">—</option>
                 <template x-for="c in clientesAtivos" :key="c.id"><option :value="c.id" x-text="c.nome"></option></template>
               </select>
             </div>
             <div>
               <label class="lbl">Projeto</label>
-              <select class="inp" x-model="editing.projetoId">
+              <select class="inp" x-model="editing.projetoId" :disabled="!editing.clienteId">
                 <option value="">—</option>
                 <template x-for="p in projetosDoCliente(editing.clienteId)" :key="p.id"><option :value="p.id" x-text="editing.projetoId === p.id ? p.nome : (nomeCliente(p.clienteId) + ' · ' + p.nome)"></option></template>
               </select>
