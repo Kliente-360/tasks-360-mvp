@@ -1879,9 +1879,10 @@
     }
     .tmodal {
       max-width: 100% !important; width: 100% !important;
-      /* altura FIXA pra não variar entre abas (Detalhes/Conversa/Histórico) */
-      height: calc(100dvh - 24px - env(safe-area-inset-bottom, 0px)) !important;
-      max-height: calc(100dvh - 24px - env(safe-area-inset-bottom, 0px)) !important;
+      /* ~80% da viewport: deixa ~10dvh de margem em cima e embaixo para centralizar.
+         Subtrai safe-area-bottom pra o footer não ficar atrás do home indicator. */
+      height: calc(80dvh - env(safe-area-inset-bottom, 0px)) !important;
+      max-height: calc(80dvh - env(safe-area-inset-bottom, 0px)) !important;
       border-radius: var(--r-md) !important;
       min-width: 0 !important;
     }
