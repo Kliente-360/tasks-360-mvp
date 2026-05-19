@@ -1110,17 +1110,18 @@
     <!-- Sort: botão + popover. Click em opção ativa alterna asc/desc; em outra, vai pra asc. -->
     <div class="relative" @click.outside="sortPanelOpen = false">
       <button class="inp text-xs py-1.5 w-full text-left flex items-center justify-between gap-1" @click="sortPanelOpen = !sortPanelOpen" type="button">
-        <span class="truncate" x-text="'Ordenar: ' + sortLabel(sortKey)"></span>
-        <span class="text-muted shrink-0" x-text="sortDir === 'asc' ? '↑' : '↓'"></span>
+        <span class="truncate" x-text="'Ordenar: ' + sortLabel(sortKeys[0]?.key || 'manual')"></span>
+        <span class="text-muted shrink-0" x-text="(sortKeys[0]?.dir || 'asc') === 'asc' ? '↑' : '↓'"></span>
       </button>
       <div x-show="sortPanelOpen" x-transition.opacity class="absolute right-0 top-full mt-1 bg-elev border border-line rounded-md shadow-xl z-40 w-[220px] py-1 max-h-[60vh] overflow-y-auto">
         <template x-for="opt in sortOptions" :key="opt.key">
           <button type="button"
                   class="w-full flex items-center justify-between gap-2 px-3 py-2 text-xs text-left hover:bg-brand-tint transition-colors"
-                  :class="opt.key === sortKey && '!bg-brand-tint !text-brand-dark font-medium'"
+                  :class="sortKeys.some(s=>s.key===opt.key) && '!bg-brand-tint !text-brand-dark font-medium'"
                   @click="pickSort(opt.key)">
             <span x-text="opt.label"></span>
-            <span x-show="opt.key === sortKey" class="font-mono text-muted text-[11px]" x-text="sortDir === 'asc' ? '↑' : '↓'"></span>
+            <span x-show="sortKeys.some(s=>s.key===opt.key)" class="font-mono text-muted text-[11px]"
+                  x-text="sortIcon(opt.key)"></span>
           </button>
         </template>
       </div>
@@ -1217,8 +1218,8 @@
           <template x-for="t in g.tasks" :key="t.id">
             <tr x-show="g.isAll || !collapsedGroups.includes(g.key)"
                 @click="openEdit(t)"
-                :draggable="sortKey==='manual' && !groupBy"
-                :class="[sortKey==='manual' && !groupBy && 'manual-row', selectedIds.includes(t.id) && 'bg-brand-tint', t.arquivadoEm && 'opacity-50']"
+                :draggable="sortKeys[0]?.key==='manual' && !groupBy"
+                :class="[sortKeys[0]?.key==='manual' && !groupBy && 'manual-row', selectedIds.includes(t.id) && 'bg-brand-tint', t.arquivadoEm && 'opacity-50']"
                 @dragstart.stop="onBacklogDragStart($event, t)"
                 @dragover.prevent="onBacklogDragOver($event, t)"
                 @drop.stop.prevent="onBacklogDrop($event, t)"
