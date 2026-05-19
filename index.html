@@ -1110,8 +1110,8 @@
     <!-- Sort: botão + popover. Click em opção ativa alterna asc/desc; em outra, vai pra asc. -->
     <div class="relative" @click.outside="sortPanelOpen = false">
       <button class="inp text-xs py-1.5 w-full text-left flex items-center justify-between gap-1" @click="sortPanelOpen = !sortPanelOpen" type="button">
-        <span class="truncate" x-text="'Ordenar: ' + sortLabel(sortKeys[0]?.key || 'manual')"></span>
-        <span class="text-muted shrink-0" x-text="(sortKeys[0]?.dir || 'asc') === 'asc' ? '↑' : '↓'"></span>
+        <span class="truncate" x-text="sortKeys.length ? 'Ordenar: ' + sortLabel(sortKeys[0].key) : 'Sem ordenação'"></span>
+        <span class="text-muted shrink-0" x-show="sortKeys.length" x-text="sortKeys[0].dir === 'asc' ? '↑' : '↓'"></span>
       </button>
       <div x-show="sortPanelOpen" x-transition.opacity class="absolute right-0 top-full mt-1 bg-elev border border-line rounded-md shadow-xl z-40 w-[220px] py-1 max-h-[60vh] overflow-y-auto">
         <template x-for="opt in sortOptions" :key="opt.key">
