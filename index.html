@@ -3158,13 +3158,20 @@
 
     <div class="flex gap-2 md:contents">
       <button class="btn text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center font-semibold"
-              style="background:#fff; color:var(--brand); border-color:#fff"
+              style="background:#fff; color:var(--brand-dark); border-color:#fff; opacity:1"
+              :style="!(bulkPending.subetapa || bulkPending.pessoa || bulkPending.cliente || bulkPending.projeto || bulkPending.prioridade || bulkPending.prazo || bulkPending.esforco !== '') && 'opacity:.45; cursor:default'"
               @click="bulkSave()"
               :disabled="!(bulkPending.subetapa || bulkPending.pessoa || bulkPending.cliente || bulkPending.projeto || bulkPending.prioridade || bulkPending.prazo || bulkPending.esforco !== '')">salvar</button>
-      <button x-show="tab==='backlog'" class="btn text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" style="color:#fff; border-color:rgba(255,255,255,.4)" @click="bulkArquivar()">arquivar</button>
-      <button x-show="viewerRole === ROLE.ADMIN && tab==='backlog'" class="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center" @click="bulkDelete()">excluir</button>
+      <button x-show="tab==='backlog'" class="btn text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
+              style="background:transparent; color:#fff; border-color:rgba(255,255,255,.45)"
+              @click="bulkArquivar()">arquivar</button>
+      <button x-show="viewerRole === ROLE.ADMIN && tab==='backlog'" class="btn text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
+              style="background:transparent; color:#ffaaaa; border-color:rgba(255,160,160,.4)"
+              @click="bulkDelete()">excluir</button>
       <div class="hidden md:block w-px h-5 mx-1" style="background:rgba(255,255,255,.3)"></div>
-      <button class="btn text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 hidden md:inline-flex" style="color:#fff; border-color:rgba(255,255,255,.4)" @click="clearSelection()">limpar</button>
+      <button class="btn text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 hidden md:inline-flex"
+              style="background:transparent; color:rgba(255,255,255,.75); border-color:transparent"
+              @click="clearSelection()">limpar</button>
     </div>
   </div>
 </div>
