@@ -369,6 +369,9 @@
   }
   /* input[type=date] no iOS/Safari ignora width:100% e usa min-content do
      widget interno (data + ícone), estourando o grid em mobile. Forçar. */
+  /* Checkboxes usam verde marca em todos os estados (checked/indeterminate).
+     Sem isso, iOS Safari PWA exibe o tick em preto (contraste ruim no fundo branco). */
+  input[type="checkbox"] { accent-color: var(--brand); }
   .inp[type="date"], .inp[type="time"], .inp[type="datetime-local"] {
     -webkit-appearance: none; appearance: none;
     min-height: 38px;
@@ -1869,6 +1872,9 @@
        safe-area-inset (home indicator iPhone) pra não cortar footer. */
     .modal-bg.p-2, .modal-bg.p-4 {
       padding: 12px !important;
+      padding-top: 12px !important;
+      padding-left: max(12px, env(safe-area-inset-left)) !important;
+      padding-right: max(12px, env(safe-area-inset-right)) !important;
       padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
     }
     .tmodal {
@@ -1929,7 +1935,7 @@
 
     /* body single column, ocupa todo espaço restante */
     .tmodal-body { grid-template-columns: 1fr; flex: 1 1 auto; min-height: 0; }
-    .tmodal-left  { padding: var(--sp-3); }
+    .tmodal-left  { padding: var(--sp-4); }
     .tmodal-right { border-left: 0; border-top: 0; }
 
     /* visibilidade controlada por modalTab via .mob-hidden */
