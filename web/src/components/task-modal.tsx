@@ -14,12 +14,15 @@
  *   - Mention picker @ inline (textarea simples por enquanto)
  *   - Notificações de mention/assignment/status change
  *   - Comment drafts em localStorage
- *   - Permissions reais (assume admin enquanto currentPessoa/viewerRole
+ *   - Permissões reais (assume admin enquanto currentPessoa/viewerRole
  *     não estão no data-store)
+ *   - Toggle "task privada" (só CEO no Alpine) — depende de
+ *     currentPessoa.is_ceo estar no store; campo `privada` continua sendo
+ *     persistido/lido do banco, só não tem UI pra trocar
  *
  * Mantém:
  *   - Form completo: atribuição, descrição (lazy), checklist, esforço,
- *     etapa, visível cliente, bloqueado por, integração, privada (escondida)
+ *     etapa, visível cliente, bloqueado por, integração
  *   - Autosave + save manual + delete + arquivar/desarquivar
  *   - Conversa (post, reply, edit, delete, toggle visível)
  *   - Histórico (status + field changes)
@@ -240,6 +243,10 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachmentUrls, setAttachmentUrls] = useState<Record<string, string>>({});
+  // True enquanto o lazy-load da descrição roda (skeleton no textarea).
+  const [descricaoLoading, setDescricaoLoading] = useState<boolean>(
+    !!source && source.descricao === undefined,
+  );
 
   // ===== Comment composers =====
   const [newComment, setNewComment] = useState('');
@@ -289,13 +296,17 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
     if (!taskId || taskId === '__new__') return;
     let cancelled = false;
     (async () => {
-      // Lazy descricao se não veio do boot
-      if (editingRef.current.descricao === undefined || editingRef.current.descricao === '') {
+      // Lazy descricao se não veio do boot. `undefined` no source = nunca
+      // foi carregada (light cols não incluem). `''` ou string = já temos.
+      if (editingRef.current.descricao === undefined) {
         const { data } = await sb.from('tasks').select('descricao').eq('id', taskId).single();
-        if (!cancelled && data) {
-          setEditing((cur) => ({ ...cur, descricao: data.descricao ?? '' }));
+        if (!cancelled) {
+          setEditing((cur) => ({ ...cur, descricao: data?.descricao ?? '' }));
+          setDescricaoLoading(false);
           skipNextDirty.current = true;
         }
+      } else {
+        if (!cancelled) setDescricaoLoading(false);
       }
       // Comments
       const { data: cdata } = await sb
@@ -1161,9 +1172,11 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
               <textarea
                 className="inp"
                 rows={3}
-                value={editing.descricao ?? ''}
+                value={descricaoLoading ? '' : (editing.descricao ?? '')}
                 onChange={(e) => set('descricao', e.target.value)}
-                placeholder="Contexto, links, critérios de aceite…"
+                placeholder={descricaoLoading ? 'Carregando…' : 'Contexto, links, critérios de aceite…'}
+                disabled={descricaoLoading}
+                style={descricaoLoading ? { opacity: 0.6 } : undefined}
               />
             </div>
 
@@ -1614,6 +1627,19 @@ function ChecklistEditor({
   items: ChecklistItem[];
   onChange: (next: ChecklistItem[]) => void;
 }) {
+  // Refs por item — usadas pra focar a linha recém-criada via Enter.
+  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
+  // Index da linha que pediu foco no próximo render (após onChange tomar efeito).
+  const pendingFocus = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (pendingFocus.current == null) return;
+    const idx = pendingFocus.current;
+    pendingFocus.current = null;
+    const el = inputsRef.current[idx];
+    if (el) el.focus();
+  });
+
   const add = (at?: number) => {
     const item: ChecklistItem = {
       id: 'cli-' + Math.random().toString(36).slice(2, 9),
@@ -1623,6 +1649,7 @@ function ChecklistEditor({
     const idx = typeof at === 'number' ? at : items.length;
     const next = [...items];
     next.splice(idx, 0, item);
+    pendingFocus.current = idx;
     onChange(next);
   };
   const remove = (idx: number) => {
@@ -1646,6 +1673,9 @@ function ChecklistEditor({
             onChange={(e) => update(idx, { done: e.target.checked })}
           />
           <input
+            ref={(el) => {
+              inputsRef.current[idx] = el;
+            }}
             type="text"
             className={`checklist-line text-sm flex-1 ${item.done ? 'opacity-60 line-through' : ''}`}
             value={item.text}
@@ -1657,6 +1687,16 @@ function ChecklistEditor({
               } else if (e.key === 'Backspace' && !item.text) {
                 e.preventDefault();
                 remove(idx);
+              } else if (e.key === 'Escape') {
+                // ESC numa linha vazia: remove (e impede fechamento do modal).
+                // ESC com texto: só sai do input (blur), próximo ESC fecha o modal.
+                e.stopPropagation();
+                if (!item.text) {
+                  e.preventDefault();
+                  remove(idx);
+                } else {
+                  (e.target as HTMLInputElement).blur();
+                }
               }
             }}
             placeholder="mini-task…"
