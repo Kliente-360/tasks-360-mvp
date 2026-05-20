@@ -5,13 +5,15 @@ import { usePathname } from 'next/navigation';
 import { NAV } from '@/lib/nav';
 import { cn } from '@/lib/utils';
 import { useData } from '@/lib/data-store';
+import { useTaskModal } from '@/components/task-modal';
 
-const APP_VERSION = 'v1.02.102';
+const APP_VERSION = 'v1.02.103';
 
 /** Barra de navegação superior — espelha o header do app Alpine. */
 export function AppNav() {
   const pathname = usePathname();
   const { refreshAll, refreshing } = useData();
+  const { openNew } = useTaskModal();
 
   return (
     <header
@@ -44,12 +46,13 @@ export function AppNav() {
         {/* Right actions */}
         <div className="flex items-center gap-1 shrink-0">
           <div className="w-px h-6 bg-line mx-1 md:mx-2 hidden md:block" />
-          <Link
-            href="/backlog"
+          <button
+            type="button"
+            onClick={openNew}
             className="btn btn-primary btn-fixed-w text-xs hidden md:inline-flex"
           >
             + task
-          </Link>
+          </button>
         </div>
       </div>
 

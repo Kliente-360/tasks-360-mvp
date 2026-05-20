@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useData, useClientesById, useProjetosById, usePessoasById, useProjetosByCliente } from '@/lib/data-store';
 import { createClient } from '@/lib/supabase/client';
+import { useTaskModal } from '@/components/task-modal';
 import { atrasada, agingDays, agingLevel, fmtDate, fmtDateShort, lblComplex, lblStatus } from '@/lib/task-utils';
 import { STATUS, SUB_LABELS, SUBS_FLAT } from '@/lib/task-constants';
 import type { Task } from '@/lib/types';
@@ -464,11 +465,8 @@ export function BacklogClient() {
     setSelectedIds([]);
   }, [selectedIds, sb, removeTasks]);
 
-  // Modal de task vem no Bloco 2.3 — por enquanto stub.
-  const openEdit = useCallback((t: Task) => {
-    // eslint-disable-next-line no-console
-    console.log('openEdit (stub Bloco 2.3)', t.id, t.titulo);
-  }, []);
+  const { openEdit: openEditModal, openNew } = useTaskModal();
+  const openEdit = useCallback((t: Task) => openEditModal(t.id), [openEditModal]);
 
   if (loading) return <div className="text-muted text-sm">Carregando…</div>;
   if (error) return <div className="text-[color:var(--danger)] text-sm">Erro: {error}</div>;
@@ -1051,6 +1049,9 @@ export function BacklogClient() {
                   <div className="text-sm text-muted mb-4">
                     {tasks.length > 0 ? 'Tente ajustar os filtros…' : 'Comece criando a primeira tarefa.'}
                   </div>
+                  <button className="btn btn-primary" onClick={openNew}>
+                    + Nova tarefa
+                  </button>
                 </td>
               </tr>
             </tbody>
