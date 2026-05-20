@@ -1,10 +1,17 @@
 import type { Metadata } from 'next';
-import { Manrope, Quicksand, JetBrains_Mono } from 'next/font/google';
+import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 
-const body = Manrope({ subsets: ['latin'], variable: '--font-body' });
-const brand = Quicksand({ subsets: ['latin'], variable: '--font-brand' });
-const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
+const plexSans = IBM_Plex_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-sans',
+});
+const plexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-mono',
+});
 
 export const metadata: Metadata = {
   title: 'tasks 360',
@@ -15,7 +22,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" className={`${body.variable} ${brand.variable} ${mono.variable}`}>
+    <html lang="pt-BR" className={`${plexSans.variable} ${plexMono.variable}`}>
       <body>{children}</body>
     </html>
   );

@@ -6,7 +6,7 @@ export default function AppLayout({
   return (
     <div className="min-h-screen">
       <AppNav />
-      <main className="px-4 py-6 md:px-6">{children}</main>
+      <main className="max-w-[1400px] mx-auto px-4 md:px-8 py-6">{children}</main>
     </div>
   );
 }
