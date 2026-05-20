@@ -1,5 +1,5 @@
-import { OndaPlaceholder } from '@/components/onda-placeholder';
+import { KanbanClient } from './kanban-client';
 
 export default function Page() {
-  return <OndaPlaceholder href="/kanban" title="Kanban" />;
+  return <KanbanClient />;
 }
