@@ -1,5 +1,5 @@
-import { OndaPlaceholder } from '@/components/onda-placeholder';
+import { TriagemClient } from './triagem-client';
 
 export default function Page() {
-  return <OndaPlaceholder href="/triagem" title="Triagem" />;
+  return <TriagemClient />;
 }
