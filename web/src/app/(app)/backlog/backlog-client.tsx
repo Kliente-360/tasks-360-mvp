@@ -316,6 +316,10 @@ export function BacklogClient() {
     };
   }, [filtered]);
 
+  // Conta tudo que difere do estado neutro — incluindo os toggles do
+  // menu ⋯ (mostrar arquivadas + agrupar) e os filtros do page-bar.
+  // q e tag entram no badge final separadamente porque vivem fora do
+  // objeto `f` no markup; mas conceitualmente também contam.
   const activeFiltersCount = useMemo(() => {
     let n = 0;
     if (f.cliente) n++;
@@ -325,12 +329,17 @@ export function BacklogClient() {
     if (f.complexidade) n++;
     if (f.status && f.status !== 'abertas') n++;
     if (f.origem) n++;
+    if (showArchived) n++;
+    if (groupBy) n++;
     return n;
-  }, [f]);
+  }, [f, showArchived, groupBy]);
 
   const clearFilters = useCallback(() => {
     setF(DEFAULT_FILTERS);
     setQDraft('');
+    setShowArchived(false);
+    setGroupBy('');
+    setCollapsedGroups([]);
   }, []);
 
   // ============ Sort handlers ============
