@@ -487,15 +487,19 @@ export function BacklogClient() {
           </span>
         </div>
         <div className="page-bar-controls">
+          {/* widths via style inline porque .inp tem width: 100% no globals.css
+              (sem @layer) e ganha de utilities tailwind. */}
           <input
             type="text"
-            className={`inp w-[200px] ${qDraft ? 'is-active' : ''}`}
+            className={`inp ${qDraft ? 'is-active' : ''}`}
+            style={{ width: 200 }}
             placeholder="Buscar…"
             value={qDraft}
             onChange={(e) => setQDraft(e.target.value)}
           />
           <select
-            className={`inp w-[140px] ${f.cliente ? 'is-active' : ''}`}
+            className={`inp ${f.cliente ? 'is-active' : ''}`}
+            style={{ width: 140 }}
             value={f.cliente}
             onChange={(e) => setF({ ...f, cliente: e.target.value, projeto: e.target.value ? f.projeto : '' })}
           >
@@ -508,7 +512,8 @@ export function BacklogClient() {
             ))}
           </select>
           <select
-            className={`inp w-[140px] ${f.projeto ? 'is-active' : ''}`}
+            className={`inp ${f.projeto ? 'is-active' : ''}`}
+            style={{ width: 140 }}
             value={f.projeto}
             disabled={!f.cliente}
             onChange={(e) => setF({ ...f, projeto: e.target.value })}
@@ -522,7 +527,8 @@ export function BacklogClient() {
             ))}
           </select>
           <select
-            className={`inp w-[140px] ${f.pessoa ? 'is-active' : ''}`}
+            className={`inp ${f.pessoa ? 'is-active' : ''}`}
+            style={{ width: 140 }}
             value={f.pessoa}
             onChange={(e) => setF({ ...f, pessoa: e.target.value })}
           >
@@ -535,7 +541,8 @@ export function BacklogClient() {
             ))}
           </select>
           <select
-            className={`inp w-[80px] ${f.pri ? 'is-active' : ''}`}
+            className={`inp ${f.pri ? 'is-active' : ''}`}
+            style={{ width: 80 }}
             value={f.pri}
             onChange={(e) => setF({ ...f, pri: e.target.value })}
           >
@@ -547,7 +554,8 @@ export function BacklogClient() {
             <option value="P3">P3</option>
           </select>
           <select
-            className={`inp w-[100px] ${f.complexidade ? 'is-active' : ''}`}
+            className={`inp ${f.complexidade ? 'is-active' : ''}`}
+            style={{ width: 100 }}
             value={f.complexidade}
             onChange={(e) => setF({ ...f, complexidade: e.target.value })}
           >
@@ -558,7 +566,8 @@ export function BacklogClient() {
             <option value="baixa">Baixa</option>
           </select>
           <select
-            className={`inp w-[140px] ${f.status && f.status !== 'abertas' ? 'is-active' : ''}`}
+            className={`inp ${f.status && f.status !== 'abertas' ? 'is-active' : ''}`}
+            style={{ width: 140 }}
             value={f.status}
             onChange={(e) => setF({ ...f, status: e.target.value })}
           >
@@ -571,7 +580,8 @@ export function BacklogClient() {
           </select>
           {allTags.length > 0 && (
             <select
-              className={`inp w-[120px] ${f.tag ? 'is-active' : ''}`}
+              className={`inp ${f.tag ? 'is-active' : ''}`}
+              style={{ width: 120 }}
               value={f.tag}
               onChange={(e) => setF({ ...f, tag: e.target.value })}
             >

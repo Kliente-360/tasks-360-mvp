@@ -25,7 +25,10 @@ interface DataState {
   clientes: Cliente[];
   projetos: Projeto[];
   pessoas: Pessoa[];
+  /** True só durante a primeira carga (boot). Pós-boot fica sempre false. */
   loading: boolean;
+  /** True durante refetches manuais pós-boot — alimenta indicador "Atualizando…". */
+  refreshing: boolean;
   error: string | null;
   realtimeStatus: RealtimeStatus;
 }
@@ -64,6 +67,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [projetos, setProjetos] = useState<Projeto[]>([]);
   const [pessoas, setPessoas] = useState<Pessoa[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('idle');
 
@@ -110,16 +114,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const refreshAll = useCallback(async () => {
     // `loading` é só sinal de "primeira carga não terminou". Refetches
-    // subsequentes (logo, ↻) acontecem em background sem trocar o flag
-    // — replica o "live simulado" do app Alpine: estado da tela
-    // (scroll, filtros, modal) preserva, dados só viram silenciosamente.
+    // subsequentes acontecem em background sem trocar o flag — replica
+    // o "live simulado" do app Alpine: estado da tela (scroll, filtros,
+    // modal) preserva, dados só viram silenciosamente. `refreshing`
+    // separado alimenta o indicador "Atualizando…" no AppNav.
     setError(null);
+    setRefreshing(true);
     try {
       await Promise.all([refreshClientes(), refreshProjetos(), refreshPessoas(), refreshTasks()]);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [refreshClientes, refreshProjetos, refreshPessoas, refreshTasks]);
 
@@ -274,6 +281,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       projetos,
       pessoas,
       loading,
+      refreshing,
       error,
       realtimeStatus,
       refreshAll,
@@ -284,7 +292,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       removeTask,
       removeTasks,
     }),
-    [tasks, clientes, projetos, pessoas, loading, error, realtimeStatus, refreshAll, patchTask, patchTasks, replaceTask, upsertTask, removeTask, removeTasks],
+    [tasks, clientes, projetos, pessoas, loading, refreshing, error, realtimeStatus, refreshAll, patchTask, patchTasks, replaceTask, upsertTask, removeTask, removeTasks],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

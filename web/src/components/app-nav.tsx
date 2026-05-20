@@ -6,12 +6,12 @@ import { NAV } from '@/lib/nav';
 import { cn } from '@/lib/utils';
 import { useData } from '@/lib/data-store';
 
-const APP_VERSION = 'v1.02.101';
+const APP_VERSION = 'v1.02.102';
 
 /** Barra de navegação superior — espelha o header do app Alpine. */
 export function AppNav() {
   const pathname = usePathname();
-  const { refreshAll } = useData();
+  const { refreshAll, refreshing } = useData();
 
   return (
     <header
@@ -36,7 +36,7 @@ export function AppNav() {
               tasks 360
             </div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted mt-1 truncate font-mono">
-              {APP_VERSION}
+              {refreshing ? 'Atualizando…' : APP_VERSION}
             </div>
           </div>
         </button>
