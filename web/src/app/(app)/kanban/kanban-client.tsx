@@ -27,7 +27,7 @@ import {
 } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
 import { createClient } from '@/lib/supabase/client';
-import { agingDays, agingLevel, atrasada, fmtDateShort, lblStatus, needsTriage, triageFailures } from '@/lib/task-utils';
+import { agingDays, agingLevel, atrasada, fmtDateShort, lblStatus, matchesPrazoFilter, needsTriage, triageFailures, type PrazoFilter } from '@/lib/task-utils';
 import { SUB_LABELS, SUBS_FLAT, SUB_TO_MACRO } from '@/lib/task-constants';
 import type { Task } from '@/lib/types';
 
@@ -51,10 +51,16 @@ export function KanbanClient() {
   const sb = sbRef.current;
 
   // ===== State =====
-  const [filters, setFilters] = useState<{ cliente: string; projeto: string; pessoa: string }>({
+  const [filters, setFilters] = useState<{
+    cliente: string;
+    projeto: string;
+    pessoa: string;
+    prazo: PrazoFilter;
+  }>({
     cliente: '',
     projeto: '',
     pessoa: '',
+    prazo: '',
   });
   const [kanbanView, setKanbanView] = useState<'op' | 'exec'>('op');
 
@@ -99,6 +105,7 @@ export function KanbanClient() {
       if (filters.pessoa === EMPTY) {
         if (t.pessoaId) return false;
       } else if (filters.pessoa && t.pessoaId !== filters.pessoa) return false;
+      if (filters.prazo && !matchesPrazoFilter(t, filters.prazo)) return false;
       return true;
     });
   }, [tasks, filters]);
@@ -277,6 +284,19 @@ export function KanbanClient() {
                 {p.nome}
               </option>
             ))}
+          </select>
+          <select
+            className={`inp ${filters.prazo ? 'is-active' : ''}`}
+            style={{ width: 140 }}
+            value={filters.prazo}
+            onChange={(e) => setFilters({ ...filters, prazo: e.target.value as PrazoFilter })}
+          >
+            <option value="">Prazo</option>
+            <option value="atrasadas">Atrasadas</option>
+            <option value="semana">Esta semana</option>
+            <option value="d7">Próx. 7d</option>
+            <option value="d15">Próx. 15d</option>
+            <option value="mes">Este mês</option>
           </select>
           <div className="view-toggle" role="tablist" aria-label="Visão do kanban">
             <button

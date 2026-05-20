@@ -119,3 +119,70 @@ export function lblComplex(c: string | undefined | null): string {
 export function normalizeTag(s: string): string {
   return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 24);
 }
+
+// ============ Janelas de prazo (filtros) ============
+
+export type PrazoFilter = '' | 'atrasadas' | 'semana' | 'd7' | 'd15' | 'mes';
+
+/** ISO 'YYYY-MM-DD' do dia local (não UTC). */
+export function todayIso(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const da = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${da}`;
+}
+
+function addDaysIso(iso: string, n: number): string {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Segunda e domingo da semana ISO em que cai a data. */
+function weekRangeIso(iso: string): [string, string] {
+  const d = new Date(iso + 'T00:00:00');
+  const day = d.getDay(); // 0 dom .. 6 sab
+  const diffMon = day === 0 ? -6 : 1 - day;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diffMon);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return [monday.toISOString().slice(0, 10), sunday.toISOString().slice(0, 10)];
+}
+
+/** Primeiro e último dia do mês em que cai a data. */
+function monthRangeIso(iso: string): [string, string] {
+  const d = new Date(iso + 'T00:00:00');
+  const start = new Date(d.getFullYear(), d.getMonth(), 1);
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const fmt = (x: Date) => {
+    const y = x.getFullYear();
+    const m = String(x.getMonth() + 1).padStart(2, '0');
+    const da = String(x.getDate()).padStart(2, '0');
+    return `${y}-${m}-${da}`;
+  };
+  return [fmt(start), fmt(end)];
+}
+
+/** Testa se a task se encaixa na janela de prazo escolhida. */
+export function matchesPrazoFilter(
+  t: Pick<Task, 'prazo' | 'status'>,
+  mode: PrazoFilter,
+): boolean {
+  if (!mode) return true;
+  if (mode === 'atrasadas') return atrasada(t);
+  if (!t.prazo) return false;
+  const today = todayIso();
+  if (mode === 'semana') {
+    const [mon, sun] = weekRangeIso(today);
+    return t.prazo >= mon && t.prazo <= sun;
+  }
+  if (mode === 'd7') return t.prazo >= today && t.prazo <= addDaysIso(today, 7);
+  if (mode === 'd15') return t.prazo >= today && t.prazo <= addDaysIso(today, 15);
+  if (mode === 'mes') {
+    const [start, end] = monthRangeIso(today);
+    return t.prazo >= start && t.prazo <= end;
+  }
+  return true;
+}
