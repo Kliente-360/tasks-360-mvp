@@ -13,7 +13,8 @@
  *   - .triage-chip / .triage-filter-chip (já em globals.css)
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useData, useClientesById, useProjetosById, usePessoasById } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
 import { BulkBar, BulkBarClearButton, BulkBarSep } from '@/components/bulk-bar';
@@ -62,6 +63,23 @@ export function TriagemClient() {
   const [filter, setFilter] = useState<TriagemFilter>(DEFAULT_FILTER);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkPending, setBulkPending] = useState<BulkPending>(DEFAULT_BULK);
+
+  // Mobile: Triagem não aparece (decisão de produto). Quem acessa /triagem
+  // por URL no mobile é redirecionado pra /backlog. UI bate com hideMobile
+  // no NavItem (dropdown filtra esta tab fora).
+  const router = useRouter();
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const update = () => {
+      const m = mq.matches;
+      setIsMobile(m);
+      if (m) router.replace('/backlog');
+    };
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, [router]);
 
   const pessoasNaoCliente = useMemo(
     () => pessoas.filter((p) => p.role !== 'cliente'),
@@ -159,6 +177,8 @@ export function TriagemClient() {
     setBulkPending(DEFAULT_BULK);
   }, [bulkPending, selectedIds, sb, patchTasks]);
 
+  // Mobile cai aqui só por uma fração antes do router.replace executar.
+  if (isMobile) return null;
   if (loading) return <div className="text-muted text-sm">Carregando…</div>;
   if (error) return <div className="text-[color:var(--danger)] text-sm">Erro: {error}</div>;
 

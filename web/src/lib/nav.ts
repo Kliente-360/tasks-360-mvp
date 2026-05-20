@@ -14,7 +14,10 @@ export type NavItem = {
 export const NAV: ReadonlyArray<NavItem> = [
   { href: '/foco',       label: 'Meu foco',      roles: ['admin', 'interno'],          onda: 1 },
   { href: '/briefing',   label: 'Briefing',      roles: ['admin'],                     onda: 3 },
-  { href: '/triagem',    label: 'Triagem',       roles: ['admin'],                     onda: 1 },
+  // Triagem escondida no mobile: bulk actions e leitura paralela dos chips
+  // de falhas funcionam melhor no desktop; quem precisar triar no celular
+  // usa o /backlog filtrando por "sem responsável" etc.
+  { href: '/triagem',    label: 'Triagem',       roles: ['admin'],                     onda: 1, hideMobile: true },
   { href: '/backlog',    label: 'Backlog',       roles: ['admin', 'interno'],          onda: 1 },
   // Kanban escondido no mobile: 11 colunas operacionais não cabem em viewport
   // estreito e a executiva é melhor servida pelo /backlog mobile.
