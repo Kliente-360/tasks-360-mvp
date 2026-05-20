@@ -863,9 +863,11 @@ input[type="checkbox"] { accent-color: var(--brand); }
 .cal-dot.late { background: var(--p0); }
 .cal-dot.done { background: var(--p3); opacity: 0.5; }
 
-/* tabs scroll */
-.tabs-row { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+/* tabs scroll — display: none em mobile pra não brigar com o dropdown
+   de navegação (regra solta ganhava de "hidden" do Tailwind). */
+.tabs-row { display: none; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .tabs-row::-webkit-scrollbar { display: none; }
+@media (min-width: 768px) { .tabs-row { display: flex; } }
 
 @media (max-width: 768px) {
   .tbl-wrap .tbl { min-width: 640px; }
@@ -1192,7 +1194,10 @@ input[type="checkbox"] { accent-color: var(--brand); }
 .page-header-subtitle-only .page-subtitle strong { color: var(--ink); font-weight: 700; }
 
 /* ============ PAGE BAR ============ */
-.page-bar { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-4); }
+/* `display: none` em mobile pra não brigar com o "hidden" do Tailwind —
+   regra solta (sem @layer) ganhava por especificidade igual + ordem. */
+.page-bar { display: none; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-4); }
+@media (min-width: 768px) { .page-bar { display: flex; } }
 .page-bar-info { display: flex; align-items: baseline; gap: var(--sp-3); min-width: 0; flex: 1 1 auto; flex-wrap: wrap; }
 .page-bar-narrative { font-size: var(--fs-md); font-weight: 600; color: var(--ink); line-height: 1.3; }
 .page-bar-narrative strong { font-weight: 700; }
