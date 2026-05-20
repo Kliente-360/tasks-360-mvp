@@ -8,10 +8,12 @@
  * ============================================================ */
 
 :root {
-  /* Força light em todos os controles nativos (date pickers, scrollbar,
-     etc) ignorando prefers-color-scheme do SO. O dark mode próprio
-     entra via .dark / [data-theme="dark"] no toggle manual (pós-Onda 0). */
-  color-scheme: light;
+  /* `only light` bloqueia o Chrome "Auto Dark Mode for Web Contents"
+     e extensões tipo Dark Reader de forçar dark scheme. Pop-ups de
+     <select>, date picker e scrollbar saem em light obrigatoriamente.
+     O dark mode próprio entra via .dark / [data-theme="dark"] (toggle
+     manual pós-Onda 0). */
+  color-scheme: only light;
 
   /* === BRAND === */
   --brand:       #009900;
@@ -380,6 +382,24 @@ input[type="checkbox"] { accent-color: var(--brand); }
     padding-bottom: 0;
     box-sizing: border-box;
   }
+}
+/* Força light scheme local na bulk bar (e dentro dela) — defesa em
+   profundidade contra Auto Dark Mode do Chrome e extensões de dark
+   forçado que ignoram `color-scheme: only light`. */
+.bulk-bar {
+  color-scheme: only light;
+}
+.bulk-bar .inp,
+.bulk-bar select,
+.bulk-bar input {
+  background-color: #FFFFFF;
+  color: #1A1A1A;
+}
+.bulk-bar .inp:disabled,
+.bulk-bar select:disabled,
+.bulk-bar input:disabled {
+  background-color: #F1F2F0;
+  color: #7D8185;
 }
 .inp:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
 .inp.is-active { border-color: var(--cyan); background: var(--cyan-soft); }

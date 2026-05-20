@@ -16,8 +16,6 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: 'tasks 360',
   description: 'Gestão de backlog · Kliente 360',
-  // Força light scheme; o dark próprio entra via toggle manual depois da Onda 0.
-  colorScheme: 'light',
 };
 
 export default function RootLayout({
@@ -25,6 +23,12 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR" className={`${plexSans.variable} ${plexMono.variable}`}>
+      <head>
+        {/* `only light` bloqueia Auto Dark Mode do Chrome + Dark Reader.
+            Next Metadata API só aceita os valores canônicos (light/dark/etc),
+            então o "only" entra via meta tag explícita. */}
+        <meta name="color-scheme" content="only light" />
+      </head>
       <body>{children}</body>
     </html>
   );
