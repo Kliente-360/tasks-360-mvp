@@ -14,11 +14,11 @@
  */
 
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { useData } from '@/lib/data-store';
+import { useData, useClientesById, useProjetosById, usePessoasById } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
 import { BulkBar, BulkBarClearButton, BulkBarSep } from '@/components/bulk-bar';
 import { createClient } from '@/lib/supabase/client';
-import { agingDays, triageFailures } from '@/lib/task-utils';
+import { agingDays, atrasada, fmtDateShort, triageFailures } from '@/lib/task-utils';
 import { STATUS, SUB_LABELS } from '@/lib/task-constants';
 import type { Task } from '@/lib/types';
 
@@ -51,6 +51,9 @@ type TaskWithFailures = Task & { _failures: string[]; _failCount: number };
 export function TriagemClient() {
   const { tasks, pessoas, patchTasks, loading, error } = useData();
   const { openEdit } = useTaskModal();
+  const clientesById = useClientesById();
+  const projetosById = useProjetosById();
+  const pessoasById = usePessoasById();
 
   const sbRef = useRef<ReturnType<typeof createClient> | null>(null);
   if (!sbRef.current) sbRef.current = createClient();
@@ -299,15 +302,45 @@ export function TriagemClient() {
                     )}
                     <span className="font-medium text-ink break-words">{t.titulo}</span>
                   </div>
+                  {/* Linha 2 (subetapa · criada há Xd) — fonte mono pra dar
+                      o ritmo de metadata "etapa + idade". */}
                   <div className="text-xs text-muted font-mono break-words">
                     {SUB_LABELS[t.subetapa] ?? t.subetapa}
-                    {/* Aging baseado em criadoEm (com cast pra reusar agingDays). */}
                     {t.criadoEm > 0 && (
                       <>
                         {' · criada há '}
                         {agingDays({ statusEm: t.criadoEm })}d
                       </>
                     )}
+                  </div>
+                  {/* Linha 3 (desktop): cliente · projeto · responsável · prazo.
+                      Mobile fica resumido (só cliente · responsável) pra não
+                      empilhar 3 linhas de texto. */}
+                  <div className="hidden md:flex items-center gap-1.5 text-xs text-ink-soft mt-1 flex-wrap">
+                    <span className={t.clienteId ? '' : 'italic text-muted'}>
+                      {t.clienteId ? clientesById.get(t.clienteId)?.nome ?? '—' : 'sem cliente'}
+                    </span>
+                    <span className="text-muted">·</span>
+                    <span className={t.projetoId ? '' : 'italic text-muted'}>
+                      {t.projetoId ? projetosById.get(t.projetoId)?.nome ?? '—' : 'sem projeto'}
+                    </span>
+                    <span className="text-muted">·</span>
+                    <span className={t.pessoaId ? '' : 'italic text-muted'}>
+                      {t.pessoaId ? pessoasById.get(t.pessoaId)?.nome ?? '—' : 'sem responsável'}
+                    </span>
+                    <span className="text-muted">·</span>
+                    <span className={`font-mono ${atrasada(t) ? 'late' : t.prazo ? '' : 'italic text-muted'}`}>
+                      {t.prazo ? fmtDateShort(t.prazo) : 'sem prazo'}
+                    </span>
+                  </div>
+                  <div className="md:hidden flex items-center gap-1.5 text-xs text-ink-soft mt-1 flex-wrap">
+                    <span className={t.clienteId ? 'truncate' : 'italic text-muted'}>
+                      {t.clienteId ? clientesById.get(t.clienteId)?.nome ?? '—' : 'sem cliente'}
+                    </span>
+                    <span className="text-muted">·</span>
+                    <span className={t.pessoaId ? 'truncate' : 'italic text-muted'}>
+                      {t.pessoaId ? pessoasById.get(t.pessoaId)?.nome ?? '—' : 'sem resp.'}
+                    </span>
                   </div>
                 </div>
               </div>

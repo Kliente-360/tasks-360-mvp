@@ -360,6 +360,11 @@ input[type="checkbox"] { accent-color: var(--brand); }
   -webkit-appearance: none; appearance: none;
   min-height: 38px;
 }
+/* Dentro da bulk bar os inputs vivem com .inp + py-2 (~36px). O min-height
+   do date acima quebra o alinhamento vertical com os selects irmãos. */
+.bulk-bar .inp[type="date"], .bulk-bar .inp[type="time"], .bulk-bar .inp[type="datetime-local"] {
+  min-height: 0;
+}
 .inp:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
 .inp.is-active { border-color: var(--cyan); background: var(--cyan-soft); }
 .lbl {

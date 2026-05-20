@@ -24,7 +24,7 @@ export function BulkBar({
   if (selectedCount === 0) return null;
   return (
     <div
-      className="fixed z-[55] shadow-xl left-3 right-3 rounded-lg p-3 md:left-1/2 md:right-auto md:-translate-x-1/2 md:p-2 md:px-3 md:max-w-[calc(100vw-24px)]"
+      className="bulk-bar fixed z-[55] shadow-xl left-3 right-3 rounded-lg p-3 md:left-1/2 md:right-auto md:-translate-x-1/2 md:p-2 md:px-3 md:max-w-[calc(100vw-24px)]"
       style={{
         bottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
         background: 'var(--surface-1)',
