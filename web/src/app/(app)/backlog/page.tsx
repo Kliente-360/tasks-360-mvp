@@ -1,5 +1,5 @@
-import { BacklogSmoke } from './backlog-client';
+import { BacklogClient } from './backlog-client';
 
 export default function Page() {
-  return <BacklogSmoke />;
+  return <BacklogClient />;
 }

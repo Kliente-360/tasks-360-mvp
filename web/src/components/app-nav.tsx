@@ -6,7 +6,7 @@ import { NAV } from '@/lib/nav';
 import { cn } from '@/lib/utils';
 import { useData } from '@/lib/data-store';
 
-const APP_VERSION = 'v1.02.098';
+const APP_VERSION = 'v1.02.100';
 
 /** Barra de navegação superior — espelha o header do app Alpine. */
 export function AppNav() {
