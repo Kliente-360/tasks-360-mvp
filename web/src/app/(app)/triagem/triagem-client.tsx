@@ -16,6 +16,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useData } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
+import { BulkBar, BulkBarClearButton, BulkBarSep } from '@/components/bulk-bar';
 import { createClient } from '@/lib/supabase/client';
 import { agingDays, triageFailures } from '@/lib/task-utils';
 import { STATUS, SUB_LABELS } from '@/lib/task-constants';
@@ -45,6 +46,8 @@ const DEFAULT_FILTER: TriagemFilter = {
 
 const DEFAULT_BULK: BulkPending = { pessoa: '', prazo: '', esforco: '' };
 
+type TaskWithFailures = Task & { _failures: string[]; _failCount: number };
+
 export function TriagemClient() {
   const { tasks, pessoas, patchTasks, loading, error } = useData();
   const { openEdit } = useTaskModal();
@@ -63,7 +66,6 @@ export function TriagemClient() {
   );
 
   // ===== triagemTasks: visíveis não-concluídas com falhas, ordenadas =====
-  type TaskWithFailures = Task & { _failures: string[]; _failCount: number };
   const triagemTasks = useMemo<TaskWithFailures[]>(() => {
     const out: TaskWithFailures[] = [];
     for (const t of tasks) {
@@ -77,28 +79,39 @@ export function TriagemClient() {
     return out;
   }, [tasks]);
 
-  const filtered = useMemo(() => {
-    return triagemTasks.filter((t) => {
-      if (filter.semResp && !t._failures.includes('sem responsável')) return false;
-      if (filter.semPrazo && !t._failures.includes('sem prazo')) return false;
-      if (filter.semEsforco && !t._failures.includes('sem esforço')) return false;
-      if (filter.origem === 'ia' && !t.criadoPorIa) return false;
-      if (filter.origem === 'humano' && t.criadoPorIa) return false;
-      return true;
-    });
-  }, [triagemTasks, filter]);
+  // Aplica filtro arbitrário (não-state) — usado tanto pelo `filtered` real
+  // quanto pelos previews de count "se eu ligar esse chip mantendo os outros".
+  const applyFilter = useCallback(
+    (arr: TaskWithFailures[], f: TriagemFilter) =>
+      arr.filter((t) => {
+        if (f.semResp && !t._failures.includes('sem responsável')) return false;
+        if (f.semPrazo && !t._failures.includes('sem prazo')) return false;
+        if (f.semEsforco && !t._failures.includes('sem esforço')) return false;
+        if (f.origem === 'ia' && !t.criadoPorIa) return false;
+        if (f.origem === 'humano' && t.criadoPorIa) return false;
+        return true;
+      }),
+    [],
+  );
+
+  const filtered = useMemo(
+    () => applyFilter(triagemTasks, filter),
+    [triagemTasks, filter, applyFilter],
+  );
 
   const anyFilter = filter.semResp || filter.semPrazo || filter.semEsforco || !!filter.origem;
 
-  // Contadores nos chips (todas as triagemTasks, independente dos filtros)
+  // Counts dinâmicos: quantas tasks sobrariam SE esse chip estivesse ativo,
+  // mantendo os outros filtros. Padrão "filtros responsivos" — você vê o
+  // impacto antes de clicar. Chip já ativo mostra o count atual do recorte.
   const counts = useMemo(
     () => ({
-      semResp: triagemTasks.filter((t) => !t.pessoaId).length,
-      semPrazo: triagemTasks.filter((t) => !t.prazo).length,
-      semEsforco: triagemTasks.filter((t) => !Number(t.esforco)).length,
-      ia: triagemTasks.filter((t) => t.criadoPorIa).length,
+      semResp: applyFilter(triagemTasks, { ...filter, semResp: true }).length,
+      semPrazo: applyFilter(triagemTasks, { ...filter, semPrazo: true }).length,
+      semEsforco: applyFilter(triagemTasks, { ...filter, semEsforco: true }).length,
+      ia: applyFilter(triagemTasks, { ...filter, origem: 'ia' }).length,
     }),
-    [triagemTasks],
+    [triagemTasks, filter, applyFilter],
   );
 
   // ===== Bulk =====
@@ -317,78 +330,51 @@ export function TriagemClient() {
         );
       })}
 
-      {/* Bulk bar */}
-      {selectedIds.length > 0 && (
-        <div
-          className="fixed z-[55] shadow-xl left-3 right-3 rounded-lg p-3 md:left-1/2 md:right-auto md:-translate-x-1/2 md:p-2 md:px-3 md:max-w-[calc(100vw-24px)]"
-          style={{
-            bottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
-            background: 'var(--surface-1)',
-            border: '1px solid var(--line)',
-            borderTop: '3px solid var(--brand)',
-          }}
+      <BulkBar selectedCount={selectedIds.length} onClear={clearSelection}>
+        <select
+          className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]"
+          value={bulkPending.pessoa}
+          onChange={(e) => setBulkPending({ ...bulkPending, pessoa: e.target.value })}
+          title="Responsável"
         >
-          <div className="flex items-center justify-between md:justify-start gap-2">
-            <span className="text-sm md:text-xs font-mono text-muted">
-              <strong className="text-ink">{selectedIds.length}</strong> selecionada
-              {selectedIds.length !== 1 ? 's' : ''}
-            </span>
-            <div className="hidden md:block w-px h-4 mx-1 bg-line" />
-            <button className="btn btn-ghost text-xs md:hidden" onClick={clearSelection}>
-              ✕ limpar
-            </button>
-          </div>
-          <div className="flex flex-col md:flex-row md:items-center gap-2 mt-2 md:mt-0 md:ml-2">
-            <select
-              className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]"
-              value={bulkPending.pessoa}
-              onChange={(e) => setBulkPending({ ...bulkPending, pessoa: e.target.value })}
-              title="Responsável"
-            >
-              <option value="">responsável…</option>
-              <option value={NONE}>— nenhum —</option>
-              {pessoasNaoCliente.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nome}
-                </option>
-              ))}
-            </select>
-            <input
-              type="date"
-              className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[110px]"
-              value={bulkPending.prazo}
-              onChange={(e) => setBulkPending({ ...bulkPending, prazo: e.target.value })}
-              title="Prazo"
-            />
-            <input
-              type="number"
-              min={0}
-              step={1}
-              placeholder="esforço (h)"
-              className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[110px]"
-              value={bulkPending.esforco}
-              onChange={(e) => setBulkPending({ ...bulkPending, esforco: e.target.value })}
-              title="Esforço em horas"
-            />
-            <div className="flex gap-2 md:contents">
-              <button
-                className="btn btn-primary text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
-                onClick={bulkSave}
-                disabled={!(bulkPending.pessoa || bulkPending.prazo || bulkPending.esforco !== '')}
-              >
-                salvar
-              </button>
-              <div className="hidden md:block w-px h-4 mx-1 bg-line" />
-              <button
-                className="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 hidden md:inline-flex"
-                onClick={clearSelection}
-              >
-                limpar
-              </button>
-            </div>
-          </div>
+          <option value="">responsável…</option>
+          <option value={NONE}>— nenhum —</option>
+          {pessoasNaoCliente.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nome}
+            </option>
+          ))}
+        </select>
+        <input
+          type="date"
+          className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[110px]"
+          value={bulkPending.prazo}
+          onChange={(e) => setBulkPending({ ...bulkPending, prazo: e.target.value })}
+          title="Prazo"
+        />
+        <input
+          type="number"
+          min={0}
+          step={1}
+          placeholder="esforço (h)"
+          className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[110px]"
+          value={bulkPending.esforco}
+          onChange={(e) => setBulkPending({ ...bulkPending, esforco: e.target.value })}
+          title="Esforço em horas"
+        />
+        <div className="flex gap-2 md:contents">
+          <button
+            type="button"
+            className="btn btn-primary text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
+            onClick={bulkSave}
+            disabled={!(bulkPending.pessoa || bulkPending.prazo || bulkPending.esforco !== '')}
+          >
+            salvar
+          </button>
+          <BulkBarSep />
+          <BulkBarClearButton onClick={clearSelection} />
         </div>
-      )}
+      </BulkBar>
     </div>
   );
 }

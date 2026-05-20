@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useData, useClientesById, useProjetosById, usePessoasById, useProjetosByCliente } from '@/lib/data-store';
 import { createClient } from '@/lib/supabase/client';
 import { useTaskModal } from '@/components/task-modal';
+import { BulkBar, BulkBarClearButton, BulkBarSep } from '@/components/bulk-bar';
 import { atrasada, agingDays, agingLevel, fmtDate, fmtDateShort, lblComplex, lblStatus } from '@/lib/task-utils';
 import { STATUS, SUB_LABELS, SUBS_FLAT } from '@/lib/task-constants';
 import type { Task } from '@/lib/types';
@@ -1150,99 +1151,104 @@ export function BacklogClient() {
         )}
       </div>
 
-      {/* ============ Bulk bar ============ */}
-      {selectedIds.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-brand text-white px-3 md:px-4 py-3 z-30 shadow-2xl">
-          <div className="max-w-[1400px] mx-auto flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold mr-2">
-              {selectedIds.length} selecionada(s)
-            </span>
-            <select
-              className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[140px]"
-              value={bulkPending.pessoa}
-              onChange={(e) => setBulkPending({ ...bulkPending, pessoa: e.target.value })}
-              title="Responsável"
-            >
-              <option value="">Responsável…</option>
-              <option value={NONE}>— remover</option>
-              {pessoasNaoCliente.map((p) => (
-                <option key={p.id} value={p.id}>{p.nome}</option>
-              ))}
-            </select>
-            <select
-              className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]"
-              value={bulkPending.cliente}
-              onChange={(e) => setBulkPending({ ...bulkPending, cliente: e.target.value, projeto: '' })}
-              title="Cliente"
-            >
-              <option value="">Cliente…</option>
-              <option value={NONE}>— remover</option>
-              {clientesAtivos.map((c) => (
-                <option key={c.id} value={c.id}>{c.nome}</option>
-              ))}
-            </select>
-            <select
-              className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]"
-              value={bulkPending.projeto}
-              disabled={!bulkPending.cliente || bulkPending.cliente === NONE}
-              onChange={(e) => setBulkPending({ ...bulkPending, projeto: e.target.value })}
-              title="Projeto"
-            >
-              <option value="">Projeto…</option>
-              <option value={NONE}>— remover</option>
-              {(bulkPending.cliente && bulkPending.cliente !== NONE
-                ? (projetosByCliente.get(bulkPending.cliente) ?? []).filter((p) => !p.arquivadoEm)
-                : []
-              ).map((p) => (
-                <option key={p.id} value={p.id}>{p.nome}</option>
-              ))}
-            </select>
-            <select
-              className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[80px]"
-              value={bulkPending.prioridade}
-              onChange={(e) => setBulkPending({ ...bulkPending, prioridade: e.target.value })}
-              title="Prioridade"
-            >
-              <option value="">Pri…</option>
-              <option value="P0">P0</option>
-              <option value="P1">P1</option>
-              <option value="P2">P2</option>
-              <option value="P3">P3</option>
-            </select>
-            <input
-              type="date"
-              className="inp text-sm md:text-xs py-2 md:py-1.5 md:w-[140px]"
-              value={bulkPending.prazo}
-              onChange={(e) => setBulkPending({ ...bulkPending, prazo: e.target.value })}
-              title="Prazo"
-            />
-            <input
-              type="number"
-              min={0}
-              step={0.5}
-              className="inp text-sm md:text-xs py-2 md:py-1.5 md:w-[80px]"
-              placeholder="h"
-              value={bulkPending.esforco}
-              onChange={(e) => setBulkPending({ ...bulkPending, esforco: e.target.value })}
-              title="Esforço (h)"
-            />
-            <div className="flex items-center gap-2 ml-auto">
-              <button className="btn btn-primary text-sm md:text-xs py-2 md:py-1.5 px-3" onClick={bulkSave}>
-                aplicar
-              </button>
-              <button className="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3" onClick={bulkArquivar} title="Arquivar selecionadas">
-                arquivar
-              </button>
-              <button className="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3" onClick={bulkDelete} title="Excluir selecionadas">
-                excluir
-              </button>
-              <button className="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-2" onClick={clearSelection}>
-                ✕
-              </button>
-            </div>
-          </div>
+      <BulkBar selectedCount={selectedIds.length} onClear={clearSelection}>
+        <select
+          className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[130px]"
+          value={bulkPending.pessoa}
+          onChange={(e) => setBulkPending({ ...bulkPending, pessoa: e.target.value })}
+          title="Responsável"
+        >
+          <option value="">responsável…</option>
+          <option value={NONE}>— remover</option>
+          {pessoasNaoCliente.map((p) => (
+            <option key={p.id} value={p.id}>{p.nome}</option>
+          ))}
+        </select>
+        <select
+          className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]"
+          value={bulkPending.cliente}
+          onChange={(e) => setBulkPending({ ...bulkPending, cliente: e.target.value, projeto: '' })}
+          title="Cliente"
+        >
+          <option value="">cliente…</option>
+          <option value={NONE}>— remover</option>
+          {clientesAtivos.map((c) => (
+            <option key={c.id} value={c.id}>{c.nome}</option>
+          ))}
+        </select>
+        <select
+          className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[120px]"
+          value={bulkPending.projeto}
+          disabled={!bulkPending.cliente || bulkPending.cliente === NONE}
+          onChange={(e) => setBulkPending({ ...bulkPending, projeto: e.target.value })}
+          title="Projeto"
+        >
+          <option value="">projeto…</option>
+          <option value={NONE}>— remover</option>
+          {(bulkPending.cliente && bulkPending.cliente !== NONE
+            ? (projetosByCliente.get(bulkPending.cliente) ?? []).filter((p) => !p.arquivadoEm)
+            : []
+          ).map((p) => (
+            <option key={p.id} value={p.id}>{p.nome}</option>
+          ))}
+        </select>
+        <select
+          className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[80px]"
+          value={bulkPending.prioridade}
+          onChange={(e) => setBulkPending({ ...bulkPending, prioridade: e.target.value })}
+          title="Prioridade"
+        >
+          <option value="">pri…</option>
+          <option value="P0">P0</option>
+          <option value="P1">P1</option>
+          <option value="P2">P2</option>
+          <option value="P3">P3</option>
+        </select>
+        <input
+          type="date"
+          className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[110px]"
+          value={bulkPending.prazo}
+          onChange={(e) => setBulkPending({ ...bulkPending, prazo: e.target.value })}
+          title="Prazo"
+        />
+        <input
+          type="number"
+          min={0}
+          step={0.5}
+          className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[90px]"
+          placeholder="esforço (h)"
+          value={bulkPending.esforco}
+          onChange={(e) => setBulkPending({ ...bulkPending, esforco: e.target.value })}
+          title="Esforço (h)"
+        />
+        <div className="flex gap-2 md:contents">
+          <button
+            type="button"
+            className="btn btn-primary text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
+            onClick={bulkSave}
+          >
+            salvar
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
+            onClick={bulkArquivar}
+            title="Arquivar selecionadas"
+          >
+            arquivar
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
+            onClick={bulkDelete}
+            title="Excluir selecionadas"
+          >
+            excluir
+          </button>
+          <BulkBarSep />
+          <BulkBarClearButton onClick={clearSelection} />
         </div>
-      )}
+      </BulkBar>
     </div>
   );
 }
