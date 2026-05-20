@@ -109,7 +109,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [sb]);
 
   const refreshAll = useCallback(async () => {
-    setLoading(true);
+    // `loading` é só sinal de "primeira carga não terminou". Refetches
+    // subsequentes (logo, ↻) acontecem em background sem trocar o flag
+    // — replica o "live simulado" do app Alpine: estado da tela
+    // (scroll, filtros, modal) preserva, dados só viram silenciosamente.
     setError(null);
     try {
       await Promise.all([refreshClientes(), refreshProjetos(), refreshPessoas(), refreshTasks()]);

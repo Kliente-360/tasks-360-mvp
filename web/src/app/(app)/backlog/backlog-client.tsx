@@ -18,6 +18,9 @@ import { atrasada, agingDays, agingLevel, fmtDate, fmtDateShort, lblComplex, lbl
 import { STATUS, SUB_LABELS, SUBS_FLAT } from '@/lib/task-constants';
 import type { Task } from '@/lib/types';
 
+// Sort manual (DnD) foi removido do Backlog do Alpine — não portamos.
+// Sort fica sempre em chain (asc/desc por coluna) ou vazio (criação desc).
+
 // ====================== Tipos locais ======================
 type SortKey = {
   key: string;
@@ -90,10 +93,7 @@ export function BacklogClient() {
     pessoas,
     loading,
     error,
-    refreshAll,
-    patchTask,
     patchTasks,
-    replaceTask,
     removeTasks,
   } = useData();
   const clientesById = useClientesById();
@@ -117,7 +117,6 @@ export function BacklogClient() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkPending, setBulkPending] = useState<BulkPending>(DEFAULT_BULK);
-  const [dragId, setDragId] = useState<string>('');
 
   // Debounce da busca (150ms — igual o Alpine).
   const [qDraft, setQDraft] = useState('');
@@ -179,17 +178,6 @@ export function BacklogClient() {
     });
 
     // ===== Sort =====
-    if (sortKeys[0]?.key === 'manual') {
-      arr.sort((a, b) => {
-        const ao = a.ordem;
-        const bo = b.ordem;
-        if (ao != null && bo != null) return ao - bo;
-        if (ao != null) return -1;
-        if (bo != null) return 1;
-        return (b.criadoEm || 0) - (a.criadoEm || 0);
-      });
-      return arr;
-    }
     if (sortKeys.length === 0) {
       arr.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
       return arr;
@@ -379,78 +367,6 @@ export function BacklogClient() {
   }, []);
   const loadMore = useCallback(() => setListLimit((n) => n + LIST_LIMIT_STEP), []);
 
-  // ============ DnD manual ============
-  const onRowDragStart = useCallback(
-    (e: React.DragEvent, t: Task) => {
-      if (sortKeys[0]?.key !== 'manual') {
-        e.preventDefault();
-        return;
-      }
-      setDragId(t.id);
-      e.dataTransfer.effectAllowed = 'move';
-    },
-    [sortKeys],
-  );
-  const onRowDragOver = useCallback(
-    (e: React.DragEvent) => {
-      if (sortKeys[0]?.key !== 'manual' || !dragId) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-    },
-    [sortKeys, dragId],
-  );
-  const onRowDrop = useCallback(
-    async (e: React.DragEvent, target: Task) => {
-      if (sortKeys[0]?.key !== 'manual') return;
-      e.preventDefault();
-      const draggedId = dragId;
-      setDragId('');
-      if (!draggedId || draggedId === target.id) return;
-      const visible = filtered;
-      const targetIdx = visible.findIndex((t) => t.id === target.id);
-      const draggedIdx = visible.findIndex((t) => t.id === draggedId);
-      const dragged = visible[draggedIdx];
-      if (!dragged) return;
-      let nbBefore: Task | undefined;
-      let nbAfter: Task | undefined;
-      if (draggedIdx < targetIdx) {
-        nbBefore = visible[targetIdx];
-        nbAfter = visible[targetIdx + 1];
-      } else {
-        nbBefore = visible[targetIdx - 1];
-        nbAfter = visible[targetIdx];
-      }
-      const ob = nbBefore && nbBefore.id !== draggedId ? nbBefore.ordem : null;
-      const oa = nbAfter && nbAfter.id !== draggedId ? nbAfter.ordem : null;
-      let novaOrdem: number;
-      if (ob != null && oa != null) novaOrdem = (ob + oa) / 2;
-      else if (ob != null) novaOrdem = ob + 1;
-      else if (oa != null) novaOrdem = oa - 1;
-      else novaOrdem = 1;
-      const prev = patchTask(draggedId, { ordem: novaOrdem });
-      if (!prev) return;
-      const { error } = await sb.from('tasks').update({ ordem: novaOrdem }).eq('id', draggedId);
-      if (error) {
-        replaceTask(draggedId, prev);
-        alert('Erro ao reordenar: ' + error.message);
-      }
-    },
-    [sortKeys, dragId, filtered, patchTask, replaceTask, sb],
-  );
-
-  const setManualSort = useCallback(async () => {
-    const updates: { id: string; ordem: number }[] = [];
-    filtered.forEach((t, idx) => {
-      const novaOrdem = idx + 1;
-      if (t.ordem !== novaOrdem) {
-        patchTask(t.id, { ordem: novaOrdem });
-        updates.push({ id: t.id, ordem: novaOrdem });
-      }
-    });
-    setSortKeys([{ key: 'manual', dir: 'asc' }]);
-    await Promise.all(updates.map((u) => sb.from('tasks').update({ ordem: u.ordem }).eq('id', u.id)));
-  }, [filtered, patchTask, sb]);
-
   // ============ Bulk actions ============
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
@@ -515,6 +431,19 @@ export function BacklogClient() {
     setBulkPending(DEFAULT_BULK);
   }, [bulkPending, selectedIds, sb, patchTasks]);
 
+  const bulkArquivar = useCallback(async () => {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    const nowIso = new Date().toISOString();
+    const { error } = await sb.from('tasks').update({ arquivado_em: nowIso }).in('id', ids);
+    if (error) {
+      alert('Erro: ' + error.message);
+      return;
+    }
+    patchTasks(ids, { arquivadoEm: nowIso });
+    setSelectedIds([]);
+  }, [selectedIds, sb, patchTasks]);
+
   const bulkDelete = useCallback(async () => {
     const ids = [...selectedIds];
     if (!ids.length) return;
@@ -543,8 +472,6 @@ export function BacklogClient() {
 
   if (loading) return <div className="text-muted text-sm">Carregando…</div>;
   if (error) return <div className="text-[color:var(--danger)] text-sm">Erro: {error}</div>;
-
-  const sortIsManual = sortKeys[0]?.key === 'manual';
 
   return (
     <div className="space-y-4">
@@ -729,26 +656,10 @@ export function BacklogClient() {
                       <span>Somente criadas por humanos</span>
                     </label>
                   </div>
-                  {!sortIsManual ? (
-                    <div className="more-row">
-                      <button className="btn btn-ghost text-xs w-full" onClick={() => { setMoreOpen(false); setManualSort(); }}>
-                        Habilitar reordenação manual
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="more-row">
-                      <button className="btn btn-ghost text-xs w-full" onClick={() => { setMoreOpen(false); setSortKeys([]); }}>
-                        Limpar ordenação manual
-                      </button>
-                    </div>
-                  )}
                 </div>
               </>
             )}
           </div>
-          <button className="btn btn-ghost text-xs" onClick={() => refreshAll()} title="Recarregar">
-            ↻
-          </button>
         </div>
       </div>
 
@@ -1019,16 +930,10 @@ export function BacklogClient() {
                   <tr
                     key={t.id}
                     onClick={() => openEdit(t)}
-                    draggable={sortIsManual && !groupBy}
                     className={[
-                      sortIsManual && !groupBy ? 'manual-row' : '',
                       sel ? 'bg-brand-tint' : '',
                       t.arquivadoEm ? 'opacity-50' : '',
                     ].filter(Boolean).join(' ')}
-                    onDragStart={(e) => onRowDragStart(e, t)}
-                    onDragOver={onRowDragOver}
-                    onDrop={(e) => onRowDrop(e, t)}
-                    onDragEnd={() => setDragId('')}
                   >
                     <td onClick={(e) => e.stopPropagation()}>
                       <input
@@ -1313,6 +1218,9 @@ export function BacklogClient() {
             <div className="flex items-center gap-2 ml-auto">
               <button className="btn btn-primary text-sm md:text-xs py-2 md:py-1.5 px-3" onClick={bulkSave}>
                 aplicar
+              </button>
+              <button className="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3" onClick={bulkArquivar} title="Arquivar selecionadas">
+                arquivar
               </button>
               <button className="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3" onClick={bulkDelete} title="Excluir selecionadas">
                 excluir

@@ -6,12 +6,12 @@ import { NAV } from '@/lib/nav';
 import { cn } from '@/lib/utils';
 import { useData } from '@/lib/data-store';
 
-const APP_VERSION = 'v1.02.100';
+const APP_VERSION = 'v1.02.101';
 
 /** Barra de navegação superior — espelha o header do app Alpine. */
 export function AppNav() {
   const pathname = usePathname();
-  const { refreshAll, loading } = useData();
+  const { refreshAll } = useData();
 
   return (
     <header
@@ -33,7 +33,7 @@ export function AppNav() {
           </div>
           <div className="leading-none min-w-0 text-left">
             <div className="font-brand text-[18px] md:text-[22px] font-semibold text-brand">
-              tasks 360{loading ? ' …' : ''}
+              tasks 360
             </div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted mt-1 truncate font-mono">
               {APP_VERSION}
