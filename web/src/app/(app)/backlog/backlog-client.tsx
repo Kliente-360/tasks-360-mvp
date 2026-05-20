@@ -8,8 +8,16 @@ import { useData, useClientesById, useProjetosById, usePessoasById } from '@/lib
  * que realtime troca o array (mudou no banco → reflete aqui).
  * UI completa do Backlog vem no Bloco 2.2.
  */
+const RT_COLORS: Record<string, string> = {
+  idle: '#888',
+  connecting: '#d97706',
+  subscribed: '#009900',
+  error: '#d33',
+  closed: '#888',
+};
+
 export function BacklogSmoke() {
-  const { tasks, clientes, projetos, pessoas, loading, error, refreshAll } = useData();
+  const { tasks, clientes, projetos, pessoas, loading, error, realtimeStatus, refreshAll } = useData();
   const clientesById = useClientesById();
   const projetosById = useProjetosById();
   const pessoasById = usePessoasById();
@@ -33,6 +41,13 @@ export function BacklogSmoke() {
           </span>
         </div>
         <div className="page-bar-controls">
+          <span
+            className="text-xs font-mono px-2 py-1 rounded"
+            style={{ background: 'var(--bg-elev)', color: RT_COLORS[realtimeStatus] }}
+            title="Status da assinatura Realtime do Supabase"
+          >
+            ● realtime: {realtimeStatus}
+          </span>
           <button className="btn btn-ghost text-xs" onClick={() => refreshAll()}>
             ↻ recarregar
           </button>

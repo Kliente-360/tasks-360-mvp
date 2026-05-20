@@ -18,6 +18,8 @@ import type { Cliente, Pessoa, Projeto, Task } from './types';
 /** Janela de tasks concluídas trazidas no boot (resto vem sob demanda). */
 const TASKS_CONCLUIDAS_WINDOW_DAYS = 60;
 
+export type RealtimeStatus = 'idle' | 'connecting' | 'subscribed' | 'error' | 'closed';
+
 interface DataState {
   tasks: Task[];
   clientes: Cliente[];
@@ -25,6 +27,7 @@ interface DataState {
   pessoas: Pessoa[];
   loading: boolean;
   error: string | null;
+  realtimeStatus: RealtimeStatus;
 }
 
 interface DataActions {
@@ -62,6 +65,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [pessoas, setPessoas] = useState<Pessoa[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('idle');
 
   // Refs pros refetch debounced — coalescem rajadas de realtime numa única query.
   const refetchTimers = useRef<Record<string, ReturnType<typeof setTimeout> | undefined>>({});
@@ -144,9 +148,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     // helper do supabase-js faz por baixo dos panos.
     let channel: ReturnType<typeof sb.channel> | null = null;
     let cancelled = false;
+    setRealtimeStatus('connecting');
     (async () => {
       const { data: { session } } = await sb.auth.getSession();
       if (cancelled) return;
+      // eslint-disable-next-line no-console
+      console.log('[realtime] session present:', !!session?.access_token);
       if (session?.access_token) sb.realtime.setAuth(session.access_token);
 
       channel = sb
@@ -156,7 +163,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           { event: '*', schema: 'public', table: 'tasks' },
           (payload) => {
             // eslint-disable-next-line no-console
-            console.debug('[realtime tasks]', payload);
+            console.log('[realtime tasks]', payload);
             const ev = (payload as { eventType: string }).eventType;
             if (ev === 'DELETE') {
               const id = (payload as { old?: { id?: string } }).old?.id;
@@ -187,7 +194,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'pessoas' }, () => scheduleRefetch('pessoas'))
         .subscribe((status, err) => {
           // eslint-disable-next-line no-console
-          console.debug('[realtime status]', status, err ?? '');
+          console.log('[realtime status]', status, err ?? '');
+          if (status === 'SUBSCRIBED') setRealtimeStatus('subscribed');
+          else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeStatus('error');
+          else if (status === 'CLOSED') setRealtimeStatus('closed');
         });
     })();
 
@@ -263,6 +273,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       pessoas,
       loading,
       error,
+      realtimeStatus,
       refreshAll,
       patchTask,
       patchTasks,
@@ -271,7 +282,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       removeTask,
       removeTasks,
     }),
-    [tasks, clientes, projetos, pessoas, loading, error, refreshAll, patchTask, patchTasks, replaceTask, upsertTask, removeTask, removeTasks],
+    [tasks, clientes, projetos, pessoas, loading, error, realtimeStatus, refreshAll, patchTask, patchTasks, replaceTask, upsertTask, removeTask, removeTasks],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
