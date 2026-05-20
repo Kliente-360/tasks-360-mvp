@@ -14,6 +14,7 @@ export default {
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    // Integração Supabase-Vercel injeta POSTGRES_URL; fallback pra DATABASE_URL em dev local.
+    url: (process.env.POSTGRES_URL ?? process.env.DATABASE_URL)!,
   },
 } satisfies Config;
