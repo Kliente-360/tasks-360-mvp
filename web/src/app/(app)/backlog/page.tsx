@@ -1,5 +1,5 @@
-import { OndaPlaceholder } from '@/components/onda-placeholder';
+import { BacklogSmoke } from './backlog-client';
 
 export default function Page() {
-  return <OndaPlaceholder href="/backlog" title="Backlog" />;
+  return <BacklogSmoke />;
 }

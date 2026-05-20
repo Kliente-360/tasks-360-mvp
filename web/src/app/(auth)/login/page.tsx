@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { LoginForm } from './login-form';
 
 export const metadata: Metadata = {
@@ -20,7 +21,9 @@ export default function LoginPage() {
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted mt-1.5 font-mono">por Kliente 360</div>
           </div>
         </div>
-        <LoginForm />
+        <Suspense fallback={<div className="text-sm text-muted">Carregando…</div>}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );
