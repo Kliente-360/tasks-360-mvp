@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { NAV } from '@/lib/nav';
 import { cn } from '@/lib/utils';
+import { useData } from '@/lib/data-store';
 
-const APP_VERSION = 'v1.02.092';
+const APP_VERSION = 'v1.02.098';
 
 /** Barra de navegação superior — espelha o header do app Alpine. */
 export function AppNav() {
   const pathname = usePathname();
+  const { refreshAll, loading } = useData();
 
   return (
     <header
@@ -18,20 +20,26 @@ export function AppNav() {
     >
       {/* Top row: logo + actions */}
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-3">
-        {/* Logo */}
-        <div className="flex items-center gap-3 min-w-0">
+        {/* Logo · click dispara refetch (mesmo gesto do app Alpine). */}
+        <button
+          type="button"
+          onClick={() => refreshAll()}
+          className="flex items-center gap-3 min-w-0 text-left hover:opacity-80 transition-opacity"
+          title="Recarregar dados"
+          aria-label="Recarregar dados"
+        >
           <div className="k360-mark">
             <span /><span /><span /><span />
           </div>
           <div className="leading-none min-w-0 text-left">
             <div className="font-brand text-[18px] md:text-[22px] font-semibold text-brand">
-              tasks 360
+              tasks 360{loading ? ' …' : ''}
             </div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted mt-1 truncate font-mono">
               {APP_VERSION}
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Right actions */}
         <div className="flex items-center gap-1 shrink-0">

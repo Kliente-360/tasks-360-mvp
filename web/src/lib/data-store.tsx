@@ -152,18 +152,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       const { data: { session } } = await sb.auth.getSession();
       if (cancelled) return;
-      // eslint-disable-next-line no-console
-      console.log('[realtime] session present:', !!session?.access_token);
       if (session?.access_token) sb.realtime.setAuth(session.access_token);
 
+      // Realtime fica conectado mas em "dormente" — a publication
+      // do Postgres no projeto não inclui as 4 tabelas (e o time hoje
+      // dá refresh manual clicando na logo). Se um dia rodarem o
+      // supabase/realtime.sql + `alter table tasks replica identity full`,
+      // este channel passa a aplicar deltas sem mudança de código.
       channel = sb
         .channel('kliente360-changes')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'tasks' },
           (payload) => {
-            // eslint-disable-next-line no-console
-            console.log('[realtime tasks]', payload);
             const ev = (payload as { eventType: string }).eventType;
             if (ev === 'DELETE') {
               const id = (payload as { old?: { id?: string } }).old?.id;
@@ -192,9 +193,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'clientes' }, () => scheduleRefetch('clientes'))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'projetos' }, () => scheduleRefetch('projetos'))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'pessoas' }, () => scheduleRefetch('pessoas'))
-        .subscribe((status, err) => {
-          // eslint-disable-next-line no-console
-          console.log('[realtime status]', status, err ?? '');
+        .subscribe((status) => {
           if (status === 'SUBSCRIBED') setRealtimeStatus('subscribed');
           else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeStatus('error');
           else if (status === 'CLOSED') setRealtimeStatus('closed');
