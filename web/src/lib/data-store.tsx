@@ -137,45 +137,63 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const timers = refetchTimers.current;
     refreshAll();
-    // Realtime: aplica delta direto em tasks; refetch debounced no resto.
-    const channel = sb
-      .channel('kliente360-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tasks' },
-        (payload) => {
-          const ev = (payload as { eventType: string }).eventType;
-          if (ev === 'DELETE') {
-            const id = (payload as { old?: { id?: string } }).old?.id;
-            if (id) {
-              setTasks((cur) => cur.filter((t) => t.id !== id));
+
+    // Realtime precisa de auth válido — sem isso o servidor recusa o
+    // postgres_changes silenciosamente (subscribe vira CHANNEL_ERROR ou
+    // TIMED_OUT). Pegamos a sessão e empurramos o access_token, igual o
+    // helper do supabase-js faz por baixo dos panos.
+    let channel: ReturnType<typeof sb.channel> | null = null;
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await sb.auth.getSession();
+      if (cancelled) return;
+      if (session?.access_token) sb.realtime.setAuth(session.access_token);
+
+      channel = sb
+        .channel('kliente360-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'tasks' },
+          (payload) => {
+            // eslint-disable-next-line no-console
+            console.debug('[realtime tasks]', payload);
+            const ev = (payload as { eventType: string }).eventType;
+            if (ev === 'DELETE') {
+              const id = (payload as { old?: { id?: string } }).old?.id;
+              if (id) {
+                setTasks((cur) => cur.filter((t) => t.id !== id));
+              }
+              return;
             }
-            return;
-          }
-          const row = (payload as { new?: Record<string, unknown> }).new;
-          if (!row || !row.id) {
-            scheduleRefetch('tasks');
-            return;
-          }
-          const next = taskFromDb(row);
-          setTasks((cur) => {
-            const i = cur.findIndex((t) => t.id === next.id);
-            if (i >= 0) {
-              const out = cur.slice();
-              out[i] = next;
-              return out;
+            const row = (payload as { new?: Record<string, unknown> }).new;
+            if (!row || !row.id) {
+              scheduleRefetch('tasks');
+              return;
             }
-            return [next, ...cur];
-          });
-        },
-      )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'clientes' }, () => scheduleRefetch('clientes'))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'projetos' }, () => scheduleRefetch('projetos'))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pessoas' }, () => scheduleRefetch('pessoas'))
-      .subscribe();
+            const next = taskFromDb(row);
+            setTasks((cur) => {
+              const i = cur.findIndex((t) => t.id === next.id);
+              if (i >= 0) {
+                const out = cur.slice();
+                out[i] = next;
+                return out;
+              }
+              return [next, ...cur];
+            });
+          },
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'clientes' }, () => scheduleRefetch('clientes'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'projetos' }, () => scheduleRefetch('projetos'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pessoas' }, () => scheduleRefetch('pessoas'))
+        .subscribe((status, err) => {
+          // eslint-disable-next-line no-console
+          console.debug('[realtime status]', status, err ?? '');
+        });
+    })();
 
     return () => {
-      sb.removeChannel(channel);
+      cancelled = true;
+      if (channel) sb.removeChannel(channel);
       Object.keys(timers).forEach((k) => timers[k] && clearTimeout(timers[k]!));
     };
   }, [sb, refreshAll, scheduleRefetch]);
