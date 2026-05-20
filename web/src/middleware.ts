@@ -1,15 +1,16 @@
 /**
  * Middleware de auth: mantém a sessão Supabase fresca a cada request
- * (refresh do token) e expõe o cookie atualizado pro Server. Padrão
- * recomendado pelo @supabase/ssr em App Router.
+ * (refresh do token) e redireciona pra /login quando não há sessão.
+ * Padrão recomendado pelo @supabase/ssr em App Router.
  *
- * Gating por role (admin/interno/cliente) e redirect de login entram
- * na Onda 1 — aqui só o refresh de sessão.
+ * Gating por role (admin/interno/cliente) entra na Onda 1.
  */
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
+
+const PUBLIC_PATHS = ['/login', '/auth/callback'];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -35,8 +36,26 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // Toca a sessão pra disparar o refresh do token quando necessário.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { pathname } = request.nextUrl;
+  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
+
+  if (!user && !isPublic) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    if (pathname !== '/') url.searchParams.set('next', pathname);
+    return NextResponse.redirect(url);
+  }
+
+  if (user && pathname === '/login') {
+    const url = request.nextUrl.clone();
+    url.pathname = request.nextUrl.searchParams.get('next') || '/';
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
 
   return response;
 }
