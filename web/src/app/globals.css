@@ -39,3 +39,16 @@ body {
   color: var(--ink);
   font-family: var(--font-body), system-ui, sans-serif;
 }
+
+@layer components {
+  /* Chip de status/tier — tamanho fixo, uppercase, mono */
+  .chip {
+    @apply inline-flex items-center px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider font-mono whitespace-nowrap;
+  }
+
+  /* Botão ghost pequeno — ações de linha em tabelas/listas */
+  .btn-ghost-sm {
+    @apply inline-flex items-center px-2 py-1 rounded text-xs text-muted border border-transparent
+           hover:border-line hover:text-ink transition-colors cursor-pointer bg-transparent;
+  }
+}
