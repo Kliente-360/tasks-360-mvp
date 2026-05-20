@@ -60,12 +60,14 @@ export function BulkBarSep() {
   return <div className="hidden md:block w-px h-4 mx-1 bg-line" />;
 }
 
-/** Botão "limpar" do desktop — fica colado nos botões de ação. */
+/** Botão "limpar" do desktop — fica colado nos botões de ação.
+ *  Usa .btn padrão (não .btn-ghost) pra ter border + bg nativos que
+ *  funcionam tanto em light quanto dark mode sem precisar de override. */
 export function BulkBarClearButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
-      className="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 hidden md:inline-flex"
+      className="btn text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 hidden md:inline-flex"
       onClick={onClick}
     >
       limpar

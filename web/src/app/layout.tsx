@@ -16,6 +16,8 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: 'tasks 360',
   description: 'Gestão de backlog · Kliente 360',
+  // Força light scheme; o dark próprio entra via toggle manual depois da Onda 0.
+  colorScheme: 'light',
 };
 
 export default function RootLayout({

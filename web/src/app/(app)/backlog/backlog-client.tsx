@@ -1240,7 +1240,7 @@ export function BacklogClient() {
           </button>
           <button
             type="button"
-            className="btn btn-ghost text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
+            className="btn text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
             onClick={bulkArquivar}
             title="Arquivar selecionadas"
           >

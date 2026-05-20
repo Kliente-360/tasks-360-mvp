@@ -8,6 +8,11 @@
  * ============================================================ */
 
 :root {
+  /* Força light em todos os controles nativos (date pickers, scrollbar,
+     etc) ignorando prefers-color-scheme do SO. O dark mode próprio
+     entra via .dark / [data-theme="dark"] no toggle manual (pós-Onda 0). */
+  color-scheme: light;
+
   /* === BRAND === */
   --brand:       #009900;
   --brand-dark:  #007A00;
@@ -374,16 +379,6 @@ input[type="checkbox"] { accent-color: var(--brand); }
     padding-top: 0;
     padding-bottom: 0;
     box-sizing: border-box;
-  }
-  /* .btn-ghost sem fundo desaparecia no fundo claro da bulk bar — dá
-     borda fina pra delimitar (sem competir com primary/danger). */
-  .bulk-bar .btn-ghost {
-    border: 1px solid var(--line);
-    background: var(--surface-1);
-  }
-  .bulk-bar .btn-ghost:hover {
-    border-color: var(--line-strong);
-    background: var(--bg-elev);
   }
 }
 .inp:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }

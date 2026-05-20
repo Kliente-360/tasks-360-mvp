@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { useData } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
 
-const APP_VERSION = 'v1.02.112';
+const APP_VERSION = 'v1.02.113';
 
 /** Barra de navegação superior — espelha o header do app Alpine. */
 export function AppNav() {
