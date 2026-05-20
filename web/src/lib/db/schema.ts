@@ -48,6 +48,7 @@ export const pessoas = pgTable('pessoas', {
   capacidadeHorasSemana: numeric('capacidade_horas_semana'),
   skills: text('skills').array(),
   senioridade: text('senioridade'), // junior | pleno | senior | lead
+  isCeo: boolean('is_ceo').notNull().default(false),
 });
 
 export const tasks = pgTable('tasks', {
@@ -72,6 +73,7 @@ export const tasks = pgTable('tasks', {
   tempoRealHoras: numeric('tempo_real_horas'),
   ordem: numeric('ordem'),
   criadoPorIa: boolean('criado_por_ia').notNull().default(false),
+  privada: boolean('privada').notNull().default(false),
   externalSource: text('external_source'), // salesforce | null
   externalId: text('external_id'),
   arquivadoEm: timestamp('arquivado_em', { withTimezone: true }),
