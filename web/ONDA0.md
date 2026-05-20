@@ -92,15 +92,41 @@ Os helpers de `lib/helpers.js` já estão em `web/src/lib/task-utils.ts` (portad
 
 ## Realtime
 
-Manter o padrão atual: Supabase Realtime no cliente.
+**Decisão (Bloco 2.1):** Realtime fica conectado em **dormente** durante
+toda a Onda 0. Refresh é manual — clicar na logo do AppNav (ou no botão
+"↻ recarregar" da página) dispara `refreshAll()`. Mesmo padrão do app
+Alpine em produção hoje.
+
+Motivo: a publication `supabase_realtime` do projeto não inclui as 4
+tabelas (`tasks`, `clientes`, `projetos`, `pessoas`). O `supabase/realtime.sql`
+está no repo mas nunca foi executado. Habilitar agora exige também
+`replica identity full` em `tasks` pra o payload do UPDATE chegar
+completo — caso contrário a delta-apply quebra. É decisão de produto,
+não de migração de stack, então fica fora da Onda 0.
+
+**Como ligar quando quiser (pós-Onda 0):** rodar no SQL Editor:
+
+```sql
+alter publication supabase_realtime add table tasks;
+alter publication supabase_realtime add table clientes;
+alter publication supabase_realtime add table projetos;
+alter publication supabase_realtime add table pessoas;
+alter table tasks replica identity full;
+```
+
+O `DataProvider` em `web/src/lib/supabase/client.ts` + `data-store.tsx`
+já assina o canal `kliente360-changes` com auth correto. Habilitar a
+publication faz os deltas começarem a aplicar sem mudança de código.
 
 ```typescript
 // web/src/lib/supabase/client.ts — singleton do browser client
-// Cada Client Component pesado assina o canal tasks
-// Aplica delta (INSERT/UPDATE/DELETE) no estado local — não refetch completo
+// DataProvider assina canal kliente360-changes (postgres_changes em
+// tasks/clientes/projetos/pessoas). Aplica delta direto em tasks,
+// refetch debounced 1200ms em clientes/projetos/pessoas.
 ```
 
-Não usar Server-Sent Events nem polling — o Supabase Realtime já resolve.
+Não usar Server-Sent Events nem polling — Supabase Realtime já resolve
+quando estiver ligado.
 
 ---
 
