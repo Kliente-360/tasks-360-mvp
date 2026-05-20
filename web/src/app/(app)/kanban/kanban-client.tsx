@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   useData,
   useClientesById,
@@ -57,16 +58,22 @@ export function KanbanClient() {
   });
   const [kanbanView, setKanbanView] = useState<'op' | 'exec'>('op');
 
-  // Mobile força exec (igual Alpine).
+  // Mobile: Kanban não aparece (decisão de produto, igual hideMobile: true do
+  // tabsList Alpine). Quem acessa /kanban via URL no mobile é redirecionado
+  // pra /backlog, que é a alternativa adequada em viewport estreito.
+  const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
-    const update = () => setIsMobile(mq.matches);
+    const update = () => {
+      const m = mq.matches;
+      setIsMobile(m);
+      if (m) router.replace('/backlog');
+    };
     update();
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
-  }, []);
-  const effectiveView: 'op' | 'exec' = isMobile ? 'exec' : kanbanView;
+  }, [router]);
 
   // DnD state
   const [draggingId, setDraggingId] = useState<string>('');
@@ -199,6 +206,9 @@ export function KanbanClient() {
     return 'há ' + d + 'd';
   };
 
+  // Mobile cai aqui só por uma fração antes do router.replace executar —
+  // não renderiza nada pra evitar flash do layout op com 11 colunas.
+  if (isMobile) return null;
   if (loading) return <div className="text-muted text-sm">Carregando…</div>;
   if (error) return <div className="text-[color:var(--danger)] text-sm">Erro: {error}</div>;
 
@@ -208,7 +218,7 @@ export function KanbanClient() {
       <div className="page-bar hidden md:flex">
         <div className="page-bar-info">
           <span className="page-bar-narrative">
-            {effectiveView === 'op' ? (
+            {kanbanView === 'op' ? (
               <>
                 <strong>Operacional</strong>
                 <span className="text-muted font-normal"> · 11 colunas detalhadas</span>
@@ -289,57 +299,8 @@ export function KanbanClient() {
         </div>
       </div>
 
-      {/* Mobile filters */}
-      <div className="flex flex-col gap-2 mb-5 md:hidden">
-        <div className="flex gap-2">
-          <select
-            className={`inp flex-1 ${filters.cliente ? 'is-active' : ''}`}
-            value={filters.cliente}
-            onChange={(e) => {
-              const v = e.target.value;
-              setFilters({ ...filters, cliente: v, projeto: v ? filters.projeto : '' });
-            }}
-          >
-            <option value="">Clientes</option>
-            <option value={EMPTY}>— sem cliente</option>
-            {clientesAtivos.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-          </select>
-          <select
-            className={`inp flex-1 ${filters.projeto ? 'is-active' : ''}`}
-            value={filters.projeto}
-            disabled={!filters.cliente}
-            onChange={(e) => setFilters({ ...filters, projeto: e.target.value })}
-          >
-            <option value="">Projetos</option>
-            <option value={EMPTY}>— sem projeto</option>
-            {projetosFiltrados.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-        <select
-          className={`inp ${filters.pessoa ? 'is-active' : ''}`}
-          value={filters.pessoa}
-          onChange={(e) => setFilters({ ...filters, pessoa: e.target.value })}
-        >
-          <option value="">Responsáveis</option>
-          <option value={EMPTY}>— sem responsável</option>
-          {pessoasNaoCliente.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nome}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {/* Visão OPERACIONAL */}
-      {effectiveView === 'op' && (
+      {kanbanView === 'op' && (
         <div className="kanban-scroll-op">
           {SUBS_FLAT.map((sub) => {
             const colTasks = tasksBySub.get(sub) ?? [];
@@ -397,7 +358,7 @@ export function KanbanClient() {
       )}
 
       {/* Visão EXECUTIVA */}
-      {effectiveView === 'exec' && (
+      {kanbanView === 'exec' && (
         <div className="kanban-scroll">
           {MACROS.map((col) => {
             const colTasks = tasksByMacro.get(col) ?? [];

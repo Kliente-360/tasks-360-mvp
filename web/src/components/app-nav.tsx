@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { useData } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
 
-const APP_VERSION = 'v1.02.106';
+const APP_VERSION = 'v1.02.107';
 
 /** Barra de navegação superior — espelha o header do app Alpine. */
 export function AppNav() {
@@ -77,7 +77,7 @@ export function AppNav() {
           <>
             <div className="fixed inset-0 z-20" onClick={() => setMobileNavOpen(false)} />
             <div className="absolute left-0 right-0 top-full bg-elev border-b border-line shadow-lg z-30">
-              {NAV.map((item) => {
+              {NAV.filter((item) => !item.hideMobile).map((item) => {
                 const active = pathname.startsWith(item.href);
                 return (
                   <button

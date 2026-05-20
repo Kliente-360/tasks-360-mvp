@@ -7,6 +7,8 @@ export type NavItem = {
   label: string;
   roles: ReadonlyArray<'admin' | 'interno' | 'cliente'>;
   onda: number;
+  /** Esconde a tab no mobile (mantida no desktop). Espelha hideMobile do tabsList Alpine. */
+  hideMobile?: boolean;
 };
 
 export const NAV: ReadonlyArray<NavItem> = [
@@ -14,7 +16,9 @@ export const NAV: ReadonlyArray<NavItem> = [
   { href: '/briefing',   label: 'Briefing',      roles: ['admin'],                     onda: 3 },
   { href: '/triagem',    label: 'Triagem',       roles: ['admin'],                     onda: 1 },
   { href: '/backlog',    label: 'Backlog',       roles: ['admin', 'interno'],          onda: 1 },
-  { href: '/kanban',     label: 'Kanban',        roles: ['admin', 'interno'],          onda: 1 },
+  // Kanban escondido no mobile: 11 colunas operacionais não cabem em viewport
+  // estreito e a executiva é melhor servida pelo /backlog mobile.
+  { href: '/kanban',     label: 'Kanban',        roles: ['admin', 'interno'],          onda: 1, hideMobile: true },
   { href: '/calendario', label: 'Calendário',    roles: ['admin', 'interno'],          onda: 1 },
   { href: '/dashboard',  label: 'Dashboard',     roles: ['admin', 'interno'],          onda: 3 },
   { href: '/portal',     label: 'Portal cliente', roles: ['admin', 'interno', 'cliente'], onda: 2 },
