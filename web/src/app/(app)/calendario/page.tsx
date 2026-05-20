@@ -1,5 +1,5 @@
-import { OndaPlaceholder } from '@/components/onda-placeholder';
+import { CalendarioClient } from './calendario-client';
 
 export default function Page() {
-  return <OndaPlaceholder href="/calendario" title="Calendário" />;
+  return <CalendarioClient />;
 }
