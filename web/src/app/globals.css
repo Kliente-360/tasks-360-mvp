@@ -365,6 +365,27 @@ input[type="checkbox"] { accent-color: var(--brand); }
 .bulk-bar .inp[type="date"], .bulk-bar .inp[type="time"], .bulk-bar .inp[type="datetime-local"] {
   min-height: 0;
 }
+/* Padroniza altura desktop de TODOS os controles dentro da bulk bar pra
+   selects, inputs e botões ficarem do mesmo tamanho na mesma linha. */
+@media (min-width: 768px) {
+  .bulk-bar .inp,
+  .bulk-bar .btn {
+    height: 32px;
+    padding-top: 0;
+    padding-bottom: 0;
+    box-sizing: border-box;
+  }
+  /* .btn-ghost sem fundo desaparecia no fundo claro da bulk bar — dá
+     borda fina pra delimitar (sem competir com primary/danger). */
+  .bulk-bar .btn-ghost {
+    border: 1px solid var(--line);
+    background: var(--surface-1);
+  }
+  .bulk-bar .btn-ghost:hover {
+    border-color: var(--line-strong);
+    background: var(--bg-elev);
+  }
+}
 .inp:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
 .inp.is-active { border-color: var(--cyan); background: var(--cyan-soft); }
 .lbl {
