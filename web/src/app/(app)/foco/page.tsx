@@ -1,5 +1,5 @@
-import { OndaPlaceholder } from '@/components/onda-placeholder';
+import { FocoClient } from './foco-client';
 
 export default function Page() {
-  return <OndaPlaceholder href="/foco" title="Meu foco" />;
+  return <FocoClient />;
 }
