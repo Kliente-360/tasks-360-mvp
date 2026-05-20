@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============ Tokens Kliente 360 ============
+ * Portados de lib/styles.css do app atual. Tailwind (tailwind.config.ts)
+ * referencia estas vars, então tema claro/escuro é só trocar a classe.
+ */
+:root {
+  --brand: #009900;
+  --brand-dark: #007a00;
+  --brand-soft: #80c980;
+  --brand-tint: #e6f5e6;
+
+  --bg: #fafaf8;
+  --bg-elev: #ffffff;
+  --ink: #1f2937;
+  --ink-soft: #374151;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+}
+
+.dark {
+  --brand: #1faf1f;
+  --brand-dark: #009900;
+  --brand-soft: #2f6f2f;
+  --brand-tint: #14241a;
+
+  --bg: #0b1220;
+  --bg-elev: #121a2b;
+  --ink: #e6e9ef;
+  --ink-soft: #c2c8d4;
+  --muted: #8b93a3;
+  --line: #243049;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
