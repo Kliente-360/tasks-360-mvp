@@ -231,7 +231,7 @@ Tabelas ainda não modeladas (do banco real):
 
 ---
 
-## Estado atual (antes da sessão dedicada)
+## Estado atual (fim da Onda 0 · pré-cutover)
 
 | Item | Status |
 |---|---|
@@ -239,14 +239,20 @@ Tabelas ainda não modeladas (do banco real):
 | Fontes IBM Plex Sans + Mono | ✅ |
 | Tailwind config com todos os tokens | ✅ |
 | `AppNav` idêntica ao app atual | ✅ |
-| Cadastros (leitura + arquivar) | ✅ Server Component |
-| Schema Drizzle (draft) | ⚠️ precisa `db:pull` |
-| `lib/supabase/client.ts` | ❌ |
-| `lib/supabase/server.ts` | ❌ |
-| Middleware de auth | ❌ |
-| Login page | ❌ |
-| Backlog, Kanban, Modal, Triagem, Foco, Calendário | ❌ |
-| Cadastros — modais criar/editar | ❌ |
+| Cadastros (leitura + arquivar + modais criar/editar) | ✅ |
+| Schema Drizzle (draft) | ⚠️ `db:pull` adiado (incompatibilidade drizzle-kit × check constraints); Client Components com Supabase JS não dependem dele |
+| `lib/supabase/client.ts` + `server.ts` | ✅ |
+| Middleware de auth | ✅ |
+| Login (magic link + 2FA) | ✅ |
+| Backlog, Kanban, Modal, Triagem, Foco, Calendário | ✅ |
+| Notificações (sino + realtime channel) | ✅ realtime dormente — publication Supabase precisa habilitar 4 tabelas |
+| Help · Onboarding · Export · Tema · Profile menu | ✅ |
+| Command palette · Quick capture · Global shortcuts | ✅ (`⌘K` · `n` · `g+f/b/k/c/d/t/l` · `⌘+Enter` no modal) |
+| PWA (manifest + ícones + splash iOS + SW Serwist) | ✅ |
+| Vitest (44 testes em helpers puros) | ✅ |
+| Playwright (smoke auth-less em 3 cenários) | ✅ |
+| GitHub Actions CI (lint + typecheck + vitest + build + e2e) | ✅ `.github/workflows/ci.yml` |
+| Briefing · Dashboard · Portal cliente · Adoção | 🅿️ parking (placeholders) |
 
 ---
 

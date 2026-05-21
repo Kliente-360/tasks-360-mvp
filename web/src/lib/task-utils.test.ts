@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { TaskStatus } from './types';
 import {
   effEsforco,
   effOcupacao,
@@ -85,7 +86,7 @@ describe('atrasada', () => {
     expect(atrasada({ prazo: '2025-01-01', status: 'concluido' }, '2026-05-21')).toBe(false);
   });
   it('false quando sem prazo', () => {
-    expect(atrasada({ prazo: null, status: 'andamento' }, '2026-05-21')).toBe(false);
+    expect(atrasada({ prazo: '', status: 'andamento' }, '2026-05-21')).toBe(false);
   });
 });
 
@@ -107,7 +108,7 @@ describe('diasAtraso', () => {
     expect(diasAtraso({ prazo: '2026-05-25' })).toBe(-4);
   });
   it('zero sem prazo', () => {
-    expect(diasAtraso({ prazo: null })).toBe(0);
+    expect(diasAtraso({ prazo: '' })).toBe(0);
   });
 });
 
@@ -140,21 +141,21 @@ describe('agingLevel', () => {
 // ─── triageFailures / needsTriage ───────────────────────────────────────
 
 describe('triageFailures', () => {
-  const base = { status: 'andamento', clienteId: 'c1', pessoaId: 'p1', prazo: '2026-06-01', esforco: 8 };
+  const base = { status: 'andamento' as TaskStatus, clienteId: 'c1', pessoaId: 'p1', prazo: '2026-06-01', esforco: 8 };
 
   it('vazio quando tudo preenchido', () => {
     expect(triageFailures({ ...base, subetapa: 'em_desenvolvimento' })).toEqual([]);
   });
   it('vazio sempre pra task concluída', () => {
-    expect(triageFailures({ ...base, status: 'concluido', subetapa: 'backlog', pessoaId: null, clienteId: null })).toEqual([]);
+    expect(triageFailures({ ...base, status: 'concluido', subetapa: 'backlog', pessoaId: '', clienteId: '' })).toEqual([]);
   });
   it('cobra responsável e cliente desde rank 0', () => {
-    const out = triageFailures({ ...base, subetapa: 'backlog', pessoaId: null, clienteId: null });
+    const out = triageFailures({ ...base, subetapa: 'backlog', pessoaId: '', clienteId: '' });
     expect(out).toEqual(['sem responsável', 'sem cliente']);
   });
   it('cobra prazo só a partir de rank 2 (priorizado)', () => {
-    expect(triageFailures({ ...base, subetapa: 'backlog', prazo: null })).toEqual([]);
-    expect(triageFailures({ ...base, subetapa: 'priorizado', prazo: null })).toEqual(['sem prazo']);
+    expect(triageFailures({ ...base, subetapa: 'backlog', prazo: '' })).toEqual([]);
+    expect(triageFailures({ ...base, subetapa: 'priorizado', prazo: '' })).toEqual(['sem prazo']);
   });
   it('cobra esforço só a partir de rank 4 (em_desenvolvimento)', () => {
     expect(triageFailures({ ...base, subetapa: 'escopo_definido', esforco: 0 })).toEqual([]);
@@ -164,7 +165,7 @@ describe('triageFailures', () => {
 
 describe('needsTriage', () => {
   it('true se há ao menos uma falha', () => {
-    expect(needsTriage({ status: 'andamento', subetapa: 'em_desenvolvimento', pessoaId: null, clienteId: 'c', prazo: '2026-06-01', esforco: 8 })).toBe(true);
+    expect(needsTriage({ status: 'andamento', subetapa: 'em_desenvolvimento', pessoaId: '', clienteId: 'c', prazo: '2026-06-01', esforco: 8 })).toBe(true);
   });
   it('false quando triada', () => {
     expect(needsTriage({ status: 'andamento', subetapa: 'em_desenvolvimento', pessoaId: 'p', clienteId: 'c', prazo: '2026-06-01', esforco: 8 })).toBe(false);
@@ -206,11 +207,11 @@ describe('matchesPrazoFilter', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  const t = (prazo: string | null, status: string = 'andamento') => ({ prazo, status });
+  const t = (prazo: string, status: TaskStatus = 'andamento') => ({ prazo, status });
 
   it('vazio passa tudo', () => {
     expect(matchesPrazoFilter(t('2099-01-01'), '')).toBe(true);
-    expect(matchesPrazoFilter(t(null), '')).toBe(true);
+    expect(matchesPrazoFilter(t(''), '')).toBe(true);
   });
   it('atrasadas: prazo < hoje e não concluído', () => {
     expect(matchesPrazoFilter(t('2026-05-19'), 'atrasadas')).toBe(true);
@@ -237,7 +238,7 @@ describe('matchesPrazoFilter', () => {
     expect(matchesPrazoFilter(t('2026-06-01'), 'mes')).toBe(false);
   });
   it('task sem prazo nunca passa em modo ativo', () => {
-    expect(matchesPrazoFilter(t(null), 'semana')).toBe(false);
-    expect(matchesPrazoFilter(t(null), 'd7')).toBe(false);
+    expect(matchesPrazoFilter(t(''), 'semana')).toBe(false);
+    expect(matchesPrazoFilter(t(''), 'd7')).toBe(false);
   });
 });

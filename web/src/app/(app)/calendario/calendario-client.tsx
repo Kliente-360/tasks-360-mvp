@@ -252,7 +252,7 @@ export function CalendarioClient() {
         });
       }
     },
-    [patchTask, replaceTask, sb],
+    [patchTask, replaceTask, sb, toast],
   );
 
   const tempoNaSubetapa = (t: Task): string => {

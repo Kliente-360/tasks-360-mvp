@@ -581,7 +581,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
         return { ok: true };
       }
     },
-    [sb, tasksById, patchTask, replaceTask, upsertTask],
+    [sb, tasksById, patchTask, replaceTask, upsertTask, currentPessoa?.id, currentPessoa?.nome],
   );
 
   const autosaveNow = useCallback(async () => {
@@ -761,7 +761,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
     }
     setComments((cur) => cur.map((c) => (c.id === tempId ? (data as Comment) : c)));
     notifyAfterComment((data as Comment).id, body);
-  }, [newComment, newCommentPublico, editing.id, sb, currentPessoa, notifyAfterComment]);
+  }, [newComment, newCommentPublico, editing.id, sb, currentPessoa, notifyAfterComment, toast]);
 
   const submitReply = useCallback(
     async (parentId: string) => {
@@ -815,7 +815,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       setComments((cur) => cur.map((c) => (c.id === tempId ? (data as Comment) : c)));
       notifyAfterComment((data as Comment).id, body);
     },
-    [newReply, editing.id, comments, sb, currentPessoa, notifyAfterComment],
+    [newReply, editing.id, comments, sb, currentPessoa, notifyAfterComment, toast],
   );
 
   const saveEditComment = useCallback(
@@ -843,7 +843,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
         toast.error('Erro ao salvar: ' + error.message);
       }
     },
-    [comments, editingCommentDraft, sb],
+    [comments, editingCommentDraft, sb, toast],
   );
 
   const deleteComment = useCallback(
@@ -867,7 +867,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
         toast.error('Erro ao excluir: ' + error.message);
       }
     },
-    [comments, sb],
+    [comments, sb, toast],
   );
 
   const toggleCommentVisivel = useCallback(
@@ -887,7 +887,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
         toast.error('Erro ao alterar visibilidade: ' + error.message);
       }
     },
-    [sb],
+    [sb, toast],
   );
 
   // ============ Attachments ============
@@ -987,7 +987,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
         setAttachmentUploadLabel('');
       }
     },
-    [editing.id, sb],
+    [editing.id, sb, toast],
   );
 
   const deleteAttachment = useCallback(
@@ -1007,7 +1007,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
         .remove([a.storage_path])
         .catch(() => {});
     },
-    [attachments, lightboxAttachment, sb],
+    [attachments, lightboxAttachment, sb, toast],
   );
 
   // ============ Footer actions ============
@@ -1022,7 +1022,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       if (prev) replaceTask(editing.id, prev);
       toast.error('Erro ao arquivar: ' + error.message);
     }
-  }, [editing.id, patchTask, replaceTask, sb]);
+  }, [editing.id, patchTask, replaceTask, sb, toast]);
 
   const desarquivarTask = useCallback(async () => {
     if (!editing.id) return;
@@ -1034,7 +1034,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       if (prev) replaceTask(editing.id, prev);
       toast.error('Erro ao desarquivar: ' + error.message);
     }
-  }, [editing.id, patchTask, replaceTask, sb]);
+  }, [editing.id, patchTask, replaceTask, sb, toast]);
 
   const deleteTask = useCallback(async () => {
     if (!editing.id) return;
@@ -1058,7 +1058,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       if (prev) upsertTask(prev);
       toast.error('Erro ao excluir: ' + error.message);
     }
-  }, [editing.id, removeTask, upsertTask, sb, onClose]);
+  }, [editing.id, removeTask, upsertTask, sb, onClose, toast]);
 
   const saveManual = useCallback(async () => {
     setSaveState('saving');
@@ -1070,7 +1070,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       setSaveState('error');
       toast.error(res.error ?? 'Erro ao salvar.');
     }
-  }, [persist, onClose]);
+  }, [persist, onClose, toast]);
 
   // ⌘/Ctrl+Enter salva e fecha. Roda no listener window — handlers
   // locais dos textareas de comment/reply/edit-comment chamam

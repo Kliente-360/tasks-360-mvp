@@ -185,7 +185,7 @@ export function TriagemClient() {
     }
     patchTasks(ids, localPatch);
     setBulkPending(DEFAULT_BULK);
-  }, [bulkPending, selectedIds, sb, patchTasks]);
+  }, [bulkPending, selectedIds, sb, patchTasks, toast]);
 
   // Mobile cai aqui só por uma fração antes do router.replace executar.
   if (isMobile) return null;

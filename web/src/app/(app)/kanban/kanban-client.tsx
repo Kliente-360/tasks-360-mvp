@@ -192,7 +192,7 @@ export function KanbanClient() {
         });
       }
     },
-    [patchTask, replaceTask, sb],
+    [patchTask, replaceTask, sb, toast],
   );
 
   // ===== DnD handlers =====

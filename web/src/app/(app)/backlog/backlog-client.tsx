@@ -469,7 +469,7 @@ export function BacklogClient() {
     }
     patchTasks(ids, localPatch);
     setBulkPending(DEFAULT_BULK);
-  }, [bulkPending, selectedIds, sb, patchTasks]);
+  }, [bulkPending, selectedIds, sb, patchTasks, toast]);
 
   const bulkArquivar = useCallback(async () => {
     const ids = [...selectedIds];
@@ -482,7 +482,7 @@ export function BacklogClient() {
     }
     patchTasks(ids, { arquivadoEm: nowIso });
     setSelectedIds([]);
-  }, [selectedIds, sb, patchTasks]);
+  }, [selectedIds, sb, patchTasks, toast]);
 
   const bulkDelete = useCallback(async () => {
     const ids = [...selectedIds];
@@ -502,7 +502,7 @@ export function BacklogClient() {
     }
     removeTasks(ids);
     setSelectedIds([]);
-  }, [selectedIds, sb, removeTasks]);
+  }, [selectedIds, sb, removeTasks, toast]);
 
   const { openEdit: openEditModal, openNew } = useTaskModal();
   const openEdit = useCallback((t: Task) => openEditModal(t.id), [openEditModal]);
