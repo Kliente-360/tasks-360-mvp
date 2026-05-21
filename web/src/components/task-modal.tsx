@@ -401,7 +401,9 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
         if (subChanged) payload.subetapa_em = nowIso;
         if (statusChanged) payload.status_em = nowIso;
 
-        // Optimistic local
+        // Optimistic local — TODOS os campos que o payload toca precisam
+        // estar aqui, senão o store fica defasado (chip não aparece, sort
+        // não reflete etc) e só atualiza no próximo boot refresh.
         if (prev) {
           patchTask(e.id, {
             titulo: e.titulo.trim(),
@@ -421,6 +423,9 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
             checklist: e.checklist.map((c) => ({ ...c })),
             tipoTrabalho: e.tipoTrabalho,
             tempoRealHoras: (e.tempoRealHoras as unknown as string) === '' ? null : e.tempoRealHoras,
+            externalId: e.externalId,
+            externalSource: e.externalSource || (e.externalId ? 'salesforce' : ''),
+            privada: e.privada,
             statusEm: statusChanged ? nowMs : prev.statusEm,
             subetapaEm: subChanged ? nowMs : prev.subetapaEm,
           });
