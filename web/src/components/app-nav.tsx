@@ -10,7 +10,7 @@ import { useTaskModal } from '@/components/task-modal';
 import { ProfileMenu } from '@/components/profile-menu';
 import { HelpIconButton } from '@/components/help-modal';
 
-const APP_VERSION = 'v1.02.130';
+const APP_VERSION = 'v1.02.131';
 
 /** Barra de navegação superior — espelha o header do app Alpine. */
 export function AppNav() {

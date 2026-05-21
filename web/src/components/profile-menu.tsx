@@ -75,6 +75,7 @@ export function ProfileMenu() {
           <div
             className="fixed md:absolute top-14 md:top-full right-3 md:right-0 mt-0 md:mt-1 bg-elev border border-line rounded-md shadow-xl py-2 w-[260px] max-w-[calc(100vw-24px)] md:w-[260px] z-40"
           >
+            {/* 1. Identidade */}
             <div className="px-3 py-1 text-xs text-muted">logado como</div>
             <div className="px-3 pb-1 text-sm font-medium text-ink truncate">
               {currentPessoa?.nome ?? '—'}
@@ -83,29 +84,9 @@ export function ProfileMenu() {
               {currentPessoa?.email ?? ''}
             </div>
 
-            {/* Itens mobile-only — exportar (no desktop fica no header
-                como ícone separado, vem no 4.F). Por ora, placeholders. */}
-            {!isCliente && (
-              <>
-                <div className="border-t border-line my-1" />
-                <MenuItem disabled label="Exportar CSV" hint="em breve · 4.F" />
-                <MenuItem disabled label="Exportar PDF" hint="em breve · 4.F" />
-              </>
-            )}
-
-            <div className="border-t border-line my-1" />
-            <MenuItem
-              disabled
-              label="Tema"
-              hint="em breve · 4.D"
-              right={<span className="text-muted text-xs whitespace-nowrap">claro</span>}
-            />
-            {/* Mobile only: no desktop o trigger é o ícone "?" do header. */}
-            <div className="md:hidden">
-              <HelpMenuItem onClick={() => setOpen(false)} />
-            </div>
-
-            {!isCliente && (
+            {/* 2. Cadastros (admin only) — mini-seção isolada logo após
+                identidade. Vive aqui porque tem inProfileMenu: true. */}
+            {isAdmin && profileItems.length > 0 && (
               <>
                 <div className="border-t border-line my-1" />
                 {profileItems.map((item) => (
@@ -118,10 +99,40 @@ export function ProfileMenu() {
                     }}
                   />
                 ))}
-                {isAdmin && <OnboardingMenuItem onClick={() => setOpen(false)} />}
               </>
             )}
 
+            {/* 3. Exportar (mobile só — desktop tem ícone no header [4.F]) */}
+            {!isCliente && (
+              <>
+                <div className="border-t border-line my-1" />
+                <MenuItem disabled label="Exportar CSV" hint="em breve · 4.F" />
+                <MenuItem disabled label="Exportar PDF" hint="em breve · 4.F" />
+              </>
+            )}
+
+            {/* 4. Preferências (tema + ajuda mobile) */}
+            <div className="border-t border-line my-1" />
+            <MenuItem
+              disabled
+              label="Tema"
+              hint="em breve · 4.D"
+              right={<span className="text-muted text-xs whitespace-nowrap">claro</span>}
+            />
+            {/* Help mobile only: no desktop o trigger é o ícone "?" do header. */}
+            <div className="md:hidden">
+              <HelpMenuItem onClick={() => setOpen(false)} />
+            </div>
+
+            {/* 5. Onboarding (admin) */}
+            {isAdmin && (
+              <>
+                <div className="border-t border-line my-1" />
+                <OnboardingMenuItem onClick={() => setOpen(false)} />
+              </>
+            )}
+
+            {/* 6. Sair */}
             <div className="border-t border-line my-1" />
             <button
               type="button"
