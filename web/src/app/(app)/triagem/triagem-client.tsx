@@ -22,6 +22,7 @@ import { BulkBar, BulkBarClearButton, BulkBarSep } from '@/components/bulk-bar';
 import { createClient } from '@/lib/supabase/client';
 import { agingDays, atrasada, fmtDateShort, triageFailures } from '@/lib/task-utils';
 import { STATUS, SUB_LABELS } from '@/lib/task-constants';
+import { CLEAR_FILTERS_EVENT } from '@/lib/events';
 import type { Task } from '@/lib/types';
 
 const NONE = '__none__';
@@ -65,6 +66,13 @@ export function TriagemClient() {
   const [filter, setFilter] = useState<TriagemFilter>(DEFAULT_FILTER);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkPending, setBulkPending] = useState<BulkPending>(DEFAULT_BULK);
+
+  // g+l global → limpa os 4 chips de filtro.
+  useEffect(() => {
+    const handler = () => setFilter(DEFAULT_FILTER);
+    window.addEventListener(CLEAR_FILTERS_EVENT, handler);
+    return () => window.removeEventListener(CLEAR_FILTERS_EVENT, handler);
+  }, []);
 
   // Mobile: Triagem não aparece (decisão de produto). Quem acessa /triagem
   // por URL no mobile é redirecionado pra /backlog. UI bate com hideMobile

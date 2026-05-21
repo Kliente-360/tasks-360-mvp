@@ -30,6 +30,7 @@ import { useToast } from '@/components/toast';
 import { createClient } from '@/lib/supabase/client';
 import { agingDays, agingLevel, atrasada, fmtDateShort, lblStatus, matchesPrazoFilter, needsTriage, triageFailures, type PrazoFilter } from '@/lib/task-utils';
 import { SUB_LABELS, SUBS_FLAT, SUB_TO_MACRO } from '@/lib/task-constants';
+import { CLEAR_FILTERS_EVENT } from '@/lib/events';
 import type { Task } from '@/lib/types';
 
 const EMPTY = '__empty__';
@@ -65,6 +66,14 @@ export function KanbanClient() {
     prazo: '',
   });
   const [kanbanView, setKanbanView] = useState<'op' | 'exec'>('op');
+
+  // g+l global → limpa filtros.
+  useEffect(() => {
+    const handler = () =>
+      setFilters({ cliente: '', projeto: '', pessoa: '', prazo: '' });
+    window.addEventListener(CLEAR_FILTERS_EVENT, handler);
+    return () => window.removeEventListener(CLEAR_FILTERS_EVENT, handler);
+  }, []);
 
   // Mobile: Kanban não aparece (decisão de produto, igual hideMobile: true do
   // tabsList Alpine). Quem acessa /kanban via URL no mobile é redirecionado

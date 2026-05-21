@@ -6,9 +6,8 @@
  *  ⌘K / Ctrl+K   — Command Palette
  *  n             — Nova tarefa (modal completo)
  *  /             — Foca busca do backlog (se na aba) ou abre palette
- *  g + letra     — Navega abas:
- *                  f foco · b backlog · k kanban · c calendário ·
- *                  d dashboard · t triagem
+ *  g + letra     — f foco · b backlog · k kanban · c calendário ·
+ *                  d dashboard · t triagem · l limpar filtros (tela atual)
  *
  * Quick capture é acessível pelo Command Palette → "Captura rápida"
  * (atalho ⌘⇧N foi removido — conflita com aba anônima do Chrome).
@@ -21,6 +20,7 @@ import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCommandPalette } from '@/components/command-palette';
 import { useTaskModal } from '@/components/task-modal';
+import { CLEAR_FILTERS_EVENT } from '@/lib/events';
 
 const TAB_BY_LETTER: Record<string, string> = {
   f: '/foco',
@@ -63,6 +63,13 @@ export function GlobalShortcuts() {
       const inGSeq = gPrefix.current && Date.now() - gPrefix.current < 1500;
       if (inGSeq) {
         gPrefix.current = 0;
+        // g+l = limpar filtros da tela atual (custom event, cada tela
+        // que tem filtros escuta e zera o próprio state).
+        if (k === 'l') {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent(CLEAR_FILTERS_EVENT));
+          return;
+        }
         const href = TAB_BY_LETTER[k];
         if (href) {
           e.preventDefault();

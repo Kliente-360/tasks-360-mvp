@@ -29,6 +29,7 @@ import { useHelp } from '@/components/help-modal';
 import { useOnboarding } from '@/components/onboarding-modal';
 import { useTheme } from '@/components/theme-toggle';
 import { useExportCsv } from '@/components/export';
+import { CLEAR_FILTERS_EVENT } from '@/lib/events';
 import { NAV } from '@/lib/nav';
 import { lblStatus } from '@/lib/task-utils';
 
@@ -153,6 +154,13 @@ function Palette({ onClose }: { onClose: () => void }) {
       { id: 'act-new', kind: 'ação', label: 'Nova tarefa', hint: 'abrir formulário · n', action: openNew },
       { id: 'act-quick', kind: 'ação', label: 'Captura rápida', hint: 'criar tarefa em 2s', action: openQuick },
       { id: 'act-csv', kind: 'export', label: 'Exportar CSV', hint: 'tarefas pra Excel', action: exportCsv },
+      {
+        id: 'act-clear',
+        kind: 'ação',
+        label: 'Limpar filtros',
+        hint: 'reset da tela atual · g+l',
+        action: () => window.dispatchEvent(new CustomEvent(CLEAR_FILTERS_EVENT)),
+      },
       { id: 'act-manual', kind: 'ação', label: 'Manual da ferramenta', hint: 'HOWTO completo', action: helpApi.open },
       { id: 'act-onb', kind: 'ação', label: 'Onboarding', hint: '3 perspectivas', action: onbApi.open },
       { id: 'act-theme', kind: 'ação', label: 'Alternar tema', hint: 'claro / escuro', action: toggleTheme },

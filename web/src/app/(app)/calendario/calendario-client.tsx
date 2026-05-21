@@ -30,6 +30,7 @@ import {
   triageFailures,
 } from '@/lib/task-utils';
 import { SUB_TO_MACRO } from '@/lib/task-constants';
+import { CLEAR_FILTERS_EVENT } from '@/lib/events';
 import type { Task } from '@/lib/types';
 
 const EMPTY = '__empty__';
@@ -81,6 +82,16 @@ export function CalendarioClient() {
     projeto: '',
     pessoa: '',
   });
+
+  // g+l global → limpa filtros.
+  useEffect(() => {
+    const handler = () => {
+      setFilters({ cliente: '', projeto: '', pessoa: '' });
+      setSelectedIso('');
+    };
+    window.addEventListener(CLEAR_FILTERS_EVENT, handler);
+    return () => window.removeEventListener(CLEAR_FILTERS_EVENT, handler);
+  }, []);
 
   const projetosFiltrados = useMemo(() => {
     if (!filters.cliente || filters.cliente === EMPTY) {

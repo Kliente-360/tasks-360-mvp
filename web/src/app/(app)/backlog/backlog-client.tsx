@@ -20,6 +20,7 @@ import { useToast } from '@/components/toast';
 import { BulkBar, BulkBarClearButton, BulkBarSep } from '@/components/bulk-bar';
 import { atrasada, agingDays, agingLevel, fmtDate, fmtDateShort, lblComplex, lblStatus } from '@/lib/task-utils';
 import { STATUS, SUB_LABELS, SUBS_FLAT } from '@/lib/task-constants';
+import { CLEAR_FILTERS_EVENT } from '@/lib/events';
 import type { Task } from '@/lib/types';
 
 // Sort manual (DnD) foi removido do Backlog do Alpine — não portamos.
@@ -362,6 +363,13 @@ export function BacklogClient() {
     setGroupBy('');
     setCollapsedGroups([]);
   }, []);
+
+  // g+l global → limpa filtros desta tela.
+  useEffect(() => {
+    const handler = () => clearFilters();
+    window.addEventListener(CLEAR_FILTERS_EVENT, handler);
+    return () => window.removeEventListener(CLEAR_FILTERS_EVENT, handler);
+  }, [clearFilters]);
 
   // ============ Sort handlers ============
   const sortBy = useCallback((key: string) => {
