@@ -640,29 +640,16 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newComment, replyingToId, newReply, editingCommentId, editingCommentDraft, editing.id, autosaveNow, onClose]);
 
-  // ESC fecha + ⌘/Ctrl+Enter salva e fecha (com fallback pra textareas
-  // de comment/reply/edit-comment, que já interceptam o evento e
-  // chamam preventDefault — listener global só age quando o evento
-  // não foi prevented).
+  // ESC fecha
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (lightboxAttachment) setLightboxAttachment(null);
         else if (!replyingToId) close();
-        return;
-      }
-      // O listener window roda DEPOIS dos handlers React dos textareas;
-      // se o textarea já fez preventDefault (post comment/reply/edit),
-      // defaultPrevented é true aqui e a gente não atropela.
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !e.defaultPrevented) {
-        e.preventDefault();
-        saveManual();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-    // saveManual está estável via useCallback
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [close, replyingToId, lightboxAttachment]);
 
   // Paste-upload de imagem em qualquer lugar do modal
@@ -1084,6 +1071,21 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       toast.error(res.error ?? 'Erro ao salvar.');
     }
   }, [persist, onClose]);
+
+  // ⌘/Ctrl+Enter salva e fecha. Roda no listener window — handlers
+  // locais dos textareas de comment/reply/edit-comment chamam
+  // preventDefault PRIMEIRO (postam o comment) e marcam defaultPrevented,
+  // então o salva-fecha não atropela quando o user tá comentando.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key !== 'Enter') return;
+      if (e.defaultPrevented) return;
+      e.preventDefault();
+      saveManual();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [saveManual]);
 
   // ============ Render helpers ============
   const topLevel = useMemo(
