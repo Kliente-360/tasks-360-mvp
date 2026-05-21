@@ -41,7 +41,9 @@ export function CadastrosClient() {
     removeCliente,
     removeProjeto,
     removePessoa,
+    viewerRole,
   } = useData();
+  const isAdmin = viewerRole === 'admin';
 
   const [tab, setTab] = useState<Tab>('clientes');
   const [showArquivados, setShowArquivados] = useState(false);
@@ -288,7 +290,7 @@ export function CadastrosClient() {
                     dominios: c.dominios,
                   }}
                 />
-                {!c.ehInterno && (
+                {!c.ehInterno && isAdmin && (
                   <button
                     type="button"
                     className="btn-ghost-sm text-[color:var(--danger)]"
@@ -357,14 +359,16 @@ export function CadastrosClient() {
                     }}
                     clientes={clienteOptions}
                   />
-                  <button
-                    type="button"
-                    className="btn-ghost-sm text-[color:var(--danger)]"
-                    onClick={() => runDeleteProjeto(p.id, p.nome)}
-                    title="Excluir projeto"
-                  >
-                    excluir
-                  </button>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      className="btn-ghost-sm text-[color:var(--danger)]"
+                      onClick={() => runDeleteProjeto(p.id, p.nome)}
+                      title="Excluir projeto"
+                    >
+                      excluir
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -413,14 +417,16 @@ export function CadastrosClient() {
                   }}
                   clientes={clienteOptions}
                 />
-                <button
-                  type="button"
-                  className="btn-ghost-sm text-[color:var(--danger)]"
-                  onClick={() => runDeletePessoa(p.id, p.nome)}
-                  title="Excluir pessoa"
-                >
-                  excluir
-                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="btn-ghost-sm text-[color:var(--danger)]"
+                    onClick={() => runDeletePessoa(p.id, p.nome)}
+                    title="Excluir pessoa"
+                  >
+                    excluir
+                  </button>
+                )}
               </div>
             </div>
           ))}

@@ -212,7 +212,18 @@ export function TaskModalProvider({ children }: { children: React.ReactNode }) {
 // Modal — leva o trabalho pesado
 // ============================================================
 function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => void }) {
-  const { clientes, pessoas, patchTask, replaceTask, upsertTask, removeTask } = useData();
+  const {
+    clientes,
+    pessoas,
+    patchTask,
+    replaceTask,
+    upsertTask,
+    removeTask,
+    currentPessoa,
+    viewerRole,
+    isCEO,
+  } = useData();
+  const isAdmin = viewerRole === 'admin';
   const projetosByCliente = useProjetosByCliente();
   const clientesById = useClientesById();
   const projetosById = useProjetosById();
@@ -1340,6 +1351,29 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
                 )}
               </div>
             </div>
+
+            {/* Privacidade — só CEO. Task privada fica visível só pra
+                pessoa atribuída (regra do banco/RLS futuro). */}
+            {isCEO && (
+              <div className="tmodal-section">
+                <div className="tmodal-section-title">Privacidade</div>
+                <label
+                  className="inp flex items-center gap-2 cursor-pointer select-none"
+                  style={{ background: 'var(--bg-elev)' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={editing.privada}
+                    onChange={(e) => set('privada', e.target.checked)}
+                  />
+                  <span className="text-sm">
+                    {editing.privada
+                      ? '🔒 task privada — visível só pra você'
+                      : '— pública (visível ao time)'}
+                  </span>
+                </label>
+              </div>
+            )}
           </div>
 
           {/* RIGHT */}
@@ -1449,16 +1483,18 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
                               {a.width && a.height ? `${a.width}×${a.height} · ` : ''}
                               {fmtBytes(a.size_bytes)}
                             </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteAttachment(a);
-                              }}
-                              className="hover:text-danger ml-1"
-                              title="Excluir anexo"
-                            >
-                              ✕
-                            </button>
+                            {(isAdmin || (currentPessoa && a.author_pessoa_id === currentPessoa.id)) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteAttachment(a);
+                                }}
+                                className="hover:text-danger ml-1"
+                                title="Excluir anexo"
+                              >
+                                ✕
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1505,6 +1541,8 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
                       setNewReply={setNewReply}
                       pessoasById={pessoasById}
                       internalFirstNames={internalFirstNames}
+                      viewerPessoaId={currentPessoa?.id ?? null}
+                      viewerIsAdmin={isAdmin}
                     />
                   ))}
                   {!editing.id && (
@@ -1583,7 +1621,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
               <span className="btn-txt">desarquivar</span>
             </button>
           )}
-          {editing.id && (
+          {editing.id && isAdmin && (
             <button
               className="btn btn-danger text-xs btn-foot"
               onClick={deleteTask}
@@ -1739,6 +1777,8 @@ function CommentItem({
   setNewReply,
   pessoasById,
   internalFirstNames,
+  viewerPessoaId,
+  viewerIsAdmin,
 }: {
   c: Comment;
   replies: Comment[];
@@ -1758,6 +1798,8 @@ function CommentItem({
   setNewReply: (s: string) => void;
   pessoasById: Map<string, { nome: string }>;
   internalFirstNames: Set<string>;
+  viewerPessoaId: string | null;
+  viewerIsAdmin: boolean;
 }) {
   const isReplyTo = (replyingToId || '') === c.id;
   return (
@@ -1776,6 +1818,8 @@ function CommentItem({
         internalFirstNames={internalFirstNames}
         pessoasById={pessoasById}
         isReply={false}
+        viewerPessoaId={viewerPessoaId}
+        viewerIsAdmin={viewerIsAdmin}
       />
       {replies.map((r) => (
         <div key={r.id} style={{ marginLeft: 24, borderLeft: '2px solid var(--line-strong)' }}>
@@ -1793,6 +1837,8 @@ function CommentItem({
             internalFirstNames={internalFirstNames}
             pessoasById={pessoasById}
             isReply
+            viewerPessoaId={viewerPessoaId}
+            viewerIsAdmin={viewerIsAdmin}
           />
         </div>
       ))}
@@ -1845,6 +1891,8 @@ function CommentBubble({
   onStartReply,
   internalFirstNames,
   isReply,
+  viewerPessoaId,
+  viewerIsAdmin,
 }: {
   c: Comment;
   editingId: string;
@@ -1859,11 +1907,18 @@ function CommentBubble({
   pessoasById: Map<string, { nome: string }>;
   internalFirstNames: Set<string>;
   isReply: boolean;
+  viewerPessoaId: string | null;
+  viewerIsAdmin: boolean;
 }) {
   const isEditing = editingId === c.id;
   const isExternal = !!c.external_source;
-  const canEdit = !isExternal && !c.from_cliente;
-  const canDelete = !isExternal;
+  const isAuthor = !!viewerPessoaId && c.author_pessoa_id === viewerPessoaId;
+  // canEdit: só o próprio autor (admin não edita texto alheio).
+  const canEdit = !isExternal && !c.from_cliente && isAuthor;
+  // canDelete: autor ou admin. SF/cliente fica imutável.
+  const canDelete = !isExternal && (viewerIsAdmin || isAuthor);
+  // canToggleVisivel: igual canDelete mas não pra comments vindos do cliente.
+  const canToggleVisivel = !isExternal && !c.from_cliente && (viewerIsAdmin || isAuthor);
   return (
     <div className={`cmsg ${c.from_cliente ? 'from-cliente' : ''}`}>
       <div className="cmsg-head">
@@ -1886,7 +1941,7 @@ function CommentBubble({
             (editado)
           </span>
         )}
-        {!c.from_cliente && canEdit && (
+        {canToggleVisivel && (
           <button
             className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono cursor-pointer transition ${c.visivel_cliente ? 'bg-cyan-soft' : 'bg-surface-2 text-muted hover:text-ink'}`}
             style={c.visivel_cliente ? { color: '#0066AD' } : undefined}

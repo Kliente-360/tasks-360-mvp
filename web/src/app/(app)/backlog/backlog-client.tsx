@@ -98,7 +98,9 @@ export function BacklogClient() {
     error,
     patchTasks,
     removeTasks,
+    viewerRole,
   } = useData();
+  const isAdmin = viewerRole === 'admin';
   const clientesById = useClientesById();
   const projetosById = useProjetosById();
   const pessoasById = usePessoasById();
@@ -1258,14 +1260,16 @@ export function BacklogClient() {
           >
             arquivar
           </button>
-          <button
-            type="button"
-            className="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
-            onClick={bulkDelete}
-            title="Excluir selecionadas"
-          >
-            excluir
-          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              className="btn btn-danger text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
+              onClick={bulkDelete}
+              title="Excluir selecionadas"
+            >
+              excluir
+            </button>
+          )}
           <BulkBarSep />
           <BulkBarClearButton onClick={clearSelection} />
         </div>

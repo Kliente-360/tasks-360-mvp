@@ -47,7 +47,9 @@ type FocoNarrativa = {
 };
 
 export function FocoClient() {
-  const { tasks, pessoas, loading, error } = useData();
+  const { tasks, pessoas, loading, error, currentPessoa, viewerRole } = useData();
+  const isAdmin = viewerRole === 'admin';
+  const isCliente = viewerRole === 'cliente';
   const { openEdit } = useTaskModal();
   const pessoasById = usePessoasById();
   const clientesById = useClientesById();
@@ -59,20 +61,25 @@ export function FocoClient() {
   );
 
   // ===== State =====
-  const [focusPessoaId, setFocusPessoaId] = useState<string>('');
+  // Admin escolhe quem ver via dropdown (persistido em localStorage).
+  // Não-admin sempre vê a si mesmo — selector escondido, focus travado
+  // em currentPessoa.id. Cliente externo cai num banner ("Foco indisponível").
+  const [focusPessoaIdState, setFocusPessoaIdState] = useState<string>('');
+  const focusPessoaId = isAdmin ? focusPessoaIdState : currentPessoa?.id ?? '';
 
-  // Boot: restaura do localStorage.
+  // Boot: restaura do localStorage só pra admin.
   useEffect(() => {
+    if (!isAdmin) return;
     try {
       const stored = localStorage.getItem(STORAGE_KEY) || '';
-      if (stored) setFocusPessoaId(stored);
+      if (stored) setFocusPessoaIdState(stored);
     } catch {
       /* ok */
     }
-  }, []);
+  }, [isAdmin]);
 
   const setFocus = useCallback((pid: string) => {
-    setFocusPessoaId(pid);
+    setFocusPessoaIdState(pid);
     try {
       localStorage.setItem(STORAGE_KEY, pid);
     } catch {
@@ -223,17 +230,40 @@ export function FocoClient() {
               )}
             </span>
           ) : (
-            <span className="page-bar-narrative text-muted font-normal">Selecione uma pessoa →</span>
+            <span className="page-bar-narrative text-muted font-normal">
+              {isAdmin ? 'Selecione uma pessoa →' : 'Foco indisponível'}
+            </span>
           )}
         </div>
-        <div className="page-bar-controls">
+        {/* Selector "atuando como…" só pra admin */}
+        {isAdmin && (
+          <div className="page-bar-controls">
+            <select
+              className={`inp ${focusPessoaId ? 'is-active' : ''}`}
+              style={{ width: 200 }}
+              value={focusPessoaId}
+              onChange={(e) => setFocus(e.target.value)}
+            >
+              <option value="">atuando como…</option>
+              {pessoasNaoCliente.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile selector — só admin */}
+      {isAdmin && (
+        <div className="md:hidden mb-4">
           <select
-            className={`inp ${focusPessoaId ? 'is-active' : ''}`}
-            style={{ width: 200 }}
+            className={`inp w-full ${focusPessoaId ? 'is-active' : ''}`}
             value={focusPessoaId}
             onChange={(e) => setFocus(e.target.value)}
           >
-            <option value="">atuando como…</option>
+            <option value="">— atuando como —</option>
             {pessoasNaoCliente.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nome}
@@ -241,30 +271,18 @@ export function FocoClient() {
             ))}
           </select>
         </div>
-      </div>
-
-      {/* Mobile selector */}
-      <div className="md:hidden mb-4">
-        <select
-          className={`inp w-full ${focusPessoaId ? 'is-active' : ''}`}
-          value={focusPessoaId}
-          onChange={(e) => setFocus(e.target.value)}
-        >
-          <option value="">— atuando como —</option>
-          {pessoasNaoCliente.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nome}
-            </option>
-          ))}
-        </select>
-      </div>
+      )}
 
       {/* Setup banner sem pessoa */}
       {!hasFocus && (
         <div className="card p-6 md:p-10 text-center">
-          <div className="font-brand text-lg md:text-xl font-semibold mb-2">Quem você quer ver?</div>
+          <div className="font-brand text-lg md:text-xl font-semibold mb-2">
+            {isAdmin ? 'Quem você quer ver?' : isCliente ? 'Foco indisponível' : 'Sem pessoa vinculada'}
+          </div>
           <div className="text-ink-soft text-sm mb-4">
-            Selecione a pessoa acima pra ver as tarefas que pedem atenção.
+            {isAdmin
+              ? 'Selecione a pessoa acima pra ver as tarefas que pedem atenção.'
+              : 'Sua sessão não está ligada a uma pessoa cadastrada. Peça pro admin verificar.'}
           </div>
         </div>
       )}
