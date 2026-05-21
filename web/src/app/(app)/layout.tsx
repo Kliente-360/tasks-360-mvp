@@ -3,6 +3,7 @@ import { DataProvider } from '@/lib/data-store';
 import { TaskModalProvider } from '@/components/task-modal';
 import { ToastProvider } from '@/components/toast';
 import { HelpProvider } from '@/components/help-modal';
+import { OnboardingProvider } from '@/components/onboarding-modal';
 
 export default function AppLayout({
   children,
@@ -11,12 +12,14 @@ export default function AppLayout({
     <DataProvider>
       <ToastProvider>
         <HelpProvider>
-          <TaskModalProvider>
-            <div className="min-h-screen">
-              <AppNav />
-              <main className="max-w-[1400px] mx-auto px-4 md:px-8 py-6">{children}</main>
-            </div>
-          </TaskModalProvider>
+          <OnboardingProvider>
+            <TaskModalProvider>
+              <div className="min-h-screen">
+                <AppNav />
+                <main className="max-w-[1400px] mx-auto px-4 md:px-8 py-6">{children}</main>
+              </div>
+            </TaskModalProvider>
+          </OnboardingProvider>
         </HelpProvider>
       </ToastProvider>
     </DataProvider>

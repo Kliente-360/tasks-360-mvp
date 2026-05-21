@@ -23,6 +23,7 @@ import { useData } from '@/lib/data-store';
 import { createClient } from '@/lib/supabase/client';
 import { NAV } from '@/lib/nav';
 import { HelpMenuItem } from '@/components/help-modal';
+import { OnboardingMenuItem } from '@/components/onboarding-modal';
 
 export function ProfileMenu() {
   const [open, setOpen] = useState(false);
@@ -117,9 +118,7 @@ export function ProfileMenu() {
                     }}
                   />
                 ))}
-                {isAdmin && (
-                  <MenuItem disabled label="Onboarding" hint="em breve · 4.C" right={<span className="text-muted text-xs">3 perfis</span>} />
-                )}
+                {isAdmin && <OnboardingMenuItem onClick={() => setOpen(false)} />}
               </>
             )}
 
