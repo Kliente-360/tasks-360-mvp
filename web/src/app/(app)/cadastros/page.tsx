@@ -1,10 +1,13 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
-import { eq, isNull, count } from 'drizzle-orm';
+import { isNull, count } from 'drizzle-orm';
 import { db, schema } from '@/lib/db';
 import { cn } from '@/lib/utils';
 import { arquivarCliente, desarquivarCliente, arquivarProjeto, desarquivarProjeto } from './actions';
+import { NewClienteButton, EditClienteButton } from './cliente-modal';
+import { NewProjetoButton, EditProjetoButton } from './projeto-modal';
+import { NewPessoaButton, EditPessoaButton } from './pessoa-modal';
 
 type Tab = 'clientes' | 'projetos' | 'pessoas';
 
@@ -63,10 +66,12 @@ export default async function CadastrosPage({
     .groupBy(schema.projetos.clienteId);
   const projetosByCliente = new Map(projetosByClienteRows.map((r) => [r.ref, r.n]));
 
-  const clienteById = new Map(clientes.map((c) => [c.id, c.nome]));
-  const allClientes = tab === 'projetos'
-    ? await db.query.clientes.findMany({ columns: { id: true, nome: true } })
-    : clientes;
+  // Sempre buscamos {id, nome} de todos os clientes pra alimentar os selects
+  // dos modais (projeto e pessoa) e os labels "cliente · projeto" das listas.
+  const allClientes = await db.query.clientes.findMany({
+    columns: { id: true, nome: true },
+    orderBy: (c, { asc }) => [asc(c.nome)],
+  });
   const clienteNameById = new Map(allClientes.map((c) => [c.id, c.nome]));
 
   const clientesSemDominio = clientes.filter(
@@ -124,6 +129,11 @@ export default async function CadastrosPage({
               arquivados
             </Link>
           )}
+
+          {/* Botão criar — varia por aba */}
+          {tab === 'clientes' && <NewClienteButton />}
+          {tab === 'projetos' && <NewProjetoButton clientes={allClientes} />}
+          {tab === 'pessoas' && <NewPessoaButton clientes={allClientes} />}
         </div>
       </div>
 
@@ -195,9 +205,15 @@ export default async function CadastrosPage({
                       <button className="btn-ghost-sm">desarquivar</button>
                     </form>
                   )}
-                  <button className="btn-ghost-sm opacity-40 cursor-not-allowed" disabled title="Edição em breve">
-                    editar
-                  </button>
+                  <EditClienteButton
+                    cliente={{
+                      id: c.id,
+                      nome: c.nome,
+                      tier: c.tier,
+                      ehInterno: c.ehInterno,
+                      dominios: Array.isArray(c.dominios) ? c.dominios : [],
+                    }}
+                  />
                 </div>
               </div>
             ))}
@@ -248,9 +264,18 @@ export default async function CadastrosPage({
                       <button className="btn-ghost-sm">desarquivar</button>
                     </form>
                   )}
-                  <button className="btn-ghost-sm opacity-40 cursor-not-allowed" disabled title="Edição em breve">
-                    editar
-                  </button>
+                  <EditProjetoButton
+                    projeto={{
+                      id: p.id,
+                      nome: p.nome,
+                      clienteId: p.clienteId ?? '',
+                      tipo: p.tipo,
+                      slaRespostaHoras: p.slaRespostaHoras,
+                      slaEntregaDias: p.slaEntregaDias,
+                      orcamentoHoras: p.orcamentoHoras,
+                    }}
+                    clientes={allClientes}
+                  />
                 </div>
               </div>
             ))}
@@ -299,9 +324,21 @@ export default async function CadastrosPage({
                 </div>
               </div>
               <div className="flex gap-1">
-                <button className="btn-ghost-sm opacity-40 cursor-not-allowed" disabled title="Edição em breve">
-                  editar
-                </button>
+                <EditPessoaButton
+                  pessoa={{
+                    id: p.id,
+                    nome: p.nome,
+                    email: p.email,
+                    role: (p.role as 'admin' | 'interno' | 'cliente') ?? 'interno',
+                    clienteId: p.clienteId,
+                    clientePrincipalId: p.clientePrincipalId,
+                    clienteSecundarioId: p.clienteSecundarioId,
+                    capacidadeHorasSemana: p.capacidadeHorasSemana,
+                    skills: p.skills ?? [],
+                    senioridade: p.senioridade,
+                  }}
+                  clientes={allClientes}
+                />
               </div>
             </div>
           ))}
