@@ -9,7 +9,7 @@ import { useData } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
 import { ProfileMenu } from '@/components/profile-menu';
 
-const APP_VERSION = 'v1.02.127';
+const APP_VERSION = 'v1.02.128';
 
 /** Barra de navegação superior — espelha o header do app Alpine. */
 export function AppNav() {

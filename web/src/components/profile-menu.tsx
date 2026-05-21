@@ -22,9 +22,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useData } from '@/lib/data-store';
 import { createClient } from '@/lib/supabase/client';
 import { NAV } from '@/lib/nav';
+import { HelpMenuButton, HelpModal } from '@/components/help-modal';
 
 export function ProfileMenu() {
   const [open, setOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const router = useRouter();
   const { currentPessoa, viewerRole } = useData();
   const sbRef = useRef<ReturnType<typeof createClient> | null>(null);
@@ -98,7 +100,12 @@ export function ProfileMenu() {
               hint="em breve · 4.D"
               right={<span className="text-muted text-xs whitespace-nowrap">claro</span>}
             />
-            <MenuItem disabled label="Manual / Ajuda" hint="em breve · 4.B" />
+            <HelpMenuButton
+              onClick={() => {
+                setOpen(false);
+                setHelpOpen(true);
+              }}
+            />
 
             {!isCliente && (
               <>
@@ -130,6 +137,8 @@ export function ProfileMenu() {
           </div>
         </>
       )}
+      {/* Modais lifted aqui pra não desmontar quando o dropdown fecha. */}
+      {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
     </div>
   );
 }
