@@ -114,12 +114,14 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (eErr) return err(500, 'db_error', eErr.message);
 
+  // last_ingest_at: sinaliza pro trigger que veio do ingest → não dispara webhook.
   const payload: Record<string, unknown> = {
     task_id: task.id,
     body: text,
     author, author_external_id: authorExternalId,
     posted_em: postedEm,
     parent_id: parentId,
+    last_ingest_at: new Date().toISOString(),
   };
 
   if (existing) {
