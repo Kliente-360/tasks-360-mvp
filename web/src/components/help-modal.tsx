@@ -3,14 +3,46 @@
 /**
  * Help / Manual — Onda 0 · 4.B
  *
- * Modal full-screen com Markdown renderizado de /docs/HOWTO.md (staff)
- * ou /docs/HOWTO_CLIENTE.md (cliente externo). TOC à esquerda (desktop)
- * com links âncora. Cache module-level evita refetch ao reabrir.
+ * Provider expõe useHelp().open() — vários disparadores (ícone "?" no
+ * header desktop, item no profile menu mobile, futuro command palette)
+ * compartilham o mesmo modal. Modal montado uma vez no layout.
+ *
+ * Markdown vem de /docs/HOWTO.md (staff) ou /docs/HOWTO_CLIENTE.md
+ * (cliente externo). Cache module-level evita refetch ao reabrir.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { marked } from 'marked';
 import { useData } from '@/lib/data-store';
+
+// ============ Provider ============
+
+type HelpApi = { open: () => void; close: () => void; isOpen: boolean };
+const HelpContext = createContext<HelpApi | null>(null);
+
+export function useHelp(): HelpApi {
+  const ctx = useContext(HelpContext);
+  if (!ctx) throw new Error('useHelp precisa de <HelpProvider>');
+  return ctx;
+}
+
+export function HelpProvider({ children }: { children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const api = useMemo<HelpApi>(
+    () => ({
+      open: () => setIsOpen(true),
+      close: () => setIsOpen(false),
+      isOpen,
+    }),
+    [isOpen],
+  );
+  return (
+    <HelpContext.Provider value={api}>
+      {children}
+      {isOpen && <HelpModal onClose={() => setIsOpen(false)} />}
+    </HelpContext.Provider>
+  );
+}
 
 type TocItem = { id: string; text: string; depth: number };
 type ParsedDoc = { html: string; toc: TocItem[] };
@@ -184,19 +216,39 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** Trigger button do menu — modal vive fora do dropdown (em ProfileMenu)
- *  pra não desmontar quando o menu fecha. */
-export function HelpMenuButton({ onClick }: { onClick: () => void }) {
+/** Item do profile menu (mobile-only — no desktop o trigger é o ícone "?"
+ *  do header). Chama useHelp().open(). */
+export function HelpMenuItem({ onClick }: { onClick?: () => void }) {
   const { viewerRole } = useData();
+  const { open } = useHelp();
   const label = viewerRole === 'cliente' ? 'Ajuda' : 'Manual da ferramenta';
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => {
+        onClick?.();
+        open();
+      }}
       className="flex w-full items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-brand-tint"
     >
       <span className="whitespace-nowrap">{label}</span>
       <span className="text-muted text-xs whitespace-nowrap">?</span>
+    </button>
+  );
+}
+
+/** Ícone "?" do header (desktop only). */
+export function HelpIconButton() {
+  const { open } = useHelp();
+  return (
+    <button
+      type="button"
+      onClick={open}
+      className="btn btn-ghost btn-icon text-xs hidden md:inline-flex"
+      title="Manual da ferramenta"
+      aria-label="Ajuda"
+    >
+      ?
     </button>
   );
 }
