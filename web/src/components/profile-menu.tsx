@@ -24,6 +24,7 @@ import { createClient } from '@/lib/supabase/client';
 import { NAV } from '@/lib/nav';
 import { HelpMenuItem } from '@/components/help-modal';
 import { OnboardingMenuItem } from '@/components/onboarding-modal';
+import { ThemeMenuItem } from '@/components/theme-toggle';
 
 export function ProfileMenu() {
   const [open, setOpen] = useState(false);
@@ -102,33 +103,31 @@ export function ProfileMenu() {
               </>
             )}
 
-            {/* 3. Exportar (mobile só — desktop tem ícone no header [4.F]) */}
+            {/* 3. Exportar — mobile only (desktop tem ícone no header 4.F) */}
             {!isCliente && (
-              <>
+              <div className="md:hidden">
                 <div className="border-t border-line my-1" />
                 <MenuItem disabled label="Exportar CSV" hint="em breve · 4.F" />
                 <MenuItem disabled label="Exportar PDF" hint="em breve · 4.F" />
-              </>
+              </div>
             )}
 
-            {/* 4. Preferências (tema + ajuda mobile) */}
-            <div className="border-t border-line my-1" />
-            <MenuItem
-              disabled
-              label="Tema"
-              hint="em breve · 4.D"
-              right={<span className="text-muted text-xs whitespace-nowrap">claro</span>}
-            />
-            {/* Help mobile only: no desktop o trigger é o ícone "?" do header. */}
+            {/* 4. Tema — mobile only (desktop tem ícone ☀/☾ no header) */}
             <div className="md:hidden">
-              <HelpMenuItem onClick={() => setOpen(false)} />
+              <div className="border-t border-line my-1" />
+              <ThemeMenuItem onClick={() => setOpen(false)} />
             </div>
 
-            {/* 5. Onboarding (admin) */}
-            {isAdmin && (
+            {/* 5. Mini-seção: Manual (mobile) + Onboarding (admin sempre).
+                No desktop só Onboarding aparece — Manual tem ícone "?"
+                no header. Borda comum agrupa os dois no mobile. */}
+            {(isAdmin || !isCliente) && (
               <>
                 <div className="border-t border-line my-1" />
-                <OnboardingMenuItem onClick={() => setOpen(false)} />
+                <div className="md:hidden">
+                  <HelpMenuItem onClick={() => setOpen(false)} />
+                </div>
+                {isAdmin && <OnboardingMenuItem onClick={() => setOpen(false)} />}
               </>
             )}
 

@@ -9,8 +9,10 @@ import { useData } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
 import { ProfileMenu } from '@/components/profile-menu';
 import { HelpIconButton } from '@/components/help-modal';
+import { ThemeIconButton } from '@/components/theme-toggle';
+import { ExportIconButton, NotifIconButton } from '@/components/header-icons';
 
-const APP_VERSION = 'v1.02.131';
+const APP_VERSION = 'v1.02.132';
 
 /** Barra de navegação superior — espelha o header do app Alpine. */
 export function AppNav() {
@@ -53,10 +55,14 @@ export function AppNav() {
         {/* Right actions — "+ task" também no mobile (igual Alpine) +
             ProfileMenu (avatar). Notificações e tema entram no header
             ao lado do "+ task" nos blocos 4.D / 4.E. */}
+        {/* Ordem espelha o Alpine:
+            DESKTOP: Export · Help · Tema · | · + task · Notif · Avatar
+            MOBILE : + task · Notif · Avatar (ícones extras vivem no
+                     profile menu mobile). */}
         <div className="flex items-center gap-1 shrink-0">
-          {/* Ícone "?" abre o manual (desktop only — mobile fica no
-              profile menu). Tema e notificações vão aqui também (4.D/4.E). */}
+          <ExportIconButton />
           <HelpIconButton />
+          <ThemeIconButton />
           <div className="w-px h-6 bg-line mx-1 md:mx-2 hidden md:block" />
           <button
             type="button"
@@ -67,6 +73,7 @@ export function AppNav() {
           >
             + task
           </button>
+          <NotifIconButton />
           <ProfileMenu />
         </div>
       </div>

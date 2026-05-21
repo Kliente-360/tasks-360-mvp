@@ -8,12 +8,10 @@
  * ============================================================ */
 
 :root {
-  /* `only light` bloqueia o Chrome "Auto Dark Mode for Web Contents"
-     e extensões tipo Dark Reader de forçar dark scheme. Pop-ups de
-     <select>, date picker e scrollbar saem em light obrigatoriamente.
-     O dark mode próprio entra via .dark / [data-theme="dark"] (toggle
-     manual pós-Onda 0). */
-  color-scheme: only light;
+  /* color-scheme: light por default. Quando o ThemeProvider aplica
+     a classe `dark` no <html>, a regra `.dark { color-scheme: dark }`
+     toma conta dos controles nativos (date picker, scrollbar). */
+  color-scheme: light;
 
   /* === BRAND === */
   --brand:       #009900;
@@ -135,6 +133,7 @@
 /* Dark mode — suporta .dark (Tailwind) e [data-theme="dark"] (Alpine) */
 .dark,
 [data-theme="dark"] {
+  color-scheme: dark;
   --brand:       #00B300;
   --brand-dark:  #00CC00;
   --brand-light: #1AD41A;
@@ -383,24 +382,8 @@ input[type="checkbox"] { accent-color: var(--brand); }
     box-sizing: border-box;
   }
 }
-/* Força light scheme local na bulk bar (e dentro dela) — defesa em
-   profundidade contra Auto Dark Mode do Chrome e extensões de dark
-   forçado que ignoram `color-scheme: only light`. */
-.bulk-bar {
-  color-scheme: only light;
-}
-.bulk-bar .inp,
-.bulk-bar select,
-.bulk-bar input {
-  background-color: #FFFFFF;
-  color: #1A1A1A;
-}
-.bulk-bar .inp:disabled,
-.bulk-bar select:disabled,
-.bulk-bar input:disabled {
-  background-color: #F1F2F0;
-  color: #7D8185;
-}
+/* Bulk bar respeita o tema do app (sem forçagem `only`) — quando o
+   user ativar dark via toggle manual, a barra escurece junto. */
 .inp:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
 .inp.is-active { border-color: var(--cyan); background: var(--cyan-soft); }
 .lbl {

@@ -24,10 +24,18 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${plexSans.variable} ${plexMono.variable}`}>
       <head>
-        {/* `only light` bloqueia Auto Dark Mode do Chrome + Dark Reader.
-            Next Metadata API só aceita os valores canônicos (light/dark/etc),
-            então o "only" entra via meta tag explícita. */}
-        <meta name="color-scheme" content="only light" />
+        {/* color-scheme reage ao toggle manual (.dark no <html>). Sem
+            `only` agora — Auto Dark do Chrome só age quando o usuário
+            também muda nosso toggle. */}
+        <meta name="color-scheme" content="light dark" />
+        {/* Anti-flash: aplica `dark` no <html> antes do primeiro paint
+            lendo o localStorage. Sem isso a tela pisca claro → escuro
+            depois da hidratação do ThemeProvider. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('kliente360-theme');if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}`,
+          }}
+        />
       </head>
       <body>{children}</body>
     </html>
