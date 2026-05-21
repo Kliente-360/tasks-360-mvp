@@ -9,7 +9,7 @@
  * "mover pra etapa" inline.
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   useData,
   useClientesById,
@@ -108,11 +108,24 @@ export function CalendarioClient() {
     setSelectedIso('');
   }, []);
 
-  // Label do mês ("maio de 2026")
+  // Label do mês — "Maio de 2026". Capitaliza só a primeira letra (não usar
+  // `text-transform: capitalize` no CSS pq isso vira "Maio De 2026" — cada
+  // palavra inicia maiúscula).
   const monthLabel = useMemo(() => {
     const d = new Date(cursor);
-    return d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const raw = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
   }, [cursor]);
+
+  // Detecta mobile pra trocar grid 7-col desktop vs 5-col (sem fim de semana).
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   // ============ Cells ============
   const cells = useMemo<Cell[]>(() => {
@@ -120,7 +133,8 @@ export function CalendarioClient() {
     const y = cur.getFullYear();
     const m = cur.getMonth();
     const first = new Date(y, m, 1);
-    const offset = (first.getDay() + 6) % 7; // 0=seg
+    // Semana começa no domingo (dow=0). Ajusta offset pra alinhar.
+    const offset = first.getDay(); // 0=dom, 1=seg, ..., 6=sab
     const start = new Date(y, m, 1 - offset);
     const today = isoLocal(new Date());
 
@@ -153,18 +167,23 @@ export function CalendarioClient() {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
       const iso = isoLocal(d);
-      const dow = (d.getDay() + 6) % 7;
+      const dow = d.getDay(); // 0=dom, 6=sab
       out.push({
         iso,
         day: d.getDate(),
         isCurMonth: d.getMonth() === m,
         isToday: iso === today,
-        isWeekend: dow >= 5,
+        isWeekend: dow === 0 || dow === 6,
         tasks: byPrazo[iso] ?? [],
       });
     }
     return out;
   }, [cursor, tasks, filters]);
+
+  // Versão mobile: tira fim de semana pra caber 5 colunas no viewport
+  // estreito; matem a ordem segunda → sexta.
+  const cellsMobile = useMemo(() => cells.filter((c) => !c.isWeekend), [cells]);
+  const cellsActive = isMobile ? cellsMobile : cells;
 
   const selectedTasks = useMemo(() => {
     if (!selectedIso) return [];
@@ -240,7 +259,7 @@ export function CalendarioClient() {
       {/* Desktop page bar */}
       <div className="page-bar hidden md:flex">
         <div className="page-bar-info">
-          <span className="page-bar-narrative capitalize">{monthLabel}</span>
+          <span className="page-bar-narrative">{monthLabel}</span>
         </div>
         <div className="page-bar-controls">
           <div className="flex items-center gap-1">
@@ -279,7 +298,7 @@ export function CalendarioClient() {
               });
             }}
           >
-            <option value="">Clientes</option>
+            <option value="">Cliente</option>
             <option value={EMPTY}>— sem cliente</option>
             {clientesAtivos.map((c) => (
               <option key={c.id} value={c.id}>
@@ -294,7 +313,7 @@ export function CalendarioClient() {
             disabled={!filters.cliente || filters.cliente === EMPTY}
             onChange={(e) => setFilters({ ...filters, projeto: e.target.value })}
           >
-            <option value="">Projetos</option>
+            <option value="">Projeto</option>
             <option value={EMPTY}>— sem projeto</option>
             {projetosFiltrados.map((p) => (
               <option key={p.id} value={p.id}>
@@ -308,7 +327,7 @@ export function CalendarioClient() {
             value={filters.pessoa}
             onChange={(e) => setFilters({ ...filters, pessoa: e.target.value })}
           >
-            <option value="">Responsáveis</option>
+            <option value="">Responsável</option>
             <option value={EMPTY}>— sem responsável</option>
             {pessoasNaoCliente.map((p) => (
               <option key={p.id} value={p.id}>
@@ -329,7 +348,7 @@ export function CalendarioClient() {
             setFilters({ ...filters, cliente: v, projeto: v && v !== EMPTY ? filters.projeto : '' });
           }}
         >
-          <option value="">Clientes</option>
+          <option value="">Cliente</option>
           <option value={EMPTY}>— sem cliente</option>
           {clientesAtivos.map((c) => (
             <option key={c.id} value={c.id}>
@@ -343,7 +362,7 @@ export function CalendarioClient() {
           disabled={!filters.cliente || filters.cliente === EMPTY}
           onChange={(e) => setFilters({ ...filters, projeto: e.target.value })}
         >
-          <option value="">Projetos</option>
+          <option value="">Projeto</option>
           <option value={EMPTY}>— sem projeto</option>
           {projetosFiltrados.map((p) => (
             <option key={p.id} value={p.id}>
@@ -356,7 +375,7 @@ export function CalendarioClient() {
           value={filters.pessoa}
           onChange={(e) => setFilters({ ...filters, pessoa: e.target.value })}
         >
-          <option value="">Responsáveis</option>
+          <option value="">Responsável</option>
           <option value={EMPTY}>— sem responsável</option>
           {pessoasNaoCliente.map((p) => (
             <option key={p.id} value={p.id}>
@@ -391,14 +410,17 @@ export function CalendarioClient() {
               ›
             </button>
           </div>
-          <div className="font-brand text-base font-semibold capitalize text-right truncate">
+          <div className="font-brand text-base font-semibold text-right truncate">
             {monthLabel}
           </div>
         </div>
 
-        {/* Headers */}
-        <div className="cal-grid mb-1">
-          {(['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'] as const).map((d) => (
+        {/* Headers — desktop dom-seg-ter-qua-qui-sex-sáb, mobile seg-sex */}
+        <div className={`cal-grid mb-1 ${isMobile ? 'cal-grid-mobile' : ''}`}>
+          {(isMobile
+            ? ['seg', 'ter', 'qua', 'qui', 'sex']
+            : ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+          ).map((d) => (
             <div key={d} className="cal-head text-center">
               {d}
             </div>
@@ -406,8 +428,8 @@ export function CalendarioClient() {
         </div>
 
         {/* Grid */}
-        <div className="cal-grid">
-          {cells.map((cell) => {
+        <div className={`cal-grid ${isMobile ? 'cal-grid-mobile' : ''}`}>
+          {cellsActive.map((cell) => {
             const klass = [
               'cal-cell',
               !cell.isCurMonth && 'muted',

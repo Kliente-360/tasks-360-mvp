@@ -338,7 +338,7 @@ html, body {
 .btn-ghost:hover { background: var(--surface-3); border-color: transparent; color: var(--ink); }
 .btn-danger { color: var(--p0); border-color: transparent; background: transparent; }
 .btn-danger:hover { background: var(--p0-soft); border-color: transparent; }
-.btn-icon { padding: var(--sp-1) var(--sp-2); }
+.btn-icon { padding: var(--sp-1) var(--sp-2); justify-content: center; }
 .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .btn-fixed-w { width: 72px; justify-content: center; padding-left: var(--sp-2); padding-right: var(--sp-2); }
 
@@ -886,6 +886,9 @@ input[type="checkbox"] { accent-color: var(--brand); }
 
 /* calendário grid */
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+/* Mobile: 5 colunas (seg-sex) — fim de semana some pra dar respiro
+   no viewport estreito. Calendário client usa só esta variante. */
+.cal-grid-mobile { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .cal-head { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: var(--muted); padding: 4px 6px; font-family: var(--font-mono); }
 .cal-cell { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 4px; min-height: 64px; padding: 4px 5px; cursor: default; overflow: hidden; transition: box-shadow 0.15s, border-color 0.15s; }
 @media (min-width: 768px) { .cal-cell { min-height: 120px; padding: 6px 8px; } }

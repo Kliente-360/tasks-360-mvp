@@ -511,7 +511,7 @@ export function BacklogClient() {
             value={f.cliente}
             onChange={(e) => setF({ ...f, cliente: e.target.value, projeto: e.target.value ? f.projeto : '' })}
           >
-            <option value="">Clientes</option>
+            <option value="">Cliente</option>
             <option value={EMPTY}>— sem cliente</option>
             {clientesAtivos.map((c) => (
               <option key={c.id} value={c.id}>
@@ -526,7 +526,7 @@ export function BacklogClient() {
             disabled={!f.cliente}
             onChange={(e) => setF({ ...f, projeto: e.target.value })}
           >
-            <option value="">Projetos</option>
+            <option value="">Projeto</option>
             <option value={EMPTY}>— sem projeto</option>
             {projetosFiltrados.map((p) => (
               <option key={p.id} value={p.id}>
@@ -540,7 +540,7 @@ export function BacklogClient() {
             value={f.pessoa}
             onChange={(e) => setF({ ...f, pessoa: e.target.value })}
           >
-            <option value="">Pessoas</option>
+            <option value="">Responsável</option>
             <option value={EMPTY}>— sem responsável</option>
             {pessoasNaoCliente.map((p) => (
               <option key={p.id} value={p.id}>
@@ -593,7 +593,7 @@ export function BacklogClient() {
               value={f.tag}
               onChange={(e) => setF({ ...f, tag: e.target.value })}
             >
-              <option value="">Tags</option>
+              <option value="">Tag</option>
               <option value={EMPTY}>— sem tags</option>
               {allTags.map((t) => (
                 <option key={t} value={t}>
@@ -707,7 +707,7 @@ export function BacklogClient() {
                 value={f.cliente}
                 onChange={(e) => setF({ ...f, cliente: e.target.value, projeto: e.target.value ? f.projeto : '' })}
               >
-                <option value="">Clientes</option>
+                <option value="">Cliente</option>
                 <option value={EMPTY}>— sem cliente</option>
                 {clientesAtivos.map((c) => (
                   <option key={c.id} value={c.id}>{c.nome}</option>
@@ -721,7 +721,7 @@ export function BacklogClient() {
                 disabled={!f.cliente}
                 onChange={(e) => setF({ ...f, projeto: e.target.value })}
               >
-                <option value="">Projetos</option>
+                <option value="">Projeto</option>
                 <option value={EMPTY}>— sem projeto</option>
                 {projetosFiltrados.map((p) => (
                   <option key={p.id} value={p.id}>{p.nome}</option>
@@ -734,7 +734,7 @@ export function BacklogClient() {
                 value={f.pessoa}
                 onChange={(e) => setF({ ...f, pessoa: e.target.value })}
               >
-                <option value="">Pessoas</option>
+                <option value="">Responsável</option>
                 <option value={EMPTY}>— sem responsável</option>
                 {pessoasNaoCliente.map((p) => (
                   <option key={p.id} value={p.id}>{p.nome}</option>
@@ -781,7 +781,7 @@ export function BacklogClient() {
             {allTags.length > 0 && (
               <div className="col-span-2">
                 <select className={`inp ${f.tag ? 'is-active' : ''}`} value={f.tag} onChange={(e) => setF({ ...f, tag: e.target.value })}>
-                  <option value="">Tags</option>
+                  <option value="">Tag</option>
                   <option value={EMPTY}>— sem tags</option>
                   {allTags.map((t) => (
                     <option key={t} value={t}>#{t}</option>

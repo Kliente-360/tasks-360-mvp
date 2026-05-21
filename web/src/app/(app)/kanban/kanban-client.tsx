@@ -248,7 +248,7 @@ export function KanbanClient() {
               setFilters({ ...filters, cliente: v, projeto: v ? filters.projeto : '' });
             }}
           >
-            <option value="">Clientes</option>
+            <option value="">Cliente</option>
             <option value={EMPTY}>— sem cliente</option>
             {clientesAtivos.map((c) => (
               <option key={c.id} value={c.id}>
@@ -263,7 +263,7 @@ export function KanbanClient() {
             disabled={!filters.cliente}
             onChange={(e) => setFilters({ ...filters, projeto: e.target.value })}
           >
-            <option value="">Projetos</option>
+            <option value="">Projeto</option>
             <option value={EMPTY}>— sem projeto</option>
             {projetosFiltrados.map((p) => (
               <option key={p.id} value={p.id}>
@@ -277,7 +277,7 @@ export function KanbanClient() {
             value={filters.pessoa}
             onChange={(e) => setFilters({ ...filters, pessoa: e.target.value })}
           >
-            <option value="">Responsáveis</option>
+            <option value="">Responsável</option>
             <option value={EMPTY}>— sem responsável</option>
             {pessoasNaoCliente.map((p) => (
               <option key={p.id} value={p.id}>
