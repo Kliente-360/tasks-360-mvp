@@ -25,6 +25,7 @@ import { NAV } from '@/lib/nav';
 import { HelpMenuItem } from '@/components/help-modal';
 import { OnboardingMenuItem } from '@/components/onboarding-modal';
 import { ThemeMenuItem } from '@/components/theme-toggle';
+import { ExportCsvMenuItem } from '@/components/export';
 
 export function ProfileMenu() {
   const [open, setOpen] = useState(false);
@@ -103,12 +104,18 @@ export function ProfileMenu() {
               </>
             )}
 
-            {/* 3. Exportar — mobile only (desktop tem ícone no header 4.F) */}
+            {/* 3. Exportar — mobile only (desktop tem ícone no header). PDF
+                fica pendente (depende de Dashboard/Briefing — parking). */}
             {!isCliente && (
               <div className="md:hidden">
                 <div className="border-t border-line my-1" />
-                <MenuItem disabled label="Exportar CSV" hint="em breve · 4.F" />
-                <MenuItem disabled label="Exportar PDF" hint="em breve · 4.F" />
+                <ExportCsvMenuItem onClick={() => setOpen(false)} />
+                <MenuItem
+                  disabled
+                  label="Exportar PDF"
+                  hint="depende de Dashboard"
+                  right={<span className="text-muted text-xs whitespace-nowrap">parking</span>}
+                />
               </div>
             )}
 

@@ -10,10 +10,10 @@ import { useTaskModal } from '@/components/task-modal';
 import { ProfileMenu } from '@/components/profile-menu';
 import { HelpIconButton } from '@/components/help-modal';
 import { ThemeIconButton } from '@/components/theme-toggle';
-import { ExportIconButton } from '@/components/header-icons';
+import { ExportIconButton } from '@/components/export';
 import { NotifBell } from '@/components/notif-bell';
 
-const APP_VERSION = 'v1.02.137';
+const APP_VERSION = 'v1.02.138';
 
 /** Barra de navegação superior — espelha o header do app Alpine. */
 export function AppNav() {
