@@ -27,3 +27,13 @@ Convenções do projeto que valem pra qualquer sessão.
 - Branches `claude/*` criadas pelo harness são ignoradas — não usar, não deletar.
 - Antes de commitar: bumpar `APP_VERSION` em `lib/helpers.js` (BUILD += 1).
 - **Sempre `git pull origin main` antes de criar branch nova**, pra evitar divergência local.
+
+## Migração de stack (Onda 0)
+
+Ver **`web/ONDA0.md`** para o plano completo com todas as decisões arquiteturais.
+
+Resumo executivo:
+- Arquitetura **híbrida**: Server Components apenas pra telas read-heavy (Cadastros, auth). Telas interativas (Backlog, Kanban, Modal, Triagem, Foco, Calendário) são **Client Components com Supabase JS** — mesmo padrão de dados do app Alpine (boot + estado em memória + realtime).
+- Objetivo da onda: **UX 100% idêntica ao app atual**, zero features novas.
+- Não usar Server Actions em telas com >1 interação/segundo — latência inaceitável.
+- Helpers de `lib/helpers.js` já portados para `web/src/lib/task-utils.ts`.

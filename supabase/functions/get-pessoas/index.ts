@@ -126,16 +126,17 @@ Deno.serve(async (req) => {
     const ids = out.map(p => p.id);
     const { data: tasks, error: tErr } = await sb
       .from('tasks')
-      .select('pessoa_id, esforco')
+      .select('pessoa_id, esforco, tempo_real_horas')
       .in('pessoa_id', ids)
       .neq('status', 'concluido')
       .is('arquivado_em', null);
     if (tErr) return err(500, 'db_error', tErr.message);
     const loadByPessoa = new Map<string, { count: number; horas: number }>();
-    for (const t of (tasks as { pessoa_id: string; esforco: number | null }[])) {
+    for (const t of (tasks as { pessoa_id: string; esforco: number | null; tempo_real_horas: number | null }[])) {
       const cur = loadByPessoa.get(t.pessoa_id) || { count: 0, horas: 0 };
       cur.count += 1;
-      cur.horas += (Number(t.esforco) > 0 ? Number(t.esforco) : 4);
+      const eff = Number(t.esforco) > 0 ? Number(t.esforco) : 4;
+      cur.horas += Math.max(0, eff - (Number(t.tempo_real_horas) || 0));
       loadByPessoa.set(t.pessoa_id, cur);
     }
     for (const p of out) {
