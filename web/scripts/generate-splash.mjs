@@ -16,14 +16,15 @@ import { Resvg } from '@resvg/resvg-js';
 
 const TEXT = 'tasks 360';
 
-// Light theme (default)
+// Cores precisam casar EXATAMENTE com o background do <body> (var(--bg) =
+// var(--surface-2) no globals.css). Se divergir, o iOS dispensa o splash
+// e aparece uma cor ligeiramente diferente embaixo — flicker visível.
 const LIGHT = {
-  bg:    '#FFFFFF',
+  bg:    '#F1F2F0', // --surface-2 light
   brand: '#009900',
 };
-// Dark theme — espelha as vars .dark do globals.css
 const DARK = {
-  bg:    '#0F1117', // --surface-1 dark
+  bg:    '#0A0C12', // --surface-2 dark
   brand: '#00B300', // --brand dark (mais clara pra contrastar)
 };
 
