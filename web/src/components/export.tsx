@@ -14,7 +14,7 @@
  *  - ExportMenuButton (profile menu mobile · variantes CSV)
  */
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useData, useClientesById, useProjetosById, usePessoasById } from '@/lib/data-store';
 import { useToast } from '@/components/toast';
 import { lblStatus } from '@/lib/task-utils';
@@ -107,23 +107,66 @@ function useExportCsv() {
 
 // ============ Triggers ============
 
-/** Ícone ⤓ do header (desktop only). */
+/** Ícone ⤓ do header (desktop only) — abre dropdown com CSV + PDF. */
 export function ExportIconButton() {
   const exportCsv = useExportCsv();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
   return (
-    <button
-      type="button"
-      onClick={exportCsv}
-      className="btn btn-ghost btn-icon text-xs !hidden md:!inline-flex"
-      title="Exportar CSV"
-      aria-label="Exportar"
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-        <polyline points="7 10 12 15 17 10" />
-        <line x1="12" y1="15" x2="12" y2="3" />
-      </svg>
-    </button>
+    <div className="relative !hidden md:!inline-flex">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="btn btn-ghost btn-icon text-xs"
+        title="Exportar"
+        aria-label="Exportar"
+        aria-expanded={open}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="absolute top-full right-0 mt-2 bg-elev border border-line rounded-lg shadow-xl z-40 text-left overflow-hidden w-[260px]">
+            <div className="px-3 pt-2.5 pb-1 text-[10px] uppercase tracking-wider text-muted font-semibold font-mono border-b border-line">
+              Exportar como
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                exportCsv();
+              }}
+              className="block w-full text-left px-3 py-2 hover:bg-brand-tint transition-colors"
+            >
+              <div className="text-xs font-medium text-ink">CSV</div>
+              <div className="text-[10px] text-muted mt-0.5">visão atual filtrada · pra Excel</div>
+            </button>
+            <div className="border-t border-line" />
+            <div
+              className="block w-full text-left px-3 py-2 opacity-40 cursor-not-allowed"
+              title="Depende de Dashboard (parking)"
+            >
+              <div className="text-xs font-medium text-ink">PDF · relatório executivo</div>
+              <div className="text-[10px] text-muted mt-0.5">depende de Dashboard · parking</div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
