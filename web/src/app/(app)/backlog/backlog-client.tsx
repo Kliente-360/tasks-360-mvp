@@ -511,7 +511,12 @@ export function BacklogClient() {
   if (error) return <div className="text-[color:var(--danger)] text-sm">Erro: {error}</div>;
 
   return (
-    <div className="space-y-4">
+    // flex+gap em vez de space-y-4: o space-y do Tailwind usa
+    // :not([hidden]) que só pega o atributo HTML — a classe `hidden`
+    // do page-bar desktop não conta, então o gap caía no primeiro
+    // filho visível do mobile. Com flex+gap, elementos display:none
+    // são totalmente ignorados.
+    <div className="flex flex-col gap-4">
       {/* ============ Desktop page bar ============ */}
       <div className="page-bar hidden md:flex">
         <div className="page-bar-info">

@@ -45,26 +45,27 @@ export const viewport: Viewport = {
  * Splash screens iOS — apple-touch-startup-image precisa ser declarada
  * por dispositivo. Tamanhos cobrem iPhone SE até iPad Pro 12.9".
  * Gerados via web/scripts/generate-splash.mjs a partir do brand mark.
+ * Variante `-dark` é selecionada via `prefers-color-scheme: dark` no media.
  */
-const APPLE_SPLASH: { src: string; mq: string }[] = [
-  // iPhone SE / 8 — 750x1334 @2x portrait
-  { src: '/assets/splash/splash-750x1334.png',  mq: '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)' },
-  // iPhone 11 / XR — 828x1792 @2x portrait
-  { src: '/assets/splash/splash-828x1792.png',  mq: '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)' },
-  // iPhone X / XS / 11 Pro — 1125x2436 @3x portrait
-  { src: '/assets/splash/splash-1125x2436.png', mq: '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)' },
-  // iPhone 12 / 12 Pro / 13 / 13 Pro / 14 — 1170x2532 @3x portrait
-  { src: '/assets/splash/splash-1170x2532.png', mq: '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)' },
-  // iPhone 15 / 15 Pro — 1179x2556 @3x portrait
-  { src: '/assets/splash/splash-1179x2556.png', mq: '(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)' },
-  // iPhone 12 Pro Max / 13 Pro Max / 14 Plus — 1284x2778 @3x portrait
-  { src: '/assets/splash/splash-1284x2778.png', mq: '(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)' },
-  // iPhone 15 Plus / 15 Pro Max — 1290x2796 @3x portrait
-  { src: '/assets/splash/splash-1290x2796.png', mq: '(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)' },
-  // iPad 11" — 1668x2388 @2x portrait
-  { src: '/assets/splash/splash-1668x2388.png', mq: '(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)' },
-  // iPad Pro 12.9" — 2048x2732 @2x portrait
-  { src: '/assets/splash/splash-2048x2732.png', mq: '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)' },
+const APPLE_SPLASH_SIZES: { w: number; h: number; ratio: number }[] = [
+  // iPhone SE / 8
+  { w: 375,  h: 667,  ratio: 2 },
+  // iPhone 11 / XR
+  { w: 414,  h: 896,  ratio: 2 },
+  // iPhone X / XS / 11 Pro
+  { w: 375,  h: 812,  ratio: 3 },
+  // iPhone 12 / 12 Pro / 13 / 13 Pro / 14
+  { w: 390,  h: 844,  ratio: 3 },
+  // iPhone 15 / 15 Pro
+  { w: 393,  h: 852,  ratio: 3 },
+  // iPhone 12/13/14 Pro Max
+  { w: 428,  h: 926,  ratio: 3 },
+  // iPhone 15 Plus / 15 Pro Max
+  { w: 430,  h: 932,  ratio: 3 },
+  // iPad 11"
+  { w: 834,  h: 1194, ratio: 2 },
+  // iPad Pro 12.9"
+  { w: 1024, h: 1366, ratio: 2 },
 ];
 
 export default function RootLayout({
@@ -86,10 +87,27 @@ export default function RootLayout({
           }}
         />
         {/* iOS splash screens — Next Metadata API ainda não cobre
-            apple-touch-startup-image; declarados manualmente aqui. */}
-        {APPLE_SPLASH.map((s) => (
-          <link key={s.src} rel="apple-touch-startup-image" href={s.src} media={s.mq} />
-        ))}
+            apple-touch-startup-image; declarados manualmente. Cada
+            device tem 2 variantes (light/dark) selecionadas por
+            prefers-color-scheme do SO. */}
+        {APPLE_SPLASH_SIZES.flatMap((s) => {
+          const px = `${s.w * s.ratio}x${s.h * s.ratio}`;
+          const base = `(device-width: ${s.w}px) and (device-height: ${s.h}px) and (-webkit-device-pixel-ratio: ${s.ratio})`;
+          return [
+            <link
+              key={`${px}-light`}
+              rel="apple-touch-startup-image"
+              href={`/assets/splash/splash-${px}.png`}
+              media={`${base} and (prefers-color-scheme: light)`}
+            />,
+            <link
+              key={`${px}-dark`}
+              rel="apple-touch-startup-image"
+              href={`/assets/splash/splash-${px}-dark.png`}
+              media={`${base} and (prefers-color-scheme: dark)`}
+            />,
+          ];
+        })}
       </head>
       <body>{children}</body>
     </html>

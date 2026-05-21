@@ -13,3 +13,6 @@ next-env.d.ts
 /public/sw.js
 /public/sw.js.map
 /public/swe-worker-*
+
+# Font asset usado só pelo generate-splash.mjs (baixar com curl quando precisar)
+/scripts/_plex-mono-400.ttf
