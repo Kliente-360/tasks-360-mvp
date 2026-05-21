@@ -209,20 +209,22 @@ export function CadastrosClient() {
             ))}
           </div>
 
-          {tab !== 'pessoas' && (
-            <button
-              type="button"
-              onClick={() => setShowArquivados((v) => !v)}
-              className={cn(
-                'text-xs px-2 py-1.5 rounded border transition-colors',
-                showArquivados
+          <button
+            type="button"
+            onClick={() => setShowArquivados((v) => !v)}
+            disabled={tab === 'pessoas'}
+            title={tab === 'pessoas' ? 'Pessoas não têm flag de arquivado.' : undefined}
+            className={cn(
+              'text-xs px-2 py-1.5 rounded border transition-colors',
+              tab === 'pessoas'
+                ? 'border-line text-muted opacity-40 cursor-not-allowed'
+                : showArquivados
                   ? 'border-brand text-brand-dark bg-brand-tint'
                   : 'border-line text-muted hover:border-line-strong',
-              )}
-            >
-              arquivados
-            </button>
-          )}
+            )}
+          >
+            arquivados
+          </button>
 
           {tab === 'clientes' && <NewClienteButton />}
           {tab === 'projetos' && <NewProjetoButton clientes={clienteOptions} />}
