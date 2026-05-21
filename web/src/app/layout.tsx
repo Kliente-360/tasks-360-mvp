@@ -25,12 +25,10 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
   },
   formatDetection: { telephone: false },
-  // Favicon redondo vive em app/icon.svg (convenção file-based do Next 15).
-  // Mantemos só o icon-512 (PWA install) e apple-touch-icon aqui.
+  // Favicon do browser vive em app/icon.svg (convenção file-based do Next 15).
+  // Aqui só declaramos o apple-touch-icon (PWA install iOS). PNGs do PWA
+  // Android são lidos pelo manifest.webmanifest.
   icons: {
-    icon: [
-      { url: '/assets/icon-512.png', sizes: '512x512', type: 'image/png' },
-    ],
     apple: { url: '/assets/apple-touch-icon.png', sizes: '180x180' },
   },
 };
