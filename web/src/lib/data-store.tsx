@@ -31,6 +31,12 @@ interface DataState {
   refreshing: boolean;
   error: string | null;
   realtimeStatus: RealtimeStatus;
+  /** Pessoa logada (resolvida via session → pessoa.user_id ou email). */
+  currentPessoa: Pessoa | null;
+  /** Derivado de currentPessoa.role. Null enquanto não resolveu. */
+  viewerRole: 'admin' | 'interno' | 'cliente' | null;
+  /** Atalho pra currentPessoa.is_ceo. */
+  isCEO: boolean;
 }
 
 interface DataActions {
@@ -80,6 +86,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('idle');
+  // currentPessoa hidrata do cache pra não piscar enquanto a query resolve.
+  const [currentPessoa, setCurrentPessoa] = useState<Pessoa | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem('kliente360-current-pessoa');
+      return raw ? (JSON.parse(raw) as Pessoa) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Refs pros refetch debounced — coalescem rajadas de realtime numa única query.
   const refetchTimers = useRef<Record<string, ReturnType<typeof setTimeout> | undefined>>({});
@@ -169,10 +185,58 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     let channel: ReturnType<typeof sb.channel> | null = null;
     let cancelled = false;
     setRealtimeStatus('connecting');
+    const resolveCurrentPessoa = async (
+      session: Awaited<ReturnType<typeof sb.auth.getSession>>['data']['session'],
+    ) => {
+      if (!session?.user) {
+        setCurrentPessoa(null);
+        try {
+          localStorage.removeItem('kliente360-current-pessoa');
+        } catch {
+          /* ok */
+        }
+        return;
+      }
+      const userId = session.user.id;
+      const email = (session.user.email ?? '').trim().toLowerCase();
+      const COLS =
+        'id,nome,email,user_id,invited_at,role,cliente_id,cliente_principal_id,cliente_secundario_id,capacidade_horas_semana,skills,senioridade,is_ceo';
+      // 1) por user_id já vinculado
+      const r1 = await sb.from('pessoas').select(COLS).eq('user_id', userId).maybeSingle();
+      if (cancelled) return;
+      if (r1.error) return;
+      let pessoa = r1.data ? pessoaFromDb(r1.data as Record<string, unknown>) : null;
+      // 2) por email (autovincula user_id na 1ª vez)
+      if (!pessoa && email) {
+        const r2 = await sb.from('pessoas').select(COLS).ilike('email', email).maybeSingle();
+        if (cancelled) return;
+        if (r2.error) return;
+        if (r2.data) {
+          const raw = r2.data as Record<string, unknown>;
+          if (!raw.user_id) {
+            await sb.from('pessoas').update({ user_id: userId }).eq('id', String(raw.id));
+            raw.user_id = userId;
+          }
+          pessoa = pessoaFromDb(raw);
+        }
+      }
+      if (cancelled) return;
+      setCurrentPessoa(pessoa);
+      try {
+        if (pessoa) localStorage.setItem('kliente360-current-pessoa', JSON.stringify(pessoa));
+        else localStorage.removeItem('kliente360-current-pessoa');
+      } catch {
+        /* ok */
+      }
+    };
+
     (async () => {
       const { data: { session } } = await sb.auth.getSession();
       if (cancelled) return;
       if (session?.access_token) sb.realtime.setAuth(session.access_token);
+      // Resolve pessoa logada em paralelo ao realtime; cache em localStorage
+      // já hidratou o state no useState inicial, então não pisca.
+      resolveCurrentPessoa(session);
 
       // Realtime fica conectado mas em "dormente" — a publication
       // do Postgres no projeto não inclui as 4 tabelas (e o time hoje
@@ -220,8 +284,27 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         });
     })();
 
+    // Escuta SIGNED_IN/SIGNED_OUT pra atualizar currentPessoa fora do boot
+    // inicial (ex.: usuário faz login em outra aba ou via magic link).
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      if (event === 'SIGNED_OUT') {
+        setCurrentPessoa(null);
+        try {
+          localStorage.removeItem('kliente360-current-pessoa');
+        } catch {
+          /* ok */
+        }
+        return;
+      }
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        resolveCurrentPessoa(session);
+      }
+    });
+
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
       if (channel) sb.removeChannel(channel);
       Object.keys(timers).forEach((k) => timers[k] && clearTimeout(timers[k]!));
     };
@@ -318,6 +401,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setPessoas((cur) => cur.filter((p) => p.id !== id));
   }, []);
 
+  const viewerRole: DataState['viewerRole'] = currentPessoa ? currentPessoa.role : null;
+  const isCEO = !!currentPessoa?.is_ceo;
+
   const value = useMemo<DataContextValue>(
     () => ({
       tasks,
@@ -328,6 +414,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       refreshing,
       error,
       realtimeStatus,
+      currentPessoa,
+      viewerRole,
+      isCEO,
       refreshAll,
       patchTask,
       patchTasks,
@@ -345,6 +434,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     [
       tasks, clientes, projetos, pessoas,
       loading, refreshing, error, realtimeStatus,
+      currentPessoa, viewerRole, isCEO,
       refreshAll,
       patchTask, patchTasks, replaceTask, upsertTask, removeTask, removeTasks,
       upsertCliente, removeCliente, upsertProjeto, removeProjeto, upsertPessoa, removePessoa,
