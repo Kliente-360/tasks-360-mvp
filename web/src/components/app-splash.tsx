@@ -27,9 +27,15 @@ export function AppSplash() {
   const [mountTs] = useState<number>(() => Date.now());
   const [visible, setVisible] = useState(true);
   const [fadingOut, setFadingOut] = useState(false);
-  // Dimensões calculadas no mount — espelham o gerador de apple-touch-startup-image.
-  // Renderiza zerado até o efeito rodar pra evitar mismatch SSR/client.
-  const [dims, setDims] = useState<{ mark: number; font: number; gap: number } | null>(null);
+  // Dimensões espelham o gerador de apple-touch-startup-image.
+  // Default = iPhone moderno (~390px de menor dim) pra ter conteúdo no
+  // 1º paint mesmo antes do useEffect rodar — evita "flash branco" entre
+  // o splash nativo do iOS e a hidratação do overlay React.
+  const [dims, setDims] = useState<{ mark: number; font: number; gap: number }>({
+    mark: 29, // 390 * 0.075
+    font: 20, // 390 * 0.052
+    gap:  12, // 390 * 0.032
+  });
 
   useEffect(() => {
     const min = Math.min(window.innerWidth, window.innerHeight);
@@ -71,8 +77,7 @@ export function AppSplash() {
         pointerEvents: fadingOut ? 'none' : 'auto',
       }}
     >
-      {dims && (
-        <div className="flex items-center" style={{ gap: dims.gap }}>
+      <div className="flex items-center" style={{ gap: dims.gap }}>
           {/* k360-mark via SVG pra casar pixel-perfect com o splash iOS */}
           <svg
             width={mark}
@@ -99,7 +104,6 @@ export function AppSplash() {
             tasks 360
           </div>
         </div>
-      )}
     </div>
   );
 }
