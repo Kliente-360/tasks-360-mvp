@@ -240,9 +240,10 @@ Deno.serve(async (req) => {
 
   // Existe? Procura por (source, external_id).
   // Carrega status atual pra detectar mudança e gravar histórico.
+  // arquivado_em: pra desarquivar automaticamente no update.
   const { data: existing, error: lookupErr } = await sb
     .from('tasks')
-    .select('id, status, subetapa')
+    .select('id, status, subetapa, arquivado_em')
     .eq('external_source', SOURCE)
     .eq('external_id', externalId)
     .maybeSingle();
@@ -250,7 +251,8 @@ Deno.serve(async (req) => {
 
   // Monta payload — só inclui campos enviados (update não-destrutivo).
   // Importante: NÃO mandar `status` no payload; trigger derive de subetapa.
-  const payload: Record<string, unknown> = { titulo };
+  // last_ingest_at: sinaliza pro trigger que veio do ingest → não dispara webhook.
+  const payload: Record<string, unknown> = { titulo, last_ingest_at: new Date().toISOString() };
   if (body.descricao !== undefined) payload.descricao    = String(body.descricao ?? '');
   if (clienteId)                    payload.cliente_id   = clienteId;
   if (projetoId)                    payload.projeto_id   = projetoId;
@@ -273,6 +275,10 @@ Deno.serve(async (req) => {
   }
 
   if (existing) {
+    // Desarquiva automaticamente se a task estava arquivada aqui.
+    if ((existing as { arquivado_em: string | null }).arquivado_em) {
+      payload.arquivado_em = null;
+    }
     const { error } = await sb.from('tasks').update(payload).eq('id', existing.id);
     if (error) return err(500, 'db_error', error.message);
     // Histórico de status macro (só quando muda — trigger ainda não derivou,
