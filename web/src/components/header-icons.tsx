@@ -16,7 +16,7 @@ export function ExportIconButton() {
     <button
       type="button"
       onClick={() => toast.info('Exportar entra no Bloco 4.F — em breve.')}
-      className="btn btn-ghost btn-icon text-xs hidden md:inline-flex opacity-50"
+      className="btn btn-ghost btn-icon text-xs !hidden md:!inline-flex opacity-50"
       title="Exportar · 4.F"
       aria-label="Exportar"
     >

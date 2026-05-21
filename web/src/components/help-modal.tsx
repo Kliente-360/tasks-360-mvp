@@ -244,7 +244,7 @@ export function HelpIconButton() {
     <button
       type="button"
       onClick={open}
-      className="btn btn-ghost btn-icon text-xs hidden md:inline-flex"
+      className="btn btn-ghost btn-icon text-xs !hidden md:!inline-flex"
       title="Manual da ferramenta"
       aria-label="Ajuda"
     >

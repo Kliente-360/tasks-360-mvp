@@ -77,7 +77,7 @@ export function ThemeIconButton() {
     <button
       type="button"
       onClick={toggle}
-      className="btn btn-ghost btn-icon text-xs hidden md:inline-flex"
+      className="btn btn-ghost btn-icon text-xs !hidden md:!inline-flex"
       title={theme === 'dark' ? 'Mudar para claro' : 'Mudar para escuro'}
       aria-label="Alternar tema"
     >
