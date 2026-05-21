@@ -1796,7 +1796,7 @@ function ChecklistEditor({
   const add = (at?: number) => {
     const item: ChecklistItem = {
       id: 'cli-' + Math.random().toString(36).slice(2, 9),
-      text: '',
+      body: '',
       done: false,
     };
     const idx = typeof at === 'number' ? at : items.length;
@@ -1831,20 +1831,20 @@ function ChecklistEditor({
             }}
             type="text"
             className={`checklist-line text-sm flex-1 ${item.done ? 'opacity-60 line-through' : ''}`}
-            value={item.text}
-            onChange={(e) => update(idx, { text: e.target.value })}
+            value={item.body}
+            onChange={(e) => update(idx, { body: e.target.value })}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
                 add(idx + 1);
-              } else if (e.key === 'Backspace' && !item.text) {
+              } else if (e.key === 'Backspace' && !item.body) {
                 e.preventDefault();
                 remove(idx);
               } else if (e.key === 'Escape') {
                 // ESC numa linha vazia: remove (e impede fechamento do modal).
                 // ESC com texto: só sai do input (blur), próximo ESC fecha o modal.
                 e.stopPropagation();
-                if (!item.text) {
+                if (!item.body) {
                   e.preventDefault();
                   remove(idx);
                 } else {

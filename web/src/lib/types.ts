@@ -14,7 +14,8 @@ export type Role = 'admin' | 'interno' | 'cliente';
 
 export interface ChecklistItem {
   id?: string;
-  text: string;
+  /** Texto do item. Campo `body` pra bater com o JSON do DB (convenção do app Alpine). */
+  body: string;
   done: boolean;
 }
 

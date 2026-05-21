@@ -4,7 +4,7 @@
  * runtime pra reuso de helpers (task-utils) e lógica idêntica de UI.
  */
 
-import type { Cliente, Projeto, Pessoa, Task, ChecklistItem, Complexidade, Prioridade, TaskStatus } from './types';
+import type { Cliente, Projeto, Pessoa, Task, Complexidade, Prioridade, TaskStatus } from './types';
 
 type Row = Record<string, unknown>;
 
@@ -37,7 +37,13 @@ export function taskFromDb(r: Row): Task {
     subetapaEm: dateMs(r.subetapa_em),
     ordem: numNull(r.ordem),
     tags: arr<string>(r.tags),
-    checklist: arr<ChecklistItem>(r.checklist),
+    // Normaliza itens salvos com chave `text` (bug temporário do preview
+    // pré-v1.02.161) pra `body` — convenção do app Alpine + DB.
+    checklist: arr<Record<string, unknown>>(r.checklist).map((c) => ({
+      id: c.id as string | undefined,
+      body: (c.body ?? c.text ?? '') as string,
+      done: c.done === true,
+    })),
     reopenCount: num(r.reopen_count),
     tipoTrabalho: str(r.tipo_trabalho),
     tempoRealHoras: numNull(r.tempo_real_horas),
