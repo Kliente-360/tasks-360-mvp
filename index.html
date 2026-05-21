@@ -3549,7 +3549,12 @@
       <span x-show="editing.id && (editing.reopenCount || 0) > 0" class="reopen-chip text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:var(--p1-soft);color:var(--p1)" :title="'Reaberta ' + editing.reopenCount + ' vez(es)'" x-text="'reaberta ' + editing.reopenCount + 'x'"></span>
       <span x-show="editing.id && editing.arquivadoEm" class="arquivada-chip text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7)" title="Tarefa arquivada">arquivada</span>
       <div class="tmodal-head-right">
-        <span x-show="editing.id" class="autosave" :data-state="saveState"
+        <span x-show="editing.id && clienteWebhookEnabled(editing.clienteId)" class="autosave" data-state="off"
+              title="Autosave desativado — salve manualmente (⌘S)">
+          <span class="as-dot"></span>
+          autosave off
+        </span>
+        <span x-show="editing.id && !clienteWebhookEnabled(editing.clienteId)" class="autosave" :data-state="saveState"
               :title="saveState === 'error' ? 'Autosave falhou — clique em Salvar' : 'Autosave ativo · ⌘S força salvar'">
           <span class="as-dot"></span>
           <span x-text="autosaveLabel()"></span>
