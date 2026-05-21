@@ -70,21 +70,66 @@ function notifSummary(n: Notif): string {
   }
 }
 
-function notifIcon(n: Notif): string {
-  switch (n.kind) {
-    case 'mention':
-      return '@';
-    case 'assigned':
-      return '👤';
-    case 'comment_on_my_task':
-      return '💬';
-    case 'cliente_respondeu':
-      return '🏢';
-    case 'status_change':
-      return '↻';
-    default:
-      return '•';
+function NotifKindIcon({ kind }: { kind: Notif['kind'] }) {
+  const common = {
+    width: 14,
+    height: 14,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  };
+  if (kind === 'mention') {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" />
+      </svg>
+    );
   }
+  if (kind === 'assigned') {
+    return (
+      <svg {...common}>
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    );
+  }
+  if (kind === 'comment_on_my_task') {
+    // message-circle (lucide)
+    return (
+      <svg {...common}>
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+      </svg>
+    );
+  }
+  if (kind === 'cliente_respondeu') {
+    // building-2 (lucide) — torre com janelas
+    return (
+      <svg {...common}>
+        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+        <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+        <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+        <path d="M10 6h4" />
+        <path d="M10 10h4" />
+        <path d="M10 14h4" />
+        <path d="M10 18h4" />
+      </svg>
+    );
+  }
+  if (kind === 'status_change') {
+    return (
+      <svg {...common}>
+        <polyline points="23 4 23 10 17 10" />
+        <polyline points="1 20 1 14 7 14" />
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+      </svg>
+    );
+  }
+  return null;
 }
 
 export function NotifBell() {
@@ -273,25 +318,25 @@ export function NotifBell() {
               )}
             </div>
             {items.length > 0 && (
-              <div className="px-2 py-1.5 border-b border-line flex items-center gap-1 overflow-x-auto">
+              <div className="px-2 py-1.5 border-b border-line grid grid-cols-4 gap-1">
                 {(['all', 'mention', 'assignment', 'status'] as const).map((k) => (
                   <button
                     key={k}
                     type="button"
-                    className={`notif-chip ${filter === k ? 'is-on' : ''}`}
+                    className={`notif-chip justify-center ${filter === k ? 'is-on' : ''}`}
                     onClick={() => setFilter(k)}
                     title={
-                      k === 'all'
+                      (k === 'all'
                         ? 'Tudo'
                         : k === 'mention'
                           ? 'Menções'
                           : k === 'assignment'
                             ? 'Atribuições e comentários'
-                            : 'Mudanças de status'
+                            : 'Mudanças de status') + ` · ${counts[k]}`
                     }
                   >
-                    {k === 'all' ? 'tudo' : k === 'mention' ? '@' : k === 'assignment' ? 'atribuições' : 'status'}{' '}
-                    <span className="opacity-60">· {counts[k]}</span>
+                    <FilterChipIcon kind={k} />
+                    <span className="opacity-60 ml-1 shrink-0 text-[11px]">{counts[k]}</span>
                   </button>
                 ))}
               </div>
@@ -338,6 +383,61 @@ export function NotifBell() {
   );
 }
 
+/** Ícones SVG pros chips de filtro — mesmo style do sino (lucide-like:
+ *  stroke 2, 14×14, currentColor). Sem emoji pra manter consistência. */
+function FilterChipIcon({ kind }: { kind: KindFilter }) {
+  const common = {
+    width: 14,
+    height: 14,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  };
+  if (kind === 'all') {
+    // lista (3 linhas com bullets) — representa "tudo"
+    return (
+      <svg {...common}>
+        <line x1="8" y1="6" x2="21" y2="6" />
+        <line x1="8" y1="12" x2="21" y2="12" />
+        <line x1="8" y1="18" x2="21" y2="18" />
+        <line x1="3" y1="6" x2="3.01" y2="6" />
+        <line x1="3" y1="12" x2="3.01" y2="12" />
+        <line x1="3" y1="18" x2="3.01" y2="18" />
+      </svg>
+    );
+  }
+  if (kind === 'mention') {
+    // @ — círculo com curva interna (lucide at-sign)
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" />
+      </svg>
+    );
+  }
+  if (kind === 'assignment') {
+    // user (lucide) — cabeça + ombros
+    return (
+      <svg {...common}>
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    );
+  }
+  // status: refresh-cw (lucide) — ciclo
+  return (
+    <svg {...common}>
+      <polyline points="23 4 23 10 17 10" />
+      <polyline points="1 20 1 14 7 14" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </svg>
+  );
+}
+
 function NotifRow({ n, onClick }: { n: Notif; onClick: () => void }) {
   return (
     <button
@@ -352,7 +452,7 @@ function NotifRow({ n, onClick }: { n: Notif; onClick: () => void }) {
     >
       <div className="flex items-start gap-2.5">
         <span className={`notif-kind-icon shrink-0 notif-kind-${n.kind}`} title={String(n.kind)}>
-          {notifIcon(n)}
+          <NotifKindIcon kind={n.kind} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
