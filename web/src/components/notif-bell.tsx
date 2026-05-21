@@ -94,6 +94,11 @@ export function NotifBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notif[]>([]);
   const [filter, setFilter] = useState<KindFilter>('all');
+  // Seção de lidas inicia colapsada toda vez que abre o painel.
+  const [readOpen, setReadOpen] = useState(false);
+  useEffect(() => {
+    if (open) setReadOpen(false);
+  }, [open]);
 
   const sbRef = useRef<ReturnType<typeof createClient> | null>(null);
   if (!sbRef.current) sbRef.current = createClient();
@@ -172,9 +177,21 @@ export function NotifBell() {
     return c;
   }, [items]);
 
-  const filtered = useMemo(() => {
-    if (filter === 'all') return items;
-    return items.filter((n) => notifKindGroup(n) === filter);
+  // Splita em duas listas, cada uma ordenada por data desc (mais recente
+  // primeiro). A query do load já vem ordenada, mas re-sort defensivo
+  // pra inserts realtime + reorder quando marca como lida.
+  const { unreadList, readList } = useMemo(() => {
+    const base = filter === 'all' ? items : items.filter((n) => notifKindGroup(n) === filter);
+    const cmp = (a: Notif, b: Notif) => (b.criado_em || '').localeCompare(a.criado_em || '');
+    const unread: Notif[] = [];
+    const read: Notif[] = [];
+    for (const n of base) {
+      if (n.read_at) read.push(n);
+      else unread.push(n);
+    }
+    unread.sort(cmp);
+    read.sort(cmp);
+    return { unreadList: unread, readList: read };
   }, [items, filter]);
 
   const markRead = useCallback(
@@ -280,38 +297,37 @@ export function NotifBell() {
               </div>
             )}
             <div className="flex-1 overflow-y-auto">
-              {filtered.map((n) => (
-                <button
-                  key={n.id}
-                  type="button"
-                  className="w-full text-left px-3 py-2.5 border-b border-line last:border-0 hover:bg-brand-tint transition-colors"
-                  style={!n.read_at ? { background: 'color-mix(in srgb, var(--brand-tint) 30%, transparent)' } : undefined}
-                  onClick={() => openNotif(n)}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <span className={`notif-kind-icon shrink-0 notif-kind-${n.kind}`} title={String(n.kind)}>
-                      {notifIcon(n)}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="shrink-0 w-1.5 h-1.5 rounded-full"
-                          style={{ background: n.read_at ? 'transparent' : 'var(--brand)' }}
-                        />
-                        <div className="text-sm text-ink truncate">{notifSummary(n)}</div>
-                      </div>
-                      {n.payload?.preview && (
-                        <div className="text-xs text-muted mt-0.5 truncate pl-3">{n.payload.preview}</div>
-                      )}
-                      <div className="text-[10px] font-mono text-muted mt-0.5 pl-3">{fmtPostedEm(n.criado_em)}</div>
-                    </div>
-                  </div>
-                </button>
+              {/* Não-lidas — sempre visíveis no topo, ordenadas data desc */}
+              {unreadList.map((n) => (
+                <NotifRow key={n.id} n={n} onClick={() => openNotif(n)} />
               ))}
+
+              {/* Lidas — agrupadas em accordion (default colapsado, reset
+                  toda vez que abre o painel). Permite revisitar sem
+                  poluir o feed principal das não-lidas. */}
+              {readList.length > 0 && (
+                <div className="border-t border-line">
+                  <button
+                    type="button"
+                    onClick={() => setReadOpen((v) => !v)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-muted hover:bg-bg-elev transition-colors"
+                  >
+                    <span>
+                      Lidas <span className="opacity-60">· {readList.length}</span>
+                    </span>
+                    <span className="font-mono">{readOpen ? '▾' : '▸'}</span>
+                  </button>
+                  {readOpen &&
+                    readList.map((n) => (
+                      <NotifRow key={n.id} n={n} onClick={() => openNotif(n)} />
+                    ))}
+                </div>
+              )}
+
               {items.length === 0 && (
                 <div className="px-4 py-8 text-center text-xs text-muted italic">Sem notificações ainda.</div>
               )}
-              {items.length > 0 && filtered.length === 0 && (
+              {items.length > 0 && unreadList.length + readList.length === 0 && (
                 <div className="px-4 py-8 text-center text-xs text-muted italic">Nada nesse filtro.</div>
               )}
             </div>
@@ -319,5 +335,41 @@ export function NotifBell() {
         </>
       )}
     </div>
+  );
+}
+
+function NotifRow({ n, onClick }: { n: Notif; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="w-full text-left px-3 py-2.5 border-b border-line last:border-0 hover:bg-brand-tint transition-colors"
+      style={
+        !n.read_at
+          ? { background: 'color-mix(in srgb, var(--brand-tint) 30%, transparent)' }
+          : undefined
+      }
+      onClick={onClick}
+    >
+      <div className="flex items-start gap-2.5">
+        <span className={`notif-kind-icon shrink-0 notif-kind-${n.kind}`} title={String(n.kind)}>
+          {notifIcon(n)}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span
+              className="shrink-0 w-1.5 h-1.5 rounded-full"
+              style={{ background: n.read_at ? 'transparent' : 'var(--brand)' }}
+            />
+            <div className={`text-sm truncate ${n.read_at ? 'text-ink-soft' : 'text-ink'}`}>
+              {notifSummary(n)}
+            </div>
+          </div>
+          {n.payload?.preview && (
+            <div className="text-xs text-muted mt-0.5 truncate pl-3">{n.payload.preview}</div>
+          )}
+          <div className="text-[10px] font-mono text-muted mt-0.5 pl-3">{fmtPostedEm(n.criado_em)}</div>
+        </div>
+      </div>
+    </button>
   );
 }
