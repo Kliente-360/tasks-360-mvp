@@ -83,8 +83,8 @@ function downloadBlob(filename: string, content: string, mime: string) {
   URL.revokeObjectURL(url);
 }
 
-/** Hook compartilhado pelos triggers. */
-function useExportCsv() {
+/** Hook compartilhado pelos triggers (header + profile menu + palette). */
+export function useExportCsv() {
   const { tasks } = useData();
   const clientesById = useClientesById();
   const projetosById = useProjetosById();

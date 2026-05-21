@@ -24,9 +24,11 @@ import {
 import { useRouter } from 'next/navigation';
 import { useData } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
+import { useQuickCapture } from '@/components/quick-capture';
 import { useHelp } from '@/components/help-modal';
 import { useOnboarding } from '@/components/onboarding-modal';
 import { useTheme } from '@/components/theme-toggle';
+import { useExportCsv } from '@/components/export';
 import { NAV } from '@/lib/nav';
 import { lblStatus } from '@/lib/task-utils';
 
@@ -64,9 +66,11 @@ function Palette({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const { tasks, clientes, projetos, pessoas, refreshAll } = useData();
   const { openEdit, openNew } = useTaskModal();
+  const { open: openQuick } = useQuickCapture();
   const helpApi = useHelp();
   const onbApi = useOnboarding();
   const { toggle: toggleTheme } = useTheme();
+  const exportCsv = useExportCsv();
 
   const [q, setQ] = useState('');
   const [idx, setIdx] = useState(0);
@@ -147,8 +151,8 @@ function Palette({ onClose }: { onClose: () => void }) {
     // ===== Ações + Navegação =====
     const actions: Item[] = [
       { id: 'act-new', kind: 'ação', label: 'Nova tarefa', hint: 'abrir formulário · n', action: openNew },
-      { id: 'act-quick', kind: 'ação', label: 'Captura rápida', hint: 'criar tarefa em 2s · ⌘⇧N', action: () => router.push('/?quick=1') },
-      { id: 'act-csv', kind: 'export', label: 'Exportar CSV', hint: 'tarefas pra Excel', action: () => router.push('/?export=csv') },
+      { id: 'act-quick', kind: 'ação', label: 'Captura rápida', hint: 'criar tarefa em 2s', action: openQuick },
+      { id: 'act-csv', kind: 'export', label: 'Exportar CSV', hint: 'tarefas pra Excel', action: exportCsv },
       { id: 'act-manual', kind: 'ação', label: 'Manual da ferramenta', hint: 'HOWTO completo', action: helpApi.open },
       { id: 'act-onb', kind: 'ação', label: 'Onboarding', hint: '3 perspectivas', action: onbApi.open },
       { id: 'act-theme', kind: 'ação', label: 'Alternar tema', hint: 'claro / escuro', action: toggleTheme },
@@ -170,7 +174,7 @@ function Palette({ onClose }: { onClose: () => void }) {
     }
 
     return out.slice(0, 50);
-  }, [q, tasks, clientes, projetos, pessoas, router, openEdit, openNew, helpApi.open, onbApi.open, toggleTheme, refreshAll]);
+  }, [q, tasks, clientes, projetos, pessoas, router, openEdit, openNew, openQuick, exportCsv, helpApi.open, onbApi.open, toggleTheme, refreshAll]);
 
   // Garante idx válido quando results encolhe
   useEffect(() => {

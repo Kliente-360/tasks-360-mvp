@@ -12,6 +12,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useData, useClientesById, useProjetosById, usePessoasById, useProjetosByCliente } from '@/lib/data-store';
 import { createClient } from '@/lib/supabase/client';
 import { useTaskModal } from '@/components/task-modal';
@@ -126,6 +127,22 @@ export function BacklogClient() {
 
   // Debounce da busca (150ms — igual o Alpine).
   const [qDraft, setQDraft] = useState('');
+
+  // Aplica filtros vindos da URL (Command Palette navega assim).
+  // Lê cliente/projeto/pessoa/tag/q dos search params na mount e quando
+  // mudam — usuário pode chegar via palette ou link e cair filtrado.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const cliente = searchParams.get('cliente') ?? '';
+    const projeto = searchParams.get('projeto') ?? '';
+    const pessoa = searchParams.get('pessoa') ?? '';
+    const tag = searchParams.get('tag') ?? '';
+    const q = searchParams.get('q') ?? '';
+    if (cliente || projeto || pessoa || tag || q) {
+      setF((cur) => ({ ...cur, cliente, projeto, pessoa, tag, q }));
+      setQDraft(q);
+    }
+  }, [searchParams]);
   useEffect(() => {
     const tid = setTimeout(() => setF((cur) => ({ ...cur, q: qDraft })), 150);
     return () => clearTimeout(tid);

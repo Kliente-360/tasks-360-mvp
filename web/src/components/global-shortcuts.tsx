@@ -3,15 +3,15 @@
 /**
  * Atalhos globais — Onda 0 · 4.H
  *
- * Espelha o handleGlobalShortcut do Alpine.
+ *  ⌘K / Ctrl+K   — Command Palette
+ *  n             — Nova tarefa (modal completo)
+ *  /             — Foca busca do backlog (se na aba) ou abre palette
+ *  g + letra     — Navega abas:
+ *                  f foco · b backlog · k kanban · c calendário ·
+ *                  d dashboard · t triagem
  *
- *  ⌘K / Ctrl+K          — Command Palette
- *  ⌘⇧N / Ctrl+Shift+N   — Captura rápida
- *  n                    — Nova tarefa (modal completo)
- *  /                    — Foca busca do backlog (se na aba) ou abre palette
- *  ?                    — TODO (atalhos de teclado overlay — fora da Onda 0)
- *  g + letra            — Navega entre abas (f foco · b backlog · k kanban
- *                         · l calendário · t triagem)
+ * Quick capture é acessível pelo Command Palette → "Captura rápida"
+ * (atalho ⌘⇧N foi removido — conflita com aba anônima do Chrome).
  *
  * Atalhos de uma letra são ignorados quando o foco está em INPUT/TEXTAREA/
  * SELECT/contenteditable.
@@ -20,23 +20,21 @@
 import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCommandPalette } from '@/components/command-palette';
-import { useQuickCapture } from '@/components/quick-capture';
 import { useTaskModal } from '@/components/task-modal';
 
 const TAB_BY_LETTER: Record<string, string> = {
   f: '/foco',
   b: '/backlog',
   k: '/kanban',
-  l: '/calendario',
+  c: '/calendario',
+  d: '/dashboard',
   t: '/triagem',
-  c: '/cadastros',
 };
 
 export function GlobalShortcuts() {
   const router = useRouter();
   const pathname = usePathname();
   const palette = useCommandPalette();
-  const quick = useQuickCapture();
   const { openNew } = useTaskModal();
   const gPrefix = useRef<number>(0);
 
@@ -52,13 +50,6 @@ export function GlobalShortcuts() {
         e.preventDefault();
         if (palette.isOpen) palette.close();
         else palette.open();
-        return;
-      }
-      // ⌘⇧N — captura rápida
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'n' || e.key === 'N')) {
-        e.preventDefault();
-        if (quick.isOpen) quick.close();
-        else quick.open();
         return;
       }
       // Letras simples — bloqueia se está digitando ou com modifier
@@ -101,7 +92,7 @@ export function GlobalShortcuts() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [router, pathname, palette, quick, openNew]);
+  }, [router, pathname, palette, openNew]);
 
   return null;
 }
