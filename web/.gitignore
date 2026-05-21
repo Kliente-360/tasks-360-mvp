@@ -16,3 +16,6 @@ next-env.d.ts
 
 # Font asset usado só pelo generate-splash.mjs (baixar com curl quando precisar)
 /scripts/_plex-mono-400.ttf
+
+# Vitest coverage
+/coverage
