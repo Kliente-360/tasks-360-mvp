@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { savePessoa, type PessoaPayload } from './actions';
 import type { ClienteOption } from './projeto-modal';
+import { useData } from '@/lib/data-store';
 
 export type PessoaInitial = {
   id: string;
@@ -58,6 +59,7 @@ function PessoaModal({
   const [err, setErr] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const nomeRef = useRef<HTMLInputElement | null>(null);
+  const { upsertPessoa } = useData();
 
   useEffect(() => {
     nomeRef.current?.focus();
@@ -102,9 +104,10 @@ function PessoaModal({
     startTransition(async () => {
       const res = await savePessoa(payload);
       if (!res.ok) {
-        setErr(res.error ?? 'Erro ao salvar.');
+        setErr(res.error);
         return;
       }
+      upsertPessoa(res.data);
       onClose();
     });
   }, [
@@ -120,6 +123,7 @@ function PessoaModal({
     skillsInput,
     senioridade,
     onClose,
+    upsertPessoa,
   ]);
 
   const isCliente = role === 'cliente';

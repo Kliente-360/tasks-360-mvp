@@ -43,6 +43,16 @@ interface DataActions {
   upsertTask: (task: Task) => void;
   removeTask: (id: string) => Task | null;
   removeTasks: (ids: string[]) => void;
+
+  // Mutadores in-memory de clientes / projetos / pessoas (usados pelos
+  // modais de Cadastros após server actions). Mantém a tela rápida — sem
+  // round-trip de revalidatePath.
+  upsertCliente: (c: Cliente) => void;
+  removeCliente: (id: string) => void;
+  upsertProjeto: (p: Projeto) => void;
+  removeProjeto: (id: string) => void;
+  upsertPessoa: (p: Pessoa) => void;
+  removePessoa: (id: string) => void;
 }
 
 type DataContextValue = DataState & DataActions;
@@ -274,6 +284,40 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setTasks((cur) => cur.filter((t) => !set.has(t.id)));
   }, []);
 
+  // ===== Mutadores in-memory de clientes / projetos / pessoas =====
+  // Inserem se id novo, substituem se já existe. Lista ordenada por nome
+  // pra refletir a UX do Alpine sem precisar reordenar no caller.
+  const upsertCliente = useCallback<DataActions['upsertCliente']>((c) => {
+    setClientes((cur) => {
+      const i = cur.findIndex((x) => x.id === c.id);
+      const out = i >= 0 ? cur.map((x) => (x.id === c.id ? c : x)) : [...cur, c];
+      return out.sort((a, b) => a.nome.localeCompare(b.nome));
+    });
+  }, []);
+  const removeCliente = useCallback<DataActions['removeCliente']>((id) => {
+    setClientes((cur) => cur.filter((c) => c.id !== id));
+  }, []);
+  const upsertProjeto = useCallback<DataActions['upsertProjeto']>((p) => {
+    setProjetos((cur) => {
+      const i = cur.findIndex((x) => x.id === p.id);
+      const out = i >= 0 ? cur.map((x) => (x.id === p.id ? p : x)) : [...cur, p];
+      return out.sort((a, b) => a.nome.localeCompare(b.nome));
+    });
+  }, []);
+  const removeProjeto = useCallback<DataActions['removeProjeto']>((id) => {
+    setProjetos((cur) => cur.filter((p) => p.id !== id));
+  }, []);
+  const upsertPessoa = useCallback<DataActions['upsertPessoa']>((p) => {
+    setPessoas((cur) => {
+      const i = cur.findIndex((x) => x.id === p.id);
+      const out = i >= 0 ? cur.map((x) => (x.id === p.id ? p : x)) : [...cur, p];
+      return out.sort((a, b) => a.nome.localeCompare(b.nome));
+    });
+  }, []);
+  const removePessoa = useCallback<DataActions['removePessoa']>((id) => {
+    setPessoas((cur) => cur.filter((p) => p.id !== id));
+  }, []);
+
   const value = useMemo<DataContextValue>(
     () => ({
       tasks,
@@ -291,8 +335,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       upsertTask,
       removeTask,
       removeTasks,
+      upsertCliente,
+      removeCliente,
+      upsertProjeto,
+      removeProjeto,
+      upsertPessoa,
+      removePessoa,
     }),
-    [tasks, clientes, projetos, pessoas, loading, refreshing, error, realtimeStatus, refreshAll, patchTask, patchTasks, replaceTask, upsertTask, removeTask, removeTasks],
+    [
+      tasks, clientes, projetos, pessoas,
+      loading, refreshing, error, realtimeStatus,
+      refreshAll,
+      patchTask, patchTasks, replaceTask, upsertTask, removeTask, removeTasks,
+      upsertCliente, removeCliente, upsertProjeto, removeProjeto, upsertPessoa, removePessoa,
+    ],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

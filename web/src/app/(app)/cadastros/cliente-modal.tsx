@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { saveCliente, type ClientePayload } from './actions';
+import { useData } from '@/lib/data-store';
 
 type ClienteInitial = {
   id: string;
@@ -44,6 +45,7 @@ function ClienteModal({
   const [err, setErr] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const nomeRef = useRef<HTMLInputElement | null>(null);
+  const { upsertCliente } = useData();
 
   useEffect(() => {
     nomeRef.current?.focus();
@@ -80,12 +82,13 @@ function ClienteModal({
     startTransition(async () => {
       const res = await saveCliente(payload);
       if (!res.ok) {
-        setErr(res.error ?? 'Erro ao salvar.');
+        setErr(res.error);
         return;
       }
+      upsertCliente(res.data);
       onClose();
     });
-  }, [initial.id, nome, tier, dominios, onClose]);
+  }, [initial.id, nome, tier, dominios, onClose, upsertCliente]);
 
   return (
     <div
