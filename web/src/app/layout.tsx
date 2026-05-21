@@ -25,10 +25,15 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
   },
   formatDetection: { telephone: false },
-  // Favicon do browser vive em app/icon.svg (convenção file-based do Next 15).
-  // Aqui só declaramos o apple-touch-icon (PWA install iOS). PNGs do PWA
-  // Android são lidos pelo manifest.webmanifest.
+  // Favicon do browser: SVG (vetorial, escala bem) + PNG fallback pro
+  // Chrome / Safari que às vezes preferem raster. apple-touch-icon usa
+  // a versão badge verde (PWA install iOS). PNGs do PWA Android são
+  // lidos do manifest.webmanifest.
   icons: {
+    icon: [
+      { url: '/assets/icon.svg', type: 'image/svg+xml' },
+      { url: '/assets/favicon-32.png', sizes: '32x32', type: 'image/png' },
+    ],
     apple: { url: '/assets/apple-touch-icon.png', sizes: '180x180' },
   },
 };
