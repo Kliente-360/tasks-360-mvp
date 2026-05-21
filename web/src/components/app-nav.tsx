@@ -7,8 +7,9 @@ import { NAV } from '@/lib/nav';
 import { cn } from '@/lib/utils';
 import { useData } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
+import { ProfileMenu } from '@/components/profile-menu';
 
-const APP_VERSION = 'v1.02.125';
+const APP_VERSION = 'v1.02.126';
 
 /** Barra de navegação superior — espelha o header do app Alpine. */
 export function AppNav() {
@@ -48,7 +49,9 @@ export function AppNav() {
           </div>
         </button>
 
-        {/* Right actions — "+ task" também no mobile (igual Alpine) */}
+        {/* Right actions — "+ task" também no mobile (igual Alpine) +
+            ProfileMenu (avatar). Notificações e tema entram no header
+            ao lado do "+ task" nos blocos 4.D / 4.E. */}
         <div className="flex items-center gap-1 shrink-0">
           <div className="w-px h-6 bg-line mx-1 md:mx-2 hidden md:block" />
           <button
@@ -60,6 +63,7 @@ export function AppNav() {
           >
             + task
           </button>
+          <ProfileMenu />
         </div>
       </div>
 
@@ -77,7 +81,7 @@ export function AppNav() {
           <>
             <div className="fixed inset-0 z-20" onClick={() => setMobileNavOpen(false)} />
             <div className="absolute left-0 right-0 top-full bg-elev border-b border-line shadow-lg z-30">
-              {NAV.filter((item) => !item.hideMobile).map((item) => {
+              {NAV.filter((item) => !item.hideMobile && !item.inProfileMenu).map((item) => {
                 const active = pathname.startsWith(item.href);
                 return (
                   <button
@@ -101,9 +105,10 @@ export function AppNav() {
         )}
       </div>
 
-      {/* Desktop: tabs horizontais */}
+      {/* Desktop: tabs horizontais — filtra `inProfileMenu` (Cadastros
+          vive no dropdown do avatar agora). */}
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 tabs-row hidden md:flex">
-        {NAV.map((item) => {
+        {NAV.filter((item) => !item.inProfileMenu).map((item) => {
           const active = pathname.startsWith(item.href);
           return (
             <Link

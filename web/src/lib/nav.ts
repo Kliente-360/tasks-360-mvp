@@ -9,6 +9,8 @@ export type NavItem = {
   onda: number;
   /** Esconde a tab no mobile (mantida no desktop). Espelha hideMobile do tabsList Alpine. */
   hideMobile?: boolean;
+  /** Sai da tab bar (em todos os breakpoints) e vive no menu do perfil. Espelha inProfileMenu Alpine. */
+  inProfileMenu?: boolean;
 };
 
 export const NAV: ReadonlyArray<NavItem> = [
@@ -25,6 +27,8 @@ export const NAV: ReadonlyArray<NavItem> = [
   { href: '/calendario', label: 'Calendário',    roles: ['admin', 'interno'],          onda: 1 },
   { href: '/dashboard',  label: 'Dashboard',     roles: ['admin', 'interno'],          onda: 3 },
   { href: '/portal',     label: 'Portal cliente', roles: ['admin', 'interno', 'cliente'], onda: 2 },
-  { href: '/cadastros',  label: 'Cadastros',     roles: ['admin'],                     onda: 1 },
+  // Cadastros sai da tab bar (espelha inProfileMenu do Alpine) — vive no
+  // dropdown do avatar pra liberar espaço horizontal nas abas principais.
+  { href: '/cadastros',  label: 'Cadastros',     roles: ['admin'],                     onda: 1, inProfileMenu: true },
   { href: '/adocao',     label: 'Adoção',        roles: ['admin'],                     onda: 4 },
 ] as const;
