@@ -4,14 +4,18 @@
 //
 // Body JSON:
 //   {
-//     "external_id":          "0D5...FeedItem.Id...",   // pra dedupe
-//     "task_external_id":     "a0X...RecordId...",       // do custom object
-//     "parent_external_id":   "0D7...FeedItem.Id...",    // OPCIONAL — pra reply
-//     "author":               "Maria Silva",             // CreatedBy.Name
-//     "author_external_id":   "005...UserId...",         // CreatedById (opcional)
-//     "body":                 "texto do post",
-//     "posted_em":            "2026-05-07T14:30:00Z"     // CreatedDate (opcional)
+//     "external_id":        "0D5...FeedItem.Id...",   // pra dedupe
+//     "task_external_id":   "a0X...RecordId...",       // do custom object
+//     "parent_external_id": "0D7...FeedItem.Id...",    // OPCIONAL — pra reply
+//     "author":             "Maria Silva",             // CreatedBy.Name
+//     "author_external_id": "005...UserId...",         // CreatedById (opcional)
+//     "body":               "texto do post",
+//     "posted_em":          "2026-05-07T14:30:00Z"    // CreatedDate (opcional)
 //   }
+//
+// O external_id do comment criado/atualizado aqui é devolvido de volta ao
+// sistema externo via webhook dispatch-webhook (resposta síncrona do POST).
+// Não há callback separado — o link é feito pela Edge Function dispatch-webhook.
 //
 // Reply rules: máximo 1 nível de aninhamento (treplica é proibida pelo DB).
 // Se parent_external_id apontar pra um comment que já é reply, o insert falha
@@ -101,7 +105,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Existe?
+  // Existe por external_id?
   const { data: existing, error: eErr } = await sb
     .from('task_comments')
     .select('id')
