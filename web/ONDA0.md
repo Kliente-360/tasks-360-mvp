@@ -247,3 +247,39 @@ Tabelas ainda não modeladas (do banco real):
 | Login page | ❌ |
 | Backlog, Kanban, Modal, Triagem, Foco, Calendário | ❌ |
 | Cadastros — modais criar/editar | ❌ |
+
+---
+
+## Roadmap PWA (pós-Onda 0)
+
+A Onda 0 entrega o **mínimo instalável** (manifest + ícones + splash iOS)
++ **service worker básico** (cache de shell + update prompt). Tudo
+abaixo fica pra revisitar depois.
+
+### Features postergadas
+
+| Feature | O que faz | Pré-req |
+|---|---|---|
+| **Push notifications** | Notif assignment/mention chega com app fechado (Android + desktop). iOS suporta a partir do iOS 16.4 (com PWA instalado). | VAPID keys + endpoint server-side pra mandar (Supabase Edge Function ou similar) |
+| **Badging API** | Badge com unread count no ícone do app (desktop + Android). | Apenas no client; usar `navigator.setAppBadge(n)` quando notif chega |
+| **Web Share Target** | Receber conteúdo via Android Share sheet ("Compartilhar pra tasks 360" → cria task com o texto) | `share_target` no manifest |
+| **Web Share API** | Botão "compartilhar task" → share sheet nativa do device | Apenas client (`navigator.share`) |
+| **File handlers** | Abrir `.csv` direto no PWA pra importar tasks | `file_handlers` no manifest + handler `launchQueue` |
+| **Install prompt custom** | Botão "Instalar app" em vez do banner default do Chrome | `beforeinstallprompt` event |
+| **Protocol handler** | `web+tasks360://t/<id>` abre task no app | `protocol_handlers` no manifest |
+| **Background sync** | Escritas offline (criar/editar task sem rede) re-sincronizam quando conexão volta | Service worker mais elaborado + IndexedDB |
+| **Edge side panel** | Sidebar permanente no Edge | `edge_side_panel` no manifest |
+| **Launch handler focus-existing** | Click no atalho foca janela existente em vez de duplicar | `launch_handler.client_mode` no manifest |
+| **Cache offline real (read+write)** | App usável 100% offline com fila de sync | SW elaborado + IndexedDB + reconcile UI |
+
+### O que A Onda 0 ENTREGA (bloco 4.I)
+
+- `manifest.webmanifest` completo (name, theme, ícones, shortcuts: Nova task / Meu Foco / Briefing)
+- Ícones 32 / 180 / 192 / 512 maskable (reuso dos do Alpine)
+- 9 splash screens iOS (apple-touch-startup-image) — geradas via `assets/generate-splash.mjs`
+- Meta tags iOS no root layout (apple-mobile-web-app-*, viewport-fit=cover, etc)
+- Service Worker básico via `@serwist/next`:
+  - Cache-first pros estáticos (HTML, CSS, JS, fontes)
+  - Network-first pra API/dados (Supabase)
+  - Update prompt quando nova versão do SW estiver pronta
+- Lighthouse PWA score ≥ 90 (instalável em ambos os SO)
