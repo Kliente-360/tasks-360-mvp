@@ -25,9 +25,10 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
   },
   formatDetection: { telephone: false },
+  // Favicon redondo vive em app/icon.svg (convenção file-based do Next 15).
+  // Mantemos só o icon-512 (PWA install) e apple-touch-icon aqui.
   icons: {
     icon: [
-      { url: '/assets/favicon-32.png', sizes: '32x32', type: 'image/png' },
       { url: '/assets/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: { url: '/assets/apple-touch-icon.png', sizes: '180x180' },

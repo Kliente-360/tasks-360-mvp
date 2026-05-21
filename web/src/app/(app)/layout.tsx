@@ -9,6 +9,7 @@ import { CommandPaletteProvider } from '@/components/command-palette';
 import { QuickCaptureProvider } from '@/components/quick-capture';
 import { GlobalShortcuts } from '@/components/global-shortcuts';
 import { ServiceWorkerRegister } from '@/components/sw-register';
+import { AppSplash } from '@/components/app-splash';
 
 export default function AppLayout({
   children,
@@ -24,6 +25,7 @@ export default function AppLayout({
                   <CommandPaletteProvider>
                     <GlobalShortcuts />
                     <ServiceWorkerRegister />
+                    <AppSplash />
                     <div className="min-h-screen">
                       <AppNav />
                       <main className="max-w-[1400px] mx-auto px-4 md:px-8 py-6">{children}</main>
