@@ -503,6 +503,44 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
               });
             });
           }
+
+          // ===== Notificações (4.E) =====
+          // Não toasta erro nem espera resposta — fire-and-forget.
+          const notifRows: Record<string, unknown>[] = [];
+          // Assignment: novo responsável diferente do anterior, não self.
+          if (
+            prev.pessoaId !== e.pessoaId &&
+            e.pessoaId &&
+            e.pessoaId !== currentPessoa?.id
+          ) {
+            notifRows.push({
+              recipient_pessoa_id: e.pessoaId,
+              kind: 'assigned',
+              payload: { author: currentPessoa?.nome ?? 'app', task_id: e.id },
+              source_task_id: e.id,
+            });
+          }
+          // Status macro mudou e há responsável diferente do autor.
+          if (
+            statusChanged &&
+            e.pessoaId &&
+            e.pessoaId !== currentPessoa?.id
+          ) {
+            notifRows.push({
+              recipient_pessoa_id: e.pessoaId,
+              kind: 'status_change',
+              payload: {
+                author: currentPessoa?.nome ?? 'app',
+                task_id: e.id,
+                from: prev.status || '∅',
+                to: SUB_TO_MACRO[e.subetapa] || 'backlog',
+              },
+              source_task_id: e.id,
+            });
+          }
+          if (notifRows.length) {
+            sb.from('notifications').insert(notifRows);
+          }
         }
         return { ok: true };
       } else {
@@ -631,15 +669,64 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
   );
 
   // ============ Comments ============
+  // Notificações de mention + comment_on_my_task — fire-and-forget.
+  // Chamado após cada postComment / submitReply bem-sucedido.
+  const notifyAfterComment = useCallback(
+    (commentId: string, body: string) => {
+      if (!editing.id) return;
+      const rows: Record<string, unknown>[] = [];
+      // Mentions: @firstname que bate com pessoa interna (excluindo cliente)
+      const found = new Set<string>();
+      const re = /@([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9]*)/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(body)) !== null) found.add(m[1]);
+      if (found.size) {
+        const mentioned = pessoas
+          .filter((p) => p.role !== 'cliente')
+          .filter((p) => found.has((p.nome || '').split(/\s+/)[0]))
+          .map((p) => p.id);
+        for (const rid of mentioned) {
+          rows.push({
+            recipient_pessoa_id: rid,
+            kind: 'mention',
+            payload: { author: currentPessoa?.nome ?? 'app', task_id: editing.id, comment_id: commentId },
+            source_task_id: editing.id,
+            source_comment_id: commentId,
+          });
+        }
+      }
+      // comment_on_my_task: dono da task ≠ autor
+      const ownerId = editing.pessoaId;
+      if (ownerId && ownerId !== currentPessoa?.id) {
+        rows.push({
+          recipient_pessoa_id: ownerId,
+          kind: 'comment_on_my_task',
+          payload: {
+            author: currentPessoa?.nome ?? 'app',
+            task_id: editing.id,
+            comment_id: commentId,
+            preview: body.slice(0, 80),
+          },
+          source_task_id: editing.id,
+          source_comment_id: commentId,
+        });
+      }
+      if (rows.length) sb.from('notifications').insert(rows);
+    },
+    [editing.id, editing.pessoaId, pessoas, currentPessoa, sb],
+  );
+
   const postComment = useCallback(async () => {
     const body = newComment.trim();
     if (!body || !editing.id) return;
+    const authorName = currentPessoa?.nome ?? 'app';
+    const authorPessoaId = currentPessoa?.id ?? null;
     const tempId = 'tmp-' + Math.random().toString(36).slice(2, 8);
     const optimistic: Comment = {
       id: tempId,
       parent_id: null,
-      author: 'app',
-      author_pessoa_id: null,
+      author: authorName,
+      author_pessoa_id: authorPessoaId,
       author_external_id: null,
       body,
       posted_em: null,
@@ -656,7 +743,8 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       .from('task_comments')
       .insert({
         task_id: editing.id,
-        author: 'app',
+        author: authorName,
+        author_pessoa_id: authorPessoaId,
         body,
         visivel_cliente: newCommentPublico,
         from_cliente: false,
@@ -672,7 +760,8 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       return;
     }
     setComments((cur) => cur.map((c) => (c.id === tempId ? (data as Comment) : c)));
-  }, [newComment, newCommentPublico, editing.id, sb]);
+    notifyAfterComment((data as Comment).id, body);
+  }, [newComment, newCommentPublico, editing.id, sb, currentPessoa, notifyAfterComment]);
 
   const submitReply = useCallback(
     async (parentId: string) => {
@@ -680,12 +769,14 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       if (!body || !editing.id || !parentId) return;
       const parent = comments.find((c) => c.id === parentId);
       const visivel = !!parent?.visivel_cliente;
+      const authorName = currentPessoa?.nome ?? 'app';
+      const authorPessoaId = currentPessoa?.id ?? null;
       const tempId = 'tmp-' + Math.random().toString(36).slice(2, 8);
       const optimistic: Comment = {
         id: tempId,
         parent_id: parentId,
-        author: 'app',
-        author_pessoa_id: null,
+        author: authorName,
+        author_pessoa_id: authorPessoaId,
         author_external_id: null,
         body,
         posted_em: null,
@@ -704,7 +795,8 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
         .insert({
           task_id: editing.id,
           parent_id: parentId,
-          author: 'app',
+          author: authorName,
+          author_pessoa_id: authorPessoaId,
           body,
           visivel_cliente: visivel,
           from_cliente: false,
@@ -721,8 +813,9 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
         return;
       }
       setComments((cur) => cur.map((c) => (c.id === tempId ? (data as Comment) : c)));
+      notifyAfterComment((data as Comment).id, body);
     },
-    [newReply, editing.id, comments, sb],
+    [newReply, editing.id, comments, sb, currentPessoa, notifyAfterComment],
   );
 
   const saveEditComment = useCallback(
