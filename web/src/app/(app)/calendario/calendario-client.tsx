@@ -18,6 +18,7 @@ import {
   useProjetosByCliente,
 } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
+import { useToast } from '@/components/toast';
 import { createClient } from '@/lib/supabase/client';
 import {
   agingDays,
@@ -53,6 +54,7 @@ function isoLocal(d: Date): string {
 export function CalendarioClient() {
   const { tasks, clientes, projetos, pessoas, patchTask, replaceTask, loading, error } = useData();
   const { openEdit } = useTaskModal();
+  const toast = useToast();
   const clientesById = useClientesById();
   const projetosById = useProjetosById();
   const pessoasById = usePessoasById();
@@ -224,7 +226,7 @@ export function CalendarioClient() {
       const { error } = await sb.from('tasks').update(payload).eq('id', t.id);
       if (error) {
         replaceTask(t.id, prev);
-        alert('Erro ao mover: ' + error.message);
+        toast.error('Erro ao mover: ' + error.message);
         return;
       }
       if (macroChanged) {

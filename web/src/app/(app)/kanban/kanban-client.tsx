@@ -26,6 +26,7 @@ import {
   useProjetosByCliente,
 } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
+import { useToast } from '@/components/toast';
 import { createClient } from '@/lib/supabase/client';
 import { agingDays, agingLevel, atrasada, fmtDateShort, lblStatus, matchesPrazoFilter, needsTriage, triageFailures, type PrazoFilter } from '@/lib/task-utils';
 import { SUB_LABELS, SUBS_FLAT, SUB_TO_MACRO } from '@/lib/task-constants';
@@ -37,6 +38,7 @@ const MACROS = ['backlog', 'andamento', 'bloqueado', 'concluido'] as const;
 export function KanbanClient() {
   const { tasks, patchTask, replaceTask, loading, error } = useData();
   const { openEdit } = useTaskModal();
+  const toast = useToast();
   const clientesById = useClientesById();
   const projetosById = useProjetosById();
   const pessoasById = usePessoasById();
@@ -166,7 +168,7 @@ export function KanbanClient() {
       const { error } = await sb.from('tasks').update(payload).eq('id', t.id);
       if (error) {
         replaceTask(t.id, prev);
-        alert('Erro ao mover: ' + error.message);
+        toast.error('Erro ao mover: ' + error.message);
         return;
       }
       if (macroChanged) {

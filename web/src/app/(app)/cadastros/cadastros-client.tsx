@@ -11,6 +11,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useData } from '@/lib/data-store';
+import { useToast } from '@/components/toast';
 import { cn } from '@/lib/utils';
 import {
   arquivarCliente,
@@ -44,6 +45,7 @@ export function CadastrosClient() {
 
   const [tab, setTab] = useState<Tab>('clientes');
   const [showArquivados, setShowArquivados] = useState(false);
+  const toast = useToast();
 
   // ===== Indices =====
   const clientesAtivos = useMemo(() => clientes.filter((c) => !c.arquivadoEm), [clientes]);
@@ -106,26 +108,26 @@ export function CadastrosClient() {
     startTransition(async () => {
       const res = await arquivarCliente(id);
       if (res.ok) upsertCliente(res.data);
-      else alert(res.error);
+      else toast.error(res.error);
     });
   const runDesarquivarCliente = (id: string) =>
     startTransition(async () => {
       const res = await desarquivarCliente(id);
       if (res.ok) upsertCliente(res.data);
-      else alert(res.error);
+      else toast.error(res.error);
     });
   const runDeleteCliente = (id: string, nome: string) => {
     const tcount = tasksByCliente.get(id) ?? 0;
     const pcount = projetosByCliente.get(id) ?? 0;
     if (tcount || pcount) {
-      alert(`Não é possível excluir: existem ${tcount} tarefa(s) e ${pcount} projeto(s) vinculados.`);
+      toast.error(`Não é possível excluir: existem ${tcount} tarefa(s) e ${pcount} projeto(s) vinculados.`);
       return;
     }
     if (!confirm(`Excluir cliente "${nome}"?`)) return;
     startTransition(async () => {
       const res = await deleteCliente(id);
       if (res.ok) removeCliente(id);
-      else alert(res.error);
+      else toast.error(res.error);
     });
   };
 
@@ -133,39 +135,39 @@ export function CadastrosClient() {
     startTransition(async () => {
       const res = await arquivarProjeto(id);
       if (res.ok) upsertProjeto(res.data);
-      else alert(res.error);
+      else toast.error(res.error);
     });
   const runDesarquivarProjeto = (id: string) =>
     startTransition(async () => {
       const res = await desarquivarProjeto(id);
       if (res.ok) upsertProjeto(res.data);
-      else alert(res.error);
+      else toast.error(res.error);
     });
   const runDeleteProjeto = (id: string, nome: string) => {
     const tcount = tasksByProjeto.get(id) ?? 0;
     if (tcount) {
-      alert(`Não é possível excluir: existem ${tcount} tarefa(s) vinculadas.`);
+      toast.error(`Não é possível excluir: existem ${tcount} tarefa(s) vinculadas.`);
       return;
     }
     if (!confirm(`Excluir projeto "${nome}"?`)) return;
     startTransition(async () => {
       const res = await deleteProjeto(id);
       if (res.ok) removeProjeto(id);
-      else alert(res.error);
+      else toast.error(res.error);
     });
   };
 
   const runDeletePessoa = (id: string, nome: string) => {
     const tcount = tasksByPessoa.get(id) ?? 0;
     if (tcount) {
-      alert(`Não é possível excluir: existem ${tcount} tarefa(s) atribuídas.`);
+      toast.error(`Não é possível excluir: existem ${tcount} tarefa(s) atribuídas.`);
       return;
     }
     if (!confirm(`Excluir "${nome}"?`)) return;
     startTransition(async () => {
       const res = await deletePessoa(id);
       if (res.ok) removePessoa(id);
-      else alert(res.error);
+      else toast.error(res.error);
     });
   };
 

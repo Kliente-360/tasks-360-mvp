@@ -39,6 +39,7 @@ import {
   useState,
 } from 'react';
 import { useData, useClientesById, useProjetosById, usePessoasById, useProjetosByCliente, useTasksById } from '@/lib/data-store';
+import { useToastSafe } from '@/components/toast';
 import { createClient } from '@/lib/supabase/client';
 import { fmtBytes, fmtPostedEm, renderCommentBody } from '@/lib/format';
 import { fmtDate, fmtDateShort, lblStatus } from '@/lib/task-utils';
@@ -217,6 +218,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
   const projetosById = useProjetosById();
   const pessoasById = usePessoasById();
   const tasksById = useTasksById();
+  const toast = useToastSafe();
 
   const sbRef = useRef<ReturnType<typeof createClient> | null>(null);
   if (!sbRef.current) sbRef.current = createClient();
@@ -650,7 +652,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
     if (error || !data) {
       setComments((cur) => cur.filter((c) => c.id !== tempId));
       setNewComment(body);
-      alert('Erro ao comentar: ' + (error?.message ?? 'falha'));
+      toast.error('Erro ao comentar: ' + (error?.message ?? 'falha'));
       return;
     }
     setComments((cur) => cur.map((c) => (c.id === tempId ? (data as Comment) : c)));
@@ -699,7 +701,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
         setComments((cur) => cur.filter((c) => c.id !== tempId));
         setNewReply(body);
         setReplyingToId(parentId);
-        alert('Erro ao responder: ' + (error?.message ?? 'falha'));
+        toast.error('Erro ao responder: ' + (error?.message ?? 'falha'));
         return;
       }
       setComments((cur) => cur.map((c) => (c.id === tempId ? (data as Comment) : c)));
@@ -711,7 +713,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
     async (id: string) => {
       const body = editingCommentDraft.trim();
       if (!body) {
-        alert('Comentário não pode ficar vazio.');
+        toast.error('Comentário não pode ficar vazio.');
         return;
       }
       const i = comments.findIndex((c) => c.id === id);
@@ -729,7 +731,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       const { error } = await sb.from('task_comments').update({ body, edited_em: nowIso }).eq('id', id);
       if (error) {
         setComments((cur) => cur.map((c) => (c.id === id ? prev : c)));
-        alert('Erro ao salvar: ' + error.message);
+        toast.error('Erro ao salvar: ' + error.message);
       }
     },
     [comments, editingCommentDraft, sb],
@@ -753,7 +755,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       const { error } = await sb.from('task_comments').delete().eq('id', c.id);
       if (error) {
         setComments(prev);
-        alert('Erro ao excluir: ' + error.message);
+        toast.error('Erro ao excluir: ' + error.message);
       }
     },
     [comments, sb],
@@ -773,7 +775,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
         setComments((cur) =>
           cur.map((x) => (x.id === c.id ? { ...x, visivel_cliente: c.visivel_cliente } : x)),
         );
-        alert('Erro ao alterar visibilidade: ' + error.message);
+        toast.error('Erro ao alterar visibilidade: ' + error.message);
       }
     },
     [sb],
@@ -827,11 +829,11 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       try {
         const processed = await downscaleImage(file, 1600, 0.85);
         if (!processed) {
-          alert('Falha ao processar imagem.');
+          toast.error('Falha ao processar imagem.');
           return;
         }
         if (processed.blob.size > 2 * 1024 * 1024) {
-          alert('Imagem ainda acima de 2MB após compressão.');
+          toast.error('Imagem ainda acima de 2MB após compressão.');
           return;
         }
         setAttachmentUploadLabel('enviando…');
@@ -847,7 +849,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
           .from('task-attachments')
           .upload(path, processed.blob, { contentType: processed.blob.type, upsert: false });
         if (upErr) {
-          alert('Erro no upload: ' + upErr.message);
+          toast.error('Erro no upload: ' + upErr.message);
           return;
         }
         const { data, error: insErr } = await sb
@@ -867,7 +869,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
           .single();
         if (insErr || !data) {
           await sb.storage.from('task-attachments').remove([path]);
-          alert('Erro ao registrar anexo: ' + (insErr?.message ?? 'falha'));
+          toast.error('Erro ao registrar anexo: ' + (insErr?.message ?? 'falha'));
           return;
         }
         setAttachments((cur) => [data as Attachment, ...cur]);
@@ -888,7 +890,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       const { error } = await sb.from('task_attachments').delete().eq('id', a.id);
       if (error) {
         setAttachments(prev);
-        alert('Erro ao excluir: ' + error.message);
+        toast.error('Erro ao excluir: ' + error.message);
         return;
       }
       sb.storage
@@ -909,7 +911,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
     const { error } = await sb.from('tasks').update({ arquivado_em: nowIso }).eq('id', editing.id);
     if (error) {
       if (prev) replaceTask(editing.id, prev);
-      alert('Erro ao arquivar: ' + error.message);
+      toast.error('Erro ao arquivar: ' + error.message);
     }
   }, [editing.id, patchTask, replaceTask, sb]);
 
@@ -921,7 +923,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
     const { error } = await sb.from('tasks').update({ arquivado_em: null }).eq('id', editing.id);
     if (error) {
       if (prev) replaceTask(editing.id, prev);
-      alert('Erro ao desarquivar: ' + error.message);
+      toast.error('Erro ao desarquivar: ' + error.message);
     }
   }, [editing.id, patchTask, replaceTask, sb]);
 
@@ -945,7 +947,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
     const { error } = await sb.from('tasks').delete().eq('id', editing.id);
     if (error) {
       if (prev) upsertTask(prev);
-      alert('Erro ao excluir: ' + error.message);
+      toast.error('Erro ao excluir: ' + error.message);
     }
   }, [editing.id, removeTask, upsertTask, sb, onClose]);
 
@@ -957,7 +959,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
       onClose();
     } else {
       setSaveState('error');
-      alert(res.error ?? 'Erro ao salvar.');
+      toast.error(res.error ?? 'Erro ao salvar.');
     }
   }, [persist, onClose]);
 

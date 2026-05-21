@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useData, useClientesById, useProjetosById, usePessoasById } from '@/lib/data-store';
 import { useTaskModal } from '@/components/task-modal';
+import { useToast } from '@/components/toast';
 import { BulkBar, BulkBarClearButton, BulkBarSep } from '@/components/bulk-bar';
 import { createClient } from '@/lib/supabase/client';
 import { agingDays, atrasada, fmtDateShort, triageFailures } from '@/lib/task-utils';
@@ -52,6 +53,7 @@ type TaskWithFailures = Task & { _failures: string[]; _failCount: number };
 export function TriagemClient() {
   const { tasks, pessoas, patchTasks, loading, error } = useData();
   const { openEdit } = useTaskModal();
+  const toast = useToast();
   const clientesById = useClientesById();
   const projetosById = useProjetosById();
   const pessoasById = usePessoasById();
@@ -161,7 +163,7 @@ export function TriagemClient() {
     if (p.esforco !== '') {
       const num = Number(p.esforco);
       if (!(num >= 0)) {
-        alert('Esforço inválido.');
+        toast.error('Esforço inválido.');
         return;
       }
       updates.esforco = num;
@@ -170,7 +172,7 @@ export function TriagemClient() {
     if (Object.keys(updates).length === 0) return;
     const { error } = await sb.from('tasks').update(updates).in('id', ids);
     if (error) {
-      alert('Erro: ' + error.message);
+      toast.error('Erro: ' + error.message);
       return;
     }
     patchTasks(ids, localPatch);

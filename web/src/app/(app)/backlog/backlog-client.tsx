@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useData, useClientesById, useProjetosById, usePessoasById, useProjetosByCliente } from '@/lib/data-store';
 import { createClient } from '@/lib/supabase/client';
 import { useTaskModal } from '@/components/task-modal';
+import { useToast } from '@/components/toast';
 import { BulkBar, BulkBarClearButton, BulkBarSep } from '@/components/bulk-bar';
 import { atrasada, agingDays, agingLevel, fmtDate, fmtDateShort, lblComplex, lblStatus } from '@/lib/task-utils';
 import { STATUS, SUB_LABELS, SUBS_FLAT } from '@/lib/task-constants';
@@ -102,6 +103,7 @@ export function BacklogClient() {
   const projetosById = useProjetosById();
   const pessoasById = usePessoasById();
   const projetosByCliente = useProjetosByCliente();
+  const toast = useToast();
 
   const sbRef = useRef<ReturnType<typeof createClient> | null>(null);
   if (!sbRef.current) sbRef.current = createClient();
@@ -426,7 +428,7 @@ export function BacklogClient() {
     if (p.esforco !== '') {
       const num = Number(p.esforco);
       if (!(num >= 0)) {
-        alert('Esforço inválido.');
+        toast.error('Esforço inválido.');
         return;
       }
       updates.esforco = num;
@@ -435,7 +437,7 @@ export function BacklogClient() {
     if (Object.keys(updates).length === 0) return;
     const { error } = await sb.from('tasks').update(updates).in('id', ids);
     if (error) {
-      alert('Erro: ' + error.message);
+      toast.error('Erro: ' + error.message);
       return;
     }
     patchTasks(ids, localPatch);
@@ -448,7 +450,7 @@ export function BacklogClient() {
     const nowIso = new Date().toISOString();
     const { error } = await sb.from('tasks').update({ arquivado_em: nowIso }).in('id', ids);
     if (error) {
-      alert('Erro: ' + error.message);
+      toast.error('Erro: ' + error.message);
       return;
     }
     patchTasks(ids, { arquivadoEm: nowIso });
@@ -468,7 +470,7 @@ export function BacklogClient() {
     }
     const { error } = await sb.from('tasks').delete().in('id', ids);
     if (error) {
-      alert('Erro: ' + error.message);
+      toast.error('Erro: ' + error.message);
       return;
     }
     removeTasks(ids);
