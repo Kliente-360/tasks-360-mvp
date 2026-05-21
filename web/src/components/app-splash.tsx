@@ -3,41 +3,66 @@
 /**
  * Splash overlay — Onda 0 · 4.I
  *
- * Cobre a tela enquanto o boot do DataProvider roda. Layout precisa bater
- * EXATAMENTE com o apple-touch-startup-image (gerado em generate-splash.mjs)
- * pra não "dançar" quando o iOS troca o splash nativo pelo overlay React.
+ * Cobre a tela enquanto o boot do DataProvider roda.
  *
- * Estratégia:
- *   - bg = var(--bg) (== --surface-2 == cor do body). Garante que, se o
- *     overlay desmontar antes do iOS dispensar (ou o iOS dispensar antes
- *     do overlay pintar), a cor embaixo é a mesma.
- *   - Logo renderizado via SVG inline com as MESMAS fórmulas do gerador:
- *       markSize = min*0.075, dotR = mark*0.16, offset = mark*0.34
- *       fontSize = min*0.052, gap = min*0.032
- *   - Texto também como SVG <text> (mesma técnica do gerador) pra reduzir
- *     diferença entre rendering resvg/browser.
+ * Anti-dança: usa o MESMO PNG do apple-touch-startup-image que o iOS já
+ * mostrou. Antes a gente reproduzia o layout (mark + texto) em SVG no
+ * browser, e a diferença de renderização entre @resvg (backend) e WebKit
+ * (frontend) causava deslocamento sub-pixel visível. Mostrando o próprio
+ * PNG, o handoff iOS → React é literal pixel-match.
  *
- * MIN_VISIBLE_MS garante que o splash fica visível por tempo legível
- * mesmo se o boot resolver instantâneo (cache, navegação client-side).
+ * Seleção do PNG: pega o mais próximo do viewport físico
+ * (innerWidth × devicePixelRatio), default = iPhone 14 Pro pra SSR.
+ * Tema (light/dark) lido via prefers-color-scheme.
+ *
+ * MIN_VISIBLE_MS garante splash visível mesmo em boot instantâneo.
  */
 
 import { useEffect, useState } from 'react';
 import { useData } from '@/lib/data-store';
 
 const MIN_VISIBLE_MS = 900;
-const TEXT = 'tasks 360';
+
+// Sizes precisam casar com generate-splash.mjs.
+const SPLASH_SIZES = [
+  { w: 750,  h: 1334 },
+  { w: 828,  h: 1792 },
+  { w: 1125, h: 2436 },
+  { w: 1170, h: 2532 },
+  { w: 1179, h: 2556 }, // iPhone 15 Pro (default SSR)
+  { w: 1284, h: 2778 },
+  { w: 1290, h: 2796 },
+  { w: 1668, h: 2388 },
+  { w: 2048, h: 2732 },
+];
+
+function pickSplashUrl(): string {
+  // SSR fallback: iPhone 15 Pro light. Sobrescrito no useEffect.
+  if (typeof window === 'undefined') {
+    return '/assets/splash/splash-1179x2556.png';
+  }
+  const dpr  = window.devicePixelRatio || 2;
+  const tw   = window.innerWidth  * dpr;
+  const th   = window.innerHeight * dpr;
+  const best = SPLASH_SIZES.reduce((b, c) => {
+    const dc = Math.abs(c.w - tw) + Math.abs(c.h - th);
+    const db = Math.abs(b.w - tw) + Math.abs(b.h - th);
+    return dc < db ? c : b;
+  }, SPLASH_SIZES[0]);
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return `/assets/splash/splash-${best.w}x${best.h}${dark ? '-dark' : ''}.png`;
+}
 
 export function AppSplash() {
   const { loading } = useData();
   const [mountTs] = useState<number>(() => Date.now());
   const [visible, setVisible] = useState(true);
   const [fadingOut, setFadingOut] = useState(false);
-  // Default = iPhone moderno (~390px) pra ter conteúdo no 1º paint mesmo
-  // antes do useEffect rodar. Refinado no mount com window real.
-  const [min, setMin] = useState<number>(390);
+  const [src, setSrc] = useState<string>(() => pickSplashUrl());
 
   useEffect(() => {
-    setMin(Math.min(window.innerWidth, window.innerHeight));
+    // Recalcula com window real (caso o SSR fallback não bata com o device).
+    setSrc(pickSplashUrl());
   }, []);
 
   useEffect(() => {
@@ -54,22 +79,10 @@ export function AppSplash() {
 
   if (!visible) return null;
 
-  // Espelha o gerador (web/scripts/generate-splash.mjs)
-  const markSize       = Math.round(min * 0.075);
-  const dotR           = markSize * 0.16;
-  const markHalfOffset = markSize * 0.34;
-  const fontSize       = Math.round(min * 0.052);
-  const gap            = Math.round(min * 0.032);
-
-  // Texto: Plex Mono ≈ 0.6em por char (mesmo fator do gerador).
-  const textWidth  = TEXT.length * fontSize * 0.6;
-  const totalWidth = markSize + gap + textWidth;
-  const svgH       = Math.max(markSize, fontSize) * 1.4;
-
   return (
     <div
       aria-hidden
-      className="fixed inset-0 z-[100] flex items-center justify-center"
+      className="fixed inset-0 z-[100]"
       style={{
         background: 'var(--bg)',
         opacity: fadingOut ? 0 : 1,
@@ -77,40 +90,20 @@ export function AppSplash() {
         pointerEvents: fadingOut ? 'none' : 'auto',
       }}
     >
-      <svg
-        width={totalWidth}
-        height={svgH}
-        viewBox={`0 0 ${totalWidth} ${svgH}`}
-        style={{ display: 'block' }}
-      >
-        {(() => {
-          const cy = svgH / 2;
-          const markCx = markSize / 2;
-          const textX = markSize + gap;
-          return (
-            <>
-              <g fill="var(--brand)">
-                <circle cx={markCx}                  cy={cy - markHalfOffset} r={dotR} />
-                <circle cx={markCx - markHalfOffset} cy={cy}                  r={dotR} />
-                <circle cx={markCx + markHalfOffset} cy={cy}                  r={dotR} />
-                <circle cx={markCx}                  cy={cy + markHalfOffset} r={dotR} />
-              </g>
-              <text
-                x={textX}
-                y={cy}
-                fontFamily="var(--font-mono)"
-                fontWeight={400}
-                fontSize={fontSize}
-                fill="var(--brand)"
-                textAnchor="start"
-                dominantBaseline="middle"
-              >
-                {TEXT}
-              </text>
-            </>
-          );
-        })()}
-      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt=""
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: 'center',
+        }}
+      />
     </div>
   );
 }
