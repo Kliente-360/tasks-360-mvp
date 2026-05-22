@@ -16,8 +16,8 @@ export default function AppLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ThemeProvider>
-      <DataProvider>
-        <ToastProvider>
+      <ToastProvider>
+        <DataProvider>
           <HelpProvider>
             <OnboardingProvider>
               <TaskModalProvider>
@@ -35,8 +35,8 @@ export default function AppLayout({
               </TaskModalProvider>
             </OnboardingProvider>
           </HelpProvider>
-        </ToastProvider>
-      </DataProvider>
+        </DataProvider>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

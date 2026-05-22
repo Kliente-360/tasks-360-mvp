@@ -532,36 +532,21 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
   // que escuta editing dispara após o set inicial.
   const skipNextDirty = useRef(true);
 
-  // ===== Sync status push (realtime) =====
-  // Quando dispatch-webhook termina (synced ou error), o UPDATE em
-  // tasks.webhook_sync_status / webhook_sync_error vem via realtime
-  // pra `tasksById`. Sincronizamos esses 2 campos no `editing` local
-  // (chip do header reage) e toastamos a transição. Só toasta em
-  // CHANGE — se já estava 'error' quando o modal abriu, não re-toasta.
+  // ===== Sync status push (realtime) — só sincroniza o chip do header =====
+  // O toast de sucesso/erro é emitido pelo DataProvider (toast GLOBAL), o
+  // que cobre o caso de salvar num cliente webhook_enabled (VB/CTF), onde
+  // o modal fecha antes do webhook completar. Aqui só refletimos o status
+  // no `editing` pra o chip do header reagir sem precisar reabrir.
   const live = editing.id ? tasksById.get(editing.id) : null;
-  const prevSyncRef = useRef<{ status: string; error: string } | null>(null);
   useEffect(() => {
     if (!editing.id || !live) return;
-    const cur = {
-      status: live.webhookSyncStatus ?? '',
-      error:  live.webhookSyncError  ?? '',
-    };
-    // Mantém chip do header em sincronia com o servidor (campo
-    // server-driven, user não edita — safe sobrescrever).
+    const status = live.webhookSyncStatus ?? '';
+    const error  = live.webhookSyncError  ?? '';
     setEditing((e) => {
-      if (e.webhookSyncStatus === cur.status && e.webhookSyncError === cur.error) return e;
-      skipNextDirty.current = true; // não marca dirty por essa sync
-      return { ...e, webhookSyncStatus: cur.status, webhookSyncError: cur.error };
+      if (e.webhookSyncStatus === status && e.webhookSyncError === error) return e;
+      skipNextDirty.current = true; // não marca dirty por sync server-driven
+      return { ...e, webhookSyncStatus: status, webhookSyncError: error };
     });
-    const prev = prevSyncRef.current;
-    if (prev && prev.status !== cur.status) {
-      if (cur.status === 'synced') {
-        toast.success('Sincronizado com Salesforce');
-      } else if (cur.status === 'error') {
-        toast.error('Falha ao sincronizar: ' + (cur.error || 'erro desconhecido'));
-      }
-    }
-    prevSyncRef.current = cur;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live?.webhookSyncStatus, live?.webhookSyncError, editing.id]);
 
