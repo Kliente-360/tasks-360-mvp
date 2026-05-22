@@ -22,6 +22,7 @@ export const clientes = pgTable('clientes', {
   ehInterno: boolean('eh_interno').notNull().default(false),
   dominios: text('dominios').array().notNull().default([]),
   arquivadoEm: timestamp('arquivado_em', { withTimezone: true }),
+  webhookEnabled: boolean('webhook_enabled').notNull().default(false),
 });
 
 export const projetos = pgTable('projetos', {

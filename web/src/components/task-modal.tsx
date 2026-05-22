@@ -87,7 +87,7 @@ type Attachment = {
   criado_em: string;
 };
 
-type SaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
+type SaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error' | 'off';
 
 // ============================================================
 // Tipo do contexto
@@ -109,6 +109,27 @@ export function useTaskModal(): TaskModalContextValue {
 // ============================================================
 // Editing draft helpers
 // ============================================================
+// SVG do ícone "copiar" — Feather Icons copy. Pixel-perfect com Alpine
+// index.html:3562. Convenção do projeto: ícones em SVG inline, nunca emoji.
+function CopyIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
 function blankEditing(): Task {
   return {
     id: '',
@@ -139,6 +160,8 @@ function blankEditing(): Task {
     arquivadoEm: null,
     criadoPorIa: false,
     privada: false,
+    webhookSyncStatus: '',
+    webhookSyncError: '',
   };
 }
 
@@ -824,13 +847,32 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
     }
   }, [persist]);
 
-  // Detecta mudanças em editing → marca dirty + debounce 800ms
+  // Autosave OFF quando o cliente tem webhook_enabled=true (VB, CTF…).
+  // Pra esses, o save dispara um webhook Salesforce — não pode rodar a
+  // cada keystroke. Usuário precisa clicar "salvar" explicitamente.
+  // Espelho do index.html:3552 do Alpine (data-state="off").
+  const clienteWebhookEnabled = useMemo(
+    () => !!(editing.clienteId && clientesById.get(editing.clienteId)?.webhookEnabled),
+    [editing.clienteId, clientesById],
+  );
+
+  // Detecta mudanças em editing → marca dirty + debounce 800ms (a menos
+  // que esteja em modo webhook off).
   useEffect(() => {
     if (skipNextDirty.current) {
       skipNextDirty.current = false;
       return;
     }
     if (!editing.id) return; // task nova: sem autosave até salvar manualmente
+    if (clienteWebhookEnabled) {
+      // Não autosalva, mas mantém saveState='off' no header pra sinalizar.
+      setSaveState('off');
+      if (autosaveTimer.current) {
+        clearTimeout(autosaveTimer.current);
+        autosaveTimer.current = null;
+      }
+      return;
+    }
     setSaveState('dirty');
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     autosaveTimer.current = setTimeout(() => {
@@ -839,7 +881,18 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
     return () => {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     };
-  }, [editing, autosaveNow]);
+  }, [editing, autosaveNow, clienteWebhookEnabled]);
+
+  // Quando muda cliente (Sem→Com webhook ou vice-versa) sem que o user
+  // tenha tocado em outro campo, o useEffect acima já trata. Mas o
+  // estado inicial em "idle" precisa virar "off" se a task já abre com
+  // webhook on. Roda só na primeira render quando o cliente já é off.
+  useEffect(() => {
+    if (clienteWebhookEnabled && saveState === 'idle') {
+      setSaveState('off');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteWebhookEnabled]);
 
   // ============ Close flow (flush) ============
   const close = useCallback(async () => {
@@ -1329,6 +1382,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
   );
 
   const autosaveLabel = (): string => {
+    if (saveState === 'off') return 'autosave off';
     if (saveState === 'saving') return 'salvando…';
     if (saveState === 'dirty') return 'editando…';
     if (saveState === 'error') return 'falhou · tentar de novo';
@@ -1402,8 +1456,36 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
             </span>
           )}
           <div className="tmodal-head-right">
+            {editing.id && editing.webhookSyncStatus === 'error' && (
+              <span
+                className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0"
+                style={{ background: 'var(--p0-soft)', color: 'var(--p0)' }}
+                title={editing.webhookSyncError || 'Falha ao sincronizar com Salesforce'}
+              >
+                sync · erro
+              </span>
+            )}
+            {editing.id && editing.webhookSyncStatus === 'synced' && (
+              <span
+                className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-mono shrink-0"
+                style={{ background: 'var(--brand-soft)', color: 'var(--brand-dark)' }}
+                title="Último update sincronizado com Salesforce"
+              >
+                sync · ok
+              </span>
+            )}
             {editing.id && (
-              <span className="autosave" data-state={saveState}>
+              <span
+                className="autosave"
+                data-state={saveState}
+                title={
+                  saveState === 'off'
+                    ? 'Autosave desativado pra este cliente — salve manualmente (⌘S)'
+                    : saveState === 'error'
+                      ? 'Autosave falhou — clique em Salvar'
+                      : 'Autosave ativo · ⌘S força salvar'
+                }
+              >
                 <span className="as-dot" />
                 {autosaveLabel()}
               </span>
@@ -1427,7 +1509,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
                   );
                 }}
               >
-                🔗
+                <CopyIcon />
               </button>
             )}
             <button className="icon-btn" aria-label="Fechar" onClick={close}>
