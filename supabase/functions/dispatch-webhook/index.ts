@@ -5,23 +5,43 @@
 //   - uma task SF é atualizada → event 'task.updated'
 //   - um comment/reply em task SF é criado/editado → 'comment.*' / 'reply.*'
 //
-// Payload de entrada (v2 · 2026-05-22): identificadores no top-level,
-// external_ids e record dentro de `data`.
+// Payload INTERNO de entrada (v2 · 2026-05-22): identificadores no top-level,
+// external_ids e record completo dentro de `data` (trigger manda tudo).
 //
 //   task.updated:
 //     { event, sent_at, task_id, data: { task_external_id, external_source,
-//                                        record, old_record } }
+//                                        record (todas colunas), old_record } }
 //   comment.* / reply.*:
 //     { event, sent_at, task_id, comment_id, is_reply,
 //       data: { task_external_id, comment_external_id, parent_id,
-//               parent_external_id, external_source, record, old_record } }
+//               parent_external_id, external_source,
+//               record (todas colunas), old_record } }
+//
+// Payload EXTERNO enviado pra URL destino (slim, v2.1 · 2026-05-22):
+//
+//   task → WEBHOOK_URL_TASK:
+//     { sent_at, task_id,
+//       data: { task_external_id,
+//               record: { titulo, descricao, responsavel,
+//                         prioridade, prazo, subetapa } } }
+//
+//   comment/reply → WEBHOOK_URL_COMMENT:
+//     { sent_at, comment_id, is_reply,
+//       data: { task_external_id, comment_external_id, parent_external_id,
+//               record: { body } } }
+//
+// `responsavel` vai como nome textual (lookup em pessoas pela pessoa_id).
+// `comment_external_id` é null no create, valor no update.
+// `is_reply` distingue comment vs reply; create vs update se diferencia
+// olhando comment_external_id (null = create).
 //
 // Fluxo:
 //   1. Valida Bearer token (DISPATCH_WEBHOOK_SECRET env).
-//   2. Roteia pra WEBHOOK_URL_TASK ou WEBHOOK_URL_COMMENT.
-//   3. Fetch síncrono com timeout de 10s.
-//   4. Lê { external_id } do body de resposta.
-//   5. Atualiza o registro no banco com external_id + webhook_sync_status.
+//   2. Constrói payload slim a partir do payload interno.
+//   3. Roteia pra WEBHOOK_URL_TASK ou WEBHOOK_URL_COMMENT.
+//   4. Fetch síncrono com timeout de 10s.
+//   5. Lê { external_id } do body de resposta.
+//   6. Atualiza o registro no banco com external_id + webhook_sync_status.
 //
 // Auth de entrada: Authorization: Bearer <DISPATCH_WEBHOOK_SECRET>
 // Env vars (Edge Functions > Settings > Secrets):
@@ -115,6 +135,58 @@ Deno.serve(async (req) => {
   const taskId    = payload.task_id;
   const commentId = payload.comment_id;
 
+  // Constrói o payload SLIM enviado pra URL externa. Mantém estrutura
+  // simétrica (sent_at/ids top-level + data{external_ids, record}), mas
+  // só com os campos que o sistema externo realmente usa.
+  let outboundBody: Record<string, unknown>;
+
+  if (isTaskEvent) {
+    const fullRecord = (data.record ?? {}) as Record<string, unknown>;
+    // Lookup do nome do responsável (pessoa_id é UUID interno; SF/n8n
+    // não tem como interpretar). Best-effort: se falhar, manda null.
+    let responsavel: string | null = null;
+    const pessoaId = fullRecord.pessoa_id as string | null | undefined;
+    if (pessoaId) {
+      const { data: p } = await sb
+        .from('pessoas')
+        .select('nome')
+        .eq('id', pessoaId)
+        .maybeSingle();
+      responsavel = (p as { nome: string } | null)?.nome ?? null;
+    }
+    outboundBody = {
+      sent_at: payload.sent_at,
+      task_id: taskId,
+      data: {
+        task_external_id: data.task_external_id,
+        record: {
+          titulo:      fullRecord.titulo ?? null,
+          descricao:   fullRecord.descricao ?? null,
+          responsavel,
+          prioridade:  fullRecord.prioridade ?? null,
+          prazo:       fullRecord.prazo ?? null,
+          subetapa:    fullRecord.subetapa ?? null,
+        },
+      },
+    };
+  } else {
+    // comment / reply
+    const fullRecord = (data.record ?? {}) as Record<string, unknown>;
+    outboundBody = {
+      sent_at:    payload.sent_at,
+      comment_id: commentId,
+      is_reply:   payload.is_reply ?? false,
+      data: {
+        task_external_id:    data.task_external_id,
+        comment_external_id: data.comment_external_id ?? null,
+        parent_external_id:  data.parent_external_id ?? null,
+        record: {
+          body: fullRecord.body ?? null,
+        },
+      },
+    };
+  }
+
   // Fetch síncrono com timeout de 10s.
   // AbortController cancela a conexão se o sistema externo não responder.
   const controller = new AbortController();
@@ -125,7 +197,7 @@ Deno.serve(async (req) => {
     externalResp = await fetch(targetUrl, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ event, sent_at: payload.sent_at, data }),
+      body: JSON.stringify(outboundBody),
       signal: controller.signal,
     });
   } catch (e) {
