@@ -45,13 +45,18 @@ begin
   if NEW.external_id is distinct from OLD.external_id then return NEW; end if;
 
   if NEW.external_source = 'salesforce' and NEW.external_id is not null then
-    perform dispatch_webhook('task.updated', jsonb_build_object(
-      'task_id',         NEW.id,
-      'external_id',     NEW.external_id,
-      'external_source', NEW.external_source,
-      'record',          to_jsonb(NEW),
-      'old_record',      to_jsonb(OLD)
-    ));
+    begin
+      perform dispatch_webhook('task.updated', jsonb_build_object(
+        'task_id',         NEW.id,
+        'external_id',     NEW.external_id,
+        'external_source', NEW.external_source,
+        'record',          to_jsonb(NEW),
+        'old_record',      to_jsonb(OLD)
+      ));
+    exception when others then
+      update tasks set webhook_sync_status = 'error', webhook_sync_error = sqlerrm
+       where id = NEW.id;
+    end;
   end if;
   return NEW;
 end;
@@ -96,13 +101,17 @@ begin
            when is_reply                      then 'reply.updated'
            else                                    'comment.updated'
          end;
-  perform dispatch_webhook(evt, jsonb_build_object(
-    'task_id',          t.id,
-    'task_external_id', t.external_id,
-    'is_reply',         is_reply,
-    'record',           to_jsonb(NEW),
-    'old_record',       case when TG_OP = 'UPDATE' then to_jsonb(OLD) else null end
-  ));
+  begin
+    perform dispatch_webhook(evt, jsonb_build_object(
+      'task_id',          t.id,
+      'task_external_id', t.external_id,
+      'is_reply',         is_reply,
+      'record',           to_jsonb(NEW),
+      'old_record',       case when TG_OP = 'UPDATE' then to_jsonb(OLD) else null end
+    ));
+  exception when others then
+    null; -- webhook nunca bloqueia operação do usuário
+  end;
   return NEW;
 end;
 $$;
