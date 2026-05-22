@@ -52,6 +52,8 @@ export function taskFromDb(r: Row): Task {
     arquivadoEm: dateIso(r.arquivado_em),
     criadoPorIa: r.criado_por_ia === true,
     privada: r.privada === true,
+    webhookSyncStatus: str(r.webhook_sync_status),
+    webhookSyncError: str(r.webhook_sync_error),
   };
 }
 
@@ -63,6 +65,7 @@ export function clienteFromDb(r: Row): Cliente {
     ehInterno: r.eh_interno === true,
     arquivadoEm: dateIso(r.arquivado_em),
     dominios: arr<string>(r.dominios),
+    webhookEnabled: r.webhook_enabled === true,
   };
 }
 
@@ -99,4 +102,4 @@ export function pessoaFromDb(r: Row): Pessoa {
 
 /** Colunas leves carregadas no boot. `descricao` é lazy (modal puxa). */
 export const TASK_LIGHT_COLS =
-  'id,titulo,cliente_id,projeto_id,pessoa_id,prioridade,esforco,complexidade,prazo,status,subetapa,bloqueado_por,visivel_cliente,criado_em,status_em,subetapa_em,ordem,tags,checklist,reopen_count,tipo_trabalho,tempo_real_horas,external_source,external_id,arquivado_em,criado_por_ia,privada';
+  'id,titulo,cliente_id,projeto_id,pessoa_id,prioridade,esforco,complexidade,prazo,status,subetapa,bloqueado_por,visivel_cliente,criado_em,status_em,subetapa_em,ordem,tags,checklist,reopen_count,tipo_trabalho,tempo_real_horas,external_source,external_id,arquivado_em,criado_por_ia,privada,webhook_sync_status,webhook_sync_error';

@@ -446,6 +446,8 @@
   .autosave[data-state="saved"]  .as-dot { background: var(--brand); }
   .autosave[data-state="error"]  { color: var(--p0); background: var(--p0-soft); }
   .autosave[data-state="error"]  .as-dot { background: var(--p0); }
+  .autosave[data-state="off"]    { color: var(--muted); opacity: 0.6; }
+  .autosave[data-state="off"]    .as-dot { background: var(--muted); }
   @keyframes as-pulse {
     0%,100% { opacity: 1;   transform: scale(1); }
     50%     { opacity: 0.35; transform: scale(1.4); }
@@ -1661,6 +1663,8 @@
   .autosave[data-state="saved"]   .as-dot { background: var(--brand-light); animation: none; }
   .autosave[data-state="error"]   { color: #F4C8C3; background: rgba(200,57,43,0.18); }
   .autosave[data-state="error"]   .as-dot { background: var(--p0); }
+  .autosave[data-state="off"]     { color: rgba(255,255,255,0.35); opacity: 0.6; }
+  .autosave[data-state="off"]     .as-dot { background: rgba(255,255,255,0.25); }
   @keyframes as-pulse {
     0%, 100% { opacity: 1;  transform: scale(1); }
     50%      { opacity: 0.35; transform: scale(1.4); }

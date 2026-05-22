@@ -49,6 +49,11 @@ export interface Task {
   arquivadoEm: string | null;
   criadoPorIa: boolean;
   privada: boolean;
+  /** Status do dispatch pro Salesforce — 'synced' | 'error' | ''. Set por
+   *  dispatch-webhook após cada update da task quando external_source=salesforce. */
+  webhookSyncStatus: string;
+  /** Mensagem de erro do último dispatch falho. */
+  webhookSyncError: string;
 }
 
 export interface Cliente {
@@ -58,6 +63,9 @@ export interface Cliente {
   ehInterno: boolean;
   arquivadoEm: string | null;
   dominios: string[];
+  /** Quando true, modal de task NÃO autosalva — usuário precisa clicar Salvar
+   *  pra disparar o webhook pro Salesforce. */
+  webhookEnabled: boolean;
 }
 
 export interface Projeto {

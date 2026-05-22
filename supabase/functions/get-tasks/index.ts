@@ -14,9 +14,7 @@
 //   ?include_concluido=true     inclui tasks concluídas (ignora default acima).
 //   ?prazo_de=YYYY-MM-DD        prazo >= data.
 //   ?prazo_ate=YYYY-MM-DD       prazo <= data.
-//   ?cliente_id=<uuid>          filtra por cliente (UUID).
-//   ?cliente=<nome>             filtra por cliente (nome case-insensitive).
-//                               Se ambos forem passados, cliente_id prevalece.
+//   ?cliente_id=<uuid>          filtra por cliente.
 //   ?projeto_id=<uuid>          filtra por projeto.
 //   ?limit=50                   máx de tasks retornadas (default 100, máx 200).
 //
@@ -47,10 +45,9 @@
 //   }
 //
 // Use cases típicos (Cowork/MCP):
-//   GET /get-tasks?pessoa=jessica@kliente360.com        → semana da pessoa (por email)
-//   GET /get-tasks?pessoa=Jéssica&prazo_ate=2026-05-25  → urgências do período
-//   GET /get-tasks?cliente=Bodytech                     → todas as tasks do cliente
-//   GET /get-tasks?include_concluido=true&pessoa=<uuid> → histórico completo
+//   GET /get-tasks?pessoa=jessica@kliente360.com   → semana da pessoa
+//   GET /get-tasks?pessoa=<uuid>&prazo_ate=2026-05-25  → urgências do período
+//   GET /get-tasks?include_concluido=true&pessoa=<uuid>  → histórico completo
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -134,26 +131,11 @@ Deno.serve(async (req) => {
   if (prazoDeParam  && !DATE_RE.test(prazoDeParam))  return err(422, 'invalid_prazo_de',  'prazo_de deve ser YYYY-MM-DD');
   if (prazoAteParam && !DATE_RE.test(prazoAteParam)) return err(422, 'invalid_prazo_ate', 'prazo_ate deve ser YYYY-MM-DD');
 
-  // --- ?cliente_id / ?cliente / ?projeto_id ---
-  const clienteIdParam  = p.get('cliente_id');
-  const clienteNomParam = p.get('cliente');
-  const projetoIdParam  = p.get('projeto_id');
+  // --- ?cliente_id / projeto_id ---
+  const clienteIdParam = p.get('cliente_id');
+  const projetoIdParam = p.get('projeto_id');
   if (clienteIdParam && !UUID_RE.test(clienteIdParam)) return err(422, 'invalid_cliente_id', 'cliente_id deve ser UUID');
   if (projetoIdParam && !UUID_RE.test(projetoIdParam)) return err(422, 'invalid_projeto_id', 'projeto_id deve ser UUID');
-
-  // Resolve ?cliente (nome) → UUID, a menos que ?cliente_id já veio.
-  let clienteIdResolved: string | null = clienteIdParam ?? null;
-  if (!clienteIdResolved && clienteNomParam) {
-    const { data, error: cErr } = await sb
-      .from('clientes')
-      .select('id')
-      .ilike('nome', clienteNomParam.trim())
-      .limit(1)
-      .maybeSingle();
-    if (cErr) return err(500, 'db_error', cErr.message);
-    if (!data) return err(422, 'cliente_not_found', `cliente '${clienteNomParam}' não encontrado`);
-    clienteIdResolved = (data as { id: string }).id;
-  }
 
   // --- ?limit ---
   const limitRaw = p.get('limit');
@@ -184,8 +166,8 @@ Deno.serve(async (req) => {
     q = q.neq('status', 'concluido');
   }
 
-  if (pessoaIdFilter)    q = q.eq('pessoa_id', pessoaIdFilter);
-  if (clienteIdResolved) q = q.eq('cliente_id', clienteIdResolved);
+  if (pessoaIdFilter) q = q.eq('pessoa_id', pessoaIdFilter);
+  if (clienteIdParam) q = q.eq('cliente_id', clienteIdParam);
   if (projetoIdParam) q = q.eq('projeto_id', projetoIdParam);
   if (prazoDeParam)   q = q.gte('prazo', prazoDeParam);
   if (prazoAteParam)  q = q.lte('prazo', prazoAteParam);

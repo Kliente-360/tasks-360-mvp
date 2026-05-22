@@ -4,30 +4,18 @@
 //
 // Body JSON:
 //   {
-//     "external_id":          "0D5...FeedItem.Id...",   // pra dedupe
-//     "task_external_id":     "a0X...RecordId...",       // do custom object
-//     "parent_external_id":   "0D7...FeedItem.Id...",    // OPCIONAL — pra reply
-//     "author":               "Maria Silva",             // CreatedBy.Name
-//     "author_external_id":   "005...UserId...",         // CreatedById (opcional)
-//     "body":                 "texto do post",
-//     "posted_em":            "2026-05-07T14:30:00Z",   // CreatedDate (opcional)
-//     "internal_comment_id":  "uuid-do-comment-aqui"    // OPCIONAL — callback de link
+//     "external_id":        "0D5...FeedItem.Id...",   // pra dedupe
+//     "task_external_id":   "a0X...RecordId...",       // do custom object
+//     "parent_external_id": "0D7...FeedItem.Id...",    // OPCIONAL — pra reply
+//     "author":             "Maria Silva",             // CreatedBy.Name
+//     "author_external_id": "005...UserId...",         // CreatedById (opcional)
+//     "body":               "texto do post",
+//     "posted_em":          "2026-05-07T14:30:00Z"    // CreatedDate (opcional)
 //   }
 //
-// Modo link (internal_comment_id presente):
-//   Usado quando o sistema externo recebeu nosso webhook (que inclui o UUID
-//   do comment), criou o registro lá e quer devolver o ID externo pra linkar.
-//   A função só atualiza external_id + external_source no comment existente,
-//   sem criar duplicata. task_external_id ainda é obrigatório (validação de
-//   segurança: confirma que o comment pertence à task certa).
-//   Neste modo, "body" NÃO é obrigatório — pode ser omitido.
-//
-//   Exemplo de callback mínimo:
-//   {
-//     "external_id":         "ID-deles",
-//     "task_external_id":    "external_id-da-task",
-//     "internal_comment_id": "uuid-nosso-que-veio-no-webhook"
-//   }
+// O external_id do comment criado/atualizado aqui é devolvido de volta ao
+// sistema externo via webhook dispatch-webhook (resposta síncrona do POST).
+// Não há callback separado — o link é feito pela Edge Function dispatch-webhook.
 //
 // Reply rules: máximo 1 nível de aninhamento (treplica é proibida pelo DB).
 // Se parent_external_id apontar pra um comment que já é reply, o insert falha
@@ -70,6 +58,9 @@ Deno.serve(async (req) => {
   const taskExternalId = String(body.task_external_id ?? '').trim();
   if (!taskExternalId) return err(422, 'missing_task_external_id', 'task_external_id is required');
 
+  const text = String(body.body ?? '').trim();
+  if (!text) return err(422, 'missing_body', 'body is required');
+
   // Resolve a task local pelo external_id da task
   const { data: task, error: tErr } = await sb
     .from('tasks')
@@ -80,43 +71,6 @@ Deno.serve(async (req) => {
   if (tErr) return err(500, 'db_error', tErr.message);
   if (!task) return err(422, 'task_not_found',
     `task com external_id '${taskExternalId}' não existe — sincronize a task antes do comment`);
-
-  // ── MODO LINK ──────────────────────────────────────────────────────────────
-  // internal_comment_id presente: o externo recebeu nosso webhook, criou o
-  // registro lá, e está devolvendo o ID deles pra linkar no comment existente.
-  // Só seta external_id + external_source — não cria duplicata.
-  const internalCommentId = body.internal_comment_id
-    ? String(body.internal_comment_id).trim() : null;
-
-  if (internalCommentId) {
-    const { data: target, error: cErr } = await sb
-      .from('task_comments')
-      .select('id, task_id, external_id')
-      .eq('id', internalCommentId)
-      .maybeSingle();
-    if (cErr) return err(500, 'db_error', cErr.message);
-    if (!target) return err(422, 'comment_not_found',
-      `comment '${internalCommentId}' não encontrado`);
-    if ((target as { task_id: string }).task_id !== (task as { id: string }).id)
-      return err(422, 'comment_task_mismatch',
-        'internal_comment_id não pertence à task informada em task_external_id');
-    if ((target as { external_id: string | null }).external_id) {
-      // Já linkado — idempotente, retorna sem erro.
-      return json(200, { id: internalCommentId, action: 'already_linked',
-        external_id: (target as { external_id: string }).external_id });
-    }
-    const { error: uErr } = await sb
-      .from('task_comments')
-      .update({ external_id: externalId, external_source: SOURCE })
-      .eq('id', internalCommentId);
-    if (uErr) return err(500, 'db_error', uErr.message);
-    return json(200, { id: internalCommentId, action: 'linked', external_id: externalId });
-  }
-
-  // ── MODO NORMAL (create / update por external_id) ──────────────────────────
-  // body só é obrigatório aqui — no modo link não é usado.
-  const text = String(body.body ?? '').trim();
-  if (!text) return err(422, 'missing_body', 'body is required (não necessário no modo link)');
 
   // postedEm opcional, ISO
   let postedEm: string | null = null;
@@ -160,12 +114,14 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (eErr) return err(500, 'db_error', eErr.message);
 
+  // last_ingest_at: sinaliza pro trigger que veio do ingest → não dispara webhook.
   const payload: Record<string, unknown> = {
     task_id: task.id,
     body: text,
     author, author_external_id: authorExternalId,
     posted_em: postedEm,
     parent_id: parentId,
+    last_ingest_at: new Date().toISOString(),
   };
 
   if (existing) {
