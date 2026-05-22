@@ -252,11 +252,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       // já hidratou o state no useState inicial, então não pisca.
       resolveCurrentPessoa(session);
 
-      // Realtime fica conectado mas em "dormente" — a publication
-      // do Postgres no projeto não inclui as 4 tabelas (e o time hoje
-      // dá refresh manual clicando na logo). Se um dia rodarem o
-      // supabase/realtime.sql + `alter table tasks replica identity full`,
-      // este channel passa a aplicar deltas sem mudança de código.
+      // Realtime fica conectado mas em "dormente". A publication
+      // supabase_realtime no projeto inclui só `tasks` — `clientes`,
+      // `projetos` e `pessoas` ficaram de fora porque o time hoje dá
+      // refresh manual clicando na logo, e o custo (latência + write
+      // amplification por replica identity full) não compensou.
+      //
+      // Dívida explícita: pra ativar realtime real nessas 3 tabelas,
+      // rodar supabase/realtime.sql (cria publication completa) +
+      // `alter table <t> replica identity full` em cada uma. O código
+      // abaixo já reage a eventos delas (scheduleRefetch faz um pull
+      // novo) — não precisa mudar nada quando ligar.
+      //
+      // Tasks é a única que aplica delta in-place (payload.new direto
+      // no array). As outras passam por refetch porque a lista
+      // ordenada/agrupada justifica a query.
       channel = sb
         .channel('kliente360-changes')
         .on(

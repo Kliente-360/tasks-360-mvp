@@ -86,9 +86,11 @@ export function ProfileMenu() {
               {currentPessoa?.email ?? ''}
             </div>
 
-            {/* 2. Cadastros (admin only) — mini-seção isolada logo após
-                identidade. Vive aqui porque tem inProfileMenu: true. */}
-            {isAdmin && profileItems.length > 0 && (
+            {/* 2. Cadastros — mini-seção isolada logo após identidade.
+                Vive aqui porque tem inProfileMenu: true. profileItems já
+                vem filtrado por role (NAV.filter na linha 58), então
+                length>0 sozinho cobre o gate de admin. */}
+            {profileItems.length > 0 && (
               <>
                 <div className="border-t border-line my-1" />
                 {profileItems.map((item) => (
