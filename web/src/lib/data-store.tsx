@@ -14,6 +14,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { createClient } from './supabase/client';
 import { TASK_LIGHT_COLS, clienteFromDb, pessoaFromDb, projetoFromDb, taskFromDb } from './adapters';
 import type { Cliente, Pessoa, Projeto, Task } from './types';
+import { useToastSafe } from '@/components/toast';
 
 /** Janela de tasks concluídas trazidas no boot (resto vem sob demanda). */
 const TASKS_CONCLUIDAS_WINDOW_DAYS = 60;
@@ -78,6 +79,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   if (!sbRef.current) sbRef.current = createClient();
   const sb = sbRef.current;
 
+  const toast = useToastSafe();
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [projetos, setProjetos] = useState<Projeto[]>([]);
@@ -99,6 +102,39 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Refs pros refetch debounced — coalescem rajadas de realtime numa única query.
   const refetchTimers = useRef<Record<string, ReturnType<typeof setTimeout> | undefined>>({});
+
+  // Watcher de transição de webhook_sync_status — toast GLOBAL (independe
+  // de modal aberto). Pra clientes webhook_enabled (VB, CTF) o save fecha
+  // o modal antes do webhook completar, então a única forma de informar
+  // o usuário é via toast no nível da app.
+  //
+  // Estratégia: mantém um Map<task_id, last_sync_status> em ref. A cada
+  // mudança em `tasks` (que vem do realtime), compara cada item com o
+  // estado anterior. Toasta apenas em transição (1ª render só popula o
+  // baseline, sem toast).
+  const syncStatusRef = useRef<Map<string, string>>(new Map());
+  const syncSeededRef = useRef(false);
+  useEffect(() => {
+    const map = syncStatusRef.current;
+    if (!syncSeededRef.current) {
+      // 1ª render: só popula sem toastar (evita toasts no boot do app).
+      for (const t of tasks) map.set(t.id, t.webhookSyncStatus ?? '');
+      syncSeededRef.current = true;
+      return;
+    }
+    for (const t of tasks) {
+      const cur = t.webhookSyncStatus ?? '';
+      const prev = map.get(t.id);
+      if (prev !== undefined && prev !== cur) {
+        if (cur === 'synced') {
+          toast.success(`"${t.titulo}" sincronizada com Salesforce`);
+        } else if (cur === 'error') {
+          toast.error(`Falha ao sincronizar "${t.titulo}": ${t.webhookSyncError || 'erro desconhecido'}`);
+        }
+      }
+      map.set(t.id, cur);
+    }
+  }, [tasks, toast]);
 
   const refreshTasks = useCallback(async () => {
     const cutoff = cutoffIso();
