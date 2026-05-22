@@ -4,18 +4,13 @@
 
 ## Visão geral da arquitetura
 
-```
-┌─────────────┐                                         ┌──────────────────┐
-│             │  ① POST /ingest-task   (cria/edita)     │                  │
-│             │  ② POST /ingest-comment(comentários)    │                  │
-│             │  ③ GET  /get-tasks     (leitura)        │                  │
-│             │  ④ GET  /get-clientes  (vocabulário)    │                  │
-│ Salesforce  │  ⑤ GET  /get-pessoas   (responsáveis)   │   Supabase       │
-│             │                                         │   Edge Functions │
-│             │←  ⑥ Webhook task.updated                │                  │
-│             │←  ⑦ Webhook comment.*/reply.*           │                  │
-│             │   (resposta: { external_id })           │                  │
-└─────────────┘                                         └──────────────────┘
+```mermaid
+flowchart LR
+    SF[Salesforce]
+    EF[Supabase<br/>Edge Functions]
+
+    SF -- "① POST /ingest-task (cria/edita)<br/>② POST /ingest-comment (comentários)<br/>③ GET /get-tasks (leitura)<br/>④ GET /get-clientes (vocabulário)<br/>⑤ GET /get-pessoas (responsáveis)" --> EF
+    EF -- "⑥ Webhook task.updated<br/>⑦ Webhook comment.* / reply.*<br/>(resposta: { external_id })" --> SF
 ```
 
 Toda comunicação passa por **Edge Functions** hospedadas em Supabase. **Não há acesso direto ao banco** — clientes externos sempre passam por uma das funções.
