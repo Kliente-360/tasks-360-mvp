@@ -44,19 +44,27 @@
 //   6. Atualiza o registro no banco com external_id + webhook_sync_status.
 //
 // Auth de entrada (pg_net → dispatch-webhook): Authorization: Bearer <DISPATCH_WEBHOOK_SECRET>
-// Auth de saída (dispatch-webhook → URL externa): headers `client_id` e
-// `client_secret`. Cada cliente externo (VB, CTF) tem o próprio par,
-// escolhido em runtime baseado no nome do cliente (clientes.nome) ligado
-// à task. Match case-insensitive: contém "vb" → VB, contém "ctf" → CTF.
+//
+// Auth de saída (dispatch-webhook → URL externa): OAuth 2.0 Client
+// Credentials flow. Pra cada disparo:
+//   1. Identifica o cliente da task (VB ou CTF pelo nome em clientes).
+//   2. Pega access_token na URL OAuth do cliente (cache em memória, TTL 50min).
+//   3. Faz POST no endpoint externo com Authorization: Bearer <token>.
+//   4. Em 401, refaz o token (force=true) e re-tenta uma vez.
+//
+// Match cliente case-insensitive: contém "vb" → VB, contém "ctf" → CTF
+// (mesmo critério da migration 2026-05-21_webhook_enabled_vb_ctf.sql).
 //
 // Env vars (Edge Functions > Settings > Secrets):
 //   DISPATCH_WEBHOOK_SECRET    — obrigatório; valida Bearer da entrada
 //   WEBHOOK_URL_TASK           — endpoint externo para task.updated
 //   WEBHOOK_URL_COMMENT        — endpoint externo para comment.*/reply.*
-//   WEBHOOK_CLIENT_ID_VB       — client_id pro cliente VB
-//   WEBHOOK_CLIENT_SECRET_VB   — client_secret pro cliente VB
-//   WEBHOOK_CLIENT_ID_CTF      — client_id pro cliente CTF
-//   WEBHOOK_CLIENT_SECRET_CTF  — client_secret pro cliente CTF
+//   WEBHOOK_TOKEN_URL_VB       — URL OAuth do VB (ex: .../services/oauth2/token)
+//   WEBHOOK_CLIENT_ID_VB       — client_id (consumer key) do connected app VB
+//   WEBHOOK_CLIENT_SECRET_VB   — client_secret (consumer secret) do VB
+//   WEBHOOK_TOKEN_URL_CTF      — URL OAuth do CTF
+//   WEBHOOK_CLIENT_ID_CTF      — client_id do CTF
+//   WEBHOOK_CLIENT_SECRET_CTF  — client_secret do CTF
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -66,17 +74,27 @@ const DISPATCH_SECRET = Deno.env.get('DISPATCH_WEBHOOK_SECRET') ?? '';
 const URL_TASK        = Deno.env.get('WEBHOOK_URL_TASK') ?? '';
 const URL_COMMENT     = Deno.env.get('WEBHOOK_URL_COMMENT') ?? '';
 
+const TOKEN_URL_VB      = Deno.env.get('WEBHOOK_TOKEN_URL_VB')      ?? '';
 const CLIENT_ID_VB      = Deno.env.get('WEBHOOK_CLIENT_ID_VB')      ?? '';
 const CLIENT_SECRET_VB  = Deno.env.get('WEBHOOK_CLIENT_SECRET_VB')  ?? '';
+const TOKEN_URL_CTF     = Deno.env.get('WEBHOOK_TOKEN_URL_CTF')     ?? '';
 const CLIENT_ID_CTF     = Deno.env.get('WEBHOOK_CLIENT_ID_CTF')     ?? '';
 const CLIENT_SECRET_CTF = Deno.env.get('WEBHOOK_CLIENT_SECRET_CTF') ?? '';
 
 const FETCH_TIMEOUT_MS = 10_000;
+// SF session default = 1h. Cacheamos 50min pra renovar antes de expirar
+// e evitar o ping-pong de 401.
+const TOKEN_TTL_MS     = 50 * 60 * 1000;
 
-type Creds = { client_id: string; client_secret: string; cliente: string };
+type Creds = {
+  cliente:       string;
+  token_url:     string;
+  client_id:     string;
+  client_secret: string;
+};
 
 /**
- * Escolhe o par client_id/client_secret baseado no nome do cliente.
+ * Escolhe o par token_url/client_id/client_secret baseado no nome do cliente.
  * Match case-insensitive: nome contém "vb" → VB, contém "ctf" → CTF.
  * Mantém o mesmo critério da migration 2026-05-21_webhook_enabled_vb_ctf.sql
  * que ligou o flag webhook_enabled nesses clientes.
@@ -84,9 +102,60 @@ type Creds = { client_id: string; client_secret: string; cliente: string };
 function pickCreds(clienteNome: string | null): Creds | null {
   if (!clienteNome) return null;
   const n = clienteNome.toLowerCase();
-  if (n.includes('vb'))  return { client_id: CLIENT_ID_VB,  client_secret: CLIENT_SECRET_VB,  cliente: 'VB' };
-  if (n.includes('ctf')) return { client_id: CLIENT_ID_CTF, client_secret: CLIENT_SECRET_CTF, cliente: 'CTF' };
+  if (n.includes('vb'))  return { cliente: 'VB',  token_url: TOKEN_URL_VB,  client_id: CLIENT_ID_VB,  client_secret: CLIENT_SECRET_VB };
+  if (n.includes('ctf')) return { cliente: 'CTF', token_url: TOKEN_URL_CTF, client_id: CLIENT_ID_CTF, client_secret: CLIENT_SECRET_CTF };
   return null;
+}
+
+// Cache de access_token por cliente (in-memory, persiste entre warm starts
+// da edge function). Em cold start o cache zera — tudo bem, primeira call
+// faz nova request OAuth e popula. TTL 50min < session default do SF.
+const tokenCache: Record<string, { access_token: string; expires_at: number }> = {};
+
+/**
+ * Pega access_token via OAuth Client Credentials. Cache hit retorna direto;
+ * cache miss faz POST `application/x-www-form-urlencoded` na token_url.
+ * `force=true` ignora o cache (usado no retry após 401).
+ *
+ * Retorna null em qualquer falha — caller decide o que fazer.
+ */
+async function getAccessToken(creds: Creds, force = false): Promise<string | null> {
+  if (!creds.token_url || !creds.client_id || !creds.client_secret) return null;
+  const cached = tokenCache[creds.cliente];
+  if (!force && cached && cached.expires_at > Date.now()) {
+    return cached.access_token;
+  }
+  const body = new URLSearchParams({
+    grant_type:    'client_credentials',
+    client_id:     creds.client_id,
+    client_secret: creds.client_secret,
+  });
+  try {
+    const resp = await fetch(creds.token_url, {
+      method:  'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body:    body.toString(),
+    });
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => '');
+      console.error(`[dispatch-webhook] token fetch ${creds.cliente} ${resp.status}:`, txt.slice(0, 200));
+      return null;
+    }
+    const data = await resp.json() as { access_token?: string };
+    if (!data.access_token) {
+      console.error(`[dispatch-webhook] token response missing access_token for ${creds.cliente}`);
+      return null;
+    }
+    tokenCache[creds.cliente] = {
+      access_token: data.access_token,
+      expires_at:   Date.now() + TOKEN_TTL_MS,
+    };
+    return data.access_token;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[dispatch-webhook] token fetch error for ${creds.cliente}:`, msg);
+    return null;
+  }
 }
 
 /**
@@ -268,33 +337,61 @@ Deno.serve(async (req) => {
     };
   }
 
-  // Fetch síncrono com timeout de 10s.
-  // AbortController cancela a conexão se o sistema externo não responder.
-  const controller = new AbortController();
-  const timeoutId  = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-  let externalResp: Response;
-  try {
-    externalResp = await fetch(targetUrl, {
-      method: 'POST',
-      headers: {
-        'content-type':  'application/json',
-        'client_id':     creds.client_id,
-        'client_secret': creds.client_secret,
-      },
-      body: JSON.stringify(outboundBody),
-      signal: controller.signal,
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    const isTimeout = e instanceof Error && e.name === 'AbortError';
-    const errMsg = isTimeout ? 'upstream timeout (10s)' : `fetch failed: ${msg}`;
+  // Pega access_token via OAuth Client Credentials (cache hit ou nova call).
+  const accessToken = await getAccessToken(creds);
+  if (!accessToken) {
+    const errMsg = `oauth token fetch failed for ${creds.cliente}`;
     if (taskId) await setTaskSyncStatus(taskId, 'error', errMsg);
-    return err(502, isTimeout ? 'upstream_timeout' : 'upstream_unreachable', errMsg);
-  } finally {
-    clearTimeout(timeoutId);
+    return err(502, 'oauth_failed', errMsg);
   }
 
+  // Helper que faz o POST no endpoint externo com o token atual.
+  // Timeout 10s + AbortController. Encapsulado pra rodar 2x (retry no 401).
+  const callExternal = async (token: string): Promise<{ ok: true; resp: Response } | { ok: false; status: number; code: string; msg: string }> => {
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const resp = await fetch(targetUrl, {
+        method:  'POST',
+        headers: {
+          'content-type':  'application/json',
+          'authorization': `Bearer ${token}`,
+        },
+        body:    JSON.stringify(outboundBody),
+        signal:  controller.signal,
+      });
+      return { ok: true, resp };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const isTimeout = e instanceof Error && e.name === 'AbortError';
+      return {
+        ok:     false,
+        status: 502,
+        code:   isTimeout ? 'upstream_timeout' : 'upstream_unreachable',
+        msg:    isTimeout ? 'upstream timeout (10s)' : `fetch failed: ${msg}`,
+      };
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
+  let attempt = await callExternal(accessToken);
+  // 401 = token expirou em background. Refresh forçado + retry uma vez.
+  if (attempt.ok && attempt.resp.status === 401) {
+    const freshToken = await getAccessToken(creds, true);
+    if (freshToken) {
+      // Drena o body da resposta anterior pra liberar a conexão.
+      try { await attempt.resp.text(); } catch { /* noop */ }
+      attempt = await callExternal(freshToken);
+    }
+  }
+
+  if (!attempt.ok) {
+    if (taskId) await setTaskSyncStatus(taskId, 'error', attempt.msg);
+    return err(attempt.status, attempt.code, attempt.msg);
+  }
+
+  const externalResp = attempt.resp;
   if (!externalResp.ok) {
     const body = await externalResp.text().catch(() => '');
     const errMsg = `upstream ${externalResp.status}: ${body.slice(0, 200)}`;
