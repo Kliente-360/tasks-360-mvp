@@ -26,7 +26,16 @@
 //     "complexidade": "media",                      // opcional: alta|media|baixa
 //     "tipo_trabalho":"feature",                    // opcional: bug|feature|discovery|manutencao|admin
 //     "tags":         ["frontend","auth"],          // opcional, array de strings
-//     "criado_por_ia":true                          // opcional, default false. Marca task como originada de automação IA (Cowork etc).
+//     "criado_por_ia":true,                         // opcional, default false. Marca task como originada de automação IA (Cowork etc).
+//     "external_status":"Cancelado"                 // opcional. Quando "Cancelado" (case-insensitive):
+//                                                   //   - arquiva a task aqui (arquivado_em=now)
+//                                                   //   - força subetapa='bloqueado'
+//                                                   //   - posta auto-comment interno "CANCELADO no sistema externo / arquivada"
+//                                                   // Quando ≠ "Cancelado" e task já estava arquivada:
+//                                                   //   - desarquiva (arquivado_em=null)
+//                                                   //   - aplica a subetapa enviada normalmente
+//                                                   //   - posta auto-comment interno "Desarquivada — saiu de CANCELADO no sistema externo"
+//                                                   // Quando ausente e task arquivada: ainda desarquiva (legado), sem comment.
 //   }
 //
 // Subetapa vs status (importante):
@@ -238,9 +247,19 @@ Deno.serve(async (req) => {
     else return err(422, 'invalid_criado_por_ia', 'criado_por_ia deve ser boolean');
   }
 
+  // external_status: sinal semântico do SF. "Cancelado" (case-insensitive)
+  // dispara o fluxo de arquivar; qualquer outro valor força desarquivar
+  // se a task estava arquivada — e, nesse caso, posta auto-comment.
+  const externalStatusRaw = body.external_status as unknown;
+  const externalStatus    = (typeof externalStatusRaw === 'string')
+    ? externalStatusRaw.trim()
+    : '';
+  const isCancelled       = externalStatus.toLowerCase() === 'cancelado';
+  const hasExplicitStatus = externalStatus.length > 0;
+
   // Existe? Procura por (source, external_id).
   // Carrega status atual pra detectar mudança e gravar histórico.
-  // arquivado_em: pra desarquivar automaticamente no update.
+  // arquivado_em: pra detectar transição de arquivamento.
   const { data: existing, error: lookupErr } = await sb
     .from('tasks')
     .select('id, status, subetapa, arquivado_em')
@@ -249,10 +268,12 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (lookupErr) return err(500, 'db_error', lookupErr.message);
 
+  const nowIso = new Date().toISOString();
+
   // Monta payload — só inclui campos enviados (update não-destrutivo).
   // Importante: NÃO mandar `status` no payload; trigger derive de subetapa.
   // last_ingest_at: sinaliza pro trigger que veio do ingest → não dispara webhook.
-  const payload: Record<string, unknown> = { titulo, last_ingest_at: new Date().toISOString() };
+  const payload: Record<string, unknown> = { titulo, last_ingest_at: nowIso };
   if (body.descricao !== undefined) payload.descricao    = String(body.descricao ?? '');
   if (clienteId)                    payload.cliente_id   = clienteId;
   if (projetoId)                    payload.projeto_id   = projetoId;
@@ -266,25 +287,48 @@ Deno.serve(async (req) => {
   if (criadoPorIa != null)          payload.criado_por_ia = criadoPorIa;
   if (subetapa) {
     payload.subetapa = subetapa;
-    // subetapa_em / status_em só viram update quando subetapa muda
-    // (ou na criação). Trigger sync atualiza `status` automaticamente.
     if (!existing || existing.subetapa !== subetapa) {
-      payload.subetapa_em = new Date().toISOString();
-      payload.status_em   = new Date().toISOString();
+      payload.subetapa_em = nowIso;
+      payload.status_em   = nowIso;
     }
   }
 
+  // Override de arquivamento via external_status (espelha o que o
+  // archive-task fazia, agora dentro do ingest).
+  if (isCancelled) {
+    // Force subetapa='bloqueado' (sobrescreve o que veio no payload).
+    payload.subetapa     = 'bloqueado';
+    payload.subetapa_em  = nowIso;
+    payload.status_em    = nowIso;
+    payload.arquivado_em = nowIso;
+  }
+
   if (existing) {
-    // Desarquiva automaticamente se a task estava arquivada aqui.
-    if ((existing as { arquivado_em: string | null }).arquivado_em) {
-      payload.arquivado_em = null;
+    const wasArchived = !!(existing as { arquivado_em: string | null }).arquivado_em;
+    let didArchive    = false;
+    let didUnarchive  = false;
+
+    if (isCancelled) {
+      // Idempotente: se já estava arquivada, não conta como transição.
+      if (!wasArchived) didArchive = true;
+    } else {
+      // Comportamento legado preservado: qualquer update reabre task arquivada.
+      // Posta auto-comment só quando o sinal foi explícito (external_status
+      // veio com valor ≠ "Cancelado") — evita comment ruidoso em update
+      // normal de task que estava arquivada manualmente.
+      if (wasArchived) {
+        payload.arquivado_em = null;
+        if (hasExplicitStatus) didUnarchive = true;
+      }
     }
+
     const { error } = await sb.from('tasks').update(payload).eq('id', existing.id);
     if (error) return err(500, 'db_error', error.message);
-    // Histórico de status macro (só quando muda — trigger ainda não derivou,
-    // então comparamos contra o status existente vs status derivado da nova subetapa).
-    if (subetapa) {
-      const newMacro = macroFromSub(subetapa);
+
+    // Histórico de status macro (compara existing vs derivado do payload).
+    const effectiveSubetapa = (payload.subetapa as string | undefined) ?? existing.subetapa;
+    if (effectiveSubetapa) {
+      const newMacro = macroFromSub(effectiveSubetapa);
       if (existing.status !== newMacro) {
         await sb.from('task_field_history').insert({
           task_id: existing.id, field: 'status',
@@ -293,7 +337,31 @@ Deno.serve(async (req) => {
         });
       }
     }
-    return json(200, { id: existing.id, action: 'updated' });
+
+    // Auto-comment de transição cancel/uncancel. last_ingest_at no payload
+    // do INSERT impede o trigger de re-disparar webhook (guard na 2026-05-22
+    // migration). visivel_cliente=false: nota interna pra time, não vai pro
+    // Portal. from_cliente=false: não é mensagem de cliente externo.
+    if (didArchive || didUnarchive) {
+      const commentBody = didArchive
+        ? 'CANCELADO no sistema externo — task arquivada automaticamente.'
+        : 'Desarquivada — saiu de CANCELADO no sistema externo.';
+      await sb.from('task_comments').insert({
+        task_id:         existing.id,
+        external_source: SOURCE,
+        author:          'Salesforce',
+        body:            commentBody,
+        visivel_cliente: false,
+        from_cliente:    false,
+        posted_em:       nowIso,
+        last_ingest_at:  nowIso,
+      });
+    }
+
+    return json(200, {
+      id:     existing.id,
+      action: didArchive ? 'archived' : didUnarchive ? 'unarchived' : 'updated',
+    });
   } else {
     payload.external_source = SOURCE;
     payload.external_id     = externalId;
