@@ -60,6 +60,11 @@ interface DataActions {
   removeProjeto: (id: string) => void;
   upsertPessoa: (p: Pessoa) => void;
   removePessoa: (id: string) => void;
+
+  /** Registra que o usuário corrente acabou de salvar essa task. Usado
+   *  pra escopar toasts de sync (só toasta o autor da edição, ignora
+   *  ações de outros usuários no mesmo workspace). TTL ~30s. */
+  markUserEditedTask: (id: string) => void;
 }
 
 type DataContextValue = DataState & DataActions;
@@ -108,12 +113,23 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // o modal antes do webhook completar, então a única forma de informar
   // o usuário é via toast no nível da app.
   //
+  // Escopo: toasta SÓ pra tasks que ESTE usuário editou recentemente
+  // (Map<id, timestamp>, TTL 30s). Outros usuários do mesmo workspace
+  // recebem o realtime mas NÃO veem toast — evita ruído.
+  //
   // Estratégia: mantém um Map<task_id, last_sync_status> em ref. A cada
   // mudança em `tasks` (que vem do realtime), compara cada item com o
-  // estado anterior. Toasta apenas em transição (1ª render só popula o
-  // baseline, sem toast).
-  const syncStatusRef = useRef<Map<string, string>>(new Map());
-  const syncSeededRef = useRef(false);
+  // estado anterior. 1ª render só popula o baseline, sem toast.
+  const syncStatusRef     = useRef<Map<string, string>>(new Map());
+  const syncSeededRef     = useRef(false);
+  const userEditedTasksRef = useRef<Map<string, number>>(new Map()); // task_id → epoch ms
+  const USER_EDIT_TTL_MS  = 30_000;
+
+  const markUserEditedTask = useCallback<DataActions['markUserEditedTask']>((id) => {
+    if (!id) return;
+    userEditedTasksRef.current.set(id, Date.now());
+  }, []);
+
   useEffect(() => {
     const map = syncStatusRef.current;
     if (!syncSeededRef.current) {
@@ -122,14 +138,26 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       syncSeededRef.current = true;
       return;
     }
+    const now = Date.now();
+    const edits = userEditedTasksRef.current;
+    // Limpa entradas vencidas (lazy purge — só quando rodar o watcher).
+    for (const [id, ts] of edits) {
+      if (now - ts > USER_EDIT_TTL_MS) edits.delete(id);
+    }
     for (const t of tasks) {
       const cur = t.webhookSyncStatus ?? '';
       const prev = map.get(t.id);
       if (prev !== undefined && prev !== cur) {
-        if (cur === 'synced') {
-          toast.success(`"${t.titulo}" sincronizada com Salesforce`);
-        } else if (cur === 'error') {
-          toast.error(`Falha ao sincronizar "${t.titulo}": ${t.webhookSyncError || 'erro desconhecido'}`);
+        const isOwnEdit = edits.has(t.id);
+        if (isOwnEdit) {
+          if (cur === 'synced') {
+            toast.success(`"${t.titulo}" sincronizada com Salesforce`);
+          } else if (cur === 'error') {
+            toast.error(`Falha ao sincronizar "${t.titulo}": ${t.webhookSyncError || 'erro desconhecido'}`);
+          }
+          // Edição já foi reconhecida — não toasta de novo se vier outra
+          // transição na mesma task (ex: error → synced após retry SF).
+          edits.delete(t.id);
         }
       }
       map.set(t.id, cur);
@@ -490,6 +518,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       removeProjeto,
       upsertPessoa,
       removePessoa,
+      markUserEditedTask,
     }),
     [
       tasks, clientes, projetos, pessoas,
@@ -498,6 +527,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       refreshAll,
       patchTask, patchTasks, replaceTask, upsertTask, removeTask, removeTasks,
       upsertCliente, removeCliente, upsertProjeto, removeProjeto, upsertPessoa, removePessoa,
+      markUserEditedTask,
     ],
   );
 

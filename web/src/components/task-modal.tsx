@@ -436,6 +436,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
     currentPessoa,
     viewerRole,
     isCEO,
+    markUserEditedTask,
   } = useData();
   const isAdmin = viewerRole === 'admin';
   const projetosByCliente = useProjetosByCliente();
@@ -861,12 +862,15 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
     if (seq !== autosaveSeq.current) return;
     if (res.ok) {
       setSaveState('saved');
+      // Marca pra o watcher global toastar quando o webhook completar
+      // (relevante apenas pra tasks SF — outras nem disparam webhook).
+      markUserEditedTask(e.id);
     } else {
       setSaveState('error');
       // eslint-disable-next-line no-console
       console.warn('[autosave]', res.error);
     }
-  }, [persist]);
+  }, [persist, markUserEditedTask]);
 
   // Autosave OFF quando o cliente tem webhook_enabled=true (VB, CTF…).
   // Pra esses, o save dispara um webhook Salesforce — não pode rodar a
@@ -1359,15 +1363,19 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
 
   const saveManual = useCallback(async () => {
     setSaveState('saving');
+    const idBefore = editingRef.current.id;
     const res = await persist({ silent: false });
     if (res.ok) {
       setSaveState('saved');
+      // editingRef pode ter ID novo (caso de "criar"); usa o atual.
+      const idAfter = editingRef.current.id || idBefore;
+      if (idAfter) markUserEditedTask(idAfter);
       onClose();
     } else {
       setSaveState('error');
       toast.error(res.error ?? 'Erro ao salvar.');
     }
-  }, [persist, onClose, toast]);
+  }, [persist, onClose, toast, markUserEditedTask]);
 
   // ⌘/Ctrl+Enter salva e fecha. Roda no listener window — handlers
   // locais dos textareas de comment/reply/edit-comment chamam
