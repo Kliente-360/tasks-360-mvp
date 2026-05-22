@@ -296,19 +296,46 @@ Quando uma task ou comment vinculado ao SF (`external_source='salesforce' AND ex
 - `WEBHOOK_URL_TASK` — recebe `task.updated`
 - `WEBHOOK_URL_COMMENT` — recebe `comment.created`, `comment.updated`, `reply.created`, `reply.updated`
 
-**Configuração necessária no nosso lado**: você nos envia ambas URLs + **dois pares de credenciais** (VB e CTF) `client_id` / `client_secret`. Configuramos via Dashboard.
+### Autenticação · OAuth 2.0 Client Credentials
 
-### Headers que enviamos em cada request
+Não enviamos `client_id`/`client_secret` direto no header do webhook. Seguimos o flow padrão do SF:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant T as tasks 360<br/>(dispatch-webhook)
+    participant SF_OAUTH as SF /oauth2/token
+    participant SF_API as SF endpoint do webhook
+
+    Note over T,SF_OAUTH: Cache em memória<br/>(TTL 50min)
+    T->>SF_OAUTH: POST grant_type=client_credentials<br/>client_id=...&client_secret=...
+    SF_OAUTH-->>T: { access_token: "00D..." }
+    T->>SF_API: POST webhook payload<br/>Authorization: Bearer <access_token>
+    SF_API-->>T: { external_id: "0D5..." }
+```
+
+**O que você precisa nos passar** (1 conjunto por cliente, total 2 conjuntos pra VB + CTF):
+
+| Item | Exemplo | Onde vai no nosso lado |
+|---|---|---|
+| Token URL | `https://sempararempresas--homol.sandbox.my.salesforce.com/services/oauth2/token` | env `WEBHOOK_TOKEN_URL_<VB\|CTF>` |
+| Consumer Key (client_id) | `3MVG9...` | env `WEBHOOK_CLIENT_ID_<VB\|CTF>` |
+| Consumer Secret (client_secret) | `1234...` | env `WEBHOOK_CLIENT_SECRET_<VB\|CTF>` |
+| Webhook URL (task) | `.../services/apexrest/tasks360/task` | env `WEBHOOK_URL_TASK` (1 só, multi-cliente discriminado pelo token) |
+| Webhook URL (comment) | `.../services/apexrest/tasks360/comment` | env `WEBHOOK_URL_COMMENT` |
+
+> **Atenção**: hoje as URLs do webhook (`WEBHOOK_URL_TASK`/`WEBHOOK_URL_COMMENT`) são globais — assumimos que o mesmo endpoint atende VB e CTF e descobre o cliente pelo token. Se preferir URLs distintas por cliente, me avise pra reestruturar.
+
+**Headers que você recebe em cada webhook** (passo 3 do diagrama):
 
 | Header | Valor |
 |---|---|
 | `Content-Type` | `application/json` |
-| `client_id` | id do cliente externo (VB ou CTF, escolhido pelo `cliente_id` da task) |
-| `client_secret` | secret correspondente ao `client_id` |
+| `Authorization` | `Bearer <access_token>` |
 
-**Como escolhemos o par**: olhamos o `cliente.nome` da task que disparou o webhook. Match case-insensitive — nome contendo `vb` usa o par VB; contendo `ctf` usa o par CTF. Se a task não bater nenhum (cenário improvável — só essas duas têm `webhook_enabled=true` hoje), pulamos o disparo e marcamos `webhook_sync_status='error'` no banco com a mensagem `no credentials configured for cliente`.
+**Como escolhemos o conjunto de credenciais**: olhamos `cliente.nome` da task que disparou o webhook. Match case-insensitive — contém `vb` → conjunto VB; contém `ctf` → conjunto CTF. Se a task não bater nenhum (cenário improvável — só esses dois têm `webhook_enabled=true` hoje), pulamos o disparo e marcamos `webhook_sync_status='error'` no banco com a mensagem `no credentials configured for cliente`.
 
-**Você** valida os dois headers no seu endpoint.
+**Cache de token**: guardamos o `access_token` em memória por **50min** (sessão SF default é 1h). Se receber `401` do seu lado, refazemos o token forçado e retentamos a chamada **uma vez** — não há retry exponencial.
 
 ### 4.1 Payload `task.updated`
 
