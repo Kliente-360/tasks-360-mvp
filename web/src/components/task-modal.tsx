@@ -174,6 +174,147 @@ const TASK_LIGHT_COLS =
   'id,titulo,cliente_id,projeto_id,pessoa_id,prioridade,esforco,complexidade,prazo,status,subetapa,bloqueado_por,visivel_cliente,criado_em,status_em,subetapa_em,ordem,tags,checklist,reopen_count,tipo_trabalho,tempo_real_horas,external_source,external_id,arquivado_em,criado_por_ia,privada';
 
 // ============================================================
+// Mention picker hook — espelho de anexos.js:341 (onMentionInput)
+// ============================================================
+// Detecta `@partial` no caret do textarea, devolve handlers pra plug
+// nas props de onChange/onKeyDown + JSX da lista flutuante. Inserção
+// reposiciona caret e mantém foco.
+type MentionPickerState = {
+  open: boolean;
+  list: Array<{ id: string; nome: string }>;
+  activeIdx: number;
+  setActiveIdx: (i: number) => void;
+  pick: (firstName: string) => void;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => boolean;
+};
+
+function useMentionPicker(
+  value: string,
+  setValue: (v: string) => void,
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>,
+  pessoas: Array<{ id: string; nome: string; role: string }>,
+  excludePessoaId: string | null,
+): MentionPickerState {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [activeIdx, setActiveIdx] = useState(0);
+  const anchorRef = useRef<number | null>(null);
+
+  const list = useMemo(() => {
+    const q = query.toLowerCase();
+    return pessoas
+      .filter((p) => p.role !== 'cliente' && p.id !== excludePessoaId)
+      .filter((p) => !q || (p.nome || '').toLowerCase().includes(q))
+      .slice(0, 8)
+      .map((p) => ({ id: p.id, nome: p.nome }));
+  }, [pessoas, query, excludePessoaId]);
+
+  const pick = useCallback(
+    (firstName: string) => {
+      if (anchorRef.current == null) return;
+      const anchor = anchorRef.current;
+      const insert = '@' + firstName + ' ';
+      const rest = value.slice(anchor).replace(/^@[A-Za-zÀ-ÿ0-9-]*/, insert);
+      const next = value.slice(0, anchor) + rest;
+      setValue(next);
+      setOpen(false);
+      const caret = anchor + insert.length;
+      anchorRef.current = null;
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (el) {
+          el.focus();
+          try {
+            el.setSelectionRange(caret, caret);
+          } catch {
+            /* noop */
+          }
+        }
+      });
+    },
+    [value, setValue, textareaRef],
+  );
+
+  const onChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const v = e.target.value;
+      setValue(v);
+      const caret = e.target.selectionStart ?? v.length;
+      const before = v.slice(0, caret);
+      const m = before.match(/(?:^|\s)@([A-Za-zÀ-ÿ0-9-]*)$/);
+      if (m) {
+        anchorRef.current = caret - m[1].length - 1;
+        setQuery(m[1]);
+        setActiveIdx(0);
+        setOpen(true);
+      } else if (open) {
+        setOpen(false);
+        anchorRef.current = null;
+      }
+    },
+    [setValue, open],
+  );
+
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>): boolean => {
+      if (!open || !list.length) return false;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setActiveIdx((i) => (i + 1) % list.length);
+        return true;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setActiveIdx((i) => (i - 1 + list.length) % list.length);
+        return true;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const p = list[activeIdx];
+        if (p) pick((p.nome || '').split(/\s+/)[0]);
+        return true;
+      }
+      if (e.key === 'Escape') {
+        // ESC fecha picker antes de bubblar pro modal/lightbox.
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+        anchorRef.current = null;
+        return true;
+      }
+      return false;
+    },
+    [open, list, activeIdx, pick],
+  );
+
+  return { open, list, activeIdx, setActiveIdx, pick, onChange, onKeyDown };
+}
+
+function MentionDropdown({ picker }: { picker: MentionPickerState }) {
+  if (!picker.open || !picker.list.length) return null;
+  return (
+    <div
+      className="absolute z-50 mt-1 left-0 right-0 max-w-[260px] bg-elev border border-line rounded-md shadow-lg py-1 max-h-[200px] overflow-y-auto"
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      {picker.list.map((p, i) => (
+        <button
+          key={p.id}
+          type="button"
+          className={`w-full text-left px-3 py-1.5 text-xs hover:bg-brand-tint transition-colors ${i === picker.activeIdx ? '!bg-brand-tint !text-brand-dark font-medium' : ''}`}
+          onMouseEnter={() => picker.setActiveIdx(i)}
+          onClick={() => picker.pick((p.nome || '').split(/\s+/)[0])}
+        >
+          @{(p.nome || '').split(/\s+/)[0]}
+          <span className="text-muted font-normal ml-1">· {p.nome}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
 // Provider + componente
 // ============================================================
 export function TaskModalProvider({ children }: { children: React.ReactNode }) {
@@ -310,8 +451,41 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
   );
 
   // ===== Comment composers =====
-  const [newComment, setNewComment] = useState('');
+  // Inicializa newComment com draft do localStorage (se existir, key
+  // draft:comment:<task_id>). Restaura entre sessões pra não perder
+  // texto se o user fechar o modal sem enviar — espelho de
+  // task-modal.js:143 do Alpine.
+  const [newComment, setNewComment] = useState<string>(() => {
+    if (typeof window === 'undefined' || !taskId || taskId === '__new__') return '';
+    try {
+      return window.localStorage.getItem('draft:comment:' + taskId) ?? '';
+    } catch {
+      return '';
+    }
+  });
+  const newCommentRef = useRef<HTMLTextAreaElement | null>(null);
   const [newCommentPublico, setNewCommentPublico] = useState(false);
+
+  const mentionPicker = useMentionPicker(
+    newComment,
+    setNewComment,
+    newCommentRef,
+    pessoas,
+    currentPessoa?.id ?? null,
+  );
+
+  // Persiste draft a cada mudança. Roda mesmo com newComment=''
+  // (pra limpar o slot após o envio). Usa window guard pra SSR.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !taskId || taskId === '__new__') return;
+    const key = 'draft:comment:' + taskId;
+    try {
+      if (newComment) window.localStorage.setItem(key, newComment);
+      else window.localStorage.removeItem(key);
+    } catch {
+      /* quota cheia / safari private mode → ignora */
+    }
+  }, [newComment, taskId]);
   const [replyingToId, setReplyingToId] = useState<string>('');
   const [newReply, setNewReply] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<string>('');
@@ -1741,18 +1915,21 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
                   )}
                 </div>
                 {editing.id && (
-                  <div className="tmodal-composer">
+                  <div className="tmodal-composer relative">
                     <textarea
+                      ref={newCommentRef}
                       value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Escrever comentário…"
+                      onChange={mentionPicker.onChange}
+                      placeholder="Escrever comentário… (use @ pra mencionar)"
                       onKeyDown={(e) => {
+                        if (mentionPicker.onKeyDown(e)) return;
                         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
                           e.preventDefault();
                           postComment();
                         }
                       }}
                     />
+                    <MentionDropdown picker={mentionPicker} />
                     {!newComment && (
                       <div className="tmodal-composer-hint">
                         <kbd>⌘</kbd>
