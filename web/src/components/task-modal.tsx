@@ -316,9 +316,11 @@ function useMentionPicker(
 
 function MentionDropdown({ picker }: { picker: MentionPickerState }) {
   if (!picker.open || !picker.list.length) return null;
+  // Abre PRA CIMA do textarea (bottom-full) — o composer vive no rodapé
+  // do modal, então abrir pra baixo cortava o picker fora do viewport.
   return (
     <div
-      className="absolute z-50 mt-1 left-0 right-0 max-w-[260px] bg-elev border border-line rounded-md shadow-lg py-1 max-h-[200px] overflow-y-auto"
+      className="absolute z-50 bottom-full mb-1 left-0 right-0 max-w-[260px] bg-elev border border-line rounded-md shadow-lg py-1 max-h-[200px] overflow-y-auto"
       onMouseDown={(e) => e.preventDefault()}
     >
       {picker.list.map((p, i) => (
