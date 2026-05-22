@@ -311,15 +311,14 @@ html, body {
   border: 1px solid var(--line-strong); background: var(--surface-1);
   white-space: nowrap; color: var(--ink-soft); line-height: 1.4;
 }
+/* status pills: neutros por padrão (dot colorido identifica o estado).
+   Tratamento "action-required" fica reservado pra aging-warn/stale e triage-chip. */
 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
 .status[data-s="andamento"] .status-dot { background: var(--brand); }
-.status[data-s="andamento"] { border-color: var(--brand); color: var(--brand-dark); background: var(--brand-tint); }
 .status[data-s="bloqueado"] .status-dot { background: var(--p0); }
-.status[data-s="bloqueado"] { color: var(--p0); border-color: color-mix(in srgb, var(--p0) 30%, transparent); }
 .status[data-s="concluido"] .status-dot { background: var(--p3); }
 .status[data-s="concluido"] { color: var(--muted); }
 .status[data-s="backlog"] .status-dot { background: var(--muted); }
-.status[data-s="backlog"] { color: var(--ink-soft); border-color: var(--line-strong); }
 
 /* ============ BOTÕES ============ */
 .btn {

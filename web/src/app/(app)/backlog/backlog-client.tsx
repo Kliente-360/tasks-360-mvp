@@ -18,7 +18,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useTaskModal } from '@/components/task-modal';
 import { useToast } from '@/components/toast';
 import { BulkBar, BulkBarClearButton, BulkBarSep } from '@/components/bulk-bar';
-import { atrasada, agingDays, agingLevel, fmtDate, fmtDateShort, lblComplex, lblStatus } from '@/lib/task-utils';
+import { atrasada, agingDays, agingLevel, fmtDate, fmtDateShort, fmtTempoEtapa, lblComplex, lblStatus } from '@/lib/task-utils';
 import { STATUS, SUB_LABELS, SUBS_FLAT } from '@/lib/task-constants';
 import { CLEAR_FILTERS_EVENT } from '@/lib/events';
 import type { Task } from '@/lib/types';
@@ -1051,10 +1051,7 @@ export function BacklogClient() {
                         <span
                           className="status"
                           data-s={t.status}
-                          title={`${lblStatus(t.status)} · ${(() => {
-                            const d = agingDays(t);
-                            return d <= 0 ? 'hoje' : d === 1 ? 'há 1d' : `há ${d}d`;
-                          })()}`}
+                          title={`${lblStatus(t.status)} · ${fmtTempoEtapa(t.statusEm)}`}
                         >
                           <span className="status-dot" />
                           {SUB_LABELS[t.subetapa] ?? t.subetapa}
@@ -1163,7 +1160,7 @@ export function BacklogClient() {
                           {lblStatus(t.status)}
                         </span>
                         {lblStatus(t.status) !== (SUB_LABELS[t.subetapa] ?? t.subetapa) && (
-                          <span className="text-[10px] font-mono text-muted">
+                          <span className="text-[10px] text-muted">
                             › <span className="text-ink-soft">{SUB_LABELS[t.subetapa] ?? t.subetapa}</span>
                           </span>
                         )}

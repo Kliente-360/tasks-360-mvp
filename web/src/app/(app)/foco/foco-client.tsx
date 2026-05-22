@@ -21,6 +21,7 @@ import {
   agingLevel,
   atrasada,
   diasAtraso,
+  fmtAtrasoLabel,
   fmtDateShort,
   lblStatus,
   needsTriage,
@@ -335,7 +336,7 @@ export function FocoClient() {
               <div key={group.key}>
                 <div className="flex items-center justify-between mb-2 px-1">
                   <div className="font-brand font-semibold text-sm">{group.title}</div>
-                  <span className="font-mono text-xs text-muted">{items.length} item(s)</span>
+                  <span className="text-xs text-muted">{items.length === 1 ? '1 task' : `${items.length} tasks`}</span>
                 </div>
                 {items.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -357,7 +358,7 @@ export function FocoClient() {
             );
           })}
 
-          <div className="text-[10px] text-muted font-mono mt-2">
+          <div className="text-[10px] text-muted mt-2">
             tarefas concluídas e não atribuídas a você não aparecem. itens podem aparecer em mais de
             um grupo.
           </div>
@@ -431,9 +432,16 @@ function FocoCard({
       <div className="flex items-center justify-between text-xs gap-2">
         <span className="text-ink-soft truncate">{pessoaName || '—'}</span>
         <span
-          className={`font-mono shrink-0 ${late ? 'text-[color:var(--p0)] font-medium' : 'text-ink-soft'}`}
+          className={`shrink-0 ${late ? 'text-[color:var(--p0)] font-medium' : 'text-ink-soft'}`}
         >
-          {t.prazo ? fmtDateShort(t.prazo) + (late ? ' · +' + diasAtraso(t) + 'd' : '') : 'sem prazo'}
+          {t.prazo ? (
+            <>
+              <span className="font-mono">{fmtDateShort(t.prazo)}</span>
+              {late && <span className="ml-1">· {fmtAtrasoLabel(diasAtraso(t))}</span>}
+            </>
+          ) : (
+            <span className="italic">sem prazo</span>
+          )}
         </span>
       </div>
       <div className="flex items-center gap-1.5 mt-2">
