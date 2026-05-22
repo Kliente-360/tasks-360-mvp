@@ -1,8 +1,10 @@
 # HABILITAR_DEPOIS
 
-> Features **desenvolvidas** (schema + lógica + UI antiga preservada) que estão **temporariamente escondidas** pra simplificar o app durante a fase de adoção. Reativar quando aparecer dor real ou quando a maturidade do uso justificar.
+> Features **desenvolvidas no Alpine** (schema + lógica + UI antiga preservada) que estão **temporariamente escondidas** pra simplificar o app durante a fase de adoção. Reativar quando aparecer dor real ou quando a maturidade do uso justificar.
 >
 > Quando reativar: tirar o comentário `<!-- HIDDEN_DESDE_v1.01.X · ... -->` no `index.html` e validar.
+>
+> ⚠️ **Pós-Onda 0 (Next)**: estas features **não foram portadas** pro app Next. O schema continua intacto no DB. Pra reativar no Next pós-cutover é necessário **re-implementar a UI** (não basta destogglear) — referenciar a implementação Alpine em `lib/views/task-modal.js` (Tags, Tipo de trabalho) e `lib/views/utilities.js` / handlers correspondentes (Dependências). Tracking em `ROADMAP.md` §9.3.3 ("Reativar features de HABILITAR_DEPOIS").
 
 ## Lista atual (escondidos a partir de v1.01.147)
 

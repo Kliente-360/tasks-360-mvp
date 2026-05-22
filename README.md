@@ -125,23 +125,28 @@ Para integrar com Salesforce e automações externas, deploy das Edge Functions 
 
 ## Estado atual
 
-**Maio 2026 — MVP modular em uso real, com cliente externo logando.** Versão atual: `v1.02.050` (BUILD bumpa a cada commit em main). Saiu de single-file de 10.8k linhas pra estrutura modular (`index.html` + `lib/helpers.js` + `lib/adapters.js` + `lib/supabase-client.js` + 13 views em `lib/views/*` + `lib/app.js`). RLS fechada role-aware (admin/interno/cliente).
+**Maio 2026 — Onda 0 (rebuild Next) feature-complete · pré-cutover.** Versão atual: `v1.02.161` (BUILD bumpa a cada commit em main).
 
-Camadas entregues:
-- Ondas de polimento H1/H2/H3 completas
+**Dois apps coexistem hoje:**
+
+1. **App Alpine em produção** (`index.html` + `lib/`) — modo manutenção desde `v1.02.050`. Atende time interno + cliente externo. Modular: `lib/helpers.js` + `lib/adapters.js` + `lib/supabase-client.js` + 13 views em `lib/views/*` + `lib/app.js`. RLS fechada role-aware (admin/interno/cliente).
+
+2. **App Next em preview Vercel** (`web/`, branch `feat/onda-0`) — paridade UX 100% com Alpine + PWA (manifest + ícone + splash iOS + service worker) + 44 unit tests Vitest + 3 e2e Playwright + CI no GitHub Actions. **Próximo passo é o cutover** (apontar domínio principal pro projeto Next).
+
+Camadas entregues no app Alpine (continuam no Next):
 - Modal de task com 4 abas (Detalhes/Conversa/Anexos/Histórico)
 - Comentários ricos (mentions, edit, delete, reply nested, visibilidade toggleable)
 - Checklist colapsável por task
 - Anexos paste-only (storage + cleanup automático 30d)
-- Portal cliente com replies aninhados + herança de visibilidade
+- Portal cliente com replies aninhados + herança de visibilidade *(ainda em parking no Next · sai pós-cutover)*
 - Mobile layout dedicado (sheet card + safe-area)
-- Capacidade semanal + 14 heurísticas determinísticas + Briefing executivo
-- Resumo Executivo em PDF (8 seções)
+- Capacidade semanal + 14 heurísticas determinísticas + Briefing executivo *(Briefing/Dashboard em parking no Next · sai na próxima onda)*
+- Resumo Executivo em PDF (8 seções) *(PDF em parking no Next · CSV ativo)*
 - Integração de automação IA: flag `criado_por_ia`, domínios de cliente, edge functions `get-clientes`/`get-pessoas`
 
-Detalhes históricos em [`ROADMAP.md`](./ROADMAP.md).
+Roadmap completo **pós-Onda 0** (Now/Next/Later/Cold + inventário de tudo discutido — IA, time tracking, push, Portal, schema pendente) em **[`ROADMAP.md` §9.3](./ROADMAP.md)**.
 
-**Próximo passo recomendado**: continuar de uso real pelo time + validação com 1 cliente piloto, antes de iniciar a Onda 0 (rebuild com Next + Drizzle + RLS apertada).
+**Próximo passo recomendado**: Bloco 5 · Cutover Vercel (checklist em [`web/ONDA0.md`](./web/ONDA0.md)). Depois: habilitar realtime publication + Sentry + JWT exp 1h.
 
 ---
 
@@ -149,9 +154,11 @@ Detalhes históricos em [`ROADMAP.md`](./ROADMAP.md).
 
 - [`HOWTO.md`](./HOWTO.md) — manual do usuário com tudo o que dá pra fazer no app, atualizado a cada release
 - [`ONBOARDING.md`](./ONBOARDING.md) — guia de primeiros passos por perfil (sócio/PM/consultor)
-- [`ROADMAP.md`](./ROADMAP.md) — roadmap canônico, decisões, ondas, registro de decisões
+- [`ROADMAP.md`](./ROADMAP.md) — roadmap canônico (§9.3 = roadmap consolidado pós-Onda 0)
 - [`CONTEXT.md`](./CONTEXT.md) — handoff técnico curto pra continuidade no Claude Code
-- [`CLAUDE.md`](./CLAUDE.md) — convenções do projeto (Supabase via Dashboard, versionamento, git)
+- [`CLAUDE.md`](./CLAUDE.md) — convenções do projeto (Supabase via Dashboard, versionamento, git, CI, testes)
 - [`DESIGN_HANDOFF.md`](./DESIGN_HANDOFF.md) — briefing pra designer (marca, tokens, dores visuais)
 - [`HABILITAR_DEPOIS.md`](./HABILITAR_DEPOIS.md) — features prontas mas escondidas; quando reativar
+- [`web/ONDA0.md`](./web/ONDA0.md) — plano + fechamento da Onda 0 (rebuild Next)
+- [`web/README.md`](./web/README.md) — entry point técnico do app Next
 - [`supabase/`](./supabase/) — schema SQL e Edge Functions

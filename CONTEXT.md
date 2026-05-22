@@ -10,7 +10,16 @@ Aplicativo de gestão de backlog interno para a **Kliente 360** (consultoria ofi
 
 ## 2. Estado atual
 
-**v1.02.050 · em uso real interno, com cliente externo logando.** Pós ciclo de design (PRs #253-#270) + features estratégicas (cliente interno bucket, notif por tipo, foco narrativa, adoption indicators de sucesso) + Resumo Executivo PDF + integração de automação IA (Cowork) + ciclo de performance/refactor. Multi-file modular. Stack: Alpine.js + Tailwind CDN + Chart.js + marked.js, conectado a backend Supabase — Postgres com **RLS fechada role-aware**, Auth (magic link), Realtime, Edge Functions, Storage e pg_cron.
+**v1.02.161 · pré-cutover · Onda 0 (rebuild Next) feature-complete em preview Vercel.**
+
+Dois apps coexistem hoje:
+
+1. **App Alpine em prod** (raiz do repo, `index.html` + `lib/`): atende usuários reais (time interno + cliente externo). Está em **modo manutenção** — sem novas features desde v1.02.050. Continua recebendo BUILD bumps coincidentes com o Next até cutover.
+2. **App Next no preview Vercel** (branch `feat/onda-0`, subpasta `web/`): paridade UX 100% com Alpine + PWA (manifest + ícone + splash + service worker Serwist). 44 unit tests (vitest) + 3 e2e (Playwright) + CI completo no GitHub Actions (`.github/workflows/ci.yml`).
+
+**Próximo passo é o cutover** (Bloco 5): trocar o domínio principal Vercel pro projeto Next, arquivar o Alpine. Pós-cutover, todo o roadmap pós-Onda 0 ataca **só o Next** (ver §14.4 e `ROADMAP.md` §9.3).
+
+**Histórico recente do Alpine** (até v1.02.050, antes do freeze pra Onda 0): pós ciclo de design (PRs #253-#270) + features estratégicas (cliente interno bucket, notif por tipo, foco narrativa, adoption indicators de sucesso) + Resumo Executivo PDF + integração de automação IA (Cowork) + ciclo de performance/refactor. Multi-file modular. Stack: Alpine.js + Tailwind CDN + Chart.js + marked.js, conectado a backend Supabase — Postgres com **RLS fechada role-aware**, Auth (magic link), Realtime, Edge Functions, Storage e pg_cron.
 
 **Automação IA / Cowork (mai/2026)**: tasks ganham flag `criado_por_ia` (chip 🤖 IA no Backlog/Kanban/Foco/Triagem/modal, filtro na Triagem e no menu ⋯ do Backlog). Clientes ganham `dominios[]` (domínios de email, pra automação resolver o cliente pelos participantes de reunião). Novas edge functions `get-clientes` e `get-pessoas` expõem o vocabulário pra automações externas; `ingest-task` aceita `criado_por_ia` e cliente vazio / sentinel `"Triagem"`.
 
@@ -83,16 +92,28 @@ Logos oficiais (PNG) em `/assets/`.
 - **Deploy**: Netlify (auto deploy no push em `main`)
 - **Sem build step**: editar arquivos em `lib/` e refrescar; ordem de carregamento controlada por `<script src>` em sequência no `<head>` do `index.html`
 
-## 6. Stack do app "de verdade" (Onda 0, ainda não iniciada)
+## 6. Stack do Next (Onda 0 · ✅ feature-complete em `feat/onda-0`)
 
-Decidida para quando sair do single-file:
+Em uso no preview Vercel hoje, sobe pra prod no Bloco 5 · Cutover:
 
-- **Next.js 15** + TypeScript + App Router (monolito)
-- **Postgres via Supabase** (banco + auth + RLS apertada)
-- **Drizzle ORM** (preferido sobre Prisma para Claude Code — sem generate step)
-- **Tailwind + shadcn/ui**
-- **Recharts** para dashboards
-- **Resend** para email transacional
+- **Next.js 15** + TypeScript + App Router (monolito) · subpasta `web/`
+- **Postgres via Supabase** (mesmo banco do Alpine — sem dual-db) com **RLS role-aware mantida**
+- **Drizzle ORM** (schema draft em `web/src/lib/db/schema.ts`; `db:pull` adiado por incompat com check constraints — Client Components não dependem dele)
+- **Supabase JS direto nos Client Components** (boot + estado em memória + realtime channel — mesmo padrão do Alpine, sem Server Actions em telas interativas)
+- **Tailwind v3** (sem shadcn — usamos os primitivos próprios `.btn` `.card` `.inp` `.chip` portados de `lib/styles.css`)
+- **Recharts** **descartado** — gráficos quando vierem usam o mesmo Chart.js já em uso no Alpine ou refazem com SVG nativo
+- **`marked`** para Markdown (Help, Onboarding)
+- **`@serwist/next`** pro service worker (PWA · precache + runtime cache)
+- **`@resvg/resvg-js`** + IBM Plex Mono TTF pra gerar splash screens iOS no build-time
+- **Vercel** deploy
+- **Sentry + PostHog** **ainda não plugados** — entra no roadmap pós-cutover (ver §14.4)
+
+Estrutura de rotas: route groups `(app)` (interno autenticado), `(auth)` (login). Portal cliente pendente — ver §14.4.
+
+**Decisões arquiteturais centrais** (em `web/ONDA0.md`):
+- **Não usar Server Actions** em telas com >1 interação/segundo — latência inaceitável.
+- **Estado em memória via `DataProvider`** Client Component que faz boot único, expõe `useData()`, mutadores otimistas com rollback (`patchTask`, `replaceTask`, `upsertCliente`, etc.) — espelho fiel dos 7 helpers de `core-data.js` do Alpine.
+- **Auth via Supabase JS no browser**, middleware Next pra gating de rotas.
 - **Vercel** deploy
 - **Sentry + PostHog** desde o dia 1
 
@@ -153,7 +174,7 @@ Detalhes críticos:
 
 ## 8. Roadmap de ondas (status real)
 
-- **Onda 0 — Rebuild Next/Drizzle**: **ainda não iniciada**. Próximo grande passo quando o single-file pesar concretamente (ver Seção 14).
+- **Onda 0 — Rebuild Next/Drizzle**: **feature-complete em `feat/onda-0` · pré-cutover (v1.02.161)**. 100% paridade UX com Alpine. PWA (manifest + ícone + splash iOS + service worker). 44 unit tests + 3 e2e + CI GitHub Actions. Realtime dormente (publication Supabase precisa habilitar 4 tabelas — fica pra pós-cutover). Helpers de `lib/helpers.js` portados pra `web/src/lib/task-utils.ts`. **Bloco 5 (cutover Vercel)** é o último passo. Plano completo em `web/ONDA0.md`.
 - **Onda 1 — MVP backlog interno**: **entregue.** Tasks, comments, checklist, anexos, histórico, auditoria, kanban, calendário, dashboard.
 - **Onda 2 — Portal cliente**: **entregue + repaginada v2 (PR #182).** Login restrito, RLS tenant isolation real, visão narrativa (header + alertas + KPIs com delta + sparkline 6m + distribuição + lead time + listas), HOWTO_CLIENTE.md dedicado.
 - **Onda 3 — Analytics**: **entregue.** 8 visões fixas dentro do Dashboard.
@@ -277,56 +298,58 @@ Recursos que **não existem combinados em nenhum competidor brasileiro acessíve
 
 ### 14.3 Pontos cegos honestos (mai/2026 pós ciclo de design)
 
-1. ~~**`index.html` ~10.800 linhas**~~ → ✅ resolvido (Onda F).
-2. ~~**Mobile UX inconsistente**~~ → ✅ resolvido (ciclo de design PRs #253-#270 + correções pós-diagnóstico v2: notif por tipo, foco narrativa, adoption indicators).
-3. **Ausência de IA visível**. **Continua sendo o gap #1.** Linear/Notion comoditizam IA. Primeira feature low-risk/high-value: "resumir thread da task" — Anthropic Sonnet 4.6 + prompt caching, fallback gracioso. ~1 dia.
-4. ~~**Captura rápida de task.**~~ → ✅ resolvido (⌘⇧N + ação na command palette · overlay só-título · v1.02.055).
-5. **Time tracking = 0.** Bloqueia faturamento e bloqueia retro honesta "quanto realmente custou esse projeto?" — dor interna recorrente em agência.
-6. **Testes parciais.** `helpers.js`, `adapters.js` (camada JS↔DB) e os 7 helpers de mutação de task cobertos em `tests/index.html`. Getters de heurística (briefing/capacidade) ainda sem teste — exigiriam harness Alpine maior.
-7. **Migrations manuais via Dashboard.** Frágil; útil um lint local que valida sintaxe antes de colar.
+1. ~~**`index.html` ~10.800 linhas**~~ → ✅ resolvido (Onda F + Onda 0 Next).
+2. ~~**Mobile UX inconsistente**~~ → ✅ resolvido (ciclo de design PRs #253-#270).
+3. **Ausência de IA visível**. **Continua sendo o gap #1.** Linear/Notion comoditizam IA. Primeira feature low-risk/high-value: `ai-suggest` (Haiku 4.5 sugere complexidade+esforço, ~R$0,015/exec) — ⭐ começar aqui. Ver `ROADMAP.md` §9.2 frentes 1-5 IA + §9.3.
+4. ~~**Captura rápida de task.**~~ → ✅ resolvido (atalho `n` + command palette no Next).
+5. **Time tracking = 0.** Bloqueia faturamento e retro honesta. Caminho: tabela `time_entries` + cronômetro start/stop por task. **Promovido pra Next em §14.4.**
+6. ~~**Testes parciais.**~~ → ✅ parcialmente resolvido (Onda 0 Next ganhou 44 unit tests vitest + 3 e2e Playwright + CI). Getters de heurística agregados ainda sem teste — endereçar quando atacar Dashboard.
+7. **Migrations manuais via Dashboard.** Frágil; útil um lint local que valida sintaxe antes de colar. ~2h.
 8. **Anon key embedded + JWT exp 2036.** RLS protege, mas defesa em profundidade pede JWT 1h + refresh. ~2h.
+9. **Realtime dormente no Next.** Code-side pronto (channel listener montado), só falta habilitar publication das 4 tabelas no Supabase Dashboard (~5min). **Promessa #1 do produto web bloqueada por config trivial.**
 
-### 14.4 Visão escalonada de futuro (atualizada mai/2026 v1.02.050)
+### 14.4 Visão escalonada de futuro (atualizada · pós-Onda 0 · v1.02.161)
 
-#### P0 · entregue maio/2026 (ciclo de adoção interna)
-- ✅ Notificações por tipo (mention/assignment/status_change) com chips de filtro
-- ✅ Foco como tab de abertura padrão pra admin/interno + narrativa heurística do dia
-- ✅ Card de indicadores de sucesso da adoção interna (DAU/WAU, sessões/dia, comments públicos/sem, tasks triadas) com conclusão heurística
-- ✅ Captura rápida de task (`⌘⇧N` + command palette) — overlay só-título, task cai na Triagem
+> Detalhamento completo + inventário de TUDO já discutido (HABILITAR_DEPOIS, IA Onda 5+, parking lots, heurísticas pendentes, schema pendente) em **`ROADMAP.md` §9.3 · Roadmap pós-Onda 0**.
 
-#### P0 · próximas 1-2 semanas (continuação adoção interna)
-- **Notif digest hourly** — agrupar push por hora, evitar quebra de foco. ~4h.
+#### Now · próximas 2-3 semanas · fechar Onda 0 + destravar promessas técnicas
 
-#### P1 · próximas 2-4 semanas (primeira IA)
-- **Resumir thread de task** com Anthropic Sonnet 4.6 + prompt caching. ~1 dia. **Fecha a maior lacuna competitiva.**
-- **Captura via texto livre** ("amanhã preciso revisar a apresentação do Cliente X") → Haiku 4.5 estrutura. ~0.5 dia.
-- **Email digest semanal** dom 18h via Edge Function + pg_cron. ~4h.
-- **JWT exp 1h + refresh.** ~2h.
-- **Testes nos getters extraídos.** ~4h.
+- **Bloco 5 · Cutover Vercel** (~2h). Trocar domínio principal pro projeto Next. Avisar time. Monitorar 24-48h.
+- **Habilitar realtime publication** Supabase (~30min). Adiciona `tasks`, `clientes`, `projetos`, `pessoas` ao publication. Resolve UX "clicar na logo pra refetch".
+- **Sentry + PostHog** plugados no Next (~1-2h). Não voar cego em prod.
+- **JWT exp 1h + refresh** (~2h). Defesa em profundidade crônica.
 
-#### P2 · próximo trimestre (lock-in interno + preparo comercial)
-- **Time tracking básico** (start/stop por task) — habilita retro honesta semanal; preparação pra faturamento.
-- **Templates de projeto** (criar projeto novo a partir de template com 15 tasks).
-- **Capacidade prevista** com snapshot histórico semanal — heurística "estoura em N semanas".
-- **Aba Foco com IA leve** — resumo do dia + 3 tasks priorizadas pelo modelo.
-- **WhatsApp digest** se email validar a tese de push.
+#### Next · 1-2 meses · Onda 1 do Next · visibilidade gerencial + 1ª IA
 
-#### P3 · 3-6 meses (comercial externo)
-- **Onda 0 modesta** — Next 15 + Drizzle só pro Portal cliente (escopo limitado).
-- **Slack integration.**
-- **API pública** (REST + webhooks documentada).
-- **Multi-workspace** quando >2 agências usarem.
+Em ordem de execução sugerida:
+1. **Dashboard** (sai de parking) — view executiva. Heurísticas e bucketing semanal já portados.
+2. **Briefing** (sai de parking) — possivelmente embutido no Dashboard como uma view, reduz custo.
+3. **`ai-suggest`** — primeira IA. Custo trivial (~R$0,015/exec). Fecha o gap competitivo #1.
+4. **`ai-weekly-summary`** — Sonnet + cron sáb 06h. Combina com Briefing → aba "Insights".
+5. **Push notifications + Badging API** — iOS 16.4+ suportado. VAPID + Edge Function.
+6. **Notif digest hourly** + **Email digest semanal** (Resend, dom 18h).
 
-#### P4 · 6-12 meses
-- **Faturamento integrado** (NFe via gateway BR).
-- **PWA bem-feita** primeiro, nativo só se métrica indicar.
-- **Heurísticas IA-driven** (skill mismatch via embeddings, etc.)
+#### Later · 3-6 meses · Onda 2 · diferenciação + multi-tenancy
+
+- **Portal cliente** (sai de parking) — versão v2 do Alpine portada com RLS apertada.
+- **`ai-risk-scanner`** — detector de risco diário (Sonnet + cron).
+- **`ai-chat` com tool use** — chat com o backlog via `⌘K`.
+- **Cronômetro start/stop por task** ⏱️ — tabela `time_entries`. Caminho pra faturamento.
+- **Templates de projeto** — quick win em projetos recorrentes.
+- **Capacidade prevista** — requer `weekly_capacity_snapshots` + job semanal.
+- **Saved views / filtros nomeados** — quick win UX.
+- **Auto-triage com IA** — Haiku + heurísticas pra tasks com `criado_por_ia=true`.
+- **Reativar features de HABILITAR_DEPOIS** (Tags, Tipo de trabalho, Dependências) no Next — schema pronto, só re-implementar UI.
+
+#### Cold storage · ainda parqueado conscientemente
+
+Adoção (interno analytics) · WhatsApp digest · Slack integration · iCal feed · Web Share Target / File handlers / Protocol handlers · Recurring tasks · Triage inbox Linear-style · Importação em massa CSV · Heurísticas pendentes (skill mismatch, senioridade malalocada, churn risk) · API pública REST+webhooks · Multi-workspace · Faturamento integrado NFe · Brand decision (Kliente 360 CRM vs tasks 360).
 
 ### 14.5 Indicadores de sucesso · adoção interna (precondição comercial)
 
-Métricas que dirão se o app virou hábito interno. Materializadas como card no topo da aba Adoption (v1.02.050).
+Métricas que dirão se o app virou hábito interno. Materializadas como card no topo da aba Adoption no Alpine (v1.02.050) — **aba Adoção segue em parking no Next** (sai quando user base justificar).
 
-| Métrica | Meta 30d | Meta 60d | Status v1.02.050 |
+| Métrica | Meta 30d | Meta 60d | Status |
 |---|---|---|---|
 | DAU/WAU | ≥70% | ≥85% | em medição |
 | Sessões/dia/pessoa | ≥5 | ≥8 | em medição |
@@ -335,16 +358,17 @@ Métricas que dirão se o app virou hábito interno. Materializadas como card no
 
 Se em 60 dias 4/4 baterem → **pronto pra piloto comercial controlado** (1-2 agências amigas).
 
-### 14.6 Riscos ranqueados (atualizado mai/2026 v1.02.050)
+### 14.6 Riscos ranqueados (atualizado · pós-Onda 0 · v1.02.161)
 
-1. **IA gap continua #1.** Médio-alto, 6 meses. Linear/Notion já comoditizam. P1 vai mitigar.
-2. **Time perde hábito** se P0 não fechar captura rápida + notif digest. Médio, 2 sem.
-3. **Adoption v2 vira métrica de vaidade** se não acompanhada de ação semanal. Médio. Mitigar com Briefing executivo abrindo seção "ações da semana".
-4. **Brand confusion** "Kliente 360" CRM vs tasks 360. Decisão de naming antes de qualquer movimento comercial. Médio.
-5. **Anon key + JWT 2036** crônico. Baixo agora (RLS fechada). JWT curto + refresh em P1.
-6. **CDN do Tailwind anunciou fim.** Trocar por instalação local em ~1h.
-7. **Onda 0 vira "rebuild infinito"** se tentada cedo demais. Baixa-média. Manter modular sem build até time interno provar valor.
+1. **IA gap continua #1.** Médio-alto, 6 meses. Linear/Notion já comoditizam. Plano: `ai-suggest` no Next como primeira frente (ver `ROADMAP.md` §9.2).
+2. **Regressão UX no cutover.** Médio, primeiro dia. Mitigação: Playwright smoke + Sentry plugado antes do cutover.
+3. **Realtime ficar dormente por esquecimento.** Médio. Habilitar publication das 4 tabelas no Supabase Dashboard na semana do cutover.
+4. **Adoption v2 vira métrica de vaidade** se não acompanhada de ação semanal. Mitigar com Briefing executivo abrindo seção "ações da semana" quando sair do parking.
+5. **Brand confusion** "Kliente 360 CRM" vs "tasks 360". Decisão de naming antes de qualquer movimento comercial. Médio.
+6. **Anon key + JWT 2036** crônico. Baixo agora (RLS fechada). JWT curto + refresh planejado pro Now.
+7. ~~**CDN do Tailwind anunciou fim.**~~ → ✅ resolvido (Next build local elimina dependência de CDN).
+8. ~~**Onda 0 vira "rebuild infinito"**~~ → ✅ não materializado. Onda 0 feature-complete com paridade UX 100% em ~3 meses de sessão.
 
 ### 14.7 Em uma frase
 
-**O app saiu de "protótipo robusto" pra "produto comercializável" no ciclo de design + adoção interna (PRs #253-#270 + #234-#241). Caminho crítico agora: ~7h de polish (captura rápida + notif digest) + 1.5 dia de primeira IA. Em 4-6 semanas time interno deve estar 100% migrado — só então faz sentido conversar comercial externo.**
+**Saímos de "protótipo robusto monolítico" pra "produto comercializável em stack moderna" via Onda 0 (Next 15 + Drizzle + Supabase + PWA + CI). Caminho crítico agora: ~8h pra fechar Onda 0 (cutover + realtime + Sentry + JWT). Próximas 1-2 ondas destrancam as 3 promessas que justificam o web app: colaboração viva (realtime), visibilidade gerencial (Dashboard + Briefing) e diferenciação por IA (`ai-suggest` ⭐).**

@@ -1,8 +1,12 @@
 # Onda 0 — Plano de migração de stack
 
-> Documento de referência para a sessão dedicada à migração.
-> Captura todas as decisões arquiteturais tomadas antes de começar a implementar.
-> Atualizar conforme novas decisões surgirem.
+> **Status: ✅ feature-complete · pré-cutover · v1.02.161** (mai/2026)
+>
+> Todos os blocos 1-4.J entregues. Branch ativa `feat/onda-0` em preview Vercel. Falta só o Bloco 5 (cutover do domínio principal).
+>
+> **Roadmap pós-Onda 0** (próximas ondas, IA, time tracking, Portal cliente, etc.): ver **`ROADMAP.md` §9.3 · Roadmap pós-Onda 0**.
+>
+> Este documento é o **plano original + captação de decisões arquiteturais** da migração. Mantido como referência histórica; status table atualizada no fim.
 
 ---
 
@@ -289,3 +293,69 @@ abaixo fica pra revisitar depois.
   - Network-first pra API/dados (Supabase)
   - Update prompt quando nova versão do SW estiver pronta
 - Lighthouse PWA score ≥ 90 (instalável em ambos os SO)
+
+---
+
+## Fechamento da Onda 0 (mai/2026 · v1.02.161)
+
+Captura final de status. Histórico vivo + roadmap pós-Onda 0 estão em `ROADMAP.md`.
+
+### Blocos · checklist
+
+| Bloco | Entrega | Status |
+|---|---|---|
+| 1 | Pré-requisitos (Supabase client/server, middleware auth, login page) | ✅ |
+| 2 | Telas Onda 1 (Backlog, Kanban, Modal, Triagem, Foco, Calendário) | ✅ |
+| 3 | Cadastros completo (CRUD clientes/projetos/pessoas) | ✅ |
+| 4.A | Header + ProfileMenu + reordenação de tabs | ✅ |
+| 4.B | Polimento mobile (filtros, page-bar, gaps) | ✅ |
+| 4.C | Modal de task completo (autosave + comments + anexos + histórico) | ✅ |
+| 4.D | Theme toggle (light/dark via `.dark` class + localStorage anti-flash) | ✅ |
+| 4.E | Notifications (sino + chips de filtro + realtime channel) | ✅ |
+| 4.F | Help · Onboarding · Export (dropdown CSV ativo + PDF parking) | ✅ |
+| 4.G | Command palette `⌘K` (tasks/clientes/projetos/pessoas/ações) | ✅ |
+| 4.H | Quick capture (`n`) + Global shortcuts (`g+f/b/k/c/d/t/l` · `⌘+Enter` no modal) | ✅ |
+| 4.I | PWA (manifest + ícone redondo + splash iOS + service worker Serwist) | ✅ |
+| 4.J | Smoke tests (44 vitest + 3 playwright) + CI GitHub Actions + lint zero warnings | ✅ |
+| 5 | **Cutover Vercel** | 🎯 próximo |
+
+### Pendências e parkings declarados
+
+| Item | Status | Onde retomar |
+|---|---|---|
+| Briefing · Dashboard · Portal cliente · Adoção | ⏸ Placeholders no Next | Roadmap pós-Onda 0 §9.3 do `ROADMAP.md` |
+| Realtime publication das 4 tabelas | ⏸ Channel listener pronto; precisa habilitar no Supabase Dashboard | Now (item 2 de §9.3.1) |
+| Features de `HABILITAR_DEPOIS.md` (Tags, Tipo de trabalho, Dependências) | ❌ Ausentes no código Next | Later (item "Reativar features" de §9.3.3) |
+| Schema Drizzle `db:pull` | ⚠️ Adiado (incompat com check constraints) | Atacar quando Dashboard precisar de queries Server tipadas |
+| Sentry + PostHog | ❌ Não plugados | Now (item 3 de §9.3.1) |
+| JWT exp 1h + refresh | ❌ Default Supabase JWT 2036 | Now (item 4 de §9.3.1) |
+
+### Decisões arquiteturais que sobreviveram à execução
+
+- **Provider stack único** envolvendo o app inteiro: `Theme > Data > Toast > Help > Onboarding > TaskModal > QuickCapture > CommandPalette + GlobalShortcuts + ServiceWorkerRegister`. Modais shareados entre abas via lift-to-provider.
+- **Mutadores otimistas** em `DataProvider` (espelho dos 7 helpers de `core-data.js` do Alpine): `patchTask`, `replaceTask`, `upsertTask`, `upsertCliente`, `upsertProjeto`, `upsertPessoa`, `removeTask`. Rollback em erro via `replaceTask(id, prev)`.
+- **Event bus minimalista** via `window.dispatchEvent` pra cross-cutting (ex: `CLEAR_FILTERS_EVENT` ouvido em Backlog/Kanban/Triagem/Calendário).
+- **Convention "FKs/datas null → `''`"** em `Task` (não nullable strings) — adapter `taskFromDb` normaliza. Tests/code fixtures usam `''` consistente.
+- **Checklist item: `body` (não `text`)** — alinhado com DB JSON e Alpine. Bug encontrado em v1.02.161, fix com backfill defensivo no adapter.
+- **CSS `!important` Tailwind prefix (`!hidden md:!inline-flex`)** quando regras globais `.btn`/`.tabs-row`/`.page-bar` em `globals.css` (fora de `@layer`) vencem utilities. Documentado nas linhas afetadas.
+
+### Convenções de teste
+
+- **Vitest** (`web/src/**/*.test.ts`): helpers puros sem DOM/network. `vi.useFakeTimers + setSystemTime` pra testes de aging/prazo. 44 testes em ~400ms.
+- **Playwright** (`web/e2e/*.spec.ts`): smoke auth-less. webServer usa `next dev -p 3100` (evita bug de `next start` com paths que têm espaço).
+- **CI** roda lint + typecheck + vitest + build (job `static`) e Playwright (job `e2e`) com env vars Supabase placeholder.
+
+### Cutover (Bloco 5) — checklist
+
+> Não executado ainda. Quando rodar:
+
+1. Confirmar v1.02.NNN bumped em `lib/helpers.js` E `web/src/components/app-nav.tsx`.
+2. Confirmar `npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e` verdes localmente.
+3. Squash-merge `feat/onda-0` em `main` via `mcp__github__merge_pull_request`.
+4. No Vercel Dashboard:
+   - Apontar domínio principal (custom) pro projeto Next.
+   - Apontar Alpine pra subdomínio `alpine.*` como fallback temporário.
+5. Avisar time no canal interno: link + "se algo quebrar, voltar pro alpine.* enquanto investigo".
+6. Habilitar realtime publication no Supabase Dashboard: `ALTER PUBLICATION supabase_realtime ADD TABLE tasks, clientes, projetos, pessoas;` no SQL Editor.
+7. Plugar Sentry: env vars + componente `@sentry/nextjs`.
+8. Monitorar 24-48h. Pós-confiança: arquivar `index.html` + `lib/` em `archive/alpine-v1.02.050/`.
