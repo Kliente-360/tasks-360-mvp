@@ -43,11 +43,20 @@
 //   5. Lê { external_id } do body de resposta.
 //   6. Atualiza o registro no banco com external_id + webhook_sync_status.
 //
-// Auth de entrada: Authorization: Bearer <DISPATCH_WEBHOOK_SECRET>
+// Auth de entrada (pg_net → dispatch-webhook): Authorization: Bearer <DISPATCH_WEBHOOK_SECRET>
+// Auth de saída (dispatch-webhook → URL externa): headers `client_id` e
+// `client_secret`. Cada cliente externo (VB, CTF) tem o próprio par,
+// escolhido em runtime baseado no nome do cliente (clientes.nome) ligado
+// à task. Match case-insensitive: contém "vb" → VB, contém "ctf" → CTF.
+//
 // Env vars (Edge Functions > Settings > Secrets):
-//   DISPATCH_WEBHOOK_SECRET  — obrigatório; rejeita request se ausente ou não-bater
-//   WEBHOOK_URL_TASK         — endpoint externo para task.updated
-//   WEBHOOK_URL_COMMENT      — endpoint externo para comment.*/reply.*
+//   DISPATCH_WEBHOOK_SECRET    — obrigatório; valida Bearer da entrada
+//   WEBHOOK_URL_TASK           — endpoint externo para task.updated
+//   WEBHOOK_URL_COMMENT        — endpoint externo para comment.*/reply.*
+//   WEBHOOK_CLIENT_ID_VB       — client_id pro cliente VB
+//   WEBHOOK_CLIENT_SECRET_VB   — client_secret pro cliente VB
+//   WEBHOOK_CLIENT_ID_CTF      — client_id pro cliente CTF
+//   WEBHOOK_CLIENT_SECRET_CTF  — client_secret pro cliente CTF
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -57,7 +66,49 @@ const DISPATCH_SECRET = Deno.env.get('DISPATCH_WEBHOOK_SECRET') ?? '';
 const URL_TASK        = Deno.env.get('WEBHOOK_URL_TASK') ?? '';
 const URL_COMMENT     = Deno.env.get('WEBHOOK_URL_COMMENT') ?? '';
 
+const CLIENT_ID_VB      = Deno.env.get('WEBHOOK_CLIENT_ID_VB')      ?? '';
+const CLIENT_SECRET_VB  = Deno.env.get('WEBHOOK_CLIENT_SECRET_VB')  ?? '';
+const CLIENT_ID_CTF     = Deno.env.get('WEBHOOK_CLIENT_ID_CTF')     ?? '';
+const CLIENT_SECRET_CTF = Deno.env.get('WEBHOOK_CLIENT_SECRET_CTF') ?? '';
+
 const FETCH_TIMEOUT_MS = 10_000;
+
+type Creds = { client_id: string; client_secret: string; cliente: string };
+
+/**
+ * Escolhe o par client_id/client_secret baseado no nome do cliente.
+ * Match case-insensitive: nome contém "vb" → VB, contém "ctf" → CTF.
+ * Mantém o mesmo critério da migration 2026-05-21_webhook_enabled_vb_ctf.sql
+ * que ligou o flag webhook_enabled nesses clientes.
+ */
+function pickCreds(clienteNome: string | null): Creds | null {
+  if (!clienteNome) return null;
+  const n = clienteNome.toLowerCase();
+  if (n.includes('vb'))  return { client_id: CLIENT_ID_VB,  client_secret: CLIENT_SECRET_VB,  cliente: 'VB' };
+  if (n.includes('ctf')) return { client_id: CLIENT_ID_CTF, client_secret: CLIENT_SECRET_CTF, cliente: 'CTF' };
+  return null;
+}
+
+/**
+ * Busca o nome do cliente ligado a uma task. Usado pra escolher creds.
+ * 2 queries simples (task → cliente) — JOIN nested seria menos legível
+ * pelo custo de ergonomia da supabase-js.
+ */
+async function getClienteNomeForTask(taskId: string): Promise<string | null> {
+  const { data: t } = await sb
+    .from('tasks')
+    .select('cliente_id')
+    .eq('id', taskId)
+    .maybeSingle();
+  const clienteId = (t as { cliente_id: string | null } | null)?.cliente_id;
+  if (!clienteId) return null;
+  const { data: c } = await sb
+    .from('clientes')
+    .select('nome')
+    .eq('id', clienteId)
+    .maybeSingle();
+  return (c as { nome: string } | null)?.nome ?? null;
+}
 
 const sb = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -135,6 +186,36 @@ Deno.serve(async (req) => {
   const taskId    = payload.task_id;
   const commentId = payload.comment_id;
 
+  // Descobre o cliente da task (pra escolher client_id/client_secret).
+  // task event tem cliente_id no record; comment/reply só tem task_id e
+  // precisa de lookup. Ambos terminam em "qual cliente é VB/CTF?".
+  let clienteNome: string | null = null;
+  if (isTaskEvent) {
+    const fullRecord = (data.record ?? {}) as Record<string, unknown>;
+    const clienteId  = fullRecord.cliente_id as string | null | undefined;
+    if (clienteId) {
+      const { data: c } = await sb
+        .from('clientes')
+        .select('nome')
+        .eq('id', clienteId)
+        .maybeSingle();
+      clienteNome = (c as { nome: string } | null)?.nome ?? null;
+    }
+  } else if (taskId) {
+    clienteNome = await getClienteNomeForTask(taskId);
+  }
+  const creds = pickCreds(clienteNome);
+  if (!creds) {
+    // Sem creds = não temos como autenticar no sistema externo.
+    // Não é erro de programação, apenas o cliente não está habilitado.
+    // Marca o status como erro pra ficar visível no app sem virar exception.
+    const msg = clienteNome
+      ? `no credentials configured for cliente "${clienteNome}"`
+      : 'no cliente linked to task; cannot pick credentials';
+    if (taskId) await setTaskSyncStatus(taskId, 'error', msg);
+    return json(200, { skipped: true, reason: msg });
+  }
+
   // Constrói o payload SLIM enviado pra URL externa. Mantém estrutura
   // simétrica (sent_at/ids top-level + data{external_ids, record}), mas
   // só com os campos que o sistema externo realmente usa.
@@ -196,7 +277,11 @@ Deno.serve(async (req) => {
   try {
     externalResp = await fetch(targetUrl, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type':  'application/json',
+        'client_id':     creds.client_id,
+        'client_secret': creds.client_secret,
+      },
       body: JSON.stringify(outboundBody),
       signal: controller.signal,
     });

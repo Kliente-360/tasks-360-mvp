@@ -296,7 +296,19 @@ Quando uma task ou comment vinculado ao SF (`external_source='salesforce' AND ex
 - `WEBHOOK_URL_TASK` — recebe `task.updated`
 - `WEBHOOK_URL_COMMENT` — recebe `comment.created`, `comment.updated`, `reply.created`, `reply.updated`
 
-**Configuração necessária no nosso lado**: você nos envia ambas URLs + um secret. Configuramos via Dashboard. **Você** valida o `Authorization: Bearer <secret>` no seu endpoint.
+**Configuração necessária no nosso lado**: você nos envia ambas URLs + **dois pares de credenciais** (VB e CTF) `client_id` / `client_secret`. Configuramos via Dashboard.
+
+### Headers que enviamos em cada request
+
+| Header | Valor |
+|---|---|
+| `Content-Type` | `application/json` |
+| `client_id` | id do cliente externo (VB ou CTF, escolhido pelo `cliente_id` da task) |
+| `client_secret` | secret correspondente ao `client_id` |
+
+**Como escolhemos o par**: olhamos o `cliente.nome` da task que disparou o webhook. Match case-insensitive — nome contendo `vb` usa o par VB; contendo `ctf` usa o par CTF. Se a task não bater nenhum (cenário improvável — só essas duas têm `webhook_enabled=true` hoje), pulamos o disparo e marcamos `webhook_sync_status='error'` no banco com a mensagem `no credentials configured for cliente`.
+
+**Você** valida os dois headers no seu endpoint.
 
 ### 4.1 Payload `task.updated`
 
