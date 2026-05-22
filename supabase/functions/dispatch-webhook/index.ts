@@ -362,6 +362,10 @@ Deno.serve(async (req) => {
     };
   }
 
+  // Log do que vai ser disparado (debug do dev SF).
+  console.log(`[dispatch-webhook] ${event} → ${creds.cliente} POST ${targetUrl}`);
+  console.log(`[dispatch-webhook] payload:`, JSON.stringify(outboundBody));
+
   // Pega access_token via OAuth Client Credentials (cache hit ou nova call).
   const accessToken = await getAccessToken(creds);
   if (!accessToken) {
@@ -417,9 +421,12 @@ Deno.serve(async (req) => {
   }
 
   const externalResp = attempt.resp;
+  console.log(`[dispatch-webhook] ${creds.cliente} upstream ${externalResp.status}`);
+
   if (!externalResp.ok) {
     const body = await externalResp.text().catch(() => '');
     const errMsg = `upstream ${externalResp.status}: ${body.slice(0, 200)}`;
+    console.error(`[dispatch-webhook] error response body:`, body.slice(0, 500));
     if (taskId) await setTaskSyncStatus(taskId, 'error', errMsg);
     return err(502, 'upstream_error', errMsg);
   }
@@ -427,15 +434,17 @@ Deno.serve(async (req) => {
   let respBody: Record<string, unknown>;
   try { respBody = await externalResp.json(); }
   catch {
+    console.log(`[dispatch-webhook] response was not JSON, marking synced anyway`);
     if (taskId) await setTaskSyncStatus(taskId, 'synced', null);
-    return json(200, { action: 'sent', external_id: null, note: 'response was not JSON' });
+    return json(200, { action: 'synced', external_id: null, note: 'response was not JSON' });
   }
+  console.log(`[dispatch-webhook] upstream body:`, JSON.stringify(respBody));
 
   const externalId = respBody.external_id != null
     ? String(respBody.external_id).trim() : null;
 
   if (isTaskEvent) {
-    if (!taskId) return json(200, { action: 'sent', note: 'no task_id in data' });
+    if (!taskId) return json(200, { action: 'synced', note: 'no task_id in data' });
 
     const { data: current } = await sb
       .from('tasks')
@@ -452,11 +461,16 @@ Deno.serve(async (req) => {
       externalId && !alreadySet ? externalId : undefined,
     );
 
+    // action='synced' nas duas variantes — o que difere é só se reescrevemos
+    // external_id local. Antes era 'no_change' vs 'updated', mas o nome
+    // 'no_change' confundia: dava a impressão de que NADA foi sincronizado,
+    // quando na verdade o POST foi feito e o SF recebeu os campos novos.
     return json(200, {
-      action: alreadySet ? 'no_change' : 'updated',
-      table: 'tasks',
-      id: taskId,
-      external_id: externalId,
+      action:                 'synced',
+      table:                  'tasks',
+      id:                     taskId,
+      external_id:            externalId,
+      external_id_was_already_set: alreadySet,
     });
   }
 
@@ -464,7 +478,7 @@ Deno.serve(async (req) => {
   if (taskId) await setTaskSyncStatus(taskId, 'synced', null);
 
   if (!commentId || !externalId) {
-    return json(200, { action: 'sent', external_id: externalId });
+    return json(200, { action: 'synced', external_id: externalId });
   }
 
   const { data: current } = await sb
@@ -473,12 +487,18 @@ Deno.serve(async (req) => {
     .eq('id', commentId)
     .maybeSingle();
 
-  if ((current as { external_id: string | null } | null)?.external_id === externalId) {
-    return json(200, { action: 'no_change', external_id: externalId });
+  const alreadySet = (current as { external_id: string | null } | null)?.external_id === externalId;
+
+  if (!alreadySet) {
+    // Seta last_ingest_at pra o trigger de comment não disparar webhook de saída.
+    await setCommentExternalId(commentId, externalId);
   }
 
-  // Seta last_ingest_at pra o trigger de comment não disparar webhook de saída.
-  await setCommentExternalId(commentId, externalId);
-
-  return json(200, { action: 'updated', table: 'task_comments', id: commentId, external_id: externalId });
+  return json(200, {
+    action:                      'synced',
+    table:                       'task_comments',
+    id:                          commentId,
+    external_id:                 externalId,
+    external_id_was_already_set: alreadySet,
+  });
 });
