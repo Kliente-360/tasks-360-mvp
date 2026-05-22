@@ -5,13 +5,23 @@
 //   - uma task SF é atualizada → event 'task.updated'
 //   - um comment/reply em task SF é criado/editado → 'comment.*' / 'reply.*'
 //
+// Payload de entrada (v2 · 2026-05-22): identificadores no top-level,
+// external_ids e record dentro de `data`.
+//
+//   task.updated:
+//     { event, sent_at, task_id, data: { task_external_id, external_source,
+//                                        record, old_record } }
+//   comment.* / reply.*:
+//     { event, sent_at, task_id, comment_id, is_reply,
+//       data: { task_external_id, comment_external_id, parent_id,
+//               parent_external_id, external_source, record, old_record } }
+//
 // Fluxo:
-//   1. Valida Bearer token (DISPATCH_WEBHOOK_SECRET env — obrigatório).
+//   1. Valida Bearer token (DISPATCH_WEBHOOK_SECRET env).
 //   2. Roteia pra WEBHOOK_URL_TASK ou WEBHOOK_URL_COMMENT.
 //   3. Fetch síncrono com timeout de 10s.
 //   4. Lê { external_id } do body de resposta.
 //   5. Atualiza o registro no banco com external_id + webhook_sync_status.
-//      webhook_sync_status = 'synced' | 'error' — campos com guard no trigger.
 //
 // Auth de entrada: Authorization: Bearer <DISPATCH_WEBHOOK_SECRET>
 // Env vars (Edge Functions > Settings > Secrets):
@@ -75,9 +85,12 @@ Deno.serve(async (req) => {
   }
 
   let payload: {
-    event: string;
-    sent_at: string;
-    data: Record<string, unknown>;
+    event:       string;
+    sent_at:     string;
+    task_id?:    string;
+    comment_id?: string;
+    is_reply?:   boolean;
+    data:        Record<string, unknown>;
   };
   try { payload = await req.json(); }
   catch { return err(400, 'invalid_json', 'body must be valid JSON'); }
@@ -98,7 +111,9 @@ Deno.serve(async (req) => {
     return json(200, { skipped: true, reason: `env var for ${isTaskEvent ? 'task' : 'comment'} URL not set` });
   }
 
-  const taskId = data.task_id as string | undefined;
+  // Identificadores agora vivem no top-level (payload v2).
+  const taskId    = payload.task_id;
+  const commentId = payload.comment_id;
 
   // Fetch síncrono com timeout de 10s.
   // AbortController cancela a conexão se o sistema externo não responder.
@@ -166,10 +181,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Comment / reply
-  const record    = data.record as Record<string, unknown> | undefined;
-  const commentId = record?.id as string | undefined;
-
+  // Comment / reply — commentId chega no top-level (payload v2).
   if (taskId) await setTaskSyncStatus(taskId, 'synced', null);
 
   if (!commentId || !externalId) {
