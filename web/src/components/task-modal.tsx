@@ -179,11 +179,37 @@ const TASK_LIGHT_COLS =
 export function TaskModalProvider({ children }: { children: React.ReactNode }) {
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const tasksById = useTasksById();
 
-  const openEdit = useCallback((taskId: string) => {
-    setIsNew(false);
-    setOpenTaskId(taskId);
-  }, []);
+  // Atualiza ?task=<id> via history.replaceState. Usa replace pra não
+  // empilhar histórico nem invalidar router cache do Next.
+  const syncUrlTaskParam = useCallback(
+    (id: string | null) => {
+      if (typeof window === 'undefined') return;
+      const sp = new URLSearchParams(window.location.search);
+      const cur = sp.get('task');
+      if (id && id !== '__new__') {
+        if (cur === id) return;
+        sp.set('task', id);
+      } else {
+        if (!cur) return;
+        sp.delete('task');
+      }
+      const qs = sp.toString();
+      const url = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
+      window.history.replaceState(null, '', url);
+    },
+    [],
+  );
+
+  const openEdit = useCallback(
+    (taskId: string) => {
+      setIsNew(false);
+      setOpenTaskId(taskId);
+      syncUrlTaskParam(taskId);
+    },
+    [syncUrlTaskParam],
+  );
   const openNew = useCallback(() => {
     setIsNew(true);
     setOpenTaskId('__new__');
@@ -191,7 +217,29 @@ export function TaskModalProvider({ children }: { children: React.ReactNode }) {
   const close = useCallback(() => {
     setOpenTaskId(null);
     setIsNew(false);
-  }, []);
+    syncUrlTaskParam(null);
+  }, [syncUrlTaskParam]);
+
+  // Hidrata modal a partir de ?task=<uuid> na URL. Lê direto de
+  // window.location pra não acionar CSR bailout do Next (useSearchParams
+  // força prerender dinâmico em todas as páginas (app)/*). Roda quando
+  // a task entra no store — assim deep link funciona mesmo se o usuário
+  // chegar antes do boot terminar. lastHydratedRef impede reabrir após
+  // fechar manual.
+  const lastHydratedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const id = new URLSearchParams(window.location.search).get('task');
+    if (!id) {
+      lastHydratedRef.current = null;
+      return;
+    }
+    if (lastHydratedRef.current === id) return;
+    if (!tasksById.get(id)) return;
+    lastHydratedRef.current = id;
+    setIsNew(false);
+    setOpenTaskId(id);
+  }, [tasksById]);
 
   const value = useMemo<TaskModalContextValue>(
     () => ({ openEdit, openNew, close }),
@@ -455,6 +503,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
             { jsKey: 'complexidade', field: 'complexidade', fmt: (v) => (v as string) || null },
             { jsKey: 'pessoaId', field: 'pessoa', fmt: (v) => (v as string) || null },
             { jsKey: 'subetapa', field: 'subetapa', fmt: (v) => (v as string) || null },
+            { jsKey: 'tipoTrabalho', field: 'tipo_trabalho', fmt: (v) => (v as string) || null },
             { jsKey: 'tempoRealHoras', field: 'tempo_real_horas', fmt: (v) => (v == null ? null : String(v)) },
             { jsKey: 'bloqueadoPor', field: 'bloqueado_por', fmt: (v) => (v as string) || null },
           ];
@@ -1184,6 +1233,28 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
                 <span className="as-dot" />
                 {autosaveLabel()}
               </span>
+            )}
+            {editing.id && (
+              <button
+                className="icon-btn"
+                aria-label="Copiar link desta tarefa"
+                title="Copiar link desta tarefa"
+                onClick={() => {
+                  const sp = new URLSearchParams(window.location.search);
+                  sp.set('task', editing.id);
+                  const url =
+                    window.location.origin +
+                    window.location.pathname +
+                    '?' +
+                    sp.toString();
+                  navigator.clipboard.writeText(url).then(
+                    () => toast.success('Link copiado!', 2000),
+                    () => toast.error('Não foi possível copiar.'),
+                  );
+                }}
+              >
+                🔗
+              </button>
             )}
             <button className="icon-btn" aria-label="Fechar" onClick={close}>
               ×
