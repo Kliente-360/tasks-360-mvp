@@ -970,7 +970,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
             size_bytes: processed.blob.size,
             width: processed.width,
             height: processed.height,
-            author_pessoa_id: null,
+            author_pessoa_id: currentPessoa?.id ?? null,
           })
           .select(
             'id, task_id, storage_path, mime, size_bytes, width, height, author_pessoa_id, criado_em',
@@ -987,7 +987,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
         setAttachmentUploadLabel('');
       }
     },
-    [editing.id, sb, toast],
+    [editing.id, sb, toast, currentPessoa?.id],
   );
 
   const deleteAttachment = useCallback(
