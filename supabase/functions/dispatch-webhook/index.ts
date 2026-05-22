@@ -66,11 +66,11 @@ async function setCommentExternalId(commentId: string, externalId: string) {
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return err(405, 'method_not_allowed', 'POST only');
 
-  // DISPATCH_WEBHOOK_SECRET é obrigatório — sem ele, rejeita tudo.
-  // Se env var não estiver setada, a função fica fechada até ser configurada.
+  // Auth opcional: se DISPATCH_WEBHOOK_SECRET estiver setado, valida o Bearer.
+  // Sem env var, aceita qualquer request (função só é chamada pelo pg_net interno).
   const auth = req.headers.get('authorization') ?? '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  if (!DISPATCH_SECRET || token !== DISPATCH_SECRET) {
+  if (DISPATCH_SECRET && token !== DISPATCH_SECRET) {
     return err(401, 'unauthorized', 'invalid or missing Authorization');
   }
 
