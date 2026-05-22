@@ -1288,7 +1288,129 @@ Achados em sub-seções escondidas que valem destaque:
 6. **JWT exp 1h + refresh** ~2h. Citado como crônico repetidamente. **Now**.
 7. **HABILITAR_DEPOIS.md** tem 4 features ocultas no Alpine que **estão ausentes no código Next** — não esquecer ao portar Tags / Tipo de trabalho / Dependências.
 
-#### 9.3.6 Promessas centrais do produto (rastreio)
+#### 9.3.6 Pedidos abertos · próximo ciclo (captura mai/2026)
+
+Ideias trazidas após o fechamento da auditoria de paridade. Cada item
+tem onde encaixar no horizonte Now/Next/Later e o que precisa pra
+destravar. Não estão priorizados ainda — só capturados pra não perder.
+
+##### 1. Workspaces · 3 pilares (Salesforce · Dados · IA) 🏛️
+
+Cenário: a empresa hoje opera 3 frentes de negócio com clientes, projetos,
+pessoas e dashboards potencialmente disjuntos. Misturar tudo no mesmo
+backlog dilui visão por pilar.
+
+- **O que é**: separação completa de ambientes (workspace switcher topo;
+  cada workspace tem sua coleção de clientes/projetos/pessoas/tasks).
+- **Encaixe**: **Later · grande**. É decisão estratégica + reescrita de
+  modelagem (`workspace_id` em ~todas as tabelas core) + RLS por workspace
+  + UI de switcher + onboarding de quem pertence a quê. Não cabe num PR;
+  precisa spec própria.
+- **Pré-requisitos**: cutover + observabilidade. Não começar antes de ter
+  Sentry/PostHog plugado pra ver impacto.
+- **Aviso**: hoje em `Cold storage` constava "Multi-workspace quando >2
+  agências usarem" — escopo diferente (multi-tenant externo). Este aqui é
+  *intra-empresa*. Promover pra Later quando o time decidir prazo.
+
+##### 2. Tasks criadas por IA caem em "triagem" obrigatória 🤖
+
+Cenário: hoje task com `criado_por_ia=true` entra direto no fluxo normal.
+Antes de virar trabalho, alguém precisa validar.
+
+- **O que é**: AI-created task começa com flag "aguardando triagem". Cada
+  pessoa tria as suas (o `pessoaId` sugerido pelo IA, ou todas se for
+  gestão). Já existe a aba **Triagem** no Next — basta adicionar um filtro
+  "Criadas por IA" + um chip de "pendente triagem" no card/linha.
+- **Encaixe**: **Next · pequeno-médio (~3-5 dias)**. UI quase pronta,
+  precisa só do filtro + de uma flag `triada_em` em tasks (NULL = pendente).
+- **Dependência**: `ai-suggest` (§9.3.2 item 3). Sem IA criando task, isso
+  não muda nada. Combinar lançamento.
+
+##### 3. Tarefas do Kliente360 · só Gestão cria ✋
+
+Cenário: o cliente interno **Kliente 360** (`eh_interno=true`) recebe
+tasks de "casa" — gestão estratégica, RH, finance. Não-gestão criando ali
+polui o backlog interno.
+
+- **O que é**: gate de criação. Quando o cliente selecionado no modal é
+  `eh_interno=true` E `nome ≈ "Kliente 360"`, exige `viewerRole='admin'`
+  pra salvar. Pode também esconder o cliente do dropdown pra não-admins.
+- **Encaixe**: **Now · ~2-4h**. Quick win. Gate no `editingToDbPayload` +
+  filtro no dropdown de cliente. RLS futuro (pós-workspaces) substitui.
+- **Cuidado**: não confundir com workspaces — esse gate é pontual.
+
+##### 4. Mover pra `bloqueado` → exige `bloqueadoPor` + comentário 🚧
+
+Cenário: hoje dá pra setar subetapa=`bloqueado` sem dizer quem bloqueou,
+sem comentário. Bloqueio órfão atrapalha follow-up.
+
+- **O que é**: ao escolher subetapa=`bloqueado` no modal, validar:
+  - `bloqueadoPor` obrigatório (cliente/nós/terceiro).
+  - Forçar um comentário inline ("descreva o bloqueio") que vira o
+    primeiro `task_comments` com `visivel_cliente=false`.
+- **Encaixe**: **Now · ~3-4h**. Validação no `saveManual`/`persist`. Já
+  temos o select de `bloqueadoPor`; só validar não-vazio + abrir mini-form
+  de comentário inline antes de fechar o modal.
+- **Bonus**: registrar no histórico um evento `bloqueio_iniciado` com o
+  motivo no `to_value`.
+
+##### 5. Calendário · filtro de Status 📅
+
+- **O que é**: hoje calendário do Next mostra todas as tasks com `prazo`
+  no mês. Adicionar select de Status (igual o do Backlog) — Abertas /
+  Todas / Backlog / Andamento / Bloqueado / Concluído.
+- **Encaixe**: **Now · ~1h**. Quick win puro. Espelho do Backlog filter.
+
+##### 6. Briefing · indicador de comentário novo em task em andamento 💬
+
+- **O que é**: no card do Briefing (quando a aba existir), exibir um dot
+  de "novo comentário" pras tasks `status=andamento` que tiveram comment
+  criado depois do último login do usuário. Permite olhar rápido o que
+  movimentou desde ontem.
+- **Encaixe**: **Next · 2-3 dias**. Depende do Briefing estar portado
+  (§9.3.2 item 2). Combinar lançamento.
+- **Modelagem**: precisa registrar `last_seen_at` por usuário (em
+  `pessoas.last_briefing_seen_at` ou em uma `user_view_state`). Ou usar
+  `notifications` já existente filtrando `kind='comment_on_my_task'`
+  unread.
+
+##### 7. Escopo da task alinhado com skill da pessoa 🎯
+
+Lista sugerida pelo time (3 famílias):
+
+```
+Salesforce (Admin):  Flow · Apex · LWC · Integração · Arquitetura · Consultoria
+Salesforce (Clouds): Sales Cloud · Service Cloud · Marketing Cloud
+IA / Conversacional: WhatsApp · Bot · Agentforce
+```
+
+- **O que é**: campo `tasks.escopo` (enum de 13 valores acima, com grupos)
+  + `pessoas.skills` já existe (text[]). UI de modal: select de escopo
+  igual o de subetapa, com `optgroup` por família. No dropdown de
+  responsável, **destacar** pessoas cuja `skills` cobre o escopo da task
+  (chip "match skill" ao lado do nome) — não bloquear, só sinalizar.
+- **Encaixe**: **Next · ~3-5 dias** (depois do realtime ligado).
+  Modelagem: migration adicionando `tasks.escopo text` com check constraint
+  pros 13 valores. Adapter + tipo. UI no modal. Highlight de match no
+  dropdown de pessoa. Dashboard depois pode usar.
+- **Bonus**: heurística futura "task X tem escopo Y, mas responsável não
+  tem skill Y" — entra como sugestão em §9.3.3 "skill mismatch".
+
+##### Como decidir o próximo passo
+
+Recomendação:
+1. **Now·rápidos** (itens #3, #4, #5) podem virar 1 PR só (~1 dia, sem
+   dependência).
+2. **Cutover** continua sendo o bloqueio do roadmap consolidado. Encaixar
+   esses 3 quick wins **antes do cutover** é seguro (pequenos, isolados).
+3. **#7 (escopo+skill)** pareia bem com `ai-suggest` (Next item 3 de
+   §9.3.2) — IA pode sugerir o escopo. Atacar junto.
+4. **#1 (workspaces)** só depois do cutover + observabilidade. Marcar pra
+   spec discovery em sessão dedicada.
+5. **#2 (triagem IA) e #6 (briefing comment dot)** caem natural com os
+   itens já planejados pra Next (§9.3.2). Sem trabalho prévio.
+
+#### 9.3.7 Promessas centrais do produto (rastreio)
 
 | Promessa | Status hoje | Destrava em |
 |---|---|---|
