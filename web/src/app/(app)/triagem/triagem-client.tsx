@@ -38,6 +38,7 @@ type BulkPending = {
   pessoa: string;
   prazo: string;
   esforco: string;
+  prioridade: string;
 };
 
 const DEFAULT_FILTER: TriagemFilter = {
@@ -47,7 +48,7 @@ const DEFAULT_FILTER: TriagemFilter = {
   origem: '',
 };
 
-const DEFAULT_BULK: BulkPending = { pessoa: '', prazo: '', esforco: '' };
+const DEFAULT_BULK: BulkPending = { pessoa: '', prazo: '', esforco: '', prioridade: '' };
 
 type TaskWithFailures = Task & { _failures: string[]; _failCount: number };
 
@@ -176,6 +177,10 @@ export function TriagemClient() {
       }
       updates.esforco = num;
       localPatch.esforco = num;
+    }
+    if (p.prioridade) {
+      updates.prioridade = p.prioridade;
+      localPatch.prioridade = p.prioridade as Task['prioridade'];
     }
     if (Object.keys(updates).length === 0) return;
     const { error } = await sb.from('tasks').update(updates).in('id', ids);
@@ -425,12 +430,24 @@ export function TriagemClient() {
           onChange={(e) => setBulkPending({ ...bulkPending, esforco: e.target.value })}
           title="Esforço em horas"
         />
+        <select
+          className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[80px]"
+          value={bulkPending.prioridade}
+          onChange={(e) => setBulkPending({ ...bulkPending, prioridade: e.target.value })}
+          title="Prioridade"
+        >
+          <option value="">pri…</option>
+          <option value="P0">P0</option>
+          <option value="P1">P1</option>
+          <option value="P2">P2</option>
+          <option value="P3">P3</option>
+        </select>
         <div className="flex gap-2 md:contents">
           <button
             type="button"
             className="btn btn-primary text-sm md:text-xs py-2 md:py-1.5 px-3 md:px-2 flex-1 md:flex-none justify-center"
             onClick={bulkSave}
-            disabled={!(bulkPending.pessoa || bulkPending.prazo || bulkPending.esforco !== '')}
+            disabled={!(bulkPending.pessoa || bulkPending.prazo || bulkPending.esforco !== '' || bulkPending.prioridade)}
           >
             salvar
           </button>
