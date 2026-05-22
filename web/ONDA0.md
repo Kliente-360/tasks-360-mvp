@@ -1,6 +1,6 @@
 # Onda 0 — Plano de migração de stack
 
-> **Status: ✅ feature-complete · pré-cutover · v1.02.161** (mai/2026)
+> **Status: ✅ feature-complete · paridade auditada · pré-cutover · v1.02.167** (mai/2026)
 >
 > Todos os blocos 1-4.J entregues. Branch ativa `feat/onda-0` em preview Vercel. Falta só o Bloco 5 (cutover do domínio principal).
 >
@@ -317,6 +317,7 @@ Captura final de status. Histórico vivo + roadmap pós-Onda 0 estão em `ROADMA
 | 4.H | Quick capture (`n`) + Global shortcuts (`g+f/b/k/c/d/t/l` · `⌘+Enter` no modal) | ✅ |
 | 4.I | PWA (manifest + ícone redondo + splash iOS + service worker Serwist) | ✅ |
 | 4.J | Smoke tests (44 vitest + 3 playwright) + CI GitHub Actions + lint zero warnings | ✅ |
+| 4.K | Auditoria de paridade Alpine→Next · 5 PRs (A · RLS+segurança · B · Backlog+Modal · C · Cadastros pessoas · D · Mention picker + drafts · E · cleanup) | ✅ |
 | 5 | **Cutover Vercel** | 🎯 próximo |
 
 ### Pendências e parkings declarados
