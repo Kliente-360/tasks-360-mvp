@@ -9,9 +9,10 @@
  * instantânea (sem revalidatePath round-trip).
  */
 
-import { useMemo, useState, useTransition } from 'react';
+import { useCallback, useMemo, useRef, useState, useTransition } from 'react';
 import { useData } from '@/lib/data-store';
 import { useToast } from '@/components/toast';
+import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   arquivarCliente,
@@ -38,12 +39,17 @@ export function CadastrosClient() {
     error,
     upsertCliente,
     upsertProjeto,
+    upsertPessoa,
     removeCliente,
     removeProjeto,
     removePessoa,
     viewerRole,
   } = useData();
   const isAdmin = viewerRole === 'admin';
+
+  const sbRef = useRef<ReturnType<typeof createClient> | null>(null);
+  if (!sbRef.current) sbRef.current = createClient();
+  const sb = sbRef.current;
 
   const [tab, setTab] = useState<Tab>('clientes');
   const [showArquivados, setShowArquivados] = useState(false);
@@ -158,6 +164,78 @@ export function CadastrosClient() {
       else toast.error(res.error);
     });
   };
+
+  // Convida cliente externo: marca invited_at + dispara magic link.
+  // Espelho de anexos.js:667 (Alpine). 1) sempre marca invited_at antes
+  // do email pra liberar acesso futuro mesmo se o send falhar; 2) o
+  // magic link redireciona pro mesmo domínio onde o cadastro abriu —
+  // funciona em preview Vercel sem hard-coding.
+  const runConvidarPessoa = useCallback(
+    async (id: string, nome: string, email: string | null) => {
+      if (!email) {
+        toast.error(`${nome} não tem email cadastrado. Edite a pessoa antes.`);
+        return;
+      }
+      const nowIso = new Date().toISOString();
+      const prev = pessoas.find((p) => p.id === id);
+      const { error: upErr } = await sb.from('pessoas').update({ invited_at: nowIso }).eq('id', id);
+      if (upErr) {
+        toast.error('Erro ao marcar convite: ' + upErr.message);
+        return;
+      }
+      if (prev) upsertPessoa({ ...prev, invited_at: nowIso });
+      const { error } = await sb.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin + window.location.pathname },
+      });
+      if (error) {
+        toast.error('Convite marcado, mas falha ao enviar email: ' + error.message);
+        return;
+      }
+      toast.success(`Convite enviado para ${email}`);
+    },
+    [pessoas, sb, toast, upsertPessoa],
+  );
+
+  // Ativa interno/admin: só marca invited_at (login é via Google).
+  const runAtivarPessoa = useCallback(
+    async (id: string, nome: string, email: string | null) => {
+      if (!email) {
+        toast.error(`${nome} não tem email. Edite a pessoa antes de ativar.`);
+        return;
+      }
+      const nowIso = new Date().toISOString();
+      const prev = pessoas.find((p) => p.id === id);
+      if (prev) upsertPessoa({ ...prev, invited_at: nowIso });
+      const { error } = await sb.from('pessoas').update({ invited_at: nowIso }).eq('id', id);
+      if (error) {
+        if (prev) upsertPessoa(prev);
+        toast.error('Erro ao ativar: ' + error.message);
+        return;
+      }
+      toast.success(`${nome} ativada. Já pode entrar com Google.`);
+    },
+    [pessoas, sb, toast, upsertPessoa],
+  );
+
+  // Revoga acesso: zera invited_at. Sessão ativa expira no próximo
+  // refresh do browser (não fazemos kill remoto — não temos service-role
+  // no client).
+  const runDesativarPessoa = useCallback(
+    async (id: string, nome: string) => {
+      if (!confirm(`Revogar acesso de ${nome}? A sessão ativa expira no próximo refresh do browser dele.`)) return;
+      const prev = pessoas.find((p) => p.id === id);
+      if (prev) upsertPessoa({ ...prev, invited_at: null });
+      const { error } = await sb.from('pessoas').update({ invited_at: null }).eq('id', id);
+      if (error) {
+        if (prev) upsertPessoa(prev);
+        toast.error('Erro ao revogar: ' + error.message);
+        return;
+      }
+      toast.success(`Acesso de ${nome} revogado.`);
+    },
+    [pessoas, sb, toast, upsertPessoa],
+  );
 
   const runDeletePessoa = (id: string, nome: string) => {
     const tcount = tasksByPessoa.get(id) ?? 0;
@@ -401,7 +479,47 @@ export function CadastrosClient() {
                   <p className="text-xs text-muted font-mono truncate">{p.email ?? '—'}</p>
                 </div>
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-wrap justify-end">
+                {isAdmin && p.role === 'cliente' && !p.invited_at && (
+                  <button
+                    type="button"
+                    className="btn-ghost-sm"
+                    onClick={() => runConvidarPessoa(p.id, p.nome, p.email)}
+                    title="Enviar magic link de acesso ao Portal"
+                  >
+                    convidar
+                  </button>
+                )}
+                {isAdmin && p.role === 'cliente' && !!p.invited_at && (
+                  <button
+                    type="button"
+                    className="btn-ghost-sm"
+                    onClick={() => runConvidarPessoa(p.id, p.nome, p.email)}
+                    title="Reenviar magic link"
+                  >
+                    reenviar
+                  </button>
+                )}
+                {isAdmin && p.role !== 'cliente' && !p.invited_at && (
+                  <button
+                    type="button"
+                    className="btn-ghost-sm"
+                    onClick={() => runAtivarPessoa(p.id, p.nome, p.email)}
+                    title="Liberar acesso (login via Google)"
+                  >
+                    ativar
+                  </button>
+                )}
+                {isAdmin && !!p.invited_at && (
+                  <button
+                    type="button"
+                    className="btn-ghost-sm text-[color:var(--muted)]"
+                    onClick={() => runDesativarPessoa(p.id, p.nome)}
+                    title="Revogar acesso"
+                  >
+                    inativar
+                  </button>
+                )}
                 <EditPessoaButton
                   pessoa={{
                     id: p.id,
