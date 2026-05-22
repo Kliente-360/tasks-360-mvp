@@ -456,6 +456,7 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
   const editingRef = useRef(editing);
   editingRef.current = editing;
 
+
   // ===== Tabs =====
   const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
   const [modalTab, setModalTab] = useState<'detalhes' | 'conversa' | 'anexos' | 'historico'>(
@@ -530,6 +531,39 @@ function TaskModal({ taskId, onClose }: { taskId: string | null; onClose: () => 
   // suprime o primeiro pulse "dirty" quando carregamos a task — o useEffect
   // que escuta editing dispara após o set inicial.
   const skipNextDirty = useRef(true);
+
+  // ===== Sync status push (realtime) =====
+  // Quando dispatch-webhook termina (synced ou error), o UPDATE em
+  // tasks.webhook_sync_status / webhook_sync_error vem via realtime
+  // pra `tasksById`. Sincronizamos esses 2 campos no `editing` local
+  // (chip do header reage) e toastamos a transição. Só toasta em
+  // CHANGE — se já estava 'error' quando o modal abriu, não re-toasta.
+  const live = editing.id ? tasksById.get(editing.id) : null;
+  const prevSyncRef = useRef<{ status: string; error: string } | null>(null);
+  useEffect(() => {
+    if (!editing.id || !live) return;
+    const cur = {
+      status: live.webhookSyncStatus ?? '',
+      error:  live.webhookSyncError  ?? '',
+    };
+    // Mantém chip do header em sincronia com o servidor (campo
+    // server-driven, user não edita — safe sobrescrever).
+    setEditing((e) => {
+      if (e.webhookSyncStatus === cur.status && e.webhookSyncError === cur.error) return e;
+      skipNextDirty.current = true; // não marca dirty por essa sync
+      return { ...e, webhookSyncStatus: cur.status, webhookSyncError: cur.error };
+    });
+    const prev = prevSyncRef.current;
+    if (prev && prev.status !== cur.status) {
+      if (cur.status === 'synced') {
+        toast.success('Sincronizado com Salesforce');
+      } else if (cur.status === 'error') {
+        toast.error('Falha ao sincronizar: ' + (cur.error || 'erro desconhecido'));
+      }
+    }
+    prevSyncRef.current = cur;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live?.webhookSyncStatus, live?.webhookSyncError, editing.id]);
 
   // ============ Helpers para resolver entidades ============
   const clientesAtivos = useMemo(() => clientes.filter((c) => !c.arquivadoEm), [clientes]);
