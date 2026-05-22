@@ -55,31 +55,36 @@
 // Match cliente case-insensitive: contém "vb" → VB, contém "ctf" → CTF
 // (mesmo critério da migration 2026-05-21_webhook_enabled_vb_ctf.sql).
 //
-// Env vars (Edge Functions > Settings > Secrets):
+// Env vars (Edge Functions > Settings > Secrets) — 1 par genérico + 5 por cliente:
 //   DISPATCH_WEBHOOK_SECRET    — obrigatório; valida Bearer da entrada
-//   WEBHOOK_URL_TASK           — endpoint externo para task.updated
-//   WEBHOOK_URL_COMMENT        — endpoint externo para comment.*/reply.*
 //   WEBHOOK_TOKEN_URL_VB       — URL OAuth do VB (ex: .../services/oauth2/token)
 //   WEBHOOK_CLIENT_ID_VB       — client_id (consumer key) do connected app VB
 //   WEBHOOK_CLIENT_SECRET_VB   — client_secret (consumer secret) do VB
+//   WEBHOOK_URL_TASK_VB        — endpoint externo do VB para task.updated
+//   WEBHOOK_URL_COMMENT_VB     — endpoint externo do VB para comment.*/reply.*
 //   WEBHOOK_TOKEN_URL_CTF      — URL OAuth do CTF
 //   WEBHOOK_CLIENT_ID_CTF      — client_id do CTF
 //   WEBHOOK_CLIENT_SECRET_CTF  — client_secret do CTF
+//   WEBHOOK_URL_TASK_CTF       — endpoint externo do CTF para task.updated
+//   WEBHOOK_URL_COMMENT_CTF    — endpoint externo do CTF para comment.*/reply.*
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL    = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY     = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const DISPATCH_SECRET = Deno.env.get('DISPATCH_WEBHOOK_SECRET') ?? '';
-const URL_TASK        = Deno.env.get('WEBHOOK_URL_TASK') ?? '';
-const URL_COMMENT     = Deno.env.get('WEBHOOK_URL_COMMENT') ?? '';
 
 const TOKEN_URL_VB      = Deno.env.get('WEBHOOK_TOKEN_URL_VB')      ?? '';
 const CLIENT_ID_VB      = Deno.env.get('WEBHOOK_CLIENT_ID_VB')      ?? '';
 const CLIENT_SECRET_VB  = Deno.env.get('WEBHOOK_CLIENT_SECRET_VB')  ?? '';
+const URL_TASK_VB       = Deno.env.get('WEBHOOK_URL_TASK_VB')       ?? '';
+const URL_COMMENT_VB    = Deno.env.get('WEBHOOK_URL_COMMENT_VB')    ?? '';
+
 const TOKEN_URL_CTF     = Deno.env.get('WEBHOOK_TOKEN_URL_CTF')     ?? '';
 const CLIENT_ID_CTF     = Deno.env.get('WEBHOOK_CLIENT_ID_CTF')     ?? '';
 const CLIENT_SECRET_CTF = Deno.env.get('WEBHOOK_CLIENT_SECRET_CTF') ?? '';
+const URL_TASK_CTF      = Deno.env.get('WEBHOOK_URL_TASK_CTF')      ?? '';
+const URL_COMMENT_CTF   = Deno.env.get('WEBHOOK_URL_COMMENT_CTF')   ?? '';
 
 const FETCH_TIMEOUT_MS = 10_000;
 // SF session default = 1h. Cacheamos 50min pra renovar antes de expirar
@@ -91,10 +96,13 @@ type Creds = {
   token_url:     string;
   client_id:     string;
   client_secret: string;
+  url_task:      string;
+  url_comment:   string;
 };
 
 /**
- * Escolhe o par token_url/client_id/client_secret baseado no nome do cliente.
+ * Escolhe o conjunto completo (token_url, client_id, client_secret,
+ * url_task, url_comment) baseado no nome do cliente.
  * Match case-insensitive: nome contém "vb" → VB, contém "ctf" → CTF.
  * Mantém o mesmo critério da migration 2026-05-21_webhook_enabled_vb_ctf.sql
  * que ligou o flag webhook_enabled nesses clientes.
@@ -102,8 +110,22 @@ type Creds = {
 function pickCreds(clienteNome: string | null): Creds | null {
   if (!clienteNome) return null;
   const n = clienteNome.toLowerCase();
-  if (n.includes('vb'))  return { cliente: 'VB',  token_url: TOKEN_URL_VB,  client_id: CLIENT_ID_VB,  client_secret: CLIENT_SECRET_VB };
-  if (n.includes('ctf')) return { cliente: 'CTF', token_url: TOKEN_URL_CTF, client_id: CLIENT_ID_CTF, client_secret: CLIENT_SECRET_CTF };
+  if (n.includes('vb')) return {
+    cliente: 'VB',
+    token_url:     TOKEN_URL_VB,
+    client_id:     CLIENT_ID_VB,
+    client_secret: CLIENT_SECRET_VB,
+    url_task:      URL_TASK_VB,
+    url_comment:   URL_COMMENT_VB,
+  };
+  if (n.includes('ctf')) return {
+    cliente: 'CTF',
+    token_url:     TOKEN_URL_CTF,
+    client_id:     CLIENT_ID_CTF,
+    client_secret: CLIENT_SECRET_CTF,
+    url_task:      URL_TASK_CTF,
+    url_comment:   URL_COMMENT_CTF,
+  };
   return null;
 }
 
@@ -246,16 +268,11 @@ Deno.serve(async (req) => {
     return json(200, { skipped: true, reason: 'unknown event type' });
   }
 
-  const targetUrl = isTaskEvent ? URL_TASK : URL_COMMENT;
-  if (!targetUrl) {
-    return json(200, { skipped: true, reason: `env var for ${isTaskEvent ? 'task' : 'comment'} URL not set` });
-  }
-
   // Identificadores agora vivem no top-level (payload v2).
   const taskId    = payload.task_id;
   const commentId = payload.comment_id;
 
-  // Descobre o cliente da task (pra escolher client_id/client_secret).
+  // Descobre o cliente da task (pra escolher conjunto OAuth + URLs).
   // task event tem cliente_id no record; comment/reply só tem task_id e
   // precisa de lookup. Ambos terminam em "qual cliente é VB/CTF?".
   let clienteNome: string | null = null;
@@ -281,6 +298,14 @@ Deno.serve(async (req) => {
     const msg = clienteNome
       ? `no credentials configured for cliente "${clienteNome}"`
       : 'no cliente linked to task; cannot pick credentials';
+    if (taskId) await setTaskSyncStatus(taskId, 'error', msg);
+    return json(200, { skipped: true, reason: msg });
+  }
+
+  // URL agora vem do conjunto de credenciais do cliente.
+  const targetUrl = isTaskEvent ? creds.url_task : creds.url_comment;
+  if (!targetUrl) {
+    const msg = `env var WEBHOOK_URL_${isTaskEvent ? 'TASK' : 'COMMENT'}_${creds.cliente} not set`;
     if (taskId) await setTaskSyncStatus(taskId, 'error', msg);
     return json(200, { skipped: true, reason: msg });
   }

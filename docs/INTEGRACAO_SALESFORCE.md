@@ -314,17 +314,15 @@ sequenceDiagram
     SF_API-->>T: { external_id: "0D5..." }
 ```
 
-**O que você precisa nos passar** (1 conjunto por cliente, total 2 conjuntos pra VB + CTF):
+**O que você precisa nos passar** (5 itens por cliente — 10 envs no total pra VB + CTF):
 
-| Item | Exemplo | Onde vai no nosso lado |
+| Item | Exemplo | Env do nosso lado |
 |---|---|---|
-| Token URL | `https://sempararempresas--homol.sandbox.my.salesforce.com/services/oauth2/token` | env `WEBHOOK_TOKEN_URL_<VB\|CTF>` |
-| Consumer Key (client_id) | `3MVG9...` | env `WEBHOOK_CLIENT_ID_<VB\|CTF>` |
-| Consumer Secret (client_secret) | `1234...` | env `WEBHOOK_CLIENT_SECRET_<VB\|CTF>` |
-| Webhook URL (task) | `.../services/apexrest/tasks360/task` | env `WEBHOOK_URL_TASK` (1 só, multi-cliente discriminado pelo token) |
-| Webhook URL (comment) | `.../services/apexrest/tasks360/comment` | env `WEBHOOK_URL_COMMENT` |
-
-> **Atenção**: hoje as URLs do webhook (`WEBHOOK_URL_TASK`/`WEBHOOK_URL_COMMENT`) são globais — assumimos que o mesmo endpoint atende VB e CTF e descobre o cliente pelo token. Se preferir URLs distintas por cliente, me avise pra reestruturar.
+| Token URL | `https://sempararempresas--homol.sandbox.my.salesforce.com/services/oauth2/token` | `WEBHOOK_TOKEN_URL_<VB\|CTF>` |
+| Consumer Key (client_id) | `3MVG9...` | `WEBHOOK_CLIENT_ID_<VB\|CTF>` |
+| Consumer Secret (client_secret) | `1234...` | `WEBHOOK_CLIENT_SECRET_<VB\|CTF>` |
+| Webhook URL (task) | `.../services/apexrest/tasks360/task` | `WEBHOOK_URL_TASK_<VB\|CTF>` |
+| Webhook URL (comment) | `.../services/apexrest/tasks360/comment` | `WEBHOOK_URL_COMMENT_<VB\|CTF>` |
 
 **Headers que você recebe em cada webhook** (passo 3 do diagrama):
 
