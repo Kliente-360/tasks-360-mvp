@@ -210,14 +210,28 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (!pessoa && email) {
         const r2 = await sb.from('pessoas').select(COLS).ilike('email', email).maybeSingle();
         if (cancelled) return;
-        if (r2.error) return;
-        if (r2.data) {
+        if (!r2.error && r2.data) {
           const raw = r2.data as Record<string, unknown>;
           if (!raw.user_id) {
-            await sb.from('pessoas').update({ user_id: userId }).eq('id', String(raw.id));
-            raw.user_id = userId;
+            const upd = await sb
+              .from('pessoas')
+              .update({ user_id: userId })
+              .eq('id', String(raw.id));
+            if (!upd.error) raw.user_id = userId;
           }
           pessoa = pessoaFromDb(raw);
+        }
+      }
+      // 3) RPC security-definer — cliente recém-convidado pode não ter
+      //    SELECT em pessoas via RLS até o user_id estar vinculado. A
+      //    função roda como definer, faz match por email do JWT e popula
+      //    user_id atomicamente. Espelho de lib/app.js:468.
+      if (!pessoa) {
+        const rpc = await sb.rpc('app_link_current_user_to_pessoa');
+        if (cancelled) return;
+        if (!rpc.error && rpc.data) {
+          const linked = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+          if (linked) pessoa = pessoaFromDb(linked as Record<string, unknown>);
         }
       }
       if (cancelled) return;
