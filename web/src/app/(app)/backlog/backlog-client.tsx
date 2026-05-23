@@ -5,6 +5,10 @@
  * Porta completa da aba Backlog do app Alpine: filtros, busca, sort
  * encadeado, agrupamento, paginação, cards de stats, DnD manual,
  * bulk actions, cards mobile.
+ *
+ * Pendências de UX (vêm nos próximos blocos):
+ *   - Click em linha abrindo modal de task → Bloco 2.3
+ *   - Botão excluir linha (admin) → Bloco 2.8 polimento
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -14,8 +18,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useTaskModal } from '@/components/task-modal';
 import { useToast } from '@/components/toast';
 import { BulkBar, BulkBarClearButton, BulkBarSep } from '@/components/bulk-bar';
-import { atrasada, agingDays, agingLevel, fmtDate, fmtDateShort, lblComplex, lblStatus } from '@/lib/task-utils';
-import { STATUS, SUB_LABELS, SUBS_FLAT, SUB_TO_MACRO } from '@/lib/task-constants';
+import { atrasada, agingDays, agingLevel, fmtDate, fmtDateShort, fmtTempoEtapa, lblComplex, lblStatus } from '@/lib/task-utils';
+import { STATUS, SUB_LABELS, SUBS_FLAT } from '@/lib/task-constants';
 import { CLEAR_FILTERS_EVENT } from '@/lib/events';
 import type { Task } from '@/lib/types';
 
@@ -41,7 +45,6 @@ type Filters = {
 };
 
 type BulkPending = {
-  subetapa: string;
   pessoa: string;
   cliente: string;
   projeto: string;
@@ -67,7 +70,6 @@ const DEFAULT_FILTERS: Filters = {
 };
 
 const DEFAULT_BULK: BulkPending = {
-  subetapa: '',
   pessoa: '',
   cliente: '',
   projeto: '',
@@ -99,7 +101,6 @@ export function BacklogClient() {
     patchTasks,
     removeTasks,
     viewerRole,
-    currentPessoa,
   } = useData();
   const isAdmin = viewerRole === 'admin';
   const clientesById = useClientesById();
@@ -423,98 +424,10 @@ export function BacklogClient() {
     setBulkPending(DEFAULT_BULK);
   }, []);
 
-  // Aplica subetapa em lote. Espelho do bulkSetSubetapa do Alpine:
-  // pra cada task com subetapa diferente, atualiza subetapa + subetapa_em
-  // + status (macro) + status_em (se mudou); insere histórico + notifica
-  // assignee quando o macro muda. Roda fora do update batch porque cada
-  // task pode ter status macro diferente.
-  const applyBulkSubetapa = useCallback(
-    async (sub: string) => {
-      if (!sub) return;
-      const ids = [...selectedIds];
-      if (!ids.length) return;
-      const targets = ids
-        .map((id) => tasks.find((t) => t.id === id))
-        .filter((t): t is Task => !!t && t.subetapa !== sub);
-      if (!targets.length) return;
-      const newMacro = (SUB_TO_MACRO[sub] || 'backlog') as Task['status'];
-      const nowMs = Date.now();
-      const nowIso = new Date(nowMs).toISOString();
-      const historyRows: Record<string, unknown>[] = [];
-      const notifRows: Record<string, unknown>[] = [];
-      // Agrupa updates por status atual (cada grupo recebe seu próprio macro).
-      const errors: string[] = [];
-      for (const t of targets) {
-        const macroChanged = t.status !== newMacro;
-        const payload: Record<string, unknown> = {
-          subetapa: sub,
-          subetapa_em: nowIso,
-        };
-        if (macroChanged) {
-          payload.status = newMacro;
-          payload.status_em = nowIso;
-        }
-        const { error: upErr } = await sb.from('tasks').update(payload).eq('id', t.id);
-        if (upErr) {
-          errors.push(upErr.message);
-          continue;
-        }
-        patchTasks([t.id], {
-          subetapa: sub,
-          status: macroChanged ? newMacro : t.status,
-          subetapaEm: nowMs,
-          statusEm: macroChanged ? nowMs : t.statusEm,
-        });
-        historyRows.push({
-          task_id: t.id,
-          field: 'subetapa',
-          from_value: t.subetapa,
-          to_value: sub,
-          actor_pessoa_id: currentPessoa?.id ?? null,
-          actor_source: 'app',
-          occurred_at: nowIso,
-        });
-        if (macroChanged) {
-          historyRows.push({
-            task_id: t.id,
-            field: 'status',
-            from_value: t.status,
-            to_value: newMacro,
-            actor_pessoa_id: currentPessoa?.id ?? null,
-            actor_source: 'app',
-            occurred_at: nowIso,
-          });
-          if (t.pessoaId && t.pessoaId !== currentPessoa?.id) {
-            notifRows.push({
-              recipient_pessoa_id: t.pessoaId,
-              kind: 'status_change',
-              payload: {
-                author: currentPessoa?.nome ?? 'app',
-                task_id: t.id,
-                from: t.status || '∅',
-                to: newMacro,
-              },
-              source_task_id: t.id,
-            });
-          }
-        }
-      }
-      if (historyRows.length) sb.from('task_field_history').insert(historyRows);
-      if (notifRows.length) sb.from('notifications').insert(notifRows);
-      if (errors.length) {
-        toast.error('Erro em ' + errors.length + ' tarefa(s): ' + errors[0]);
-      } else {
-        toast.success(targets.length + ' tarefa(s) movida(s).');
-      }
-    },
-    [selectedIds, tasks, sb, patchTasks, currentPessoa, toast],
-  );
-
   const bulkSave = useCallback(async () => {
     const p = bulkPending;
     const ids = [...selectedIds];
     if (!ids.length) return;
-    if (p.subetapa) await applyBulkSubetapa(p.subetapa);
     const updates: Record<string, unknown> = {};
     const localPatch: Partial<Task> = {};
     if (p.pessoa) {
@@ -548,10 +461,7 @@ export function BacklogClient() {
       updates.esforco = num;
       localPatch.esforco = num;
     }
-    if (Object.keys(updates).length === 0) {
-      setBulkPending(DEFAULT_BULK);
-      return;
-    }
+    if (Object.keys(updates).length === 0) return;
     const { error } = await sb.from('tasks').update(updates).in('id', ids);
     if (error) {
       toast.error('Erro: ' + error.message);
@@ -559,7 +469,7 @@ export function BacklogClient() {
     }
     patchTasks(ids, localPatch);
     setBulkPending(DEFAULT_BULK);
-  }, [bulkPending, selectedIds, sb, patchTasks, toast, applyBulkSubetapa]);
+  }, [bulkPending, selectedIds, sb, patchTasks, toast]);
 
   const bulkArquivar = useCallback(async () => {
     const ids = [...selectedIds];
@@ -596,35 +506,6 @@ export function BacklogClient() {
 
   const { openEdit: openEditModal, openNew } = useTaskModal();
   const openEdit = useCallback((t: Task) => openEditModal(t.id), [openEditModal]);
-
-  // Delete uma única tarefa (admin-only). Pattern espelhado do bulkDelete:
-  // best-effort remove de anexos, depois delete na tabela. Optimistic via
-  // removeTasks; em erro fica registrado no toast (sem reverter — refetch
-  // do realtime recoloca se preciso).
-  const deleteOne = useCallback(
-    async (id: string) => {
-      if (!confirm('Excluir esta tarefa? Esta ação não pode ser desfeita.')) return;
-      try {
-        const { data: atts } = await sb
-          .from('task_attachments')
-          .select('storage_path')
-          .eq('task_id', id);
-        const paths = ((atts ?? []) as { storage_path: string | null }[])
-          .map((a) => a.storage_path)
-          .filter((p): p is string => !!p);
-        if (paths.length) await sb.storage.from('task-attachments').remove(paths);
-      } catch {
-        /* best-effort */
-      }
-      const { error } = await sb.from('tasks').delete().eq('id', id);
-      if (error) {
-        toast.error('Erro: ' + error.message);
-        return;
-      }
-      removeTasks([id]);
-    },
-    [sb, removeTasks, toast],
-  );
 
   if (loading) return <div className="text-muted text-sm">Carregando…</div>;
   if (error) return <div className="text-[color:var(--danger)] text-sm">Erro: {error}</div>;
@@ -1170,10 +1051,7 @@ export function BacklogClient() {
                         <span
                           className="status"
                           data-s={t.status}
-                          title={`${lblStatus(t.status)} · ${(() => {
-                            const d = agingDays(t);
-                            return d <= 0 ? 'hoje' : d === 1 ? 'há 1d' : `há ${d}d`;
-                          })()}`}
+                          title={`${lblStatus(t.status)} · ${fmtTempoEtapa(t.statusEm)}`}
                         >
                           <span className="status-dot" />
                           {SUB_LABELS[t.subetapa] ?? t.subetapa}
@@ -1188,19 +1066,7 @@ export function BacklogClient() {
                         )}
                       </div>
                     </td>
-                    <td onClick={(e) => e.stopPropagation()}>
-                      {isAdmin && (
-                        <button
-                          type="button"
-                          className="text-muted hover:text-danger text-sm leading-none px-1.5 py-1 rounded transition"
-                          onClick={() => deleteOne(t.id)}
-                          title="Excluir tarefa"
-                          aria-label="Excluir tarefa"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </td>
+                    <td></td>
                   </tr>
                 );
               })}
@@ -1294,7 +1160,7 @@ export function BacklogClient() {
                           {lblStatus(t.status)}
                         </span>
                         {lblStatus(t.status) !== (SUB_LABELS[t.subetapa] ?? t.subetapa) && (
-                          <span className="text-[10px] font-mono text-muted">
+                          <span className="text-[10px] text-muted">
                             › <span className="text-ink-soft">{SUB_LABELS[t.subetapa] ?? t.subetapa}</span>
                           </span>
                         )}
@@ -1326,19 +1192,6 @@ export function BacklogClient() {
       </div>
 
       <BulkBar selectedCount={selectedIds.length} onClear={clearSelection}>
-        <select
-          className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[150px]"
-          value={bulkPending.subetapa}
-          onChange={(e) => setBulkPending({ ...bulkPending, subetapa: e.target.value })}
-          title="Etapa"
-        >
-          <option value="">etapa…</option>
-          {SUBS_FLAT.map((s) => (
-            <option key={s} value={s}>
-              {SUB_LABELS[s] ?? s}
-            </option>
-          ))}
-        </select>
         <select
           className="inp text-sm md:text-xs py-2 md:py-1.5 w-full md:w-[130px]"
           value={bulkPending.pessoa}
@@ -1415,7 +1268,6 @@ export function BacklogClient() {
             onClick={bulkSave}
             disabled={
               !(
-                bulkPending.subetapa ||
                 bulkPending.pessoa ||
                 bulkPending.cliente ||
                 bulkPending.projeto ||

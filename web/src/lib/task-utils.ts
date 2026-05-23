@@ -71,11 +71,23 @@ export function agingLevel(t: Pick<Task, 'status' | 'statusEm'>): AgingLevel {
 
 /** Tempo na etapa atual em label curto ('hoje', 'há 1d', 'há Nd'). */
 export function tempoNaEtapa(t: Pick<Task, 'statusEm'>): string {
-  if (!t.statusEm) return '';
-  const d = Math.floor((Date.now() - t.statusEm) / 86400000);
+  return fmtTempoEtapa(t.statusEm);
+}
+
+/** Linguagem natural pra "tempo numa etapa/status": hoje · 1 dia · N dias. */
+export function fmtTempoEtapa(ts?: number | null): string {
+  if (!ts) return '';
+  const d = Math.floor((Date.now() - ts) / 86400000);
   if (d <= 0) return 'hoje';
-  if (d === 1) return 'há 1d';
-  return `há ${d}d`;
+  if (d === 1) return '1 dia';
+  return `${d} dias`;
+}
+
+/** Label de atraso em linguagem natural: 'Xd atrasada' (sem o '+'). */
+export function fmtAtrasoLabel(dias: number): string {
+  if (dias <= 0) return '';
+  if (dias === 1) return '1 dia atrasada';
+  return `${dias} dias atrasada`;
 }
 
 /** Lista o que falta na task pra estar "triada". Vazio = ok. */

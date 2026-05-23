@@ -28,7 +28,7 @@ import {
 import { useTaskModal } from '@/components/task-modal';
 import { useToast } from '@/components/toast';
 import { createClient } from '@/lib/supabase/client';
-import { agingDays, agingLevel, atrasada, fmtDateShort, lblStatus, matchesPrazoFilter, needsTriage, triageFailures, type PrazoFilter } from '@/lib/task-utils';
+import { agingDays, agingLevel, atrasada, fmtDateShort, fmtTempoEtapa, lblStatus, matchesPrazoFilter, needsTriage, triageFailures, type PrazoFilter } from '@/lib/task-utils';
 import { SUB_LABELS, SUBS_FLAT, SUB_TO_MACRO } from '@/lib/task-constants';
 import { CLEAR_FILTERS_EVENT } from '@/lib/events';
 import type { Task } from '@/lib/types';
@@ -215,14 +215,7 @@ export function KanbanClient() {
   );
 
   // ===== Render helpers =====
-  const tempoNaSubetapa = (t: Task): string => {
-    const ts = t.subetapaEm || t.statusEm;
-    if (!ts) return '';
-    const d = Math.floor((Date.now() - ts) / 86400000);
-    if (d <= 0) return 'hoje';
-    if (d === 1) return 'há 1d';
-    return 'há ' + d + 'd';
-  };
+  const tempoNaSubetapa = (t: Task): string => fmtTempoEtapa(t.subetapaEm || t.statusEm);
 
   // Mobile cai aqui só por uma fração antes do router.replace executar —
   // não renderiza nada pra evitar flash do layout op com 11 colunas.
@@ -372,7 +365,7 @@ export function KanbanClient() {
                     projetoName={projetosById.get(t.projetoId)?.nome ?? '—'}
                     pessoaName={pessoasById.get(t.pessoaId)?.nome ?? '—'}
                     extraFooter={
-                      <div className="text-[10px] text-muted font-mono">
+                      <div className="text-[10px] text-muted">
                         {tempoNaSubetapa(t)} nesta etapa
                       </div>
                     }
@@ -415,7 +408,7 @@ export function KanbanClient() {
                     pessoaName={pessoasById.get(t.pessoaId)?.nome ?? '—'}
                     showSubetapa
                     extraFooter={
-                      <div className="text-[10px] text-muted font-mono">
+                      <div className="text-[10px] text-muted">
                         {tempoNaSubetapa(t)} nesta etapa
                       </div>
                     }
