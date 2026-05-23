@@ -1191,9 +1191,11 @@ Sem cache (worst case absoluto): R$ 35–50/mês. Preços de modelo podem mudar;
 
 ### 9.3 Roadmap pós-Onda 0 · Next migration completa
 
-> Estado atual: **Onda 0 do Next feature-complete em `feat/onda-0` (v1.02.186)**. 100% paridade UX com Alpine + PWA + CI + 47 testes. Time validando em preview antes do cutover. **Cutover (Bloco 5) parqueado — será executado manualmente quando o responsável sinalizar.** Esta seção é o **roadmap consolidado pós-cutover** — reúne tudo que foi discutido ao longo da migração, descobertas em sessões de design, parking lots e itens espalhados no `ROADMAP.md` e `CONTEXT.md`.
+> Estado atual: **Onda 0 do Next feature-complete em `feat/onda-0` (v1.02.186)**. 100% paridade UX com Alpine + PWA + CI + 47 testes. Time validando em preview antes do cutover. **Cutover (Bloco 5) parqueado — será executado manualmente quando o responsável sinalizar.**
 >
-> **Como ler**: Now / Next / Later / Cold. Cada item linka pra seção mais detalhada quando existe.
+> **Última revisão de roadmap**: 23/05/2026 — pedidos abertos distribuídos nos horizontes, 14 itens descontinuados definitivamente, Cold storage consolidado.
+>
+> **Como ler**: Now / Next / Later / Cold / Descontinuados. Itens em §9.3.5 foram removidos do radar — não repropor sem novo input significativo.
 
 #### 9.3.1 Now · validação em preview + destravar pós-cutover
 
@@ -1201,6 +1203,9 @@ Sem cache (worst case absoluto): R$ 35–50/mês. Preços de modelo podem mudar;
 
 | Item | Esforço | Valor | Quando |
 |---|---|---|---|
+| **Kliente 360 · só gestão cria** ✋ | ~2-4h | Gate de criação: cliente `eh_interno` + nome ≈ "Kliente 360" exige `viewerRole='admin'` pra salvar. Esconde do dropdown pra não-admins. Gate pontual — não confundir com workspaces. | **Pré-cutover · isolado** |
+| **Bloqueado exige `bloqueadoPor` + comentário** 🚧 | ~3-4h | Ao setar `bloqueado`, valida `bloqueadoPor` obrigatório + força comentário inline (`visivel_cliente=false`). Registra evento `bloqueio_iniciado` no histórico. Elimina bloqueio órfão. | **Pré-cutover · isolado** |
+| **Calendário · filtro de Status** 📅 | ~1h | Adiciona select de Status no calendário (Abertas / Todas / Backlog / Andamento / Bloqueado / Concluído). Espelho do Backlog filter. | **Pré-cutover · isolado** |
 | **Bloco 5 · Cutover Vercel** | ~2h | Apontar domínio principal pro projeto Next. Avisar time + monitorar 24-48h. | ⏸ **Manual · aguarda sinal do responsável** |
 | **Habilitar realtime publication** (`tasks`, `clientes`, `projetos`, `pessoas`) | ~5min config | Maior ROI valor/esforço do roadmap inteiro. Resolve UX "clicar na logo pra refetch". Channel listener já montado no Next. | Pós-cutover (não habilitar antes — confunde Alpine e Next em paralelo) |
 | **Sentry + PostHog** | ~1-2h | Ouvir bugs no campo + adoption tracking em prod. | Pós-cutover |
@@ -1212,213 +1217,106 @@ Sem cache (worst case absoluto): R$ 35–50/mês. Preços de modelo podem mudar;
 
 Em ordem de execução sugerida (sequência importa):
 
+Em ordem de execução sugerida (sequência importa — cada item desbloqueia o próximo):
+
 | # | Item | Esforço | Por quê agora |
 |---|---|---|---|
-| 1 | **Dashboard** (sai de parking) | ~1 semana | View executiva. Heurísticas + bucketing semanal + agingLevel + `projetoCapacidadeSemana` já portados e testados em `task-utils.ts`. |
+| 1 | **Dashboard** (sai de parking) | ~1-2 semanas | View executiva. Heurísticas + bucketing semanal + agingLevel + `projetoCapacidadeSemana` já portados em `task-utils.ts`. Requer Recharts. |
 | 2 | **Briefing** (sai de parking) | 3-5 dias | "Monday huddle" — combinar com Dashboard como uma view dele reduz custo total. |
 | 3 | **`ai-suggest`** (Haiku, ~R$0,015/exec) | ~1 semana | Fecha gap competitivo #1 da §14.3 do CONTEXT. Custo trivial. ⭐ |
 | 4 | **`ai-weekly-summary`** (Sonnet + cron sáb) | 4-5 dias | Combina com Briefing → aba "Insights". Sócio lê portfólio em 5min. ⭐⭐ |
-| 5 | **Push notifications + Badging API** | ~1.5 semana | Comportamental forte. iOS 16.4+ suporta com PWA instalado. |
+| 5 | **Push notifications + Badging API** | ~2-3 semanas | Comportamental forte. iOS 16.4+ suporta com PWA. Inclui VAPID keys + Edge Function + UI de permissão. |
 | 6 | **Notif digest hourly** | 4h | Evita quebra de foco. P0 do diagnóstico CONTEXT §14.4. |
 | 7 | **Email digest semanal** (Resend dom 18h) | 4h | Toque externo regular. Edge Function + pg_cron. |
+| 8 | **Escopo da task + skill da pessoa** 🎯 | ~3-5 dias | Campo `tasks.escopo` (13 valores: SF Admin · SF Clouds · IA/Conversacional) + highlight de match no dropdown de responsável. Migration + adapter + UI. Pareia com `ai-suggest`. | 
+| 9 | **Triagem obrigatória pra tasks criadas por IA** 🤖 | ~3-5 dias | Flag `triada_em` + filtro "Criadas por IA" na Triagem. UI quase pronta. Combinar com lançamento de `ai-suggest`. |
+| 10 | **Briefing · dot de comentário novo** 💬 | ~2-3 dias | Dot de "novo comentário" no card do Briefing pras tasks `status=andamento` com comment após último login. `last_seen_at` por usuário (ou filtrar `notifications` unread). Combinar com lançamento do Briefing. |
 
 **Detalhamento de cada IA**: ver §9.2 "Onda 5+ — Diferenciação com IA" acima (frentes 1-5 com prompt strategy, custo por exec, casos de uso perfeitos).
 
 #### 9.3.3 Later · 3-6 meses · Onda 2 do Next · diferenciação + multi-tenancy
 
+Em ordem de prioridade (esforço × impacto):
+
 | Item | Esforço | Origem |
 |---|---|---|
-| **Portal cliente** (sai de parking) | 2-3 semanas | Big bet. Versão v2 já existe no Alpine (header narrativo, KPIs delta, sparkline 6m, lead time 90d). Portar + RLS apertada por `role='cliente'`. Detalhes do escopo MVP em §9.2 "Portal do cliente — escopo MVP" acima. |
-| **`ai-risk-scanner`** (Sonnet diário) | ~1 semana | Banner "🚨 N sinais hoje" no Dashboard. Premium-perception alta. |
-| **`ai-chat` com tool use** | ~1.5 semana | Chat com o backlog via `⌘K`. Defesa contra prompt injection: tool results schema-only. |
-| **Cronômetro start/stop por task ⏱️** | ~1 semana | Tabela `time_entries` + UI start/stop por task. **Habilita retro honesta + caminho pra faturamento.** Mencionado em §9.1.3 e §14.4 do CONTEXT como dor recorrente em agência. |
-| **Templates de projeto** | 3-5 dias | Quick win pra projetos recorrentes (instancia N tasks padrão). |
-| **Capacidade prevista** | M | Heurística "estoura em N semanas". Requer tabela `weekly_capacity_snapshots` + job semanal. |
-| **Saved views / filtros nomeados** | 2-3 dias | "Minhas atrasadas", "Aguardando cliente X". Quick win UX. |
-| **Auto-triage com IA** | M | Combina Haiku + heurísticas pra classificar tasks `criado_por_ia=true` (tipo, complexidade, projeto, responsável). |
-| **`ai-suggest-tags`** (Haiku) | 2 dias | Sugere 1-3 tags do vocabulário existente do projeto. Cluster de tags similares via embedding (job mensal). |
-| **Reativar features de `HABILITAR_DEPOIS`** | M | Tags, Tipo de trabalho, Dependências entre tasks. **Schema pronto, ausentes no código Next** — re-implementar UI. |
-| **Sticky thead da tabela Backlog** | 2-3 dias | Parqueado no Alpine porque CSS sticky falhou em produção. Nota explícita: "Reabrir quando migrarmos pra Next.js (Onda 0) onde controlamos DOM/CSS mais determinísticamente". **Agora estamos no Next.** |
-| **Aba Foco com IA leve** | M | Resumo do dia + 3 tasks priorizadas pelo modelo. |
+| **Portal cliente** (sai de parking) | 4-6 semanas | Big bet. Versão v2 já existe no Alpine (header narrativo, KPIs delta, sparkline 6m, lead time 90d). Portar + RLS apertada por `role='cliente'`. Detalhes do escopo MVP em §9.2 "Portal do cliente — escopo MVP" acima. |
+| **`ai-risk-scanner`** (Sonnet diário) | ~1 semana | Banner "🚨 N sinais hoje" no Dashboard. Premium-perception alta. Depende do Dashboard estar no ar. |
+| **Cronômetro start/stop por task ⏱️** | ~1 semana (UI) | Tabela `time_entries` + UI start/stop. **Habilita retro honesta + caminho pra faturamento.** Relatórios de tempo e billing são escopo adicional posterior. |
+| **Saved views / filtros nomeados** | 2-3 dias | "Minhas atrasadas", "Aguardando cliente X". Quick win UX alto impacto. |
+| **Reativar features de `HABILITAR_DEPOIS`** | M | Tags (2-3 dias) + Tipo de trabalho (2 dias) + Dependências UI (~1 semana). Schema pronto, só UI faltando no Next. Sequência recomendada: Tags → Tipo → Dependências. |
+| **Sticky thead da tabela Backlog** | 2-3 dias | Parqueado no Alpine por CSS sticky problemático. Agora no Next: DOM determinístico. Quick win UX. |
 | **Captura via texto livre** (Haiku) | ~4h | "amanhã preciso revisar a apresentação do Cliente X" → Haiku estrutura. Combina com QuickCapture já portado. |
-| **Resumir thread de task** (Sonnet) | ~1 dia | Botão "TL;DR" no modal. Cited como "primeira IA low-risk/high-value" em CONTEXT §14.3. |
+| **Resumir thread de task** (Sonnet) | ~1 dia | Botão "TL;DR" no modal. Primeira IA low-risk/high-value. Combinar com lançamento de `ai-suggest`. |
+| **`ai-suggest-tags`** (Haiku) | 2 dias | Sugere 1-3 tags do vocabulário existente. Depende de Tags reativadas. |
+| **Auto-triage com IA** | M | Haiku + heurísticas pra classificar tasks `criado_por_ia=true`. Depende de `ai-suggest` + Triagem obrigatória (§9.3.2 item 9). |
+| **Aba Foco com IA leve** | M | Resumo do dia + 3 tasks priorizadas pelo modelo. |
+| **Capacidade prevista** | M | Heurística "estoura em N semanas". Requer tabela `weekly_capacity_snapshots` + job semanal. |
+| **Templates de projeto** | 3-5 dias | Quick win pra projetos recorrentes (instancia N tasks padrão). |
 
 #### 9.3.4 Cold storage · parqueado conscientemente
 
-Mantenho listado pra ninguém repropor sem novo input:
+Mantenho listado pra ninguém repropor sem novo input. Itens descontinuados definitivamente estão em §9.3.5.
 
-**Notificações & integrações**:
-- **WhatsApp digest** (Twilio + template Meta) — ~$15/mês com 10 agências. Reabrir quando email digest validar push + 3 gestores externos pedirem. Detalhes operacionais completos em §9.2 "WhatsApp digest" acima.
-- **Slack integration** (canal por projeto recebe atualizações) — P3 quando comercial externo aquecer.
-- **iCal feed por pessoa** — sync Google Cal/Outlook do prazo das tasks atribuídas.
-- **Web Share Target** Android — `share_target` no manifest.
-- **File handlers** (`.csv` import) — `file_handlers` no manifest.
-- **Protocol handlers** — PWA avançado.
+**IA avançada**:
+- **`ai-chat` com tool use** — Chat com backlog via `⌘K`. Sonnet + tool_use com schema-only results. Diferenciador real, mas exige cuidado com qualidade de resposta e defesa contra prompt injection. Adiar até ter dados de uso suficientes pra calibrar os tools. Reabrir depois de `ai-suggest` + `ai-risk-scanner` validados em prod.
 
-**UX**:
-- **Recurring tasks** — template + cron.
-- **Triage inbox** Linear-style — fila pra triar tasks novas em lote.
-- **Importação em massa CSV** — colar CSV → seeds SQL.
+**Estratégico / intra-empresa**:
+- **Workspaces · 3 pilares** (Salesforce · Dados · IA) — Separação completa de ambientes com switcher topo. Decisão estratégica grande: `workspace_id` em ~todas as tabelas core + RLS por workspace + UI + onboarding. Precisa spec própria. Pré-req: cutover + observabilidade. *(Distinto de "multi-workspace externo/multi-tenant" — esse foi descontinuado.)*
 
 **Heurísticas pendentes** (sem dor reportada, ver §9.2 "Heurísticas pendentes"):
 - Skill mismatch · Senioridade malalocada · Churn risk · Cliente em fricção via NLP · Margem por hora vs ticket.
 
 **Schema parqueado**:
-- `tasks.entregavel_cliente` · `projetos.inicio_previsto/fim_previsto` (habilita burndown) · `pessoas.disponibilidade` (férias) · `clientes.cadencia_reuniao/ultima_reuniao_em`.
+- `tasks.entregavel_cliente` · `projetos.inicio_previsto/fim_previsto` (habilita burndown).
 
-**Comercial / escala**:
-- **Brand decision** Kliente 360 CRM vs tasks 360 — antes de movimento comercial externo.
-- **API pública** REST + webhooks.
-- **Multi-workspace** quando >2 agências usarem.
-- **Faturamento integrado** NFe via gateway BR.
-- **Adoção** (analytics internas no Next) — entra quando user count justificar.
+**Adoção** (analytics internas no Next) — entra quando user count justificar.
 
-**Rejeitados / não fazer**:
-- Margem em risco ✅ entregue via H13/H14/H11/H12 · Cliente em fricção captura H4 · Jr sem revisor substituído por H6 · Wiki/docs Notion-style · Mobile app nativo · Otimização global (LP/SA) · `cadencia_reuniao`/`ultima_reuniao_em` · `mrr`/`ticket_medio`/`status_comercial` · `decisor_nome/email`.
+**Recurring tasks** — template + cron. Sem dor reportada ainda.
 
-#### 9.3.5 Itens que estavam pra sumir do radar
+**Rejeitados / não fazer** (histórico):
+- Margem em risco ✅ entregue via H13/H14/H11/H12 · Cliente em fricção captura H4 · Jr sem revisor substituído por H6 · Wiki/docs Notion-style · Mobile app nativo · Otimização global (LP/SA) · `mrr`/`ticket_medio`/`status_comercial` · `decisor_nome/email`.
 
-Achados em sub-seções escondidas que valem destaque:
+#### 9.3.5 Descontinuados definitivamente · mai/2026
 
-1. **Cronômetro start/stop por task** — citado em §9.1.3 "Benchmark · não priorizado". Promovido pra **Later** (3-6m). Habilita faturamento + retro honesta.
-2. **Sticky thead Backlog** — explicitamente parqueado pra reabrir "quando migrarmos pra Next". Agora estamos lá → **Later** (quick win UX).
-3. **`ai-suggest`** marcado ⭐ "começar aqui" há meses. Custo R$0,23/mês. Promovido pra **Next**.
-4. **Email digest semanal** ~4h. Promovido pra **Next**.
-5. **Captura via texto livre** ~4h, combina com QuickCapture já portado. **Later**.
-6. **JWT exp 1h + refresh** ~2h. Citado como crônico repetidamente. **Now**.
-7. **HABILITAR_DEPOIS.md** tem 4 features ocultas no Alpine que **estão ausentes no código Next** — não esquecer ao portar Tags / Tipo de trabalho / Dependências.
+Itens avaliados em revisão de esforço × impacto e removidos do radar. Alto esforço, baixo impacto para o momento atual — ou substituídos por alternativas já implementadas.
 
-#### 9.3.6 Pedidos abertos · próximo ciclo (captura mai/2026)
+| Item | Motivo |
+|---|---|
+| **WhatsApp digest** | Compliance Meta pesado (template approval, política 24h), custo fixo, volume de usuários atual não justifica. Email digest semanal (§9.3.2 item 7) cobre o caso de uso com muito menos atrito. |
+| **Slack integration** | Sem demanda real. Quando equipe crescer e surgir pedido concreto, reavaliar do zero. |
+| **iCal feed por pessoa** | Pessoas internas usam o app diretamente. Clientes externos usarão o Portal. Overlap mínimo pra esforço desproporcionado. |
+| **Triage inbox Linear-style** | Aba Triagem funcional já existe no Next. Duplicação de conceito sem ganho claro. |
+| **Importação em massa CSV** | Quick capture + `ai-suggest` resolve criação em volume sem complexidade de parsing/validação. |
+| **File handlers** (`.csv` via manifest) | PWA avançado sem demanda. |
+| **Protocol handlers** | PWA avançado sem demanda. |
+| **Web Share Target** Android | PWA avançado sem demanda. |
+| **`pessoas.disponibilidade`** (schema) | Sem processo de registrar férias/licenças no app → campo viraria dado bolorento. Falso positivo de sobrecarga é aceitável no estágio atual. |
+| **`clientes.cadencia_reuniao/ultima_reuniao_em`** (schema) | Sem processo de registrar reunião → dado bolorento. CRM territory. |
+| **Multi-workspace externo** (multi-tenant agências) | Produto para uma agência hoje. Revisitar só quando >2 agências usarem. *(Workspaces intra-empresa/3 pilares é distinto — permanece em cold storage §9.3.4.)* |
+| **Faturamento integrado NFe** | Complexidade fiscal brasileira enorme. Integração com sistema contábil externo é mais simples e mais correto. |
+| **API pública REST+webhooks** | Sem demanda hoje. Revisitar quando o produto tiver tração externa real. |
+| **Brand decision** (Kliente 360 CRM vs tasks 360) | Não é produto, é marketing. Indefinido até movimento comercial real — não precisa de decisão agora. |
 
-Ideias trazidas após o fechamento da auditoria de paridade. Cada item
-tem onde encaixar no horizonte Now/Next/Later e o que precisa pra
-destravar. Não estão priorizados ainda — só capturados pra não perder.
+#### 9.3.6 Pedidos abertos · integrados em mai/2026
 
-##### 1. Workspaces · 3 pilares (Salesforce · Dados · IA) 🏛️
-
-Cenário: a empresa hoje opera 3 frentes de negócio com clientes, projetos,
-pessoas e dashboards potencialmente disjuntos. Misturar tudo no mesmo
-backlog dilui visão por pilar.
-
-- **O que é**: separação completa de ambientes (workspace switcher topo;
-  cada workspace tem sua coleção de clientes/projetos/pessoas/tasks).
-- **Encaixe**: **Later · grande**. É decisão estratégica + reescrita de
-  modelagem (`workspace_id` em ~todas as tabelas core) + RLS por workspace
-  + UI de switcher + onboarding de quem pertence a quê. Não cabe num PR;
-  precisa spec própria.
-- **Pré-requisitos**: cutover + observabilidade. Não começar antes de ter
-  Sentry/PostHog plugado pra ver impacto.
-- **Aviso**: hoje em `Cold storage` constava "Multi-workspace quando >2
-  agências usarem" — escopo diferente (multi-tenant externo). Este aqui é
-  *intra-empresa*. Promover pra Later quando o time decidir prazo.
-
-##### 2. Tasks criadas por IA caem em "triagem" obrigatória 🤖
-
-Cenário: hoje task com `criado_por_ia=true` entra direto no fluxo normal.
-Antes de virar trabalho, alguém precisa validar.
-
-- **O que é**: AI-created task começa com flag "aguardando triagem". Cada
-  pessoa tria as suas (o `pessoaId` sugerido pelo IA, ou todas se for
-  gestão). Já existe a aba **Triagem** no Next — basta adicionar um filtro
-  "Criadas por IA" + um chip de "pendente triagem" no card/linha.
-- **Encaixe**: **Next · pequeno-médio (~3-5 dias)**. UI quase pronta,
-  precisa só do filtro + de uma flag `triada_em` em tasks (NULL = pendente).
-- **Dependência**: `ai-suggest` (§9.3.2 item 3). Sem IA criando task, isso
-  não muda nada. Combinar lançamento.
-
-##### 3. Tarefas do Kliente360 · só Gestão cria ✋
-
-Cenário: o cliente interno **Kliente 360** (`eh_interno=true`) recebe
-tasks de "casa" — gestão estratégica, RH, finance. Não-gestão criando ali
-polui o backlog interno.
-
-- **O que é**: gate de criação. Quando o cliente selecionado no modal é
-  `eh_interno=true` E `nome ≈ "Kliente 360"`, exige `viewerRole='admin'`
-  pra salvar. Pode também esconder o cliente do dropdown pra não-admins.
-- **Encaixe**: **Now · ~2-4h**. Quick win. Gate no `editingToDbPayload` +
-  filtro no dropdown de cliente. RLS futuro (pós-workspaces) substitui.
-- **Cuidado**: não confundir com workspaces — esse gate é pontual.
-
-##### 4. Mover pra `bloqueado` → exige `bloqueadoPor` + comentário 🚧
-
-Cenário: hoje dá pra setar subetapa=`bloqueado` sem dizer quem bloqueou,
-sem comentário. Bloqueio órfão atrapalha follow-up.
-
-- **O que é**: ao escolher subetapa=`bloqueado` no modal, validar:
-  - `bloqueadoPor` obrigatório (cliente/nós/terceiro).
-  - Forçar um comentário inline ("descreva o bloqueio") que vira o
-    primeiro `task_comments` com `visivel_cliente=false`.
-- **Encaixe**: **Now · ~3-4h**. Validação no `saveManual`/`persist`. Já
-  temos o select de `bloqueadoPor`; só validar não-vazio + abrir mini-form
-  de comentário inline antes de fechar o modal.
-- **Bonus**: registrar no histórico um evento `bloqueio_iniciado` com o
-  motivo no `to_value`.
-
-##### 5. Calendário · filtro de Status 📅
-
-- **O que é**: hoje calendário do Next mostra todas as tasks com `prazo`
-  no mês. Adicionar select de Status (igual o do Backlog) — Abertas /
-  Todas / Backlog / Andamento / Bloqueado / Concluído.
-- **Encaixe**: **Now · ~1h**. Quick win puro. Espelho do Backlog filter.
-
-##### 6. Briefing · indicador de comentário novo em task em andamento 💬
-
-- **O que é**: no card do Briefing (quando a aba existir), exibir um dot
-  de "novo comentário" pras tasks `status=andamento` que tiveram comment
-  criado depois do último login do usuário. Permite olhar rápido o que
-  movimentou desde ontem.
-- **Encaixe**: **Next · 2-3 dias**. Depende do Briefing estar portado
-  (§9.3.2 item 2). Combinar lançamento.
-- **Modelagem**: precisa registrar `last_seen_at` por usuário (em
-  `pessoas.last_briefing_seen_at` ou em uma `user_view_state`). Ou usar
-  `notifications` já existente filtrando `kind='comment_on_my_task'`
-  unread.
-
-##### 7. Escopo da task alinhado com skill da pessoa 🎯
-
-Lista sugerida pelo time (3 famílias):
-
-```
-Salesforce (Admin):  Flow · Apex · LWC · Integração · Arquitetura · Consultoria
-Salesforce (Clouds): Sales Cloud · Service Cloud · Marketing Cloud
-IA / Conversacional: WhatsApp · Bot · Agentforce
-```
-
-- **O que é**: campo `tasks.escopo` (enum de 13 valores acima, com grupos)
-  + `pessoas.skills` já existe (text[]). UI de modal: select de escopo
-  igual o de subetapa, com `optgroup` por família. No dropdown de
-  responsável, **destacar** pessoas cuja `skills` cobre o escopo da task
-  (chip "match skill" ao lado do nome) — não bloquear, só sinalizar.
-- **Encaixe**: **Next · ~3-5 dias** (depois do realtime ligado).
-  Modelagem: migration adicionando `tasks.escopo text` com check constraint
-  pros 13 valores. Adapter + tipo. UI no modal. Highlight de match no
-  dropdown de pessoa. Dashboard depois pode usar.
-- **Bonus**: heurística futura "task X tem escopo Y, mas responsável não
-  tem skill Y" — entra como sugestão em §9.3.3 "skill mismatch".
-
-##### Como decidir o próximo passo
-
-Recomendação:
-1. **Now·rápidos** (itens #3, #4, #5) podem virar 1 PR só (~1 dia, sem
-   dependência).
-2. **Cutover** continua sendo o bloqueio do roadmap consolidado. Encaixar
-   esses 3 quick wins **antes do cutover** é seguro (pequenos, isolados).
-3. **#7 (escopo+skill)** pareia bem com `ai-suggest` (Next item 3 de
-   §9.3.2) — IA pode sugerir o escopo. Atacar junto.
-4. **#1 (workspaces)** só depois do cutover + observabilidade. Marcar pra
-   spec discovery em sessão dedicada.
-5. **#2 (triagem IA) e #6 (briefing comment dot)** caem natural com os
-   itens já planejados pra Next (§9.3.2). Sem trabalho prévio.
+> Os 7 pedidos capturados após o fechamento da auditoria de paridade foram distribuídos nos horizontes corretos após revisão de priorização (mai/2026):
+>
+> - **#3, #4, #5** (Kliente360 gate · Bloqueado obrigatório · Calendário filtro) → **§9.3.1 Now** (pré-cutover)
+> - **#7, #2, #6** (Escopo+skill · Triagem IA obrigatória · Briefing dot) → **§9.3.2 Next** (itens 8-10)
+> - **#1** (Workspaces 3 pilares) → **§9.3.4 Cold storage** (aguarda spec própria + pós-cutover + observabilidade)
+>
+> Nada perdido — tudo rastreado nos horizontes acima.
 
 #### 9.3.7 Promessas centrais do produto (rastreio)
 
 | Promessa | Status hoje | Destrava em |
 |---|---|---|
-| **Colaboração viva** (realtime multi-usuário) | ⏸ Channel pronto · publication dormente | Now (item 2) |
-| **Visibilidade gerencial** (Dashboard + Briefing) | ⏸ Lógica pronta · UI ausente | Next (itens 1-2) |
-| **Diferenciação por IA** | ❌ Zero features de IA em prod | Next (itens 3-4) |
-| **Multi-tenancy real** (Portal cliente) | ⏸ RLS desenhada · UI ausente no Next | Later |
-| **Time tracking + faturamento** | ❌ tempoRealHoras manual · sem cronômetro | Later (cronômetro) → Onda 3 (NFe) |
+| **Colaboração viva** (realtime multi-usuário) | ⏸ Channel pronto · publication dormente | Now · pós-cutover (~5min config) |
+| **Visibilidade gerencial** (Dashboard + Briefing) | ⏸ Lógica pronta · UI ausente no Next | Next · itens 1-2 (~2 semanas) |
+| **Diferenciação por IA** | ❌ Zero features de IA em prod | Next · `ai-suggest` item 3 ⭐ |
+| **Multi-tenancy real** (Portal cliente) | ⏸ RLS desenhada · UI ausente no Next | Later · 4-6 semanas |
+| **Time tracking** | ❌ `tempoRealHoras` manual · sem cronômetro | Later · cronômetro item 3 (~1 sem UI) |
 
 ---
 
