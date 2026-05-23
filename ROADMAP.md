@@ -1313,7 +1313,7 @@ Itens avaliados em revisão de esforço × impacto e removidos do radar. Alto es
 
 | Promessa | Status hoje | Destrava em |
 |---|---|---|
-| **Colaboração viva** (realtime multi-usuário) | ⏸ Channel pronto · publication dormente | Now · pós-cutover (~5min config) |
+| **Colaboração viva** (realtime multi-usuário) | ⏸ Channel pronto · publication dormente · padrão logo-clique suficiente hoje | ⏸ parqueado · habilitar quando surgir dor real (war room / equipe grande) — ver §12 item 21 |
 | **Visibilidade gerencial** (Dashboard + Briefing) | ⏸ Lógica pronta · UI ausente no Next | Next · itens 1-2 (~2 semanas) |
 | **Diferenciação por IA** | ❌ Zero features de IA em prod | Next · `ai-suggest` item 3 ⭐ |
 | **Multi-tenancy real** (Portal cliente) | ⏸ RLS desenhada · UI ausente no Next | Later · 4-6 semanas |
@@ -1490,8 +1490,9 @@ Decisões tomadas durante a discussão inicial, com motivo. Sirva como ADR (Arch
 | 16 | Status colors afastadas do verde da marca | Verde é da marca; usar verde para "ok" gera conflito visual |
 | 17 | **Tremor v3** para Dashboard + Briefing (não Recharts/shadcn Charts) | Prioridade de nível executivo e analítico máximo. Tremor é purpose-built para dashboards analíticos, Tailwind-native, aesthetic premium (referência: Stripe/Linear). Recharts/shadcn Charts descartado: visual competente mas não executivo. Heatmap pessoa × semana via CSS Grid customizado (controle total, sem overhead de lib). shadcn/ui permanece para todo o resto do app. |
 | 18 | **Briefing = aba separada** (não toggle dentro do Dashboard) | Públicos diferentes (time todo vs executivo), propósitos diferentes (operacional vs narrativo), dados diferentes (filtráveis vs portfólio fixo). Unificar forçaria UI comprometida pros dois casos — toggle com contexto dual é anti-pattern clássico. Aba própria na nav principal (ao lado de Dashboard), role-gated pra `admin`. |
-| 19 | **Dados ao vivo em ambas as telas** (não snapshot semanal) | Executivo que abre o Briefing numa segunda precisa ver o estado real do portfólio, não um snapshot de sábado. Dado velho = decisão errada. Custo de computação é trivial — toda lógica já roda client-side via `DataProvider` em memória. Snapshot semanal teria complexidade de armazenamento sem benefício real. |
+| 19 | **Dados ao vivo em ambas as telas** (não snapshot semanal) | "Ao vivo" significa: lê do banco **no momento que o usuário abre a tela**, sem pré-geração. Snapshot semanal = anti-pattern (executivo vê estado de 6 dias atrás). **Nota**: "ao vivo" ≠ realtime push — o padrão logo-clique já resolve. Dashboard e Briefing leem o mesmo `DataProvider` em memória que o resto do app usa hoje, atualizados a cada refresh manual. Realtime push é camada separada e opcional (ver §12 item 21). |
 | 20 | **PDF on-demand via `window.print()`** (não pré-geração) | Executivo exporta quando quer, não quando o cron rodou. `@media print` CSS garante layout limpo sem backend adicional. Pré-geração (servidor + storage + cron) é ~2 semanas de infra para substituir 2 linhas de CSS. Complexidade zero, resultado equivalente para o uso real (reunião de board 1x/semana). |
+| 21 | **Realtime push parqueado** (canal pronto, publication desabilitada) | Equipe pequena satisfeita com logo-clique para atualizar. Realtime push vira necessário em cenários específicos: (a) Dashboard como war room em TV sem ninguém interagindo, (b) equipe grande com mudanças simultâneas frequentes, (c) suporte ao vivo onde minutos importam. Nenhum desses cenários existe hoje. Custo de habilitar: ~5min de config no Supabase Dashboard (habilitar publication na tabela). Manter parqueado até dor real reportada. |
 
 ---
 
