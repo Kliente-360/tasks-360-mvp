@@ -37,11 +37,18 @@ Convenções do projeto que valem pra qualquer sessão.
 
 Ver **`web/ONDA0.md`** pro plano completo. **Tudo dos blocos 1-4.J entregue.**
 
-Arquitetura híbrida:
-- **Server Components**: apenas telas read-heavy (Cadastros, auth).
+Arquitetura híbrida (na prática, virou **quase 100% Client Components**):
 - **Client Components com Supabase JS**: telas interativas (Backlog, Kanban, Modal, Triagem, Foco, Calendário) — mesmo padrão de dados do Alpine (boot + estado em memória + realtime channel).
+- **Cadastros** também virou Client Component pelo mesmo `DataProvider` que já tinha tudo em memória (Server fetch duplicaria dados).
+- **Server Components**: só layouts e o login.
 - **Não usar Server Actions** em telas com >1 interação/segundo — latência inaceitável.
 - Helpers de `lib/helpers.js` portados pra `web/src/lib/task-utils.ts` com cobertura de testes (44 unit · 3 e2e).
+
+### Drizzle ORM — dormente
+
+Instalado mas **não usado em runtime**. Schema draft em `web/src/lib/db/schema.ts` documenta o shape do DB; `db:pull` continua quebrado por incompat com check constraints. Decisão consciente: o boot único do `DataProvider` cobre tudo, então a ORM não foi necessária. **Volta a entrar em ação quando atacar Dashboard** (agregações pesadas client-side ficam caras — server-side com Drizzle + materialized views resolve, ou troca por Kysely se Drizzle continuar travado). Até lá, fica como peso morto trivial.
+
+**Stack efetiva em runtime: Next + Supabase JS, sem ORM.**
 
 Próximo passo: **Bloco 5 · Cutover Vercel** (domínio principal pro projeto Next).
 

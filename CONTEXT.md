@@ -98,8 +98,8 @@ Em uso no preview Vercel hoje, sobe pra prod no Bloco 5 · Cutover:
 
 - **Next.js 15** + TypeScript + App Router (monolito) · subpasta `web/`
 - **Postgres via Supabase** (mesmo banco do Alpine — sem dual-db) com **RLS role-aware mantida**
-- **Drizzle ORM** (schema draft em `web/src/lib/db/schema.ts`; `db:pull` adiado por incompat com check constraints — Client Components não dependem dele)
-- **Supabase JS direto nos Client Components** (boot + estado em memória + realtime channel — mesmo padrão do Alpine, sem Server Actions em telas interativas)
+- **Drizzle ORM** instalado mas **dormente em runtime** — schema draft em `web/src/lib/db/schema.ts` serve como documentação do shape do DB, mas nenhuma linha de código importa. `db:pull` adiado (incompat com check constraints). Decisão consciente: o boot único do `DataProvider` cobre todas as telas, então Server Components com Drizzle nunca foram realmente necessários. **Volta a ser ativado quando atacar Dashboard** (agregações pesadas client-side ficariam caras — server-side com Drizzle ou materialized views resolve). Até lá, fica como peso morto trivial (~3MB de `node_modules`).
+- **Supabase JS direto nos Client Components** (boot + estado em memória + realtime channel — mesmo padrão do Alpine, sem Server Actions em telas interativas). **Stack efetiva em runtime hoje: Next + Supabase JS, sem ORM.**
 - **Tailwind v3** (sem shadcn — usamos os primitivos próprios `.btn` `.card` `.inp` `.chip` portados de `lib/styles.css`)
 - **Recharts** **descartado** — gráficos quando vierem usam o mesmo Chart.js já em uso no Alpine ou refazem com SVG nativo
 - **`marked`** para Markdown (Help, Onboarding)

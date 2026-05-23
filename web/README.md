@@ -8,8 +8,8 @@ App Alpine em prod até cutover: raiz do repo (`../index.html` + `../lib/`), Net
 
 - **Next.js 15** (App Router, React 19) + **TypeScript** strict
 - **Tailwind CSS** v3 — tokens da marca Kliente 360 em `src/app/globals.css`
-- **Drizzle ORM** — schema draft em `src/lib/db/schema.ts` (`db:pull` adiado por incompat com check constraints)
-- **Supabase** — mesmo projeto do Alpine (Auth, Realtime, Postgres). Client em `src/lib/supabase/{client,server}.ts`
+- **Drizzle ORM** — **instalado mas dormente em runtime**. Schema draft em `src/lib/db/schema.ts` serve como documentação do shape do DB; nenhuma linha de runtime importa. `db:pull` continua quebrado (incompat com check constraints). Volta a entrar em ação quando atacar Dashboard (agregações server-side). Detalhes em `CLAUDE.md` § "Drizzle ORM — dormente".
+- **Supabase** — mesmo projeto do Alpine (Auth, Realtime, Postgres). Client em `src/lib/supabase/{client,server}.ts`. **Stack efetiva em runtime hoje: Next + Supabase JS, sem ORM.**
 - **@serwist/next** — service worker PWA (precache + runtime cache)
 - **marked** — Markdown (Help, Onboarding)
 - **@resvg/resvg-js** — gera splash screens iOS no build-time (`scripts/generate-splash.mjs`)
