@@ -1,8 +1,8 @@
 # Onda 0 — Plano de migração de stack
 
-> **Status: ✅ feature-complete · paridade auditada · pré-cutover · v1.02.167** (mai/2026)
+> **Status: ✅ feature-complete · paridade auditada · cutover parqueado · v1.02.186** (mai/2026)
 >
-> Todos os blocos 1-4.J entregues. Branch ativa `feat/onda-0` em preview Vercel. Falta só o Bloco 5 (cutover do domínio principal).
+> Todos os blocos 1-4.J entregues. Branch ativa `feat/onda-0` em preview Vercel. Time validando em preview antes do cutover. **Bloco 5 (cutover do domínio principal) está parqueado — será executado manualmente quando o responsável sinalizar.**
 >
 > **Roadmap pós-Onda 0** (próximas ondas, IA, time tracking, Portal cliente, etc.): ver **`ROADMAP.md` §9.3 · Roadmap pós-Onda 0**.
 >
@@ -318,14 +318,14 @@ Captura final de status. Histórico vivo + roadmap pós-Onda 0 estão em `ROADMA
 | 4.I | PWA (manifest + ícone redondo + splash iOS + service worker Serwist) | ✅ |
 | 4.J | Smoke tests (44 vitest + 3 playwright) + CI GitHub Actions + lint zero warnings | ✅ |
 | 4.K | Auditoria de paridade Alpine→Next · 5 PRs (A · RLS+segurança · B · Backlog+Modal · C · Cadastros pessoas · D · Mention picker + drafts · E · cleanup) | ✅ |
-| 5 | **Cutover Vercel** | 🎯 próximo |
+| 5 | **Cutover Vercel** | ⏸ parqueado · manual quando sinalizado |
 
 ### Pendências e parkings declarados
 
 | Item | Status | Onde retomar |
 |---|---|---|
 | Briefing · Dashboard · Portal cliente · Adoção | ⏸ Placeholders no Next | Roadmap pós-Onda 0 §9.3 do `ROADMAP.md` |
-| Realtime publication das 4 tabelas | ⏸ Channel listener pronto; precisa habilitar no Supabase Dashboard | Now (item 2 de §9.3.1) |
+| Realtime publication das 4 tabelas | ⏸ Channel listener pronto; aguarda cutover (não habilitar enquanto Alpine atende prod) | Pós-cutover (ver §9.3.1) |
 | Features de `HABILITAR_DEPOIS.md` (Tags, Tipo de trabalho, Dependências) | ❌ Ausentes no código Next | Later (item "Reativar features" de §9.3.3) |
 | Schema Drizzle `db:pull` | ⚠️ Adiado (incompat com check constraints) | Atacar quando Dashboard precisar de queries Server tipadas |
 | Sentry + PostHog | ❌ Não plugados | Now (item 3 de §9.3.1) |
@@ -348,7 +348,7 @@ Captura final de status. Histórico vivo + roadmap pós-Onda 0 estão em `ROADMA
 
 ### Cutover (Bloco 5) — checklist
 
-> Não executado ainda. Quando rodar:
+> **Parqueado.** Time validando o app Next em preview antes de fazer o cutover. Será executado manualmente quando o responsável sinalizar — não há prazo definido. Checklist preservado para quando chegar a hora:
 
 1. Confirmar v1.02.NNN bumped em `lib/helpers.js` E `web/src/components/app-nav.tsx`.
 2. Confirmar `npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e` verdes localmente.

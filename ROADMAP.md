@@ -353,7 +353,7 @@ Expandir conforme decisões surgirem.
 
 Painel rápido pra retomar contexto. Atualizar quando algo entrar/sair.
 
-Último update: 21/05/2026 — **v1.02.161 (Onda 0 do Next feature-complete, pré-cutover)**. App Alpine em prod (modo manutenção desde v1.02.050). App Next em preview Vercel via `feat/onda-0`. Roadmap pós-Onda 0 consolidado em **§9.3**.
+Último update: 23/05/2026 — **v1.02.186 (Onda 0 feature-complete · cutover parqueado)**. App Alpine em prod (modo manutenção desde v1.02.050). App Next em preview Vercel via `feat/onda-0` — time validando antes do cutover. Cutover será executado manualmente quando sinalizado. Roadmap pós-Onda 0 consolidado em **§9.3**.
 
 ---
 
@@ -989,7 +989,7 @@ Nenhuma versão funcionou visualmente em produção. Suspeitas não confirmadas:
 - Realtime publication das 4 tabelas no Supabase Dashboard (dormente · 5min de config pós-cutover).
 - Features de `HABILITAR_DEPOIS.md` (Tags, Tipo de trabalho, Dependências) — não portadas.
 
-**Próximo passo**: Bloco 5 · Cutover Vercel. Plano completo em `web/ONDA0.md`. Roadmap pós-cutover em **§9.3** acima.
+**Próximo passo**: time validando em preview. Cutover (Bloco 5) parqueado — será executado manualmente quando sinalizado. Plano completo em `web/ONDA0.md`. Roadmap pós-cutover em **§9.3** acima.
 
 ### WhatsApp digest (parking lot · pra avaliar quando o single-file estiver modularizado)
 
@@ -1191,22 +1191,22 @@ Sem cache (worst case absoluto): R$ 35–50/mês. Preços de modelo podem mudar;
 
 ### 9.3 Roadmap pós-Onda 0 · Next migration completa
 
-> Estado atual: **Onda 0 do Next feature-complete em `feat/onda-0` (v1.02.161)**. 100% paridade UX com Alpine + PWA + CI + 47 testes. Próximo passo é o cutover. Esta seção é o **roadmap consolidado pós-cutover** — reúne tudo que foi discutido ao longo da migração, descobertas em sessões de design, parking lots e itens espalhados no `ROADMAP.md` e `CONTEXT.md`.
+> Estado atual: **Onda 0 do Next feature-complete em `feat/onda-0` (v1.02.186)**. 100% paridade UX com Alpine + PWA + CI + 47 testes. Time validando em preview antes do cutover. **Cutover (Bloco 5) parqueado — será executado manualmente quando o responsável sinalizar.** Esta seção é o **roadmap consolidado pós-cutover** — reúne tudo que foi discutido ao longo da migração, descobertas em sessões de design, parking lots e itens espalhados no `ROADMAP.md` e `CONTEXT.md`.
 >
 > **Como ler**: Now / Next / Later / Cold. Cada item linka pra seção mais detalhada quando existe.
 
-#### 9.3.1 Now · próximas 2-3 semanas · fechar Onda 0 + destravar promessas técnicas
+#### 9.3.1 Now · validação em preview + destravar pós-cutover
 
-| Item | Esforço | Valor |
-|---|---|---|
-| **Bloco 5 · Cutover Vercel** | ~2h | Apontar domínio principal pro projeto Next. Avisar time + monitorar 24-48h. Onda 0 fecha. |
-| **Habilitar realtime publication** (`tasks`, `clientes`, `projetos`, `pessoas`) | ~5min config | Maior ROI valor/esforço do roadmap inteiro. Resolve UX "clicar na logo pra refetch". Channel listener já montado no Next. |
-| **Sentry + PostHog** | ~1-2h | Ouvir bugs no campo + adoption tracking em prod. Crítico pós-cutover. |
-| **JWT exp 1h + refresh** | ~2h | Defesa em profundidade. Anon key embedded + JWT 2036 é dívida crônica documentada. |
+> **Cutover (Bloco 5) parqueado.** Time validando o app Next em preview Vercel com uso real antes de fazer o cutover de domínio. Cutover será executado manualmente quando o responsável sinalizar — sem prazo definido.
 
-**Total**: ~6-8h. Onda 0 cutover'd, observabilidade plugada, realtime vivo.
+| Item | Esforço | Valor | Quando |
+|---|---|---|---|
+| **Bloco 5 · Cutover Vercel** | ~2h | Apontar domínio principal pro projeto Next. Avisar time + monitorar 24-48h. | ⏸ **Manual · aguarda sinal do responsável** |
+| **Habilitar realtime publication** (`tasks`, `clientes`, `projetos`, `pessoas`) | ~5min config | Maior ROI valor/esforço do roadmap inteiro. Resolve UX "clicar na logo pra refetch". Channel listener já montado no Next. | Pós-cutover (não habilitar antes — confunde Alpine e Next em paralelo) |
+| **Sentry + PostHog** | ~1-2h | Ouvir bugs no campo + adoption tracking em prod. | Pós-cutover |
+| **JWT exp 1h + refresh** | ~2h | Defesa em profundidade. Anon key embedded + JWT 2036 é dívida crônica. | Pós-cutover |
 
-**Dependência crítica**: cutover precisa rodar **antes** do realtime — enquanto Alpine atende prod, mexer no publication confunde os dois apps.
+**Dependência mantida**: realtime, Sentry e JWT só depois do cutover — enquanto Alpine atende prod, mexer no publication confunde os dois apps.
 
 #### 9.3.2 Next · 1-2 meses · Onda 1 do Next · visibilidade gerencial + 1ª IA
 
