@@ -1226,11 +1226,9 @@ Em ordem de execução sugerida (sequência importa — cada item desbloqueia o 
 | 3 | **`ai-suggest`** (Haiku, ~R$0,015/exec) | ~1 semana | Fecha gap competitivo #1 da §14.3 do CONTEXT. Custo trivial. ⭐ |
 | 4 | **`ai-weekly-summary`** (Sonnet + cron sáb) | 4-5 dias | Combina com Briefing → aba "Insights". Sócio lê portfólio em 5min. ⭐⭐ |
 | 5 | **Push notifications + Badging API** | ~2-3 semanas | Comportamental forte. iOS 16.4+ suporta com PWA. Inclui VAPID keys + Edge Function + UI de permissão. |
-| 6 | **Notif digest hourly** | 4h | Evita quebra de foco. P0 do diagnóstico CONTEXT §14.4. |
-| 7 | **Email digest semanal** (Resend dom 18h) | 4h | Toque externo regular. Edge Function + pg_cron. |
-| 8 | **Escopo da task + skill da pessoa** 🎯 | ~3-5 dias | Campo `tasks.escopo` (13 valores: SF Admin · SF Clouds · IA/Conversacional) + highlight de match no dropdown de responsável. Migration + adapter + UI. Pareia com `ai-suggest`. | 
-| 9 | **Triagem obrigatória pra tasks criadas por IA** 🤖 | ~3-5 dias | Flag `triada_em` + filtro "Criadas por IA" na Triagem. UI quase pronta. Combinar com lançamento de `ai-suggest`. |
-| 10 | **Briefing · dot de comentário novo** 💬 | ~2-3 dias | Dot de "novo comentário" no card do Briefing pras tasks `status=andamento` com comment após último login. `last_seen_at` por usuário (ou filtrar `notifications` unread). Combinar com lançamento do Briefing. |
+| 6 | **Escopo da task + skill da pessoa** 🎯 | ~3-5 dias | Campo `tasks.escopo` (13 valores: SF Admin · SF Clouds · IA/Conversacional) + highlight de match no dropdown de responsável. Migration + adapter + UI. Pareia com `ai-suggest`. |
+| 7 | **Triagem obrigatória pra tasks criadas por IA** 🤖 | ~3-5 dias | Flag `triada_em` + filtro "Criadas por IA" na Triagem. UI quase pronta. Combinar com lançamento de `ai-suggest`. |
+| 8 | **Briefing · dot de comentário novo** 💬 | ~2-3 dias | Dot de "novo comentário" no card do Briefing pras tasks `status=andamento` com comment após último login. `last_seen_at` por usuário (ou filtrar `notifications` unread). Combinar com lançamento do Briefing. |
 
 **Detalhamento de cada IA**: ver §9.2 "Onda 5+ — Diferenciação com IA" acima (frentes 1-5 com prompt strategy, custo por exec, casos de uso perfeitos).
 
@@ -1297,6 +1295,8 @@ Itens avaliados em revisão de esforço × impacto e removidos do radar. Alto es
 | **Faturamento integrado NFe** | Complexidade fiscal brasileira enorme. Integração com sistema contábil externo é mais simples e mais correto. |
 | **API pública REST+webhooks** | Sem demanda hoje. Revisitar quando o produto tiver tração externa real. |
 | **Brand decision** (Kliente 360 CRM vs tasks 360) | Não é produto, é marketing. Indefinido até movimento comercial real — não precisa de decisão agora. |
+| **Notif digest hourly** | Notificações in-app já existem. Complexidade de agrupamento não justifica o ganho no estágio atual. |
+| **Email digest semanal** | Resend + pg_cron + template de email para uma agência hoje é overhead desproporcionado. Push notifications (item 5 do Next) cobre o caso de uso comportamental. |
 
 #### 9.3.6 Pedidos abertos · integrados em mai/2026
 
