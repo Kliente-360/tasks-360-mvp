@@ -985,7 +985,7 @@ Nenhuma versão funcionou visualmente em produção. Suspeitas não confirmadas:
 - CI: `.github/workflows/ci.yml` rodando lint + typecheck + vitest + build + e2e em todo PR.
 
 **O que ficou de fora propositalmente** (parking declarado):
-- Briefing · Dashboard · Portal cliente · Adoção — placeholders no Next.
+- Briefing · Dashboard · Portal cliente — placeholders no Next. Adoção descontinuada (PostHog + Dashboard substituem).
 - Realtime publication das 4 tabelas no Supabase Dashboard (dormente · 5min de config pós-cutover).
 - Features de `HABILITAR_DEPOIS.md` (Tags, Tipo de trabalho, Dependências) — não portadas.
 
@@ -1268,7 +1268,7 @@ Mantenho listado pra ninguém repropor sem novo input. Itens descontinuados defi
 **Schema parqueado**:
 - `tasks.entregavel_cliente` · `projetos.inicio_previsto/fim_previsto` (habilita burndown).
 
-**Adoção** (analytics internas no Next) — entra quando user count justificar.
+**Adoção** (analytics internas no Next) — **descontinuado** (ver §9.3.5). PostHog cobre a camada comportamental; KPIs de negócio (% triadas, comments, throughput) pertencem ao Dashboard.
 
 **Recurring tasks** — template + cron. Sem dor reportada ainda.
 
@@ -1297,6 +1297,7 @@ Itens avaliados em revisão de esforço × impacto e removidos do radar. Alto es
 | **Brand decision** (Kliente 360 CRM vs tasks 360) | Não é produto, é marketing. Indefinido até movimento comercial real — não precisa de decisão agora. |
 | **Notif digest hourly** | Notificações in-app já existem. Complexidade de agrupamento não justifica o ganho no estágio atual. |
 | **Email digest semanal** | Resend + pg_cron + template de email para uma agência hoje é overhead desproporcionado. Push notifications (item 5 do Next) cobre o caso de uso comportamental. |
+| **Aba Adoção** | PostHog cobre a camada comportamental (DAU/WAU, sessões, heatmap de atividade, session recordings) com mais profundidade do que qualquer implementação interna. KPIs de negócio específicos (% triadas, comments públicos, throughput) pertencem ao Dashboard como painel "Saúde da operação" — não numa aba separada. Aba descontinuada, placeholder removido do escopo. |
 
 #### 9.3.6 Pedidos abertos · integrados em mai/2026
 
