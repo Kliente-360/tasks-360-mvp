@@ -144,7 +144,7 @@ Cada cor tem variante `-soft` para backgrounds de badges (ex: `--p0-soft: #FBEAE
 | ORM | **Drizzle** | SQL-first, sem `generate` step (Claude Code lida melhor que com Prisma) |
 | Auth | **Supabase Auth** | Email/senha + magic link + OAuth, integração nativa com RLS |
 | UI | **Tailwind + shadcn/ui** | Componentes copiados (não dependência), totalmente customizáveis |
-| Charts | **Recharts** | Componentes React nativos, padrão de mercado, fácil de tematizar |
+| Charts | **Tremor v3** (Dashboard/Briefing) + **CSS Grid** (heatmap) | Aesthetic executivo premium, Tailwind-native, purpose-built para dashboards analíticos. shadcn/ui Charts descartado: Recharts puro não entrega nível executivo. |
 | Email | **Resend** | API moderna, domínio próprio, sem cerimônia |
 | Deploy | **Vercel** | Próximo do Next.js, preview deploys por PR |
 | Observabilidade | **Sentry + PostHog** | Erros + uso. **Desde o dia 1**, não depois |
@@ -1221,8 +1221,8 @@ Em ordem de execução sugerida (sequência importa — cada item desbloqueia o 
 
 | # | Item | Esforço | Por quê agora |
 |---|---|---|---|
-| 1 | **Dashboard** (sai de parking) | ~1-2 semanas | View executiva. Heurísticas + bucketing semanal + agingLevel + `projetoCapacidadeSemana` já portados em `task-utils.ts`. Requer Recharts. |
-| 2 | **Briefing** (sai de parking) | 3-5 dias | "Monday huddle" — combinar com Dashboard como uma view dele reduz custo total. |
+| 1 | **Dashboard** (sai de parking) | ~1-2 semanas | View executiva. Heurísticas + bucketing semanal + agingLevel + `projetoCapacidadeSemana` já portados em `task-utils.ts`. **Stack: Tremor v3** (KPI cards, gráficos executivos) — decisão §12 item 17. |
+| 2 | **Briefing** (sai de parking) | 3-5 dias | "Monday huddle" — combinar com Dashboard como uma view dele. **Heatmap pessoa × semana: CSS Grid customizado** (não Tremor — controle total, melhor performance). |
 | 3 | **`ai-suggest`** (Haiku, ~R$0,015/exec) | ~1 semana | Fecha gap competitivo #1 da §14.3 do CONTEXT. Custo trivial. ⭐ |
 | 4 | **`ai-weekly-summary`** (Sonnet + cron sáb) | 4-5 dias | Combina com Briefing → aba "Insights". Sócio lê portfólio em 5min. ⭐⭐ |
 | 5 | **Push notifications + Badging API** | ~2-3 semanas | Comportamental forte. iOS 16.4+ suporta com PWA. Inclui VAPID keys + Edge Function + UI de permissão. |
@@ -1438,6 +1438,7 @@ Decisões tomadas durante a discussão inicial, com motivo. Sirva como ADR (Arch
 | 14 | Sentry + PostHog desde dia 1 | Plugar depois é fácil de adiar e nunca acontece |
 | 15 | Quicksand + Manrope + JetBrains Mono | Alinha com logo (Quicksand-like), legibilidade UI, dados em mono |
 | 16 | Status colors afastadas do verde da marca | Verde é da marca; usar verde para "ok" gera conflito visual |
+| 17 | **Tremor v3** para Dashboard + Briefing (não Recharts/shadcn Charts) | Prioridade de nível executivo e analítico máximo. Tremor é purpose-built para dashboards analíticos, Tailwind-native, aesthetic premium (referência: Stripe/Linear). Recharts/shadcn Charts descartado: visual competente mas não executivo. Heatmap pessoa × semana via CSS Grid customizado (controle total, sem overhead de lib). shadcn/ui permanece para todo o resto do app. |
 
 ---
 
