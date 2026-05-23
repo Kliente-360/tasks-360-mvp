@@ -1221,8 +1221,8 @@ Em ordem de execução sugerida (sequência importa — cada item desbloqueia o 
 
 | # | Item | Esforço | Por quê agora |
 |---|---|---|---|
-| 1 | **Dashboard** (sai de parking) | ~1-2 semanas | View executiva. Heurísticas + bucketing semanal + agingLevel + `projetoCapacidadeSemana` já portados em `task-utils.ts`. **Stack: Tremor v3** (KPI cards, gráficos executivos) — decisão §12 item 17. |
-| 2 | **Briefing** (sai de parking) | 3-5 dias | "Monday huddle" — combinar com Dashboard como uma view dele. **Heatmap pessoa × semana: CSS Grid customizado** (não Tremor — controle total, melhor performance). |
+| 1 | **Dashboard** (sai de parking) | ~1-2 semanas | Cockpit operacional do time. Heurísticas + bucketing semanal + agingLevel + `projetoCapacidadeSemana` já portados em `task-utils.ts`. **Stack: Tremor v3** (KPI cards, gráficos executivos) — decisão §12 item 17. Filtros ao vivo por cliente/responsável/projeto. Ver spec completa em §9.3.8. |
+| 2 | **Briefing** (sai de parking) | 3-5 dias | "Monday huddle" — **aba separada** do Dashboard (decisão §12 item 18). View executiva sem filtros, ao vivo (decisão §12 item 19), PDF on-demand (decisão §12 item 20). **Heatmap pessoa × semana: CSS Grid customizado** (não Tremor — controle total, melhor performance). Ver spec completa em §9.3.8. |
 | 3 | **`ai-suggest`** (Haiku, ~R$0,015/exec) | ~1 semana | Fecha gap competitivo #1 da §14.3 do CONTEXT. Custo trivial. ⭐ |
 | 4 | **`ai-weekly-summary`** (Sonnet + cron sáb) | 4-5 dias | Combina com Briefing → aba "Insights". Sócio lê portfólio em 5min. ⭐⭐ |
 | 5 | **Push notifications + Badging API** | ~2-3 semanas | Comportamental forte. iOS 16.4+ suporta com PWA. Inclui VAPID keys + Edge Function + UI de permissão. |
@@ -1318,6 +1318,55 @@ Itens avaliados em revisão de esforço × impacto e removidos do radar. Alto es
 | **Diferenciação por IA** | ❌ Zero features de IA em prod | Next · `ai-suggest` item 3 ⭐ |
 | **Multi-tenancy real** (Portal cliente) | ⏸ RLS desenhada · UI ausente no Next | Later · 4-6 semanas |
 | **Time tracking** | ❌ `tempoRealHoras` manual · sem cronômetro | Later · cronômetro item 3 (~1 sem UI) |
+
+#### 9.3.8 Dashboard + Briefing · Especificação de design · mai/2026
+
+Duas telas separadas com propósitos distintos e público diferente. Decisões registradas em §12 itens 18-20.
+
+##### Dashboard — cockpit operacional
+
+**Audiência**: time todo (admins + internos). **Objetivo**: responder "o que está em fogo agora?".
+
+Filtros globais ao vivo: cliente · responsável · projeto — afetam todos os blocos abaixo.
+
+| Bloco | Conteúdo | Componente |
+|---|---|---|
+| **1 · KPIs** | 4 cards: throughput W-1 · total abertas · atrasadas · projetos com orçamento em risco. Cada card com delta vs semana anterior (▲▼). | Tremor `Metric` + `BadgeDelta` |
+| **2 · Banner de heurísticas** | Todas as 15 heurísticas ativas, agrupadas por severidade (🔴 crítica · 🟡 atenção · 🔵 info). Expansível. Filtrável por nível. | Tremor `Callout` list |
+| **3 · Semáforo de projetos** | Uma linha por projeto ativo: cliente · sinal (verde/âmbar/vermelho) · motivo · N tasks abertas · N atrasadas. Clicável → filtra bloco 5. | Tremor `Table` |
+| **4 · Heatmap capacidade W0–W3** | Pessoa × semana. Células: % ocupação (sum `effOcupacao` / capacidade). Verde <80% · âmbar 80-100% · vermelho >100%. Tooltip com breakdown de tasks. | CSS Grid customizado (não Tremor) |
+| **5 · Gráficos analíticos** | (a) Throughput semanal 8 semanas · bar chart com semana atual destacada. (b) Distribuição de aging: cards por bucket (ok / warn / crítico). | Tremor `BarChart` + `DonutChart` |
+
+**O que NÃO fazer no Dashboard**: narrativa em linguagem natural ("o time está bem"), IA inline (ruído), duplicar filtros em cada bloco separadamente.
+
+##### Briefing — relatório executivo
+
+**Audiência**: sócio/executivo (role `admin`). **Objetivo**: responder "o que o sócio precisa saber em 3 minutos?".
+
+**Sem filtros** — visão de portfólio completo. Dados ao vivo (não snapshot semanal). Deep-links para o Dashboard filtrado.
+
+| Bloco | Conteúdo | Componente |
+|---|---|---|
+| **1 · Headline IA** | 2-3 frases geradas por `ai-weekly-summary` (Sonnet). Tom executivo — sem jargão técnico, sem "sprint", sem "story". Se IA indisponível, mostra placeholder cinza elegante. | Tremor `Callout` (estilo narrativo) |
+| **2 · Clientes em atenção** | 2-5 cards: cliente · sinal de risco · motivo em 1 linha · "Ver detalhes →" (deep-link ao Dashboard filtrado por cliente). Critério de inclusão: sinal vermelho ou âmbar sustentado ≥3 dias. | Tremor `Card` list |
+| **3 · Heatmap pessoa × semana** | Mesmo grid W0–W3, mas portfólio completo (sem filtro de pessoa). Serve para redistribuição de carga à vista. | CSS Grid customizado |
+| **4 · Orçamento por projeto** | Uma linha por projeto: nome · horas consumidas vs orçadas · barra de progresso. Âmbar >70% · vermelho >90%. | Tremor `ProgressBar` |
+| **5 · Conquistas + sugestões** | Tasks concluídas na semana W-1 (destaque positivo). Abaixo: 1-3 sugestões de redistribuição geradas por heurística (ex: "Pedro sobrecarga W0 — mover T#42 para Ana"). | Tremor `List` |
+
+**O que NÃO fazer no Briefing**: filtros (confundem executivo), gráficos de throughput detalhados (já estão no Dashboard), duplicar heurísticas técnicas (mostrar só top-3 severidade alta sem jargão), snapshot estático semanal (dado velho = decisão errada).
+
+##### Deep-link padrão
+
+`/dashboard?cliente=<clienteId>` — todos os filtros via query params. Link copiável no botão "Ver detalhes →" de cada card de risco do Briefing. Ao retornar, filtros persistem na sessão (não em URL inicial do Dashboard).
+
+##### Heurísticas: onde aparecem
+
+- **Dashboard bloco 2**: todas as 15, com badge de severidade e link para task afetada.
+- **Briefing bloco 5**: apenas top-3 de severidade `crítica`, reformatadas em linguagem executiva (sem "H7", sem "subetapa"). Ex: "2 tarefas do Cliente X bloqueadas há mais de 5 dias — sugerido escalation."
+
+##### PDF on-demand (decisão §12 item 20)
+
+Botão "Exportar PDF" no Briefing → `window.print()` com CSS `@media print` dedicado (oculta nav, filtros, botões; ajusta cores pra escala de cinza). Sem backend. Sem cron. Sem pré-geração. Disponível quando o usuário pedir.
 
 ---
 
@@ -1440,6 +1489,9 @@ Decisões tomadas durante a discussão inicial, com motivo. Sirva como ADR (Arch
 | 15 | Quicksand + Manrope + JetBrains Mono | Alinha com logo (Quicksand-like), legibilidade UI, dados em mono |
 | 16 | Status colors afastadas do verde da marca | Verde é da marca; usar verde para "ok" gera conflito visual |
 | 17 | **Tremor v3** para Dashboard + Briefing (não Recharts/shadcn Charts) | Prioridade de nível executivo e analítico máximo. Tremor é purpose-built para dashboards analíticos, Tailwind-native, aesthetic premium (referência: Stripe/Linear). Recharts/shadcn Charts descartado: visual competente mas não executivo. Heatmap pessoa × semana via CSS Grid customizado (controle total, sem overhead de lib). shadcn/ui permanece para todo o resto do app. |
+| 18 | **Briefing = aba separada** (não toggle dentro do Dashboard) | Públicos diferentes (time todo vs executivo), propósitos diferentes (operacional vs narrativo), dados diferentes (filtráveis vs portfólio fixo). Unificar forçaria UI comprometida pros dois casos — toggle com contexto dual é anti-pattern clássico. Aba própria na nav principal (ao lado de Dashboard), role-gated pra `admin`. |
+| 19 | **Dados ao vivo em ambas as telas** (não snapshot semanal) | Executivo que abre o Briefing numa segunda precisa ver o estado real do portfólio, não um snapshot de sábado. Dado velho = decisão errada. Custo de computação é trivial — toda lógica já roda client-side via `DataProvider` em memória. Snapshot semanal teria complexidade de armazenamento sem benefício real. |
+| 20 | **PDF on-demand via `window.print()`** (não pré-geração) | Executivo exporta quando quer, não quando o cron rodou. `@media print` CSS garante layout limpo sem backend adicional. Pré-geração (servidor + storage + cron) é ~2 semanas de infra para substituir 2 linhas de CSS. Complexidade zero, resultado equivalente para o uso real (reunião de board 1x/semana). |
 
 ---
 
