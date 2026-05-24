@@ -1,5 +1,10 @@
-import { OndaPlaceholder } from '@/components/onda-placeholder';
+import { Suspense } from 'react';
+import { BriefingClient } from './briefing-client';
 
 export default function Page() {
-  return <OndaPlaceholder href="/briefing" title="Briefing executivo" />;
+  return (
+    <Suspense fallback={<div className="text-muted text-sm py-8">Carregando…</div>}>
+      <BriefingClient />
+    </Suspense>
+  );
 }

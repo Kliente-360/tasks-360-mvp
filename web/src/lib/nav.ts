@@ -15,7 +15,7 @@ export type NavItem = {
 
 export const NAV: ReadonlyArray<NavItem> = [
   { href: '/foco',       label: 'Meu foco',      roles: ['admin', 'interno'],          onda: 1 },
-  { href: '/briefing',   label: 'Briefing',      roles: ['admin'],                     onda: 3 },
+  { href: '/briefing',   label: 'Briefing',      roles: ['admin'],                     onda: 1 },
   // Triagem escondida no mobile: bulk actions e leitura paralela dos chips
   // de falhas funcionam melhor no desktop; quem precisar triar no celular
   // usa o /backlog filtrando por "sem responsável" etc.
@@ -25,10 +25,10 @@ export const NAV: ReadonlyArray<NavItem> = [
   // estreito e a executiva é melhor servida pelo /backlog mobile.
   { href: '/kanban',     label: 'Kanban',        roles: ['admin', 'interno'],          onda: 1, hideMobile: true },
   { href: '/calendario', label: 'Calendário',    roles: ['admin', 'interno'],          onda: 1 },
-  { href: '/dashboard',  label: 'Dashboard',     roles: ['admin', 'interno'],          onda: 3 },
+  { href: '/dashboard',  label: 'Dashboard',     roles: ['admin', 'interno'],          onda: 1 },
   { href: '/portal',     label: 'Portal cliente', roles: ['admin', 'interno', 'cliente'], onda: 2 },
   // Cadastros sai da tab bar (espelha inProfileMenu do Alpine) — vive no
   // dropdown do avatar pra liberar espaço horizontal nas abas principais.
   { href: '/cadastros',  label: 'Cadastros',     roles: ['admin'],                     onda: 1, inProfileMenu: true },
-  { href: '/adocao',     label: 'Adoção',        roles: ['admin'],                     onda: 4 },
+  // Adoção removida: PostHog cobre a camada comportamental (mai/2026).
 ] as const;

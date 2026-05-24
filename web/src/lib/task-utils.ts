@@ -4,7 +4,7 @@
  * statusEm em epoch ms). Sem dependência de DOM, React ou Supabase.
  */
 
-import type { Task } from './types';
+import type { Projeto, Task } from './types';
 import { STATUS, STAGE_RANK } from './task-constants';
 
 /** Esforço efetivo: usa o declarado, ou 4h como fallback se zero/null. */
@@ -197,4 +197,102 @@ export function matchesPrazoFilter(
     return t.prazo >= start && t.prazo <= end;
   }
   return true;
+}
+
+// ============ Bucketing semanal (capacidade 4 semanas) ============
+
+/** ISO 'YYYY-MM-DD' da segunda-feira da semana de `d`. */
+export function weekStartMonday(d: string | Date): string {
+  const dt = d instanceof Date ? new Date(d.getTime()) : new Date(d + 'T00:00:00');
+  const day = dt.getDay(); // 0 dom, 1 seg … 6 sab
+  const diff = day === 0 ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diff);
+  return dt.toISOString().slice(0, 10);
+}
+
+/** Prazo pra análise: usa o da task ou hoje como fallback (sem escrever no campo). */
+export function effPrazoForAnalysis(t: Pick<Task, 'prazo'>, today?: string): string {
+  if (t.prazo) return t.prazo;
+  return today ?? todayIso();
+}
+
+/**
+ * Índice da semana em que a task cai (relative a hoje):
+ *  -1  → atrasada (segunda do prazo < segunda de hoje)
+ *   0  → esta semana
+ *   1-3 → próximas 3 semanas
+ *  null → além de 4 semanas ou concluída
+ */
+export function taskWeekIndex(t: Pick<Task, 'prazo' | 'status'>, today?: string): number | null {
+  if (t.status === STATUS.CONCLUIDO) return null;
+  const ref = today ?? todayIso();
+  const monRef = weekStartMonday(ref);
+  const monTask = weekStartMonday(effPrazoForAnalysis(t, ref));
+  if (monTask < monRef) return -1;
+  const ms =
+    new Date(monTask + 'T00:00:00Z').getTime() -
+    new Date(monRef + 'T00:00:00Z').getTime();
+  const weeks = Math.round(ms / (7 * 86400 * 1000));
+  if (weeks < 0) return -1;
+  if (weeks > 3) return null;
+  return weeks;
+}
+
+export type WeekBuckets = {
+  past: Task[];
+  w0: Task[];
+  w1: Task[];
+  w2: Task[];
+  w3: Task[];
+  far: Task[];
+};
+
+/** Bucketiza tasks em janela de 4 semanas + passado + distante. */
+export function bucketTasksByWeek(tasks: Task[], today?: string): WeekBuckets {
+  const out: WeekBuckets = { past: [], w0: [], w1: [], w2: [], w3: [], far: [] };
+  for (const t of tasks) {
+    const idx = taskWeekIndex(t, today);
+    if (idx === -1) out.past.push(t);
+    else if (idx === 0) out.w0.push(t);
+    else if (idx === 1) out.w1.push(t);
+    else if (idx === 2) out.w2.push(t);
+    else if (idx === 3) out.w3.push(t);
+    else out.far.push(t);
+  }
+  return out;
+}
+
+/** Soma effEsforco num array de tasks. */
+export function sumEffEsforco(tasks: Task[]): number {
+  return tasks.reduce((acc, t) => acc + effEsforco(t), 0);
+}
+
+/** Soma effOcupacao num array de tasks. */
+export function sumEffOcupacao(tasks: Task[]): number {
+  return tasks.reduce((acc, t) => acc + effOcupacao(t), 0);
+}
+
+export type CargaNivel = 'sobrecarga' | 'pressao' | 'ok' | 'folga' | 'sem-cap';
+
+/** Classifica nível de carga pela % de capacidade alocada. */
+export function cargaNivelFromPctCap(pctCap: number | null): CargaNivel {
+  if (pctCap == null) return 'sem-cap';
+  if (pctCap > 130) return 'sobrecarga';
+  if (pctCap > 100) return 'pressao';
+  if (pctCap < 60) return 'folga';
+  return 'ok';
+}
+
+/**
+ * Capacidade semanal contratada de um projeto:
+ *   sustentacao → orcamentoHoras / 4 (mensal → semanal)
+ *   projeto / discovery → null (não aplica análise semanal)
+ */
+export function projetoCapacidadeSemana(
+  projeto: Pick<Projeto, 'tipo' | 'orcamentoHoras'>,
+): number | null {
+  const orc = Number(projeto.orcamentoHoras) || 0;
+  if (!orc) return null;
+  if (projeto.tipo === 'sustentacao') return orc / 4;
+  return null;
 }
