@@ -352,6 +352,7 @@ sequenceDiagram
       "titulo": "Customizar layout",
       "descricao": "...",
       "responsavel": "Jéssica Santos",
+      "responsavel_id": "b2f4e891-3c1a-4d7e-9f02-a5c8d6b1e034",
       "prioridade": "P1",
       "prazo": "2026-06-15",
       "subetapa": "em_desenvolvimento"
@@ -365,6 +366,7 @@ sequenceDiagram
 - `task_id` — UUID interno (use só pra logging)
 - `data.task_external_id` — Record Id do SF; **chave de lookup do seu lado**
 - `data.record.responsavel` — nome textual da pessoa atribuída (ou `null` se sem responsável)
+- `data.record.responsavel_id` — UUID interno da pessoa (ou `null`). Use este campo para lookups no SF — é mais confiável que o nome.
 - `data.record.subetapa` — ver enum em §3.1
 
 ### 4.2 Payload `comment.* / reply.*`
