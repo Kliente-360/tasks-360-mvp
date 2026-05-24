@@ -1,23 +1,13 @@
 'use client';
 
 /**
- * Dashboard · cockpit operacional — Onda 1 · feat/dashboard-briefing
- *
- * Bloco 1 · KPI cards (throughput W-1, abertas, atrasadas, projetos em risco)
- * Bloco 2 · Banner de heurísticas (H1–H15)
- * Bloco 3 · Semáforo de projetos
- * Bloco 4 · Heatmap capacidade pessoa × semana W0–W3
- * Bloco 5 · Throughput 8 semanas (barra CSS)
+ * Dashboard · cockpit operacional — Onda 1
+ * Mobile-first: título oculto (tab bar já indica contexto),
+ * filtros colapsáveis, heatmap compacto, throughput sem labels mobile.
  */
 
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  useData,
-  useClientesById,
-  usePessoasById,
-  useProjetosById,
-} from '@/lib/data-store';
+import { useData } from '@/lib/data-store';
 import { cn } from '@/lib/utils';
 import { atrasada } from '@/lib/task-utils';
 import {
@@ -26,7 +16,6 @@ import {
   computeProjetosSaude,
   computeThroughput,
   type HeuristicAlert,
-  type WeekData,
 } from '@/lib/heuristics';
 
 // ─────────────────────────────────────────────────────────
@@ -43,7 +32,6 @@ function heatmapColor(nivel: string) {
   if (nivel === 'sobrecarga') return 'bg-[var(--p0-soft)] text-[var(--p0)] font-semibold';
   if (nivel === 'pressao') return 'bg-[var(--p1-soft)] text-[var(--warn)] font-semibold';
   if (nivel === 'ok') return 'bg-[var(--brand-tint)] text-[var(--brand-dark)]';
-  if (nivel === 'folga') return 'bg-[var(--surface-3)] text-[var(--muted)]';
   return 'bg-[var(--surface-3)] text-[var(--muted)]';
 }
 
@@ -73,11 +61,13 @@ function KpiCard({
   danger?: boolean;
 }) {
   return (
-    <div className="bg-elev border border-line rounded-xl p-4 flex flex-col gap-1 min-w-0">
-      <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">{label}</div>
+    <div className="bg-elev border border-line rounded-xl p-3 md:p-4 flex flex-col gap-1 min-w-0">
+      <div className="text-[10px] md:text-[11px] font-medium uppercase tracking-[0.12em] text-muted leading-none">
+        {label}
+      </div>
       <div
         className={cn(
-          'text-3xl font-semibold tabular-nums leading-none mt-1',
+          'text-2xl md:text-3xl font-semibold tabular-nums leading-none mt-1',
           danger && Number(value) > 0 ? 'text-[var(--danger)]' : 'text-[var(--ink)]',
         )}
       >
@@ -86,34 +76,33 @@ function KpiCard({
       {delta && (
         <div
           className={cn(
-            'text-xs mt-0.5',
-            deltaSign === 'up' ? 'text-[var(--brand)]' : deltaSign === 'down' ? 'text-[var(--danger)]' : 'text-muted',
+            'text-[11px] mt-0.5',
+            deltaSign === 'up'
+              ? 'text-[var(--brand)]'
+              : deltaSign === 'down'
+              ? 'text-[var(--danger)]'
+              : 'text-muted',
           )}
         >
           {deltaSign === 'up' ? '▲' : deltaSign === 'down' ? '▼' : '●'} {delta}
         </div>
       )}
-      {sub && <div className="text-xs text-muted mt-0.5">{sub}</div>}
+      {sub && <div className="text-[10px] text-muted hidden md:block mt-0.5">{sub}</div>}
     </div>
   );
 }
 
 function HeuristicRow({ alert, expanded }: { alert: HeuristicAlert; expanded: boolean }) {
   return (
-    <div
-      className={cn(
-        'border rounded-lg px-3 py-2.5 text-sm',
-        severityColor(alert.severity),
-      )}
-    >
+    <div className={cn('border rounded-lg px-3 py-2.5 text-sm', severityColor(alert.severity))}>
       <div className="flex items-start gap-2">
-        <span className="shrink-0 text-xs font-bold uppercase mt-0.5 opacity-70">
+        <span className="shrink-0 text-xs font-bold mt-0.5 opacity-60">
           {alert.severity === 'alta' ? '●' : '○'}
         </span>
         <div className="min-w-0">
-          <div className="font-medium leading-snug">{alert.titulo}</div>
+          <div className="font-medium leading-snug text-[13px]">{alert.titulo}</div>
           {expanded && alert.detalhe && (
-            <div className="text-xs opacity-80 mt-0.5">{alert.detalhe}</div>
+            <div className="text-xs opacity-75 mt-1">{alert.detalhe}</div>
           )}
         </div>
       </div>
@@ -127,56 +116,43 @@ function HeuristicRow({ alert, expanded }: { alert: HeuristicAlert; expanded: bo
 
 export function DashboardClient() {
   const { tasks, clientes, projetos, pessoas, loading, refreshing } = useData();
-  const clientesById = useClientesById();
-  const pessoasById = usePessoasById();
-  const projetosById = useProjetosById();
-  const router = useRouter();
 
   const [filterCliente, setFilterCliente] = useState('');
   const [filterPessoa, setFilterPessoa] = useState('');
   const [filterProjeto, setFilterProjeto] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [heurExpanded, setHeurExpanded] = useState(false);
   const [heurFilter, setHeurFilter] = useState<'' | 'alta' | 'media'>('');
 
-  // Tasks filtradas (excluindo arquivadas)
-  const baseTasks = useMemo(
-    () => tasks.filter((t) => !t.arquivadoEm),
-    [tasks],
+  const hasFilter = !!(filterCliente || filterPessoa || filterProjeto);
+
+  const baseTasks = useMemo(() => tasks.filter((t) => !t.arquivadoEm), [tasks]);
+
+  const filteredTasks = useMemo(
+    () =>
+      baseTasks.filter((t) => {
+        if (filterCliente && t.clienteId !== filterCliente) return false;
+        if (filterPessoa && t.pessoaId !== filterPessoa) return false;
+        if (filterProjeto && t.projetoId !== filterProjeto) return false;
+        return true;
+      }),
+    [baseTasks, filterCliente, filterPessoa, filterProjeto],
   );
 
-  const filteredTasks = useMemo(() => {
-    return baseTasks.filter((t) => {
-      if (filterCliente && t.clienteId !== filterCliente) return false;
-      if (filterPessoa && t.pessoaId !== filterPessoa) return false;
-      if (filterProjeto && t.projetoId !== filterProjeto) return false;
-      return true;
-    });
-  }, [baseTasks, filterCliente, filterPessoa, filterProjeto]);
-
-  // Throughput W-1 vs W-2 pra delta
   const throughput = useMemo(() => computeThroughput(baseTasks), [baseTasks]);
   const throughputW1 = throughput[throughput.length - 2]?.count ?? 0;
   const throughputW2 = throughput[throughput.length - 3]?.count ?? 0;
   const throughputDelta = throughputW1 - throughputW2;
 
-  // KPIs
-  const abertas = useMemo(
-    () => filteredTasks.filter((t) => t.status !== 'concluido'),
-    [filteredTasks],
-  );
-  const atrasadas = useMemo(
-    () => abertas.filter((t) => atrasada(t)),
-    [abertas],
-  );
+  const abertas = useMemo(() => filteredTasks.filter((t) => t.status !== 'concluido'), [filteredTasks]);
+  const atrasadas = useMemo(() => abertas.filter((t) => atrasada(t)), [abertas]);
 
-  // Projetos em risco (semáforo vermelho/amarelo)
   const projetosSaude = useMemo(
     () => computeProjetosSaude(filteredTasks, projetos, clientes),
     [filteredTasks, projetos, clientes],
   );
   const projsEmRisco = projetosSaude.filter((p) => p.sinal !== 'verde').length;
 
-  // Heurísticas (usa tasks sem filtro de pessoa/cliente pra não perder alertas)
   const heuristicAlerts = useMemo(
     () => computeHeuristicAlerts(baseTasks, clientes, projetos, pessoas),
     [baseTasks, clientes, projetos, pessoas],
@@ -187,121 +163,175 @@ export function DashboardClient() {
   const countAlta = heuristicAlerts.filter((a) => a.severity === 'alta').length;
   const countMedia = heuristicAlerts.filter((a) => a.severity === 'media').length;
 
-  // Capacidade semanal (portfólio completo — não filtrado)
   const wca = useMemo(
     () => computeWeeklyCapacityAnalysis(baseTasks, clientes, projetos, pessoas),
     [baseTasks, clientes, projetos, pessoas],
   );
 
-  // Selects de filtro
   const clientesAtivos = useMemo(
-    () => clientes.filter((c) => !c.arquivadoEm && !c.ehInterno).sort((a, b) => a.nome.localeCompare(b.nome)),
+    () =>
+      clientes
+        .filter((c) => !c.arquivadoEm && !c.ehInterno)
+        .sort((a, b) => a.nome.localeCompare(b.nome)),
     [clientes],
   );
   const pessoasAtivas = useMemo(
-    () => pessoas.filter((p) => p.role !== 'cliente').sort((a, b) => a.nome.localeCompare(b.nome)),
+    () =>
+      pessoas.filter((p) => p.role !== 'cliente').sort((a, b) => a.nome.localeCompare(b.nome)),
     [pessoas],
   );
   const projetosAtivos = useMemo(
     () =>
       projetos
-        .filter((p) => {
-          if (p.arquivadoEm) return false;
-          if (filterCliente && p.clienteId !== filterCliente) return false;
-          return true;
-        })
+        .filter((p) => !p.arquivadoEm && (!filterCliente || p.clienteId === filterCliente))
         .sort((a, b) => a.nome.localeCompare(b.nome)),
     [projetos, filterCliente],
   );
 
-  const weekLabels = ['Esta sem.', 'Próx. sem.', 'Em 2 sem.', 'Em 3 sem.'];
+  // Labels compactos no heatmap: mobile usa W0/W1/W2/W3, desktop usa por extenso
+  const weekLabelsMobile = ['Agora', '+1s', '+2s', '+3s'];
+  const weekLabelsDesktop = ['Esta sem.', 'Próx. sem.', 'Em 2 sem.', 'Em 3 sem.'];
+
   const maxThroughput = Math.max(...throughput.map((w) => w.count), 1);
 
+  function clearFilters() {
+    setFilterCliente('');
+    setFilterPessoa('');
+    setFilterProjeto('');
+  }
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24 text-muted text-sm">
-        Carregando…
-      </div>
-    );
+    return <div className="text-muted text-sm py-8">Carregando…</div>;
   }
 
   return (
-    <div className="space-y-6">
-      {/* ── Cabeçalho ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--ink)]">Dashboard</h1>
-          <p className="text-xs text-muted mt-0.5">
-            {refreshing ? 'Atualizando…' : 'Cockpit operacional · dados ao vivo'}
-          </p>
+    <div className="flex flex-col gap-4 md:gap-6">
+
+      {/* ── Page bar · desktop only (mobile: tab bar já diz "Dashboard") ── */}
+      <div className="page-bar hidden md:flex">
+        <div className="page-bar-info">
+          <span className="page-bar-narrative">
+            Dashboard
+            <span className="text-muted font-normal text-sm ml-2">
+              {refreshing ? '· atualizando…' : '· cockpit operacional'}
+            </span>
+          </span>
         </div>
-        <a
-          href="/briefing"
-          className="text-xs text-[var(--brand)] hover:underline font-medium self-start sm:self-auto"
-        >
-          Ver Briefing executivo →
-        </a>
+        <div className="page-bar-controls">
+          <a href="/briefing" className="btn btn-ghost text-xs">
+            Briefing →
+          </a>
+        </div>
       </div>
 
       {/* ── Filtros ── */}
-      <div className="flex flex-wrap gap-2">
-        <select
-          value={filterCliente}
-          onChange={(e) => { setFilterCliente(e.target.value); setFilterProjeto(''); }}
-          className="text-sm border border-line rounded-lg px-3 py-1.5 bg-elev text-ink focus:outline-none focus:border-[var(--cyan)] min-w-[140px]"
-        >
-          <option value="">Todos clientes</option>
-          {clientesAtivos.map((c) => (
-            <option key={c.id} value={c.id}>{c.nome}</option>
-          ))}
-        </select>
-        <select
-          value={filterPessoa}
-          onChange={(e) => setFilterPessoa(e.target.value)}
-          className="text-sm border border-line rounded-lg px-3 py-1.5 bg-elev text-ink focus:outline-none focus:border-[var(--cyan)] min-w-[140px]"
-        >
-          <option value="">Todas pessoas</option>
-          {pessoasAtivas.map((p) => (
-            <option key={p.id} value={p.id}>{p.nome}</option>
-          ))}
-        </select>
-        <select
-          value={filterProjeto}
-          onChange={(e) => setFilterProjeto(e.target.value)}
-          className="text-sm border border-line rounded-lg px-3 py-1.5 bg-elev text-ink focus:outline-none focus:border-[var(--cyan)] min-w-[140px]"
-        >
-          <option value="">Todos projetos</option>
-          {projetosAtivos.map((p) => (
-            <option key={p.id} value={p.id}>{p.nome}</option>
-          ))}
-        </select>
-        {(filterCliente || filterPessoa || filterProjeto) && (
+      {/* Mobile: botão colapsável compacto */}
+      <div>
+        <div className="flex items-center gap-2 md:hidden">
           <button
-            onClick={() => { setFilterCliente(''); setFilterPessoa(''); setFilterProjeto(''); }}
-            className="text-xs text-muted hover:text-ink underline px-1"
+            onClick={() => setFiltersOpen((v) => !v)}
+            className={cn(
+              'flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors',
+              hasFilter
+                ? 'bg-[var(--brand-soft)] border-[var(--brand)] text-[var(--brand-dark)] font-medium'
+                : 'bg-elev border-line text-muted',
+            )}
           >
-            Limpar filtros
+            <span>Filtrar</span>
+            {hasFilter && (
+              <span className="bg-[var(--brand)] text-white rounded-full px-1.5 py-0.5 font-bold leading-none" style={{ fontSize: 10 }}>
+                {[filterCliente, filterPessoa, filterProjeto].filter(Boolean).length}
+              </span>
+            )}
+            <span style={{ fontSize: 9, opacity: 0.6 }}>{filtersOpen ? '▴' : '▾'}</span>
           </button>
+          {hasFilter && (
+            <button onClick={clearFilters} className="text-xs text-muted underline">
+              Limpar
+            </button>
+          )}
+          {refreshing && (
+            <span className="text-xs text-muted ml-auto">atualizando…</span>
+          )}
+        </div>
+
+        {/* Mobile: painel expansível */}
+        {filtersOpen && (
+          <div className="mt-2 p-3 bg-elev border border-line rounded-xl flex flex-col gap-2 md:hidden">
+            <select
+              value={filterCliente}
+              onChange={(e) => { setFilterCliente(e.target.value); setFilterProjeto(''); }}
+              className="text-sm border border-line rounded-lg px-3 py-2.5 bg-[var(--surface-3)] text-ink w-full"
+            >
+              <option value="">Todos clientes</option>
+              {clientesAtivos.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            </select>
+            <select
+              value={filterPessoa}
+              onChange={(e) => setFilterPessoa(e.target.value)}
+              className="text-sm border border-line rounded-lg px-3 py-2.5 bg-[var(--surface-3)] text-ink w-full"
+            >
+              <option value="">Todas pessoas</option>
+              {pessoasAtivas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+            </select>
+            <select
+              value={filterProjeto}
+              onChange={(e) => setFilterProjeto(e.target.value)}
+              className="text-sm border border-line rounded-lg px-3 py-2.5 bg-[var(--surface-3)] text-ink w-full"
+            >
+              <option value="">Todos projetos</option>
+              {projetosAtivos.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+            </select>
+          </div>
         )}
+
+        {/* Desktop: inline como antes */}
+        <div className="hidden md:flex flex-wrap gap-2">
+          <select
+            value={filterCliente}
+            onChange={(e) => { setFilterCliente(e.target.value); setFilterProjeto(''); }}
+            className="text-sm border border-line rounded-lg px-3 py-1.5 bg-elev text-ink focus:outline-none focus:border-[var(--cyan)] min-w-[140px]"
+          >
+            <option value="">Todos clientes</option>
+            {clientesAtivos.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+          <select
+            value={filterPessoa}
+            onChange={(e) => setFilterPessoa(e.target.value)}
+            className="text-sm border border-line rounded-lg px-3 py-1.5 bg-elev text-ink focus:outline-none focus:border-[var(--cyan)] min-w-[140px]"
+          >
+            <option value="">Todas pessoas</option>
+            {pessoasAtivas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+          </select>
+          <select
+            value={filterProjeto}
+            onChange={(e) => setFilterProjeto(e.target.value)}
+            className="text-sm border border-line rounded-lg px-3 py-1.5 bg-elev text-ink focus:outline-none focus:border-[var(--cyan)] min-w-[140px]"
+          >
+            <option value="">Todos projetos</option>
+            {projetosAtivos.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+          </select>
+          {hasFilter && (
+            <button onClick={clearFilters} className="text-xs text-muted hover:text-ink underline px-1">
+              Limpar filtros
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Bloco 1 · KPIs ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
         <KpiCard
           label="Throughput W-1"
           value={throughputW1}
-          delta={
-            throughputDelta !== 0
-              ? `${Math.abs(throughputDelta)} vs W-2`
-              : 'igual a W-2'
-          }
+          delta={throughputDelta !== 0 ? `${Math.abs(throughputDelta)} vs W-2` : 'igual a W-2'}
           deltaSign={throughputDelta > 0 ? 'up' : throughputDelta < 0 ? 'down' : 'neutral'}
           sub="tasks concluídas"
         />
         <KpiCard
           label="Tasks abertas"
           value={abertas.length}
-          sub={filterCliente || filterPessoa || filterProjeto ? 'no filtro' : 'total ativas'}
+          sub={hasFilter ? 'no filtro' : 'total ativas'}
         />
         <KpiCard
           label="Atrasadas"
@@ -310,18 +340,20 @@ export function DashboardClient() {
           danger
         />
         <KpiCard
-          label="Projetos em atenção"
+          label="Em atenção"
           value={projsEmRisco}
-          sub="vermelho ou âmbar"
+          sub="projetos âmbar/vermelho"
           danger={projsEmRisco > 0}
         />
       </div>
 
       {/* ── Bloco 2 · Heurísticas ── */}
-      <div className="bg-elev border border-line rounded-xl p-4">
-        <div className="flex items-center justify-between gap-3 mb-3">
+      <div className="bg-elev border border-line rounded-xl p-3 md:p-4">
+        {/* Header — duas linhas no mobile, uma linha no desktop */}
+        <div className="flex flex-col gap-2 mb-3">
+          {/* Linha 1: título + badges */}
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-ink">Alertas operacionais</h2>
+            <h2 className="text-sm font-semibold text-ink">Alertas</h2>
             {countAlta > 0 && (
               <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-[var(--p0-soft)] text-[var(--danger)]">
                 {countAlta} crítico{countAlta > 1 ? 's' : ''}
@@ -332,39 +364,44 @@ export function DashboardClient() {
                 {countMedia} atenção
               </span>
             )}
+            {heuristicAlerts.length === 0 && (
+              <span className="text-[11px] text-[var(--brand)]">✓ tudo certo</span>
+            )}
           </div>
+          {/* Linha 2: controles — filtros de severidade apenas desktop */}
           <div className="flex items-center gap-2">
-            <div className="flex gap-1">
+            <div className="hidden md:flex gap-1">
               {(['', 'alta', 'media'] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setHeurFilter(f)}
                   className={cn(
-                    'text-xs px-2 py-0.5 rounded border transition-colors',
+                    'text-xs px-2 py-1 rounded border transition-colors',
                     heurFilter === f
                       ? 'bg-[var(--brand-soft)] border-[var(--brand)] text-[var(--brand-dark)] font-medium'
-                      : 'border-line text-muted hover:border-[var(--line-strong)]',
+                      : 'border-line text-muted',
                   )}
                 >
                   {f === '' ? 'Todos' : f === 'alta' ? 'Críticos' : 'Atenção'}
                 </button>
               ))}
             </div>
+            <div className="flex-1 md:hidden" />
             <button
               onClick={() => setHeurExpanded((v) => !v)}
-              className="text-xs text-muted hover:text-ink"
+              className="text-xs text-muted hover:text-ink shrink-0"
             >
-              {heurExpanded ? 'Menos ▴' : 'Detalhes ▾'}
+              {heurExpanded ? 'Menos ▴' : 'Detalhe ▾'}
             </button>
           </div>
         </div>
 
         {alertsToShow.length === 0 ? (
-          <div className="text-sm text-muted py-2">
+          <div className="text-sm text-muted py-1">
             {heuristicAlerts.length === 0 ? '✓ Nenhum alerta no momento' : 'Nenhum alerta nesta categoria'}
           </div>
         ) : (
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
             {alertsToShow.map((a, i) => (
               <HeuristicRow key={i} alert={a} expanded={heurExpanded} />
             ))}
@@ -374,33 +411,38 @@ export function DashboardClient() {
 
       {/* ── Bloco 3 · Semáforo de projetos ── */}
       <div className="bg-elev border border-line rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-line">
+        <div className="px-3 md:px-4 py-3 border-b border-line">
           <h2 className="text-sm font-semibold text-ink">Saúde por projeto</h2>
         </div>
         {projetosSaude.length === 0 ? (
-          <div className="px-4 py-6 text-sm text-muted">
-            Nenhum projeto ativo no filtro
-          </div>
+          <div className="px-4 py-5 text-sm text-muted">Nenhum projeto ativo no filtro</div>
         ) : (
           <div className="divide-y divide-line">
             {projetosSaude.map((ps) => (
               <div
                 key={ps.projetoId}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-3)] transition-colors"
+                className="flex items-center gap-3 px-3 md:px-4 py-3"
               >
                 <span
                   className={cn('shrink-0 w-2.5 h-2.5 rounded-full', sinalDot(ps.sinal))}
-                  title={ps.sinal}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-ink truncate">{ps.nome}</div>
-                  <div className="text-xs text-muted truncate">{ps.nomeCliente}</div>
+                  {/* Mobile: motivo na segunda linha; Desktop: inline */}
+                  <div className="text-xs text-muted truncate">
+                    <span>{ps.nomeCliente}</span>
+                    <span className="md:hidden">
+                      {ps.motivo !== 'Saudável' && ` · ${ps.motivo}`}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-xs text-muted shrink-0 hidden sm:block">{ps.motivo}</div>
-                <div className="text-xs text-muted shrink-0 tabular-nums">
-                  {ps.nAbertas} abertas
+                <div className="text-xs text-muted shrink-0 hidden md:block">{ps.motivo}</div>
+                <div className="text-xs tabular-nums shrink-0 text-right">
+                  <span className="text-muted">{ps.nAbertas}</span>
                   {ps.nAtrasadas > 0 && (
-                    <span className="text-[var(--danger)] ml-1">· {ps.nAtrasadas} atras.</span>
+                    <span className="text-[var(--danger)] ml-1 font-medium">
+                      · {ps.nAtrasadas}↑
+                    </span>
                   )}
                 </div>
               </div>
@@ -411,57 +453,61 @@ export function DashboardClient() {
 
       {/* ── Bloco 4 · Heatmap capacidade ── */}
       <div className="bg-elev border border-line rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-line flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">Capacidade por pessoa · 4 semanas</h2>
-          <div className="flex items-center gap-3 text-[10px] text-muted">
+        <div className="px-3 md:px-4 py-3 border-b border-line flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-ink">Capacidade · 4 semanas</h2>
+          <div className="flex items-center gap-2 md:gap-3 text-[10px] text-muted shrink-0">
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[var(--p0-soft)] inline-block" /> Sobrecarga
+              <span className="w-2 h-2 rounded-sm bg-[var(--p0-soft)] inline-block border border-[var(--p0)] border-opacity-30" />
+              <span className="hidden sm:inline">Sobrecarga</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[var(--p1-soft)] inline-block" /> Pressão
+              <span className="w-2 h-2 rounded-sm bg-[var(--p1-soft)] inline-block border border-[var(--p1)] border-opacity-30" />
+              <span className="hidden sm:inline">Pressão</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[var(--brand-tint)] inline-block" /> OK
+              <span className="w-2 h-2 rounded-sm bg-[var(--brand-tint)] inline-block" />
+              <span className="hidden sm:inline">OK</span>
             </span>
           </div>
         </div>
         {wca.pessoas.length === 0 ? (
-          <div className="px-4 py-6 text-sm text-muted">Nenhum dado de capacidade</div>
+          <div className="px-4 py-5 text-sm text-muted">Nenhum dado de capacidade</div>
         ) : (
           <div className="overflow-x-auto">
-            <div className="min-w-[400px] px-4 py-3">
+            {/* Mobile: col nome 72px; Desktop: 120px */}
+            <div className="px-3 md:px-4 py-3" style={{ minWidth: 300 }}>
               {/* Header */}
               <div
-                className="grid gap-1.5 mb-2"
-                style={{ gridTemplateColumns: '120px repeat(4, 1fr)' }}
+                className="grid gap-1 mb-1.5"
+                style={{ gridTemplateColumns: 'var(--name-col, 72px) repeat(4, 1fr)' }}
               >
                 <div />
-                {weekLabels.map((l) => (
+                {weekLabelsMobile.map((l, i) => (
                   <div key={l} className="text-center text-[10px] text-muted font-medium uppercase tracking-wide">
-                    {l}
+                    <span className="md:hidden">{weekLabelsMobile[i]}</span>
+                    <span className="hidden md:inline">{weekLabelsDesktop[i]}</span>
                   </div>
                 ))}
               </div>
               {/* Rows */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {wca.pessoas.map((p) => (
                   <div
                     key={p.pessoaId}
-                    className="grid gap-1.5 items-center"
-                    style={{ gridTemplateColumns: '120px repeat(4, 1fr)' }}
+                    className="grid gap-1 items-center"
+                    style={{ gridTemplateColumns: 'var(--name-col, 72px) repeat(4, 1fr)' }}
                   >
                     <div
-                      className="text-xs text-ink font-medium truncate pr-2"
+                      className="text-xs text-ink truncate pr-1"
                       title={p.nome}
                     >
                       {p.nome.split(' ')[0]}
-                      {p.nome.split(' ').length > 1 ? ` ${p.nome.split(' ')[1][0]}.` : ''}
                     </div>
                     {p.weeks.map((wk, i) => (
                       <div
                         key={i}
                         className={cn(
-                          'text-center text-xs py-1.5 rounded-md font-mono',
+                          'text-center text-[11px] py-1.5 rounded font-mono',
                           heatmapColor(wk.nivel),
                         )}
                         title={`${wk.hours}h`}
@@ -473,9 +519,7 @@ export function DashboardClient() {
                 ))}
               </div>
               {wca.pessoas.some((p) => p.capacidade === 0) && (
-                <p className="text-[10px] text-muted mt-2">
-                  * Sem capacidade cadastrada → % não calculado
-                </p>
+                <p className="text-[10px] text-muted mt-2">* Sem capacidade → % não calculado</p>
               )}
             </div>
           </div>
@@ -483,30 +527,38 @@ export function DashboardClient() {
       </div>
 
       {/* ── Bloco 5 · Throughput ── */}
-      <div className="bg-elev border border-line rounded-xl p-4">
-        <h2 className="text-sm font-semibold text-ink mb-4">Throughput semanal · últimas 8 semanas</h2>
-        <div className="flex items-end gap-1.5 h-28">
+      <div className="bg-elev border border-line rounded-xl p-3 md:p-4">
+        <h2 className="text-sm font-semibold text-ink mb-3">
+          Throughput · 8 semanas
+        </h2>
+        <div className="flex items-end gap-1 h-24 md:h-28">
           {throughput.map((week, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <div className="text-[10px] text-muted tabular-nums">{week.count}</div>
+            <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+              <div className="text-[10px] text-muted tabular-nums">{week.count || ''}</div>
               <div
                 className={cn(
-                  'w-full rounded-t-sm transition-all',
+                  'w-full rounded-t-sm',
                   week.isCurrent ? 'bg-[var(--brand)]' : 'bg-[var(--brand-soft)]',
                 )}
-                style={{
-                  height: `${Math.max(3, (week.count / maxThroughput) * 72)}px`,
-                }}
+                style={{ height: `${Math.max(3, (week.count / maxThroughput) * 70)}px` }}
               />
             </div>
           ))}
         </div>
-        <div className="flex gap-1.5 mt-1">
+        {/* Labels de data: hidden no mobile (barras falam por si), visíveis no desktop */}
+        <div className="hidden md:flex gap-1.5 mt-1.5">
           {throughput.map((week, i) => (
             <div key={i} className="flex-1 text-center text-[9px] text-muted truncate">
               {week.label}
             </div>
           ))}
+        </div>
+        {/* Mobile: só semana atual */}
+        <div className="flex justify-end mt-1 md:hidden">
+          <span className="text-[10px] text-muted">
+            ← semanas anteriores · semana atual{' '}
+            <span className="inline-block w-2 h-2 rounded-sm bg-[var(--brand)] align-middle" />
+          </span>
         </div>
       </div>
     </div>

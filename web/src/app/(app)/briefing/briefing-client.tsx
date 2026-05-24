@@ -148,56 +148,48 @@ export function BriefingClient() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24 text-muted text-sm">
-        Carregando…
-      </div>
+      <div className="text-muted text-sm py-8">Carregando…</div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* ── Cabeçalho ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--ink)]">Briefing executivo</h1>
-          <p className="text-xs text-muted mt-0.5">
-            {refreshing ? 'Atualizando…' : 'Visão de portfólio · dados ao vivo · sem filtros'}
-          </p>
+    <div className="flex flex-col gap-4 md:gap-6">
+
+      {/* ── Page bar · desktop only ── */}
+      <div className="page-bar hidden md:flex">
+        <div className="page-bar-info">
+          <span className="page-bar-narrative">
+            Briefing
+            <span className="text-muted font-normal text-sm ml-2">
+              {refreshing ? '· atualizando…' : '· portfólio ao vivo'}
+            </span>
+          </span>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="text-xs text-muted hover:text-ink underline"
-          >
-            ← Ver Dashboard
-          </Link>
-          <button
-            onClick={() => window.print()}
-            className="btn btn-ghost text-xs"
-          >
+        <div className="page-bar-controls">
+          <Link href="/dashboard" className="btn btn-ghost text-xs">← Dashboard</Link>
+          <button onClick={() => window.print()} className="btn btn-ghost text-xs">
             Exportar PDF
           </button>
         </div>
       </div>
 
       {/* ── Bloco 1 · Headline IA ── */}
-      <div className="bg-elev border border-line rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-3">
+      <div className="bg-elev border border-line rounded-xl p-3 md:p-5">
+        <div className="flex items-center gap-2 mb-2">
           <span className="text-xs font-bold uppercase tracking-wide text-muted">Resumo executivo</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-3)] text-muted border border-line">
             IA · em breve
           </span>
         </div>
         <p className="text-sm text-muted italic leading-relaxed">
-          O resumo gerado por IA estará disponível com o lançamento do{' '}
-          <span className="font-medium">ai-weekly-summary</span>. Por enquanto, consulte os blocos
-          abaixo para o estado completo do portfólio.
+          O resumo por IA estará disponível com o{' '}
+          <span className="font-medium">ai-weekly-summary</span>. Consulte os blocos abaixo.
         </p>
       </div>
 
       {/* ── Bloco 2 · Clientes em atenção ── */}
       <div className="bg-elev border border-line rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-line flex items-center justify-between">
+        <div className="px-3 md:px-4 py-3 border-b border-line flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink">Clientes em atenção</h2>
           <span className="text-xs text-muted">
             {clientesAtencao.length === 0 ? 'Todos saudáveis ✓' : `${clientesAtencao.length} cliente(s)`}
@@ -226,9 +218,9 @@ export function BriefingClient() {
                 </div>
                 <Link
                   href={`/dashboard?cliente=${c.clienteId}`}
-                  className="shrink-0 text-xs text-[var(--brand)] hover:underline font-medium"
+                  className="shrink-0 text-xs text-[var(--brand)] font-medium py-1 px-2 rounded hover:bg-[var(--brand-tint)] transition-colors"
                 >
-                  Ver detalhes →
+                  <span className="hidden sm:inline">Ver detalhes </span>→
                 </Link>
               </div>
             ))}
@@ -238,51 +230,43 @@ export function BriefingClient() {
 
       {/* ── Bloco 3 · Heatmap portfólio ── */}
       <div className="bg-elev border border-line rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-line flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">Capacidade portfólio · 4 semanas</h2>
-          <div className="flex items-center gap-3 text-[10px] text-muted">
+        <div className="px-3 md:px-4 py-3 border-b border-line flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-ink">Capacidade portfólio</h2>
+          <div className="flex items-center gap-2 text-[10px] text-muted">
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[var(--p0-soft)] inline-block" /> Sobrecarga
+              <span className="w-2 h-2 rounded-sm bg-[var(--p0-soft)] inline-block" />
+              <span className="hidden sm:inline">Sobrecarga</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[var(--p1-soft)] inline-block" /> Pressão
+              <span className="w-2 h-2 rounded-sm bg-[var(--p1-soft)] inline-block" />
+              <span className="hidden sm:inline">Pressão</span>
             </span>
           </div>
         </div>
         {wca.pessoas.length === 0 ? (
-          <div className="px-4 py-6 text-sm text-muted">Nenhum dado de capacidade</div>
+          <div className="px-4 py-5 text-sm text-muted">Nenhum dado de capacidade</div>
         ) : (
           <div className="overflow-x-auto">
-            <div className="min-w-[400px] px-4 py-3">
-              <div
-                className="grid gap-1.5 mb-2"
-                style={{ gridTemplateColumns: '120px repeat(4, 1fr)' }}
-              >
+            <div className="px-3 md:px-4 py-3" style={{ minWidth: 300 }}>
+              <div className="grid gap-1 mb-1.5" style={{ gridTemplateColumns: '72px repeat(4, 1fr)' }}>
                 <div />
-                {weekLabels.map((l) => (
+                {(['Agora', '+1s', '+2s', '+3s'] as const).map((l, i) => (
                   <div key={l} className="text-center text-[10px] text-muted font-medium uppercase tracking-wide">
-                    {l}
+                    <span className="md:hidden">{l}</span>
+                    <span className="hidden md:inline">{weekLabels[i]}</span>
                   </div>
                 ))}
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {wca.pessoas.map((p) => (
-                  <div
-                    key={p.pessoaId}
-                    className="grid gap-1.5 items-center"
-                    style={{ gridTemplateColumns: '120px repeat(4, 1fr)' }}
-                  >
-                    <div className="text-xs text-ink font-medium truncate pr-2" title={p.nome}>
+                  <div key={p.pessoaId} className="grid gap-1 items-center" style={{ gridTemplateColumns: '72px repeat(4, 1fr)' }}>
+                    <div className="text-xs text-ink truncate pr-1" title={p.nome}>
                       {p.nome.split(' ')[0]}
-                      {p.nome.split(' ').length > 1 ? ` ${p.nome.split(' ')[1][0]}.` : ''}
                     </div>
                     {p.weeks.map((wk, i) => (
                       <div
                         key={i}
-                        className={cn(
-                          'text-center text-xs py-1.5 rounded-md font-mono',
-                          heatmapColor(wk.nivel),
-                        )}
+                        className={cn('text-center text-[11px] py-1.5 rounded font-mono', heatmapColor(wk.nivel))}
                         title={`${wk.hours}h`}
                       >
                         {wk.pctCap != null ? `${wk.pctCap}%` : '—'}
@@ -299,22 +283,18 @@ export function BriefingClient() {
       {/* ── Bloco 4 · Orçamento por projeto ── */}
       {wca.projetosFechados.length > 0 && (
         <div className="bg-elev border border-line rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-line">
-            <h2 className="text-sm font-semibold text-ink">Orçamento por projeto fechado</h2>
+          <div className="px-3 md:px-4 py-3 border-b border-line">
+            <h2 className="text-sm font-semibold text-ink">Orçamento · projetos fechados</h2>
           </div>
           <div className="divide-y divide-line">
             {wca.projetosFechados.map((p) => (
-              <div key={p.projetoId} className="px-4 py-3">
+              <div key={p.projetoId} className="px-3 md:px-4 py-3">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm font-medium text-ink truncate">{p.nome}</span>
                   <span
                     className={cn(
-                      'text-xs font-semibold tabular-nums shrink-0 ml-2',
-                      p.estourado
-                        ? 'text-[var(--danger)]'
-                        : p.risco
-                        ? 'text-[var(--warn)]'
-                        : 'text-muted',
+                      'text-xs font-bold tabular-nums shrink-0 ml-2',
+                      p.estourado ? 'text-[var(--danger)]' : p.risco ? 'text-[var(--warn)]' : 'text-muted',
                     )}
                   >
                     {p.pctEsgotamento}%
@@ -322,13 +302,13 @@ export function BriefingClient() {
                 </div>
                 <div className={cn('w-full h-2 rounded-full', budgetBg(p.pctEsgotamento))}>
                   <div
-                    className={cn('h-2 rounded-full transition-all', budgetColor(p.pctEsgotamento))}
+                    className={cn('h-2 rounded-full', budgetColor(p.pctEsgotamento))}
                     style={{ width: `${Math.min(p.pctEsgotamento, 100)}%` }}
                   />
                 </div>
                 <div className="flex justify-between text-[10px] text-muted mt-1">
                   <span>{p.usado}h usadas · {p.comprometido}h comprometidas</span>
-                  <span>{p.orcTotal}h orçadas</span>
+                  <span className="shrink-0 ml-2">{p.orcTotal}h total</span>
                 </div>
               </div>
             ))}
@@ -337,11 +317,11 @@ export function BriefingClient() {
       )}
 
       {/* ── Bloco 5 · Conquistas + sugestões ── */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-3 md:gap-4">
         {/* Conquistas W-1 */}
         <div className="bg-elev border border-line rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-line flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-ink">Conquistas · semana passada</h2>
+          <div className="px-3 md:px-4 py-3 border-b border-line flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-ink">Conquistas · W-1</h2>
             <span className="text-xs font-bold text-[var(--brand)] tabular-nums">
               {throughputW1} tarefa{throughputW1 !== 1 ? 's' : ''}
             </span>
@@ -353,7 +333,7 @@ export function BriefingClient() {
           ) : (
             <div className="divide-y divide-line">
               {concluidas.map((t) => (
-                <div key={t.id} className="px-4 py-2.5">
+                <div key={t.id} className="px-3 md:px-4 py-2.5">
                   <div className="text-sm text-ink truncate">{t.titulo}</div>
                   <div className="text-xs text-muted mt-0.5">
                     {clientesById.get(t.clienteId)?.nome ?? '—'}
@@ -361,7 +341,7 @@ export function BriefingClient() {
                 </div>
               ))}
               {throughputW1 > 5 && (
-                <div className="px-4 py-2 text-xs text-muted">
+                <div className="px-3 md:px-4 py-2 text-xs text-muted">
                   + {throughputW1 - 5} outras tarefas concluídas
                 </div>
               )}
@@ -371,8 +351,8 @@ export function BriefingClient() {
 
         {/* Sugestões de redistribuição */}
         <div className="bg-elev border border-line rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-line">
-            <h2 className="text-sm font-semibold text-ink">Sugestões de redistribuição</h2>
+          <div className="px-3 md:px-4 py-3 border-b border-line">
+            <h2 className="text-sm font-semibold text-ink">Redistribuição</h2>
           </div>
           {sugestoes.length === 0 ? (
             <div className="px-4 py-5 text-sm text-muted">
@@ -381,8 +361,8 @@ export function BriefingClient() {
           ) : (
             <div className="divide-y divide-line">
               {sugestoes.map((s, i) => (
-                <div key={i} className="px-4 py-3 flex items-start gap-2">
-                  <span className="text-[var(--warn)] shrink-0 mt-0.5">⚠</span>
+                <div key={i} className="px-3 md:px-4 py-3 flex items-start gap-2">
+                  <span className="text-[var(--warn)] shrink-0 mt-0.5 text-sm">⚠</span>
                   <span className="text-sm text-ink leading-snug">{s}</span>
                 </div>
               ))}
