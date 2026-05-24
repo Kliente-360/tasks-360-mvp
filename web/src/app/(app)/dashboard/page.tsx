@@ -1,5 +1,10 @@
-import { OndaPlaceholder } from '@/components/onda-placeholder';
+import { Suspense } from 'react';
+import { DashboardClient } from './dashboard-client';
 
 export default function Page() {
-  return <OndaPlaceholder href="/dashboard" title="Dashboard" />;
+  return (
+    <Suspense fallback={<div className="text-muted text-sm py-8">Carregando…</div>}>
+      <DashboardClient />
+    </Suspense>
+  );
 }
