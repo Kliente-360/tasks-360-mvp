@@ -22,7 +22,7 @@
 //   task → WEBHOOK_URL_TASK:
 //     { sent_at, task_id,
 //       data: { task_external_id,
-//               record: { titulo, descricao, responsavel,
+//               record: { titulo, descricao, responsavel, responsavel_id,
 //                         prioridade, prazo, subetapa } } }
 //
 //   comment/reply → WEBHOOK_URL_COMMENT:
@@ -31,6 +31,7 @@
 //               record: { body } } }
 //
 // `responsavel` vai como nome textual (lookup em pessoas pela pessoa_id).
+// `responsavel_id` vai como UUID direto (pessoa_id do registro).
 // `comment_external_id` é null no create, valor no update.
 // `is_reply` distingue comment vs reply; create vs update se diferencia
 // olhando comment_external_id (null = create).
@@ -335,12 +336,13 @@ Deno.serve(async (req) => {
       data: {
         task_external_id: data.task_external_id,
         record: {
-          titulo:      fullRecord.titulo ?? null,
-          descricao:   fullRecord.descricao ?? null,
+          titulo:          fullRecord.titulo ?? null,
+          descricao:       fullRecord.descricao ?? null,
           responsavel,
-          prioridade:  fullRecord.prioridade ?? null,
-          prazo:       fullRecord.prazo ?? null,
-          subetapa:    fullRecord.subetapa ?? null,
+          responsavel_id:  pessoaId ?? null,
+          prioridade:      fullRecord.prioridade ?? null,
+          prazo:           fullRecord.prazo ?? null,
+          subetapa:        fullRecord.subetapa ?? null,
         },
       },
     };
