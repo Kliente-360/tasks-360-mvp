@@ -18,6 +18,7 @@
 //                                                   // Se cliente é null/sentinel, projeto é
 //                                                   // ignorado (não tenta lookup sem cliente).
 //     "responsavel":  "Jéssica",                    // opcional, by name. "Triagem" sentinel = null.
+//     "responsavel_id": "uuid-da-pessoa",           // opcional, UUID direto. Tem precedência sobre responsavel.
 //     "prioridade":   "P1",                         // opcional: P0|P1|P2|P3
 //     "esforco":      4,                            // opcional, horas
 //     "prazo":        "2026-06-15",                 // opcional, YYYY-MM-DD
@@ -50,7 +51,10 @@
 //       concluido  → 'concluido'
 //   - Sem nenhum dos dois, novo task começa em 'backlog'.
 //
-// Retorna 201 { id, action: "created" } ou 200 { id, action: "updated" }.
+// Retorna 201 { id, action: "created", responsavel_id } ou
+//         200 { id, action: "updated"|"archived"|"unarchived", responsavel_id }.
+// responsavel_id: UUID resolvido (via responsavel_id direto ou lookup por responsavel),
+//   ou null se não enviado.
 // Erros 4xx retornam { error: { code, message } }.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -165,10 +169,12 @@ Deno.serve(async (req) => {
     } catch (e) { return err(500, 'db_error', String((e as Error).message)); }
   }
 
-  // Responsável: opcional. Sentinel "Triagem" também é aceito como null
-  // (task fica sem responsável e cai em Triagem).
+  // Responsável: opcional. UUID direto (responsavel_id) tem precedência
+  // sobre lookup por nome (responsavel). Sentinel "Triagem" = null.
   let pessoaId: string | null = null;
-  if (body.responsavel && !isTriageSentinel(body.responsavel)) {
+  if (body.responsavel_id) {
+    pessoaId = String(body.responsavel_id).trim();
+  } else if (body.responsavel && !isTriageSentinel(body.responsavel)) {
     try {
       const r = await findByName('pessoas', String(body.responsavel));
       if (!r) return err(422, 'responsavel_not_found', `responsavel '${body.responsavel}' não cadastrado`);
@@ -359,8 +365,9 @@ Deno.serve(async (req) => {
     }
 
     return json(200, {
-      id:     existing.id,
-      action: didArchive ? 'archived' : didUnarchive ? 'unarchived' : 'updated',
+      id:             existing.id,
+      action:         didArchive ? 'archived' : didUnarchive ? 'unarchived' : 'updated',
+      responsavel_id: pessoaId,
     });
   } else {
     payload.external_source = SOURCE;
@@ -375,7 +382,7 @@ Deno.serve(async (req) => {
       from_value: null, to_value: data.status,
       actor_source: SOURCE,
     });
-    return json(201, { id: data.id, action: 'created' });
+    return json(201, { id: data.id, action: 'created', responsavel_id: pessoaId });
   }
 });
 
