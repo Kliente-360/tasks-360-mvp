@@ -1191,9 +1191,9 @@ Sem cache (worst case absoluto): R$ 35–50/mês. Preços de modelo podem mudar;
 
 ### 9.3 Roadmap pós-Onda 0 · Next migration completa
 
-> Estado atual: **Onda 0 do Next feature-complete em `feat/onda-0` (v1.02.186)**. 100% paridade UX com Alpine + PWA + CI + 47 testes. Time validando em preview antes do cutover. **Cutover (Bloco 5) parqueado — será executado manualmente quando o responsável sinalizar.**
+> Estado atual: **Onda 0 + Dashboard + Briefing entregues em `feat/onda-0` (v1.02.193)**. 100% paridade UX com Alpine + PWA + CI + 44 testes. Time validando em preview antes do cutover. **Cutover (Bloco 5) parqueado — será executado manualmente quando o responsável sinalizar.**
 >
-> **Última revisão de roadmap**: 23/05/2026 — pedidos abertos distribuídos nos horizontes, 14 itens descontinuados definitivamente, Cold storage consolidado.
+> **Última revisão de roadmap**: 24/05/2026 — Dashboard e Briefing entregues (§9.3.2 itens 1-2 ✅), limpeza de telemetria anotada em §9.3.9.
 >
 > **Como ler**: Now / Next / Later / Cold / Descontinuados. Itens em §9.3.5 foram removidos do radar — não repropor sem novo input significativo.
 
@@ -1221,8 +1221,8 @@ Em ordem de execução sugerida (sequência importa — cada item desbloqueia o 
 
 | # | Item | Esforço | Por quê agora |
 |---|---|---|---|
-| 1 | **Dashboard** (sai de parking) | ~1-2 semanas | Cockpit operacional do time. Heurísticas + bucketing semanal + agingLevel + `projetoCapacidadeSemana` já portados em `task-utils.ts`. **Stack: Tremor v3** (KPI cards, gráficos executivos) — decisão §12 item 17. Filtros ao vivo por cliente/responsável/projeto. Ver spec completa em §9.3.8. |
-| 2 | **Briefing** (sai de parking) | 3-5 dias | "Monday huddle" — **aba separada** do Dashboard (decisão §12 item 18). View executiva sem filtros, ao vivo (decisão §12 item 19), PDF on-demand (decisão §12 item 20). **Heatmap pessoa × semana: CSS Grid customizado** (não Tremor — controle total, melhor performance). Ver spec completa em §9.3.8. |
+| 1 | ✅ **Dashboard** · entregue mai/2026 | — | Cockpit operacional. KPIs, heurísticas, semáforo de projetos, heatmap W0–W3, throughput 8 semanas. CSS Grid puro (sem Tremor — ver ADR §12 item 17). PR #335 + #336. |
+| 2 | ✅ **Briefing** · entregue mai/2026 | — | Relatório executivo. Clientes em atenção, heatmap portfólio, orçamento projetos, conquistas W-1, redistribuição. Aba separada, ao vivo, sem filtros. PR #335. |
 | 3 | **`ai-suggest`** (Haiku, ~R$0,015/exec) | ~1 semana | Fecha gap competitivo #1 da §14.3 do CONTEXT. Custo trivial. ⭐ |
 | 4 | **`ai-weekly-summary`** (Sonnet + cron sáb) | 4-5 dias | Combina com Briefing → aba "Insights". Sócio lê portfólio em 5min. ⭐⭐ |
 | 5 | **Push notifications + Badging API** | ~2-3 semanas | Comportamental forte. iOS 16.4+ suporta com PWA. Inclui VAPID keys + Edge Function + UI de permissão. |
@@ -1314,7 +1314,7 @@ Itens avaliados em revisão de esforço × impacto e removidos do radar. Alto es
 | Promessa | Status hoje | Destrava em |
 |---|---|---|
 | **Colaboração viva** (realtime multi-usuário) | ⏸ Channel pronto · publication dormente · padrão logo-clique suficiente hoje | ⏸ parqueado · habilitar quando surgir dor real (war room / equipe grande) — ver §12 item 21 |
-| **Visibilidade gerencial** (Dashboard + Briefing) | ⏸ Lógica pronta · UI ausente no Next | Next · itens 1-2 (~2 semanas) |
+| **Visibilidade gerencial** (Dashboard + Briefing) | ✅ Entregue mai/2026 · PRs #335-#336 | — |
 | **Diferenciação por IA** | ❌ Zero features de IA em prod | Next · `ai-suggest` item 3 ⭐ |
 | **Multi-tenancy real** (Portal cliente) | ⏸ RLS desenhada · UI ausente no Next | Later · 4-6 semanas |
 | **Time tracking** | ❌ `tempoRealHoras` manual · sem cronômetro | Later · cronômetro item 3 (~1 sem UI) |
@@ -1367,6 +1367,32 @@ Filtros globais ao vivo: cliente · responsável · projeto — afetam todos os 
 ##### PDF on-demand (decisão §12 item 20)
 
 Botão "Exportar PDF" no Briefing → `window.print()` com CSS `@media print` dedicado (oculta nav, filtros, botões; ajusta cores pra escala de cinza). Sem backend. Sem cron. Sem pré-geração. Disponível quando o usuário pedir.
+
+#### 9.3.9 Limpeza pós-cutover · telemetria interna
+
+> **Pré-req**: Alpine desativado (pós-cutover confirmado). Enquanto Alpine e Next coexistem, estas tabelas e chamadas são compartilhadas — não mexer antes.
+
+Com a aba Adoção descontinuada e PostHog assumindo a camada comportamental, toda a infraestrutura de telemetria interna do Alpine pode ser removida. O app Next nunca recebeu esses calls — a limpeza é só no lado Alpine.
+
+**Banco de dados (SQL Editor do dashboard)**:
+- `DROP TABLE usage_events CASCADE` — tabela de 90 dias, ~50k rows no pico. RLS, índices e tudo associado vai junto.
+- `DROP FUNCTION fn_usage_events_cleanup()` — função de retenção que roda via cron.
+- Remover o `cron.schedule` correspondente em **Database > Extensions > pg_cron**.
+
+**Alpine (arquivos em `lib/`)**:
+- Deletar `lib/views/telemetria-export.js` inteiro — contém a função `track()` + `session_start` automático.
+- Deletar `lib/views/adoption.js` inteiro — único consumidor das `usage_events`.
+- Remover os ~19 calls de `this.track(...)` espalhados por:
+  - `lib/app.js` (login, portal login)
+  - `lib/views/task-modal.js` (task_view, task_create, task_edit, comment_post)
+  - `lib/views/backlog-kanban.js` (bulk_action)
+  - `lib/views/utilities.js` (tab_open, palette_open/select, onboarding_open, quick_capture)
+  - `lib/views/cadastros.js` (task/cliente/projeto arquivar)
+  - `lib/views/anexos.js` (comment_reply/edit/delete/visivel_toggle, attachment_upload/delete)
+- Remover import de `telemetria-export.js` no `index.html`.
+- Remover a aba "Adoção" do `tabsList` em `lib/app.js` (se ainda estiver lá como entrada).
+
+**Esforço estimado**: ~2-3h. Baixo risco — tudo é remoção, sem lógica nova. O `track()` usa fire-and-forget, então remover as chamadas não quebra nada no fluxo principal.
 
 ---
 
