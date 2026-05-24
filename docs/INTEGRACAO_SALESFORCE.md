@@ -1,6 +1,6 @@
 # Integração Salesforce ↔ tasks 360 (Kliente 360)
 
-> Documentação técnica para o dev Salesforce. Última atualização: 22/05/2026 · v1.02.173.
+> Documentação técnica para o dev Salesforce. Última atualização: 24/05/2026 · v1.02.193.
 
 ## Visão geral da arquitetura
 
@@ -64,7 +64,7 @@ Cria ou atualiza uma task identificada por `external_id`. **Upsert idempotente**
   "descricao":       "Cliente pediu Lightning record page específico",
   "cliente":         "Bodytech",
   "projeto":         "Sustentação BT",
-  "responsavel":     "Jéssica",
+  "responsavel_id":  "b2f4e891-3c1a-4d7e-9f02-a5c8d6b1e034",
   "prioridade":      "P1",
   "esforco":         4,
   "prazo":           "2026-06-15",
@@ -84,7 +84,8 @@ Cria ou atualiza uma task identificada por `external_id`. **Upsert idempotente**
 | `descricao` | string | não | markdown ok |
 | `cliente` | string | não | **resolução por nome** case-insensitive. `null`/`""`/`"Triagem"` = task sem cliente |
 | `projeto` | string | não | resolução por nome dentro do cliente. Ignorado se `cliente` for null |
-| `responsavel` | string | não | resolução por nome. `"Triagem"` = sem responsável |
+| `responsavel_id` | string (UUID) | não | **preferencial** — UUID direto da pessoa (obtido via `GET /get-pessoas`). Sem lookup. Tem precedência sobre `responsavel`. |
+| `responsavel` | string | não | alternativa: resolução por nome case-insensitive. Ignorado se `responsavel_id` for enviado. `"Triagem"` = sem responsável. |
 | `prioridade` | enum | não | `P0` \| `P1` \| `P2` \| `P3` |
 | `esforco` | number | não | horas (decimal aceito) |
 | `prazo` | string | não | `YYYY-MM-DD` |
@@ -97,15 +98,17 @@ Cria ou atualiza uma task identificada por `external_id`. **Upsert idempotente**
 | `external_status` | string | não | **sinal de cancelamento**. Ver §2.1.1 |
 
 **Resposta**:
-- `201 Created` (insert): `{ "id": "<uuid>", "action": "created" }`
-- `200 OK` (update): `{ "id": "<uuid>", "action": "updated" }`
-- `200 OK` (cancel transition): `{ "id": "<uuid>", "action": "archived" }`
-- `200 OK` (uncancel transition): `{ "id": "<uuid>", "action": "unarchived" }`
+- `201 Created` (insert): `{ "id": "<uuid>", "action": "created", "responsavel_id": "<uuid>|null" }`
+- `200 OK` (update): `{ "id": "<uuid>", "action": "updated", "responsavel_id": "<uuid>|null" }`
+- `200 OK` (cancel): `{ "id": "<uuid>", "action": "archived", "responsavel_id": "<uuid>|null" }`
+- `200 OK` (uncancel): `{ "id": "<uuid>", "action": "unarchived", "responsavel_id": "<uuid>|null" }`
+
+`responsavel_id` na resposta é o UUID resolvido — confirma quem ficou como responsável (ou `null` se não enviado).
 
 **Erros**:
 - `401 unauthorized` — API key inválida
 - `422 invalid_<campo>` — validação de tipo/enum
-- `422 cliente_not_found` / `projeto_not_found` / `responsavel_not_found` — nome não bate
+- `422 cliente_not_found` / `projeto_not_found` / `responsavel_not_found` — nome não bate (só ao usar `responsavel` por nome)
 - `500 db_error` — erro inesperado
 
 #### 2.1.1 Cancelamento / reabertura via `external_status`
@@ -433,9 +436,9 @@ Para clientes flag-ados com `webhook_enabled=true` (ex: VB, CTF), nosso modal **
 ```
 SF (Apex trigger no after insert/update do Task__c)
   ↓
-POST /ingest-task { external_id, titulo, cliente, ... }
+POST /ingest-task { external_id, titulo, cliente, responsavel_id, ... }
   ↓
-tasks 360 cria/atualiza, retorna { id, action }
+tasks 360 cria/atualiza, retorna { id, action, responsavel_id }
 ```
 
 ### 5.2 Usuário edita task no app → SF reflete
@@ -561,7 +564,7 @@ Resposta de erro padronizada:
 ### Inbound (você envia pra nós)
 - [ ] Trigger no `Task__c` (after insert/update) chama `/ingest-task` com payload v2.1.
 - [ ] Mapear `Status__c='Cancelled'` → `external_status: "Cancelado"`. Outros valores: mandar `external_status: "<status atual>"` para auto-uncancel funcionar.
-- [ ] Resolver `cliente`/`projeto`/`responsavel` por nome ou usar `"Triagem"` quando não souber.
+- [ ] Para `responsavel`: preferir `responsavel_id` (UUID direto via `GET /get-pessoas`) — mais robusto que lookup por nome. Fallback: `responsavel` por nome. Usar `"Triagem"` quando não souber.
 - [ ] Trigger no `FeedItem` (after insert/update) com `ParentId` de um `Task__c` SF chama `/ingest-comment`. Setar `parent_external_id` quando for reply.
 
 ### Outbound (você recebe de nós)
