@@ -28,6 +28,7 @@
 //     "tipo_trabalho":"feature",                    // opcional: bug|feature|discovery|manutencao|admin
 //     "tags":         ["frontend","auth"],          // opcional, array de strings
 //     "criado_por_ia":true,                         // opcional, default false. Marca task como originada de automação IA (Cowork etc).
+//     "isprivate":     true,                        // opcional, default false. Marca task como privada (visível só ao CEO). Mapeia para `privada` no DB.
 //     "external_status":"Cancelado"                 // opcional. Quando "Cancelado" (case-insensitive):
 //                                                   //   - arquiva a task aqui (arquivado_em=now)
 //                                                   //   - força subetapa='bloqueado'
@@ -253,6 +254,21 @@ Deno.serve(async (req) => {
     else return err(422, 'invalid_criado_por_ia', 'criado_por_ia deve ser boolean');
   }
 
+  // isprivate → privada: task visível só ao CEO. Mesmo padrão de coerção que criado_por_ia.
+  // Default = null (não toca o campo no update; insert usa default false do DB).
+  let privada: boolean | null = null;
+  if (body.isprivate != null) {
+    const v = body.isprivate;
+    if (typeof v === 'boolean') privada = v;
+    else if (typeof v === 'string') {
+      const s = v.toLowerCase().trim();
+      if (s === 'true' || s === '1')  privada = true;
+      else if (s === 'false' || s === '0') privada = false;
+      else return err(422, 'invalid_isprivate', 'isprivate deve ser boolean');
+    } else if (typeof v === 'number') privada = v === 1;
+    else return err(422, 'invalid_isprivate', 'isprivate deve ser boolean');
+  }
+
   // external_status: sinal semântico do SF. "Cancelado" (case-insensitive)
   // dispara o fluxo de arquivar; qualquer outro valor força desarquivar
   // se a task estava arquivada — e, nesse caso, posta auto-comment.
@@ -291,6 +307,7 @@ Deno.serve(async (req) => {
   if (tipoTrabalho)                 payload.tipo_trabalho = tipoTrabalho;
   if (tags)                         payload.tags         = tags;
   if (criadoPorIa != null)          payload.criado_por_ia = criadoPorIa;
+  if (privada != null)              payload.privada       = privada;
   if (subetapa) {
     payload.subetapa = subetapa;
     if (!existing || existing.subetapa !== subetapa) {

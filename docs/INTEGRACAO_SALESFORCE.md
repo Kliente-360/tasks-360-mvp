@@ -1,6 +1,6 @@
 # Integração Salesforce ↔ tasks 360 (Kliente 360)
 
-> Documentação técnica para o dev Salesforce. Última atualização: 24/05/2026 · v1.02.193.
+> Documentação técnica para o dev Salesforce. Última atualização: 25/05/2026 · v1.02.194.
 
 ## Visão geral da arquitetura
 
@@ -73,6 +73,7 @@ Cria ou atualiza uma task identificada por `external_id`. **Upsert idempotente**
   "tipo_trabalho":   "feature",
   "tags":            ["frontend", "lightning"],
   "criado_por_ia":   false,
+  "isprivate":       false,
   "external_status": "Em andamento"
 }
 ```
@@ -95,6 +96,7 @@ Cria ou atualiza uma task identificada por `external_id`. **Upsert idempotente**
 | `tipo_trabalho` | enum | não | `bug` \| `feature` \| `discovery` \| `manutencao` \| `admin` |
 | `tags` | string[] | não | tags livres |
 | `criado_por_ia` | boolean | não | true se a task foi gerada por automação SF |
+| `isprivate` | boolean | não | `true` = task visível apenas ao CEO (campo `privada` no DB). Default `false`. |
 | `external_status` | string | não | **sinal de cancelamento**. Ver §2.1.1 |
 
 **Resposta**:
